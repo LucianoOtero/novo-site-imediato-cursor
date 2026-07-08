@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { useCurrentRamo } from "@/components/cta/use-current-ramo";
 import { useContactModal } from "@/components/cta/ContactModalContext";
+import { useStickyCtaVisible } from "@/components/cta/use-sticky-cta-visible";
 import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { trackEvent } from "@/lib/analytics";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
@@ -31,30 +31,15 @@ import { cn } from "@/lib/utils";
  *
  * **Integrações 2026-07-08**: o botão de WhatsApp abre o
  * `ContactLeadModal` em vez de navegar direto — mesmo tratamento do
- * `WhatsAppButton`/`WhatsAppFAB`.
+ * `WhatsAppButton`/`WhatsAppFAB`. Lógica de visibilidade extraída para
+ * `useStickyCtaVisible` (compartilhada com `WhatsAppFAB`, que se esconde
+ * no mobile exatamente quando esta barra aparece — evita o FAB ficar
+ * escondido atrás da barra opaca, mesma faixa inferior da tela).
  */
 export function StickyCTA() {
   const ramo = useCurrentRamo();
   const { open } = useContactModal();
-  const [pastHero, setPastHero] = useState(false);
-  const [atFooter, setAtFooter] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setPastHero(window.scrollY > window.innerHeight * 0.6);
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const footer = document.querySelector("footer");
-    if (!footer) return;
-    const observer = new IntersectionObserver(([entry]) => setAtFooter(entry.isIntersecting));
-    observer.observe(footer);
-    return () => observer.disconnect();
-  }, []);
-
-  const visible = pastHero && !atFooter;
+  const visible = useStickyCtaVisible();
 
   return (
     <div role="complementary" aria-label="Barra de contato rápido">

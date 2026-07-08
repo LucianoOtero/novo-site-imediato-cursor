@@ -97,6 +97,10 @@ A Home agora tem **todos** os blocos do wireframe original (seção 6.1 da espec
 ### 3.5 Conteúdo/produto ainda em aberto (não é bloqueio técnico, é decisão de escopo)
 - **Revisão de Conteúdo/Comercial do rascunho de FAQ/objeções por ramo** (`lib/ramos.ts`) antes de publicar nas LPs — ver seção 3.3 acima.
 
+### 3.6b ✅ Resolvido (2026-07-08) — `WhatsAppFAB` responsivo + correção de sobreposição com a `StickyCTA`
+- Tamanho do `WhatsAppFAB` dobrado no desktop (56px → 112px, `md:size-28`), mantendo o tamanho original no mobile (56px, já acima do mínimo de toque de 44px) — ícone escala junto, preservando a proporção.
+- **Achado ao verificar a responsividade mobile**: a `StickyCTA` (barra opaca de largura total, só mobile) ficava por cima do `WhatsAppFAB` na mesma faixa inferior da tela, escondendo o FAB completamente sempre que a barra aparecia (sem quebra visual, mas o FAB ficava sem função). Corrigido extraindo a lógica de visibilidade para o hook compartilhado `useStickyCtaVisible` — o FAB agora se esconde no mobile exatamente quando a `StickyCTA` está visível (que já tem seu próprio ícone de WhatsApp); no desktop, onde a `StickyCTA` não existe, o FAB continua sempre visível.
+
 ### 3.6 ✅ Resolvido (2026-07-08) — Ajustes visuais no site de teste (feedback ao vivo)
 - **Logos de seguradoras maiores no desktop**: 2 rodadas de ajuste no mesmo dia — 40px → 80px → 100px de altura (`InsurersGrid`, `md:h-[100px]`), mantendo 6 por linha (`md:grid-cols-6`); `max-w-full` no `<img>` garante que nenhum logo mais largo quebre a linha, mesmo no tamanho maior.
 - **Ícone original do WhatsApp**: criado `components/shared/WhatsAppIcon.tsx` (glifo oficial da marca, path público do Simple Icons — mesmo padrão já usado em `components/layout/social-icons.tsx`), substituindo o ícone genérico (`MessageCircle`, lucide) em **todos** os pontos de contato: `WhatsAppButton`, `WhatsAppFAB`, `StickyCTA`, `ContactLeadModal`.
