@@ -67,12 +67,11 @@ A Home agora tem **todos** os blocos do wireframe original (seção 6.1 da espec
 - Removido um arquivo `.zip` de 48MB (backup antigo do projeto, sem relação com o código-fonte) que tinha entrado por engano no primeiro `git add`, antes do push — adicionado ao `.gitignore` para não repetir.
 - Pronto para conectar a um projeto Vercel.
 
-### 3.1.2 ⏳ Aguardando propagação de DNS
-- Domínio escolhido por você: `comparaseguroonline.com.br` (e `www.comparaseguroonline.com.br`), já adicionado ao projeto Vercel `imediato-seguros`.
-- Deploy de teste já publicado (build passou depois de um ajuste — ver nota abaixo).
-- **Decisão sua (2026-07-08)**: em vez de configurar DNS direto no registro.br, você criou uma zona no Cloudflare e trocou os nameservers do domínio no registro.br para o Cloudflare.
-- **Configurado por mim no Cloudflare** (via API, token com permissão só de DNS desta zona, fornecido por você): 2 registros `A` — `comparaseguroonline.com.br` → `76.76.21.21` e `www.comparaseguroonline.com.br` → `76.76.21.21`, ambos com o proxy do Cloudflare **desligado** ("DNS only" — importante: com o proxy ligado, a emissão automática do certificado SSL da Vercel pode falhar).
-- **Pendente**: a zona no Cloudflare está com status `pending` — a troca de nameservers no registro.br ainda não propagou (consulta pública via Google DNS e Cloudflare DNS às 2026-07-08 19h08 UTC ainda retorna os nameservers antigos `a.auto.dns.br`/`b.auto.dns.br`). Nameservers que o Cloudflare espera ver (específicos desta zona, confirme no registro.br): `dayana.ns.cloudflare.com` e `ruben.ns.cloudflare.com`. Assim que propagar, o Cloudflare ativa a zona automaticamente (e avisa por e-mail) e a Vercel emite o certificado SSL sozinha.
+### 3.1.2 ✅ Resolvido (2026-07-08) — Site de teste no ar
+- Domínio: `comparaseguroonline.com.br` (e `www.comparaseguroonline.com.br`), no projeto Vercel `imediato-seguros`.
+- DNS gerenciado via Cloudflare (decisão sua): 2 registros `A` → `76.76.21.21` (Vercel), proxy do Cloudflare **desligado** ("DNS only" — necessário para a emissão automática do certificado SSL da Vercel funcionar).
+- Nameservers propagaram no registro.br (confirmado 2026-07-08 ~20h58 UTC, depois de ~1h50 de espera): zona Cloudflare `active`, DNS resolvendo corretamente para a Vercel.
+- **Site confirmado no ar via HTTP** (`Cotação de Seguro Grátis | Imediato Seguros` — página real renderizando). HTTPS aguardando a Vercel terminar de emitir o certificado SSL automático (normal levar alguns minutos depois do DNS ficar correto) — monitorado, aviso quando terminar.
 - **Nota técnica**: durante a configuração, encontrei e corrigi um bug real em `lib/env.ts` — o override manual `NEXT_PUBLIC_APP_ENV` não tinha prioridade de verdade sobre o `VERCEL_ENV` automático da Vercel (ver commit `fix: NEXT_PUBLIC_APP_ENV deve ter prioridade total sobre VERCEL_ENV`). Sem essa correção, o build falhava em produção por faltar as 10 variáveis que ainda não temos (GTM/GA4/Ads/Turnstile/banco de dados) — agora o deployment de teste roda classificado como "staging" internamente (banner de teste + `noindex` automáticos), mesmo estando no deployment "Production" da própria Vercel.
 - A URL automática `*.vercel.app` do deployment pede login da Vercel para abrir (proteção padrão da plataforma) — isso é esperado e **não afeta o domínio customizado**, que fica público normalmente assim que o DNS propagar.
 
