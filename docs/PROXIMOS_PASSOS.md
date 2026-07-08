@@ -55,7 +55,7 @@ A Home agora tem **todos** os blocos do wireframe original (seção 6.1 da espec
 ### 3.2 Aguardando decisão/acesso seu ou do seu time
 | Item | O que é preciso | Onde já está preparado no código |
 |---|---|---|
-| Deploy de produção (Issue 24) | ~~Pré-requisito: criar repositório Git dedicado~~ — ✅ resolvido (2026-07-08): [github.com/LucianoOtero/novo-site-imediato-cursor](https://github.com/LucianoOtero/novo-site-imediato-cursor), branch `main`, primeiro commit já enviado (197 arquivos). Falta: criar o projeto na Vercel conectado a este repositório e configurar as variáveis de ambiente reais de produção (14 listadas em `.env.example`/`lib/env.ts`) | `next.config.mjs`, `lib/env.ts` já validam e travam o build se faltar algo em produção |
+| Deploy de produção (Issue 24) | ~~Pré-requisito: criar repositório Git dedicado~~ — ✅ (2026-07-08). ~~Criar projeto na Vercel~~ — ✅ (2026-07-08): projeto `imediato-seguros` criado, conectado ao GitHub (deploy automático a cada push em `main`), domínio de teste `comparaseguroonline.com.br` adicionado. **Falta só a configuração de DNS** (ver seção 3.1.2) — depende só de você, no painel do seu registrador | `next.config.mjs`, `lib/env.ts` já validam e travam o build se faltar algo em produção |
 | Integração real GTM/GA4/Google Ads (Issue 18) | Você confirmou acesso às contas (2026-07-08) — reaproveitar o mesmo container `GTM-PD6J398` (preserva histórico de GA4/Ads) usando o recurso de Environments do próprio GTM para testar com segurança no domínio temporário antes de publicar | Código de tracking (`lib/analytics.ts`, eventos) já implementado e disparando — só falta validar contra as contas reais |
 | Habilitar RPA em produção | Você confirmou (2026-07-08) que a TI já aceita CORS de `rpaimediatoseguros.com.br` para o novo domínio — falta só ligar `NEXT_PUBLIC_RPA_ENABLED=true` no ambiente de produção da Vercel, quando chegarmos lá | `lib/rpa.ts`/`RPAProgressModal` prontos, desabilitados por padrão |
 | Revisão jurídica dos textos genéricos | `/politica-de-privacidade` e `/termos` foram redigidos por mim a seu pedido — recomendável (não bloqueante) uma revisão pelo Jurídico em algum momento | Páginas já publicadas e indexáveis |
@@ -66,6 +66,15 @@ A Home agora tem **todos** os blocos do wireframe original (seção 6.1 da espec
 - Confirmado antes do push: `.env.local` (segredos reais), `.data/` (leads locais), `node_modules/`, `.next/` — todos corretamente ignorados pelo `.gitignore` já existente; nada sensível foi commitado.
 - Removido um arquivo `.zip` de 48MB (backup antigo do projeto, sem relação com o código-fonte) que tinha entrado por engano no primeiro `git add`, antes do push — adicionado ao `.gitignore` para não repetir.
 - Pronto para conectar a um projeto Vercel.
+
+### 3.1.2 ⏳ Aguardando você — Configuração de DNS do domínio de teste
+- Domínio escolhido por você: `comparaseguroonline.com.br` (e `www.comparaseguroonline.com.br`), já adicionado ao projeto Vercel `imediato-seguros`.
+- Deploy de teste já publicado (build passou depois de um ajuste — ver nota abaixo). Falta só apontar o DNS para a Vercel assumir o domínio de verdade:
+  - **Opção recomendada** (mantém o resto do DNS do domínio como está, ex.: e-mail): criar um registro `A` para `comparaseguroonline.com.br` apontando para `76.76.21.21`, e outro `A` para `www.comparaseguroonline.com.br` apontando para o mesmo IP — no painel do seu registrador (hoje o domínio usa os nameservers padrão do registro.br: `a.auto.dns.br`/`b.auto.dns.br`).
+  - **Opção alternativa** (delega o DNS inteiro à Vercel): trocar os nameservers do domínio para `ns1.vercel-dns.com` e `ns2.vercel-dns.com`.
+  - Depois de configurar, a Vercel emite o certificado SSL automaticamente e avisa por e-mail quando terminar (geralmente minutos, pode levar até algumas horas por propagação de DNS).
+- **Nota técnica**: durante a configuração, encontrei e corrigi um bug real em `lib/env.ts` — o override manual `NEXT_PUBLIC_APP_ENV` não tinha prioridade de verdade sobre o `VERCEL_ENV` automático da Vercel (ver commit `fix: NEXT_PUBLIC_APP_ENV deve ter prioridade total sobre VERCEL_ENV`). Sem essa correção, o build falhava em produção por faltar as 10 variáveis que ainda não temos (GTM/GA4/Ads/Turnstile/banco de dados) — agora o deployment de teste roda classificado como "staging" internamente (banner de teste + `noindex` automáticos), mesmo estando no deployment "Production" da própria Vercel.
+- A URL automática `*.vercel.app` do deployment pede login da Vercel para abrir (proteção padrão da plataforma) — isso é esperado e **não afeta o domínio customizado**, que fica público normalmente assim que o DNS propagar.
 
 ### 3.2.1 ✅ Resolvido (2026-07-08) — Credenciais reais EspoCRM/Octadesk
 - **Decisão do cliente**: EspoCRM apontado para o ambiente dev (`dev.flyingdonkeys.com.br`); Octadesk usa produção mesmo (não existe ambiente de teste) — inclusive durante a fase de testes no domínio temporário.
