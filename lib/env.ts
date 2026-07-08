@@ -22,7 +22,17 @@ export type AppEnvironment = "development" | "staging" | "production";
  * Detecta o ambiente da aplicação:
  * - Vercel expõe `VERCEL_ENV` automaticamente ("production" | "preview" | "development");
  *   "preview" é tratado como o nosso "staging" (ver Issue 23A).
- * - Pode ser sobrescrito manualmente via `NEXT_PUBLIC_APP_ENV`.
+ * - Pode ser sobrescrito manualmente via `NEXT_PUBLIC_APP_ENV` — e essa
+ *   sobrescrita tem PRIORIDADE TOTAL sobre `VERCEL_ENV`, nos dois sentidos
+ *   (promover OU rebaixar). Caso de uso real (2026-07-08): testar o site
+ *   num domínio próprio ligado à branch `main`/deployment "Production" da
+ *   Vercel, mas sem ainda ter todas as variáveis obrigatórias de produção
+ *   (GTM/GA4/Ads/Turnstile/banco de dados reais) — `NEXT_PUBLIC_APP_ENV=
+ *   staging` classifica esse deployment como "staging" mesmo com
+ *   `VERCEL_ENV=production`, evitando a validação estrita antes da hora.
+ *   Antes desta correção, a função dava prioridade a `VERCEL_ENV===
+ *   "production"` mesmo com o override manual — o que não era uma
+ *   sobrescrita de verdade, só um "OR" a favor de produção.
  *
  * Importante: NÃO usamos `NODE_ENV` como sinal de "produção real" aqui.
  * `next build` sempre define `NODE_ENV=production`, inclusive em builds
@@ -34,11 +44,14 @@ export type AppEnvironment = "development" | "staging" | "production";
  */
 function resolveAppEnvironment(): AppEnvironment {
   const explicit = process.env.NEXT_PUBLIC_APP_ENV;
-  const vercelEnv = process.env.VERCEL_ENV;
+  if (explicit === "production" || explicit === "staging" || explicit === "development") {
+    return explicit;
+  }
 
-  if (explicit === "production" || vercelEnv === "production") return "production";
-  if (explicit === "staging" || vercelEnv === "preview") return "staging";
-  if (explicit === "development" || vercelEnv === "development") return "development";
+  const vercelEnv = process.env.VERCEL_ENV;
+  if (vercelEnv === "production") return "production";
+  if (vercelEnv === "preview") return "staging";
+  if (vercelEnv === "development") return "development";
 
   // Sem VERCEL_ENV nem override explícito (ex.: `next build` local, fora
   // da Vercel): tratamos como "development" para permitir mocks, mesmo
