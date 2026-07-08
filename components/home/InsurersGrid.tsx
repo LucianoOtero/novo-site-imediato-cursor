@@ -47,7 +47,15 @@ export function InsurersGrid() {
           </p>
         </div>
 
-        <div className="mt-10 grid grid-cols-3 items-center gap-x-6 gap-y-8 sm:grid-cols-4 md:grid-cols-6">
+        {/*
+          Tamanho do logo dobra no desktop (`md:h-20`, 80px vs. 40px no
+          mobile/tablet) — a pedido do cliente (2026-07-08), que achou os
+          logos pequenos demais na versão desktop. Mantém 6 por linha
+          (`md:grid-cols-6`) — só o tamanho de cada logo aumenta, não a
+          quantidade por linha. `gap-y` aumentado no desktop também, para
+          dar respiro proporcional aos logos maiores.
+        */}
+        <div className="mt-10 grid grid-cols-3 items-center gap-x-6 gap-y-8 sm:grid-cols-4 md:grid-cols-6 md:gap-y-12">
           {seguradoras.map((seguradora) => (
             <div
               key={seguradora.slug}
@@ -61,7 +69,7 @@ export function InsurersGrid() {
                 decoding="async"
                 width={120}
                 height={48}
-                className="h-10 w-auto max-w-full object-contain"
+                className="h-10 w-auto max-w-full object-contain md:h-20"
               />
             </div>
           ))}
