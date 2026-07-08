@@ -25,13 +25,23 @@ import { trackEvent } from "@/lib/analytics";
  * (progressive enhancement: funciona com JS desabilitado, permite
  * "abrir em nova aba"/"copiar link" no botão direito do mouse) — o
  * `onClick` intercepta o clique padrão e abre o modal no lugar.
+ *
+ * **Exceção `skipModal`** (2026-07-08, decisão do cliente): em
+ * `/obrigado` (`ObrigadoContent`), o usuário acabou de preencher DDD/
+ * celular no `LeadForm` segundos antes — reabrir o modal ali pedindo os
+ * mesmos dados é fricção redundante. `skipModal` restaura a navegação
+ * direta (sem `ContactLeadModal`) só para esse caso pontual; em todos os
+ * outros lugares o padrão (`skipModal` ausente/`false`) continua abrindo
+ * o modal.
  */
 export interface WhatsAppButtonProps extends Omit<ButtonProps, "href" | "onClick"> {
   location: string;
   ramo?: string;
+  /** `true` pula o `ContactLeadModal` e navega direto para o WhatsApp — ver nota acima. */
+  skipModal?: boolean;
 }
 
-export function WhatsAppButton({ location, ramo, children, iconLeft, variant, ...props }: WhatsAppButtonProps) {
+export function WhatsAppButton({ location, ramo, skipModal, children, iconLeft, variant, ...props }: WhatsAppButtonProps) {
   const { open } = useContactModal();
 
   return (
@@ -42,9 +52,11 @@ export function WhatsAppButton({ location, ramo, children, iconLeft, variant, ..
       variant={variant ?? "whatsapp"}
       iconLeft={iconLeft ?? <MessageCircle className="size-4" aria-hidden="true" />}
       onClick={(event) => {
-        event.preventDefault();
         trackEvent("whatsapp_click", { location, ramo });
-        open({ channel: "whatsapp", location, ramo });
+        if (!skipModal) {
+          event.preventDefault();
+          open({ channel: "whatsapp", location, ramo });
+        }
       }}
       {...props}
     >

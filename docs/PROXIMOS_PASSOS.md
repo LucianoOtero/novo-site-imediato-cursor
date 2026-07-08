@@ -90,8 +90,9 @@ A Home agora tem **todos** os blocos do wireframe original (seção 6.1 da espec
 - **FAQ/objeções por ramo + coberturas faltantes** — rascunho genérico redigido para os 10 ramos em `lib/ramos.ts` (sem inventar dados comerciais/regulatórios específicos). Coberturas já publicadas ao vivo nas LPs de ramo (decisão do cliente); FAQ/objeções aguardando revisão do time de Conteúdo antes de publicar (continuam fora da renderização). Ver nota em `docs/BACKLOG.md`.
 - **Comportamento de modal em WhatsApp/telefone** — decisão do cliente: replicar o modal do site legado (8 campos antes de abrir WhatsApp/telefone), mas corrigindo o "beco sem saída" identificado na investigação (fechar sem preencher agora ainda leva ao destino). Implementado em todos os pontos de contato do site (`ContactLeadModal` + `ContactModalContext`, novo). Ver nota em `docs/BACKLOG.md`.
 
-### 3.4 Próximo passo já decidido, ainda não implementado
-- **Remover o `ContactLeadModal` da página `/obrigado`** (`ObrigadoContent`) — decisão do cliente (2026-07-08): o botão "Falar agora no WhatsApp" ali deve voltar a ser um link direto (`wa.me`), sem reabrir o modal de captura, porque o usuário acabou de preencher DDD/celular no `LeadForm` segundos antes — reabrir o modal pedindo os mesmos dados é fricção redundante. Único ponto de contato do site que fica de fora do `ContactLeadModal` (todos os outros — Header, Footer, FAB, StickyCTA, CTASection, LPs de ramo — continuam abrindo o modal, conforme decisão anterior de "todos os pontos de contato").
+### 3.4 ✅ Resolvido (2026-07-08) — `/obrigado` sem `ContactLeadModal`
+- `WhatsAppButton` ganhou uma prop `skipModal` — quando `true`, restaura a navegação direta (sem abrir o `ContactLeadModal`). Usada apenas em `ObrigadoContent` (`/obrigado`), já que o usuário acabou de preencher DDD/celular no `LeadForm` segundos antes — reabrir o modal pedindo os mesmos dados seria fricção redundante. Todos os outros pontos de contato do site continuam abrindo o modal normalmente.
+- Validado com `typecheck`, `lint`, `check:hardcode` e `build` limpos.
 
 ### 3.5 Conteúdo/produto ainda em aberto (não é bloqueio técnico, é decisão de escopo)
 - **Revisão de Conteúdo/Comercial do rascunho de FAQ/objeções por ramo** (`lib/ramos.ts`) antes de publicar nas LPs — ver seção 3.3 acima.

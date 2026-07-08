@@ -34,6 +34,13 @@ const NEXT_STEPS = [
  * O botão de WhatsApp usa `WhatsAppButton` (Issue 15) — centraliza o
  * padrão Button + `buildWhatsappUrl` + evento `whatsapp_click` que antes
  * era montado inline aqui.
+ *
+ * `skipModal` (integrações 2026-07-08, decisão do cliente): o
+ * `ContactLeadModal` normalmente abre antes do WhatsApp em qualquer
+ * outro ponto do site, mas aqui o usuário acabou de preencher DDD/
+ * celular no `LeadForm` segundos antes — reabrir o modal pedindo os
+ * mesmos dados é fricção redundante. Único ponto do site que usa esse
+ * atalho; ver `docs/BACKLOG.md`.
  */
 export function ObrigadoContent({ ramo }: { ramo?: string }) {
   const hasFired = useRef(false);
@@ -65,7 +72,7 @@ export function ObrigadoContent({ ramo }: { ramo?: string }) {
         </ol>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <WhatsAppButton location="obrigado" ramo={ramo}>
+          <WhatsAppButton location="obrigado" ramo={ramo} skipModal>
             Falar agora no WhatsApp
           </WhatsAppButton>
           <Button href="/" variant="ghost">
