@@ -55,10 +55,17 @@ A Home agora tem **todos** os blocos do wireframe original (seção 6.1 da espec
 ### 3.2 Aguardando decisão/acesso seu ou do seu time
 | Item | O que é preciso | Onde já está preparado no código |
 |---|---|---|
-| Deploy de produção (Issue 24) | **Pré-requisito novo (2026-07-08)**: criar um repositório Git dedicado a este projeto (hoje ele está "preso" dentro de um repositório muito mais amplo, enraizado em `C:/Users/Luciano`, que rastreia por engano um projeto diferente) e subir para o GitHub; depois, criar o projeto na Vercel e configurar as variáveis de ambiente reais de produção (14 listadas em `.env.example`/`lib/env.ts`) | `next.config.mjs`, `lib/env.ts` já validam e travam o build se faltar algo em produção |
+| Deploy de produção (Issue 24) | ~~Pré-requisito: criar repositório Git dedicado~~ — ✅ resolvido (2026-07-08): [github.com/LucianoOtero/novo-site-imediato-cursor](https://github.com/LucianoOtero/novo-site-imediato-cursor), branch `main`, primeiro commit já enviado (197 arquivos). Falta: criar o projeto na Vercel conectado a este repositório e configurar as variáveis de ambiente reais de produção (14 listadas em `.env.example`/`lib/env.ts`) | `next.config.mjs`, `lib/env.ts` já validam e travam o build se faltar algo em produção |
 | Integração real GTM/GA4/Google Ads (Issue 18) | Você confirmou acesso às contas (2026-07-08) — reaproveitar o mesmo container `GTM-PD6J398` (preserva histórico de GA4/Ads) usando o recurso de Environments do próprio GTM para testar com segurança no domínio temporário antes de publicar | Código de tracking (`lib/analytics.ts`, eventos) já implementado e disparando — só falta validar contra as contas reais |
 | Habilitar RPA em produção | Você confirmou (2026-07-08) que a TI já aceita CORS de `rpaimediatoseguros.com.br` para o novo domínio — falta só ligar `NEXT_PUBLIC_RPA_ENABLED=true` no ambiente de produção da Vercel, quando chegarmos lá | `lib/rpa.ts`/`RPAProgressModal` prontos, desabilitados por padrão |
 | Revisão jurídica dos textos genéricos | `/politica-de-privacidade` e `/termos` foram redigidos por mim a seu pedido — recomendável (não bloqueante) uma revisão pelo Jurídico em algum momento | Páginas já publicadas e indexáveis |
+
+### 3.1.1 ✅ Resolvido (2026-07-08) — Repositório Git dedicado
+- Criado [github.com/LucianoOtero/novo-site-imediato-cursor](https://github.com/LucianoOtero/novo-site-imediato-cursor) (antes, o projeto estava "preso" dentro de um repositório muito mais amplo, enraizado em `C:/Users/Luciano`, que rastreava por engano um projeto diferente).
+- `.git` inicializado direto nesta pasta, branch `main`, primeiro commit (197 arquivos) já enviado.
+- Confirmado antes do push: `.env.local` (segredos reais), `.data/` (leads locais), `node_modules/`, `.next/` — todos corretamente ignorados pelo `.gitignore` já existente; nada sensível foi commitado.
+- Removido um arquivo `.zip` de 48MB (backup antigo do projeto, sem relação com o código-fonte) que tinha entrado por engano no primeiro `git add`, antes do push — adicionado ao `.gitignore` para não repetir.
+- Pronto para conectar a um projeto Vercel.
 
 ### 3.2.1 ✅ Resolvido (2026-07-08) — Credenciais reais EspoCRM/Octadesk
 - **Decisão do cliente**: EspoCRM apontado para o ambiente dev (`dev.flyingdonkeys.com.br`); Octadesk usa produção mesmo (não existe ambiente de teste) — inclusive durante a fase de testes no domínio temporário.
