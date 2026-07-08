@@ -1,9 +1,8 @@
 "use client";
 
-import { MessageCircle } from "lucide-react";
-
 import { useCurrentRamo } from "@/components/cta/use-current-ramo";
 import { useContactModal } from "@/components/cta/ContactModalContext";
+import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { trackEvent } from "@/lib/analytics";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
@@ -22,7 +21,12 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
  * qualquer landmark).
  *
  * **Integrações 2026-07-08**: abre o `ContactLeadModal` em vez de
- * navegar direto — mesmo tratamento do `WhatsAppButton`.
+ * navegar direto — mesmo tratamento do `WhatsAppButton`. Ícone trocado
+ * de `MessageCircle` (genérico) para `WhatsAppIcon` (glifo original da
+ * marca) e adicionado anel pulsante (`animate-ping`), replicando o
+ * comportamento do FAB do site legado ("símbolo original verde do
+ * WhatsApp pulsando" — pedido do cliente). `motion-reduce:animate-none`
+ * desliga o pulso para quem prefere movimento reduzido (a11y).
  */
 export function WhatsAppFAB() {
   const ramo = useCurrentRamo();
@@ -42,7 +46,11 @@ export function WhatsAppFAB() {
         aria-label="Falar no WhatsApp"
         className="fixed right-5 bottom-5 z-30 flex size-14 items-center justify-center rounded-full bg-whatsapp text-white shadow-lg outline-none transition-transform duration-[var(--dur-fast)] hover:scale-105 focus-visible:ring-2 focus-visible:ring-whatsapp focus-visible:ring-offset-2 md:right-8 md:bottom-8"
       >
-        <MessageCircle className="size-7" aria-hidden="true" />
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-full bg-whatsapp opacity-75 motion-safe:animate-ping motion-reduce:animate-none"
+        />
+        <WhatsAppIcon className="size-7" />
       </a>
     </div>
   );

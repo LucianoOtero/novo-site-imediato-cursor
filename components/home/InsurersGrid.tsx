@@ -48,12 +48,16 @@ export function InsurersGrid() {
         </div>
 
         {/*
-          Tamanho do logo dobra no desktop (`md:h-20`, 80px vs. 40px no
-          mobile/tablet) — a pedido do cliente (2026-07-08), que achou os
-          logos pequenos demais na versão desktop. Mantém 6 por linha
-          (`md:grid-cols-6`) — só o tamanho de cada logo aumenta, não a
-          quantidade por linha. `gap-y` aumentado no desktop também, para
-          dar respiro proporcional aos logos maiores.
+          Tamanho do logo no desktop — a pedido do cliente (2026-07-08):
+          1ª rodada dobrou de 40px para 80px (`md:h-20`); 2ª rodada
+          (mesmo dia) pediu mais ~25% de destaque, chegando a 100px
+          (`md:h-[100px]`, valor exato pedido — não corresponde a um
+          degrau padrão da escala do Tailwind, por isso o valor
+          arbitrário). Mantém 6 por linha (`md:grid-cols-6`) — só o
+          tamanho de cada logo aumenta, nunca a quantidade por linha:
+          `max-w-full` no `<img>` impede que um logo mais largo estoure a
+          coluna do grid e quebre a linha, mesmo que isso limite um pouco
+          a altura efetiva dos logos com proporção mais larga.
         */}
         <div className="mt-10 grid grid-cols-3 items-center gap-x-6 gap-y-8 sm:grid-cols-4 md:grid-cols-6 md:gap-y-12">
           {seguradoras.map((seguradora) => (
@@ -69,7 +73,7 @@ export function InsurersGrid() {
                 decoding="async"
                 width={120}
                 height={48}
-                className="h-10 w-auto max-w-full object-contain md:h-20"
+                className="h-10 w-auto max-w-full object-contain md:h-[100px]"
               />
             </div>
           ))}

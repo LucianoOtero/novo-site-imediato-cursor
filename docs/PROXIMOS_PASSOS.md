@@ -97,6 +97,18 @@ A Home agora tem **todos** os blocos do wireframe original (seção 6.1 da espec
 ### 3.5 Conteúdo/produto ainda em aberto (não é bloqueio técnico, é decisão de escopo)
 - **Revisão de Conteúdo/Comercial do rascunho de FAQ/objeções por ramo** (`lib/ramos.ts`) antes de publicar nas LPs — ver seção 3.3 acima.
 
+### 3.6 ✅ Resolvido (2026-07-08) — Ajustes visuais no site de teste (feedback ao vivo)
+- **Logos de seguradoras maiores no desktop**: 2 rodadas de ajuste no mesmo dia — 40px → 80px → 100px de altura (`InsurersGrid`, `md:h-[100px]`), mantendo 6 por linha (`md:grid-cols-6`); `max-w-full` no `<img>` garante que nenhum logo mais largo quebre a linha, mesmo no tamanho maior.
+- **Ícone original do WhatsApp**: criado `components/shared/WhatsAppIcon.tsx` (glifo oficial da marca, path público do Simple Icons — mesmo padrão já usado em `components/layout/social-icons.tsx`), substituindo o ícone genérico (`MessageCircle`, lucide) em **todos** os pontos de contato: `WhatsAppButton`, `WhatsAppFAB`, `StickyCTA`, `ContactLeadModal`.
+- **Pulso no `WhatsAppFAB`** (botão flutuante do canto inferior direito): anel verde pulsante (`animate-ping`), replicando o comportamento do site legado — desligado automaticamente para quem usa `prefers-reduced-motion` (a11y).
+- Validado com `typecheck`, `lint`, `check:hardcode` e `build` limpos; conferido o HTML renderizado ao vivo em `comparaseguroonline.com.br`.
+
+### 3.7 ⏳ Nova fase registrada (2026-07-08) — Logotipo da Imediato no cabeçalho
+- **Pedido do cliente**: inserir o logotipo oficial da Imediato no topo do site (`Header`) "de forma elegante" — hoje o `Header` renderiza só o nome em texto (`company.tradeName`), nunca chegou a usar um arquivo de imagem/vetor.
+- **Cliente vai enviar o SVG** a ser usado — aguardando o arquivo antes de implementar.
+- **Achado relevante**: já existe um SVG do logotipo no projeto, migrado do CDN do Webflow em 2026-07-03 e nunca conectado a nada — `public/logos/imediato-seguros.svg` (12,4KB, confirmado vetor puro, cores da marca `#00488b`/`#008bc9` preservadas, sem imagem rasterizada embutida). Pode servir de referência/placeholder, mas a versão que o cliente vai enviar tem prioridade.
+- **Escopo a decidir quando o SVG chegar**: só o `Header`, ou também `Footer`/favicon/Open Graph (`opengraph-image.tsx`)? A tabela de `docs/BRAND_ASSETS.md` já previa esses 4 usos para este asset.
+
 ---
 
 ## 4. Sugestão de por onde retomar na segunda-feira

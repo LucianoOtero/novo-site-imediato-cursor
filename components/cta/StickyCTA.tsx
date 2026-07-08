@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useCurrentRamo } from "@/components/cta/use-current-ramo";
 import { useContactModal } from "@/components/cta/ContactModalContext";
+import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { trackEvent } from "@/lib/analytics";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
@@ -80,7 +80,7 @@ export function StickyCTA() {
           aria-label="Falar no WhatsApp"
           className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-whatsapp text-white outline-none focus-visible:ring-2 focus-visible:ring-whatsapp focus-visible:ring-offset-2"
         >
-          <MessageCircle className="size-5" aria-hidden="true" />
+          <WhatsAppIcon className="size-5" />
         </a>
         <Button
           render={<Link href="/cotacao" />}

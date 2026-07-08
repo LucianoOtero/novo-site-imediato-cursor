@@ -1,9 +1,8 @@
 "use client";
 
-import { MessageCircle } from "lucide-react";
-
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { useContactModal } from "@/components/cta/ContactModalContext";
+import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { trackEvent } from "@/lib/analytics";
 
@@ -50,7 +49,7 @@ export function WhatsAppButton({ location, ramo, skipModal, children, iconLeft, 
       target="_blank"
       rel="noopener noreferrer"
       variant={variant ?? "whatsapp"}
-      iconLeft={iconLeft ?? <MessageCircle className="size-4" aria-hidden="true" />}
+      iconLeft={iconLeft ?? <WhatsAppIcon className="size-4" />}
       onClick={(event) => {
         trackEvent("whatsapp_click", { location, ramo });
         if (!skipModal) {

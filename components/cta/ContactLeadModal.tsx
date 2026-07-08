@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { MessageCircle, Phone, X } from "lucide-react";
+import { Phone, X } from "lucide-react";
 import type { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/lead/fields";
 import { useContactModal } from "@/components/cta/ContactModalContext";
+import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { company } from "@/lib/company";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { trackEvent } from "@/lib/analytics";
@@ -57,7 +58,7 @@ type ContactModalFormValues = z.input<typeof leadSchema>;
 
 const CHANNEL_COPY = {
   whatsapp: {
-    icon: MessageCircle,
+    icon: WhatsAppIcon,
     title: "Solicitar Cotação",
     subtitle: "Quer uma cotação de seguro? Comece pelo seu telefone!",
     submitLabel: "Ir para o WhatsApp",
