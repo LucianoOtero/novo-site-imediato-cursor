@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   AppWindow,
   Car,
@@ -39,10 +38,12 @@ import { getRamo } from "@/lib/ramos";
  * **Mostra todas as coberturas** (2026-07-09, pedido do cliente) — não
  * só as 6 primeiras como na versão anterior (wireframe original da
  * seção 6.1 previa só 6 + link "ver todas"; o cliente decidiu exibir a
- * lista completa direto na página). Link "ver todas" mantido mesmo
- * assim — aponta para `/coberturas` (hub dedicado, seção 4 do mapa do
- * site), página ainda não construída (issue futura), com mais contexto
- * por cobertura do que cabe aqui.
+ * lista completa direto na página). Link "ver todas as coberturas"
+ * removido no mesmo dia — perdeu o sentido depois que a lista completa
+ * passou a ser exibida direto aqui (não é mais um link para uma
+ * página com "o resto" da lista). O item de navegação "Coberturas" do
+ * Header/Footer (apontando para `/coberturas`, hub ainda não
+ * construído) é outro link, fora do escopo desta remoção.
  *
  * **Ícone por cobertura** (2026-07-09, pedido do cliente: "pesquise
  * ícones svg que combinem com essas coberturas") — `COVERAGE_ICONS`
@@ -108,14 +109,6 @@ export function CoverageCards({ ramoSlug }: { ramoSlug: string }) {
               </div>
             );
           })}
-        </div>
-        <div className="mt-8 text-center">
-          <Link
-            href="/coberturas"
-            className="rounded-md text-sm font-medium text-brand-700 underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-          >
-            Ver todas as coberturas
-          </Link>
         </div>
       </Container>
     </Section>
