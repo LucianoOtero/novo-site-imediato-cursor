@@ -127,6 +127,7 @@ Você pediu para analisar e criticar o documento com a nova proposta de marca ("
 - Cada cobertura ganhou um ícone específico (antes todas usavam o mesmo ícone genérico de escudo) — mapeados a partir da biblioteca `lucide-react` já usada em todo o projeto: Colisão → carro de frente, Roubo e furto → escudo de alerta, Incêndio → chama, Danos pessoais → coração com pulso, Danos materiais → martelo, Assistência 24h → boia de resgate, Chaveiro → chave, Vidros → janela, Pane seca → posto de combustível, Pane elétrica → raio, Pane mecânica → chave de fenda, Faróis → lâmpada, Táxi → carro de táxi, Retrovisores → olho, Pneus → círculo com ponto central, Carro reserva → carro.
 - Ramos além de "auto" (nomes de cobertura diferentes, ex. "RCF (danos a terceiros)") continuam usando o ícone genérico de escudo como fallback — não fazem parte do mapa específico ainda.
 - Validado com `typecheck`, `lint`, `check:hardcode` e `build` limpos; confirmado via terminal que as 16 coberturas aparecem na Home.
+- **Ajuste de layout (2026-07-09, mesmo dia)**: grid fixo de 4 colunas em qualquer largura (antes 1 no mobile → 2 → 3) — cabe as 16 coberturas em 4 linhas mesmo no mobile. Card mudou de layout horizontal (ícone ao lado do texto) para vertical (ícone acima, texto abaixo, centralizado) — texto não caberia ao lado do ícone numa coluna tão estreita. `gap`/padding reduzidos para caber 4 por linha; ícone e texto aumentados; `min-h-28` deixa o card mais "quadrado". Confirmado visualmente (mobile 390px e desktop 1440px) — ficou como esperado nos dois.
 
 ---
 

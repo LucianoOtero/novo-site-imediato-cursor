@@ -52,6 +52,19 @@ import { getRamo } from "@/lib/ramos";
  * cobertura diferentes (ex.: "RCF (danos a terceiros)") — o ícone
  * genérico `Shield` continua sendo o fallback para qualquer nome fora
  * do mapa, em vez de deixar sem ícone.
+ *
+ * **Layout do card (2026-07-09, pedido do cliente, agora com 16 itens
+ * visíveis)**: grid fixo de 4 colunas em qualquer largura (antes 1 no
+ * mobile → 2 → 3), para caber as 16 coberturas em 4 linhas mesmo no
+ * mobile. Isso deixa cada card bem mais estreito, então o conteúdo
+ * mudou de horizontal (ícone ao lado do texto) para vertical (ícone
+ * acima, texto abaixo, centralizado) — texto ao lado do ícone não
+ * caberia numa coluna estreita. `gap`/`padding` reduzidos (`gap-2`/
+ * `p-2.5`, antes `gap-4`/`p-4`) para sobrar espaço de conteúdo com 4
+ * colunas; `min-h-28` dá altura mínima para o card ficar mais
+ * "quadrado" (antes bem mais largo que alto, com ícone+texto numa só
+ * linha). Ícone (`size-7`, antes `size-5`) e texto (`text-sm` com
+ * `leading-tight`, antes só `text-sm`) aumentados.
  */
 const COVERAGE_ICONS: Record<string, LucideIcon> = {
   Colisão: CarFront,
@@ -82,13 +95,16 @@ export function CoverageCards({ ramoSlug }: { ramoSlug: string }) {
     <Section>
       <Container>
         <h2 className="text-center font-display text-2xl font-bold text-neutral-900 md:text-3xl">Coberturas principais</h2>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
           {coverages.map((coverage) => {
             const Icon = COVERAGE_ICONS[coverage] ?? Shield;
             return (
-              <div key={coverage} className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                <Icon className="size-5 shrink-0 text-brand-500" aria-hidden="true" />
-                <span className="text-sm font-medium text-neutral-900">{coverage}</span>
+              <div
+                key={coverage}
+                className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white p-2.5 text-center"
+              >
+                <Icon className="size-7 shrink-0 text-brand-500" aria-hidden="true" />
+                <span className="text-sm leading-tight font-medium text-neutral-900">{coverage}</span>
               </div>
             );
           })}
