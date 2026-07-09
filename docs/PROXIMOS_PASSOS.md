@@ -121,6 +121,13 @@ Você pediu para analisar e criticar o documento com a nova proposta de marca ("
 - O documento é um refresh parcial (só cor + tipografia) — não cobre neutros, verde do WhatsApp, vermelho de alerta, raios, sombras nem motion, todos já definidos em `app/globals.css`.
 - **Próximo passo, quando você decidir**: como a paleta já está centralizada em tokens CSS (`--color-brand-*` em `app/globals.css`, consumidos como classes Tailwind em todo o projeto), aplicar cores novas é uma mudança de baixo risco — só trocar os valores dos tokens, sem precisar editar cada componente individualmente. A troca de fonte (Manrope → Poppins) é uma decisão maior, à parte.
 
+### 3.9 ✅ Resolvido (2026-07-09) — Coberturas completas + ícone por cobertura na Home
+- Lista de coberturas do Auto (`AUTO_COVERAGES`, `lib/ramos.ts`) atualizada para os 16 itens confirmados por você (incluindo "Táxi", que uma leitura anterior tinha excluído por cautela, suspeitando de duplicidade na fonte original).
+- `CoverageCards` (bloco "Coberturas principais" da Home) agora mostra **todas** as 16 coberturas, não só as 6 primeiras como antes (mudança do wireframe original).
+- Cada cobertura ganhou um ícone específico (antes todas usavam o mesmo ícone genérico de escudo) — mapeados a partir da biblioteca `lucide-react` já usada em todo o projeto: Colisão → carro de frente, Roubo e furto → escudo de alerta, Incêndio → chama, Danos pessoais → coração com pulso, Danos materiais → martelo, Assistência 24h → boia de resgate, Chaveiro → chave, Vidros → janela, Pane seca → posto de combustível, Pane elétrica → raio, Pane mecânica → chave de fenda, Faróis → lâmpada, Táxi → carro de táxi, Retrovisores → olho, Pneus → círculo com ponto central, Carro reserva → carro.
+- Ramos além de "auto" (nomes de cobertura diferentes, ex. "RCF (danos a terceiros)") continuam usando o ícone genérico de escudo como fallback — não fazem parte do mapa específico ainda.
+- Validado com `typecheck`, `lint`, `check:hardcode` e `build` limpos; confirmado via terminal que as 16 coberturas aparecem na Home.
+
 ---
 
 ## 4. Sugestão de por onde retomar na segunda-feira

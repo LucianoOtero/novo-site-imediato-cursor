@@ -78,10 +78,11 @@ const AUTO_COVERAGES = [
   "Pane elétrica",
   "Pane mecânica",
   "Faróis",
+  "Táxi",
   "Retrovisores",
   "Pneus",
   "Carro reserva",
-]; // seção 1.1 — lista observada de 16 itens no site atual (16 nomeados; 1 duplicado com Táxi na fonte)
+]; // Lista completa de 16 itens confirmada pelo cliente (2026-07-09) — inclui "Táxi", que a leitura anterior da seção 1.1 tinha marcado como possível duplicidade e excluído por cautela.
 
 /**
  * Rascunhos de FAQ/objeções por ramo (2026-07-08, a pedido do cliente:
