@@ -29,6 +29,14 @@ import { company } from "@/lib/company";
  * final; aqui o vermelho (`--color-alert`) não é usado, pois a
  * especificação reserva essa cor exclusivamente ao componente `FraudAlert`
  * (seção 29.3: "único uso do vermelho").
+ *
+ * **Logotipo (2026-07-08)**: substitui o texto `company.tradeName` que
+ * fazia esse papel antes. O arquivo (`imediato-seguros-2026.svg`) tem o
+ * texto "IMEDIATO SEGUROS" desenhado em azul escuro (`#003881`), quase
+ * idêntico ao fundo escuro deste rodapé (`--color-brand-700: #0a2540`)
+ * — ficaria praticamente invisível direto sobre o fundo. Por isso o
+ * logo fica sobre um cartão branco arredondado, preservando as cores
+ * originais do arquivo sem exigir uma variante clara/invertida.
  */
 const footerLinkClass =
   "rounded-sm text-white/75 outline-none hover:text-white hover:underline focus-visible:ring-2 focus-visible:ring-white/60";
@@ -42,7 +50,10 @@ export function Footer() {
     <footer className="bg-brand-700 text-white">
       <Container className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="font-display text-lg font-bold">{company.tradeName}</p>
+          <div className="inline-flex rounded-lg bg-white p-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element -- SVG local com gradientes; next/image não otimiza SVG, sem benefício da chamada extra ao endpoint de otimização aqui. */}
+            <img src="/logos/imediato-seguros-2026.svg" alt={company.tradeName} className="h-16 w-auto" />
+          </div>
           <address className="mt-4 space-y-3 text-sm text-white/75 not-italic">
             <p className="flex items-start gap-2">
               <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />

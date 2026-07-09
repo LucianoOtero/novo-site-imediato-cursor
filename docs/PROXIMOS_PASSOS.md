@@ -107,11 +107,19 @@ A Home agora tem **todos** os blocos do wireframe original (seção 6.1 da espec
 - **Pulso no `WhatsAppFAB`** (botão flutuante do canto inferior direito): anel verde pulsante (`animate-ping`), replicando o comportamento do site legado — desligado automaticamente para quem usa `prefers-reduced-motion` (a11y).
 - Validado com `typecheck`, `lint`, `check:hardcode` e `build` limpos; conferido o HTML renderizado ao vivo em `comparaseguroonline.com.br`.
 
-### 3.7 ⏳ Nova fase registrada (2026-07-08) — Logotipo da Imediato no cabeçalho
-- **Pedido do cliente**: inserir o logotipo oficial da Imediato no topo do site (`Header`) "de forma elegante" — hoje o `Header` renderiza só o nome em texto (`company.tradeName`), nunca chegou a usar um arquivo de imagem/vetor.
-- **Cliente vai enviar o SVG** a ser usado — aguardando o arquivo antes de implementar.
-- **Achado relevante**: já existe um SVG do logotipo no projeto, migrado do CDN do Webflow em 2026-07-03 e nunca conectado a nada — `public/logos/imediato-seguros.svg` (12,4KB, confirmado vetor puro, cores da marca `#00488b`/`#008bc9` preservadas, sem imagem rasterizada embutida). Pode servir de referência/placeholder, mas a versão que o cliente vai enviar tem prioridade.
-- **Escopo a decidir quando o SVG chegar**: só o `Header`, ou também `Footer`/favicon/Open Graph (`opengraph-image.tsx`)? A tabela de `docs/BRAND_ASSETS.md` já previa esses 4 usos para este asset.
+### 3.7 ✅ Resolvido (2026-07-08) — Novo logotipo Imediato Seguros
+- Cliente forneceu o arquivo definitivo (`Novo Logotipo Imediato Final SVG.svg`) e pediu para conectá-lo ao `Header`, `Footer`, favicon e imagem Open Graph — escopo completo já previsto em `docs/BRAND_ASSETS.md`.
+- **Achado técnico**: o arquivo é um lockup empilhado verticalmente (ícone "M" + "IMEDIATO"/"SEGUROS" em duas linhas, texto em `<path>`, não HTML), proporção quase quadrada — não uma faixa larga como um logo de cabeçalho tradicional. Decisão do cliente: usar o lockup completo (não só o ícone) e adaptar o `Header` para acomodá-lo — altura aumentada (`h-14`/`md:h-24`, encolhendo para `md:h-16` ao rolar). Ver nota completa em `docs/BRAND_ASSETS.md`.
+- **Favicon**: usa só o ícone "M" recortado (`public/logos/imediato-seguros-icon.svg`) — exceção técnica necessária, não estética (favicon é sempre renderizado minúsculo, o texto do lockup ficaria ilegível em qualquer tamanho).
+- **Contraste em fundos escuros**: o texto do logotipo (`#003881`) tem contraste baixo contra o fundo escuro já usado no `Footer`/imagem Open Graph (`#0a2540`) — resolvido colocando o logotipo sobre um cartão branco nesses dois lugares (decisão assumida por padrão, já que você pulou a pergunta específica sobre isso — fácil de trocar depois por outra abordagem, ex.: uma variante clara do logotipo, se preferir).
+- Validado com `typecheck`, `lint`, `check:hardcode` e `build` limpos.
+
+### 3.8 ⏳ Feedback registrado (2026-07-08) — Proposta de paleta/tipografia ("Projeto Visual.docx")
+Você pediu para analisar e criticar o documento com a nova proposta de marca ("Digital Clarity Blue" + tipografia "Digital Trust Typeface") — análise feita, **nada foi aplicado ainda** (decisão sua: só registrar como feedback por enquanto).
+- **Paleta compatível em direção** com a atual (`--color-brand-500`/`700` em `app/globals.css`), mas o azul "Secundária" (`#0088E8`) tem contraste calculado de **~3,7:1 contra branco** — abaixo do mínimo WCAG AA (4,5:1) para texto normal. O documento sugere esse azul no fundo de botões CTA com texto branco, o que reintroduziria o mesmo tipo de falha já corrigida uma vez neste projeto (botão do WhatsApp, Issue 23, `#1aa564` reprovado a 3,18:1 → `#0e8449` a 4,76:1). Se a paleta for adotada, esse ponto específico precisa de ajuste antes.
+- **Tipografia**: troca de Manrope → Poppins nos títulos, com caixa alta + peso 600 — mudança de personalidade visual perceptível (Inter no corpo do texto permanece igual nos dois documentos).
+- O documento é um refresh parcial (só cor + tipografia) — não cobre neutros, verde do WhatsApp, vermelho de alerta, raios, sombras nem motion, todos já definidos em `app/globals.css`.
+- **Próximo passo, quando você decidir**: como a paleta já está centralizada em tokens CSS (`--color-brand-*` em `app/globals.css`, consumidos como classes Tailwind em todo o projeto), aplicar cores novas é uma mudança de baixo risco — só trocar os valores dos tokens, sem precisar editar cada componente individualmente. A troca de fonte (Manrope → Poppins) é uma decisão maior, à parte.
 
 ---
 
