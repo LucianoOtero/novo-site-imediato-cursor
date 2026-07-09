@@ -128,6 +128,8 @@ Você pediu para analisar e criticar o documento com a nova proposta de marca ("
 - Ramos além de "auto" (nomes de cobertura diferentes, ex. "RCF (danos a terceiros)") continuam usando o ícone genérico de escudo como fallback — não fazem parte do mapa específico ainda.
 - Validado com `typecheck`, `lint`, `check:hardcode` e `build` limpos; confirmado via terminal que as 16 coberturas aparecem na Home.
 - **Ajuste de layout (2026-07-09, mesmo dia)**: grid fixo de 4 colunas em qualquer largura (antes 1 no mobile → 2 → 3) — cabe as 16 coberturas em 4 linhas mesmo no mobile. Card mudou de layout horizontal (ícone ao lado do texto) para vertical (ícone acima, texto abaixo, centralizado) — texto não caberia ao lado do ícone numa coluna tão estreita. `gap`/padding reduzidos para caber 4 por linha; ícone e texto aumentados; `min-h-28` deixa o card mais "quadrado". Confirmado visualmente (mobile 390px e desktop 1440px) — ficou como esperado nos dois.
+- **Link "ver todas as coberturas" removido** (2026-07-09, mesmo dia) — perdeu o sentido depois que a lista completa passou a ser exibida direto na página.
+- **Estendido às 10 LPs de ramo** (2026-07-09, mesmo dia — "replicar as alterações da Home para as outras páginas"): como `CoverageCards` já era compartilhado com `RamoLandingPage` (Issue 16), o grid de 4 colunas e a lista completa já valiam para as 10 LPs sem nenhuma mudança — só faltava mapear os nomes de cobertura específicos dos outros 9 ramos (ex.: "RCF (danos a terceiros)" → balança, "Cobertura para uso por aplicativo" → celular, "Aluguéis em atraso" → calendário, "Danos ao imóvel" → casa, entre outros 15 novos mapeamentos), que sem isso cairiam todos no ícone genérico de escudo. Confirmado visualmente nas LPs de Moto e Fiança.
 
 ---
 

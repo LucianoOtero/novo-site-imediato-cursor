@@ -1,19 +1,36 @@
 import {
   AppWindow,
+  Briefcase,
+  CalendarClock,
   Car,
   CarFront,
   CarTaxiFront,
   CircleDot,
+  ClipboardList,
   Eye,
+  FileText,
+  FileWarning,
   Flame,
   Fuel,
   Hammer,
   HeartPulse,
+  Home,
   KeyRound,
   Lightbulb,
   LifeBuoy,
+  Package,
+  PackageCheck,
+  Phone,
+  Receipt,
+  Scale,
   Shield,
   ShieldAlert,
+  ShieldCheck,
+  Siren,
+  Smartphone,
+  Stethoscope,
+  Truck,
+  Users,
   Wrench,
   Zap,
   type LucideIcon,
@@ -49,10 +66,17 @@ import { getRamo } from "@/lib/ramos";
  * ícones svg que combinem com essas coberturas") — `COVERAGE_ICONS`
  * mapeia cada um dos 16 nomes de `AUTO_COVERAGES` a um ícone
  * `lucide-react` (mesma biblioteca já usada em todo o projeto)
- * semanticamente relacionado. Ramos além de "auto" têm nomes de
- * cobertura diferentes (ex.: "RCF (danos a terceiros)") — o ícone
- * genérico `Shield` continua sendo o fallback para qualquer nome fora
- * do mapa, em vez de deixar sem ícone.
+ * semanticamente relacionado.
+ *
+ * **Estendido aos outros 9 ramos** (2026-07-09, mesmo dia — "replicar
+ * as alterações da Home para as outras páginas"): como `CoverageCards`
+ * já era compartilhado com `RamoLandingPage` (Issue 16), o grid de 4
+ * colunas e a lista completa já valiam para as 10 LPs de ramo sem
+ * nenhuma mudança — só faltava mapear os nomes de cobertura
+ * específicos dos outros 9 ramos (ex.: "RCF (danos a terceiros)",
+ * "Cobertura para uso por aplicativo"), que sem isso cairiam todos no
+ * ícone genérico `Shield` (fallback, mantido para qualquer nome futuro
+ * fora do mapa).
  *
  * **Layout do card (2026-07-09, pedido do cliente, agora com 16 itens
  * visíveis)**: grid fixo de 4 colunas em qualquer largura (antes 1 no
@@ -84,6 +108,27 @@ const COVERAGE_ICONS: Record<string, LucideIcon> = {
   Retrovisores: Eye,
   Pneus: CircleDot,
   "Carro reserva": Car,
+  // Ramos além de "auto" (moto, caminhão, uber, táxi, utilitário, frota, pet, fiança, assistência 24h/RCF):
+  "RCF (danos a terceiros)": Scale,
+  "RCF-V (danos a terceiros)": Scale,
+  "Reposição de acessórios": PackageCheck,
+  "Casco (colisão, roubo e incêndio)": ShieldCheck,
+  "Carga transportada (opcional)": Package,
+  "Assistência 24h para veículos pesados": LifeBuoy,
+  "Assistência 24h para toda a frota": LifeBuoy,
+  "Cobertura para uso por aplicativo": Smartphone,
+  "Danos a passageiros": Users,
+  "Uso profissional coberto": Briefcase,
+  "Gestão centralizada de apólices": FileText,
+  "Consultas em rede credenciada": Stethoscope,
+  "Emergência veterinária 24h": Siren,
+  "Exames básicos": ClipboardList,
+  "Orientação veterinária por telefone": Phone,
+  "Aluguéis em atraso": CalendarClock,
+  "Multas contratuais": FileWarning,
+  "Danos ao imóvel": Home,
+  "Encargos condominiais e de consumo (conforme plano)": Receipt,
+  Guincho: Truck,
 };
 
 export function CoverageCards({ ramoSlug }: { ramoSlug: string }) {
