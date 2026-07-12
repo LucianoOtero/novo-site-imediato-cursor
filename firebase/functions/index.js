@@ -54,6 +54,11 @@ function sleep(ms) {
  * — contrato fixo dos proxies Cloud Run legados (EspoCRM/Octadesk), não
  * controlado por nós. `leadData` é o objeto salvo em
  * `leads_backup/{leadId}/data` por `lib/leads/firebase-backup.ts`.
+ *
+ * Correção 2026-07-12 (mesmo achado documentado em
+ * `lib/leads/legacy-proxy-payload.ts`): `DDD-CELULAR` carrega só o DDD,
+ * não "DDD-CELULAR" concatenado — validado com chamada real isolada ao
+ * proxy Octadesk.
  */
 function buildLegacyProxyPayload(leadData, name) {
   const phoneE164 = leadData.phoneE164 || "";
@@ -63,7 +68,7 @@ function buildLegacyProxyPayload(leadData, name) {
 
   return {
     data: {
-      "DDD-CELULAR": `${ddd}-${celular}`,
+      "DDD-CELULAR": ddd,
       CELULAR: celular,
       GCLID_FLD: utm.gclid || "",
       NOME: leadData.nome || "",

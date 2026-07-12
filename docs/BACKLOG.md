@@ -75,6 +75,7 @@ Este arquivo é um backlog **rastreável e resumido** (título, dependências, a
 | 40 | Feedback registrado | Crítica à proposta de paleta/tipografia ("Projeto Visual.docx") | ⏳ Análise feita, aplicação adiada (decisão do cliente) | — | Achado de contraste WCAG AA no azul secundário (~3,7:1, abaixo do mínimo 4,5:1) | Decisão do cliente sobre adotar a nova paleta/tipografia (com o ajuste de contraste recomendado) |
 | 41 | Extensão pós-24 | Paridade EspoCRM/Octadesk + backup Firebase + Cloud Function de reentrega (dev/UAT/produção) | ✅ Concluída (ver nota) | Issue 29, `docs/ANALISE_ESPOCRM_OCTADESK_FIREBASE_CLOUDRUN.md` | URL de EspoCRM resolvida automaticamente por ambiente; lead sempre gravado no Firebase (backup); Cloud Function reentrega o que falhar, testada de fato com sucesso | Fila de reentrega de longo prazo (Cloud Scheduler) para destinos fora do ar por muito tempo |
 | 42 | Correção de bug | `lib/leads/store.ts` resiliente ao filesystem somente leitura da Vercel ("Não foi possível enviar agora") | ✅ Concluída (ver nota) | Issue 12 | `/api/lead` não retorna mais 500 por falha de gravação local; usa `/tmp` na Vercel; validado simulando `VERCEL=1` | Postgres real (solução definitiva, sem data prevista) |
+| 43 | Correção de bug | Campo `DDD-CELULAR` malformado rejeitava todo lead no Octadesk desde o início da integração | ✅ Concluída (ver nota) | Issue 29 (Extensão #41) | Octadesk aceita o lead de primeira tentativa; corrigido no site e na Cloud Function; log de erro melhorado para diagnósticos futuros | — |
 
 ---
 
@@ -194,6 +195,13 @@ Este arquivo é um backlog **rastreável e resumido** (título, dependências, a
 > - Correção (aprovada como solução imediata, já que o Postgres real ainda não foi provisionado): `DATA_DIR` usa `os.tmpdir()` quando `process.env.VERCEL` está definido; `writeFile()` nunca mais lança exceção (falha só gera um aviso no log).
 > - Validado de verdade simulando o ambiente da Vercel localmente (`VERCEL=1`) — lead de teste gravado corretamente no equivalente ao `/tmp`, sem erro.
 > - Aceitável como solução best-effort (não definitiva) porque, desde a Extensão #41, todo lead também é gravado no Firebase (backup real e persistente, independente deste arquivo).
+>
+> **Nota sobre a Correção de bug #43 (✅ Concluída, 2026-07-12) — `DDD-CELULAR` malformado:**
+> - Você pediu para investigar o achado paralelo registrado no item #41 (Octadesk rejeitando o payload de teste). Fiz uma chamada isolada e direta ao proxy Cloud Run do Octadesk, fora da aplicação, para capturar o corpo completo da resposta de erro (o código só registrava "falhou", sem o motivo — lacuna também corrigida).
+> - **Causa raiz**: `lib/leads/legacy-proxy-payload.ts` montava `"DDD-CELULAR": "11-988887777"` (DDD + celular concatenados); o contrato real dos proxies espera só o DDD nesse campo (`"11"`) — confirmado lendo o código do modal legado (`MODAL_WHATSAPP_DEFINITIVO.js`) e validado com uma chamada real isolada: o mesmo payload, só trocando esse campo, passou de 500 "Telefone inválido" para 200 sucesso.
+> - O EspoCRM tolera o formato errado (por isso sempre funcionou nos testes); só o Octadesk validava e rejeitava.
+> - Corrigido nos dois lugares que tinham essa lógica: `lib/leads/legacy-proxy-payload.ts` (site) e `firebase/functions/index.js` (Cloud Function, tinha uma cópia). `lib/leads/proxy-sender.ts` também passou a logar o corpo da resposta em falhas — sem isso, o bug ficaria invisível de novo no futuro.
+> - **Implicação importante**: esse bug existia desde o início da integração (2026-07-03) — nenhuma notificação por WhatsApp via Octadesk chegou a ser enviada de verdade até esta correção, embora o EspoCRM (CRM) sempre tenha recebido os leads normalmente.
 >
 > Este backlog reflete a **ordem de execução recomendada (rev. 4.1)** — a numeração `#`/`ID` das issues de implementação preserva os números originais das 24 issues da especificação; a coluna `#` reflete apenas a ordem de execução, não uma renumeração.
 > Para prompts completos, critérios de aceite detalhados, arquivos prováveis e passos de cada issue, consulte a seção 8 de `PLANO_IMPLEMENTACAO.md`.

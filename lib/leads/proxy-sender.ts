@@ -22,13 +22,27 @@ function sleep(ms: number): Promise<void> {
 
 export type DestinationResult = { delivered: boolean; attempts: number };
 
-async function sendOnce(url: string, lead: LeadRecord, payloadName: string): Promise<boolean> {
+/**
+ * Retorna `response.ok`, mas antes disso **loga o corpo da resposta em
+ * caso de falha** (achado 2026-07-12: sem isso, uma rejeição real do
+ * proxy — ex.: `{"details":"Telefone inválido"}` — ficava indistinguível
+ * de um erro genérico nos logs, dificultando o diagnóstico de um bug
+ * real de payload que existiu sem ser notado por um tempo). Nunca lança
+ * por causa do log — se a leitura do corpo falhar, ignora e segue.
+ */
+async function sendOnce(label: string, url: string, lead: LeadRecord, payloadName: string): Promise<boolean> {
   const payload = buildLegacyProxyPayload(lead, payloadName);
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "(corpo não pôde ser lido)");
+    console.warn(`[lib/leads/${label}] Resposta não-OK (status ${response.status}) para o lead ${lead.id}: ${body}`);
+  }
+
   return response.ok;
 }
 
@@ -50,7 +64,7 @@ export async function sendToLegacyProxy(
 
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
     try {
-      const ok = await sendOnce(url, lead, payloadName);
+      const ok = await sendOnce(label, url, lead, payloadName);
       if (ok) return { delivered: true, attempts: attempt + 1 };
     } catch (error) {
       console.error(`[lib/leads/${label}] Tentativa ${attempt + 1} falhou para o lead ${lead.id}:`, error);

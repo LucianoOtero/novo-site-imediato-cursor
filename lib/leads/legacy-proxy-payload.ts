@@ -14,6 +14,19 @@ import type { LeadRecord } from "@/lib/leads/types";
  * `phoneE164` é sempre `+55{ddd}{celular}` (ver `app/api/lead/route.ts`,
  * `toE164()`) — por isso o DDD são sempre os caracteres 3-4 (índices
  * 3 e 4, 0-based) e o celular é o restante.
+ *
+ * Correção 2026-07-12 (achado ao investigar rejeição real do Octadesk):
+ * o campo `DDD-CELULAR`, apesar do nome, carrega **só o DDD** (ex.:
+ * "11") — não "DDD-CELULAR" concatenado. Confirmado lendo
+ * `registrarPrimeiroContatoEspoCRM`/`enviarMensagemInicialOctadesk` em
+ * `MODAL_WHATSAPP_DEFINITIVO.js` (`'DDD-CELULAR': String(ddd)`) e
+ * validado com uma chamada real e isolada ao proxy Octadesk: com
+ * `DDD-CELULAR: "11-988887777"` (o que este arquivo enviava antes desta
+ * correção) o Octadesk respondia 500 `{"details":"Telefone inválido"}`;
+ * com `DDD-CELULAR: "11"` respondeu 200 com sucesso. O EspoCRM tolerava
+ * o formato errado (não valida esse campo com o mesmo rigor), por isso
+ * o bug só afetava o Octadesk e passou despercebido nos testes de
+ * EspoCRM. Ver `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md`.
  */
 function splitPhoneE164(phoneE164: string): { ddd: string; celular: string } {
   return { ddd: phoneE164.slice(3, 5), celular: phoneE164.slice(5) };
@@ -24,7 +37,7 @@ export function buildLegacyProxyPayload(lead: LeadRecord, name: string) {
 
   return {
     data: {
-      "DDD-CELULAR": `${ddd}-${celular}`,
+      "DDD-CELULAR": ddd,
       CELULAR: celular,
       GCLID_FLD: lead.utm?.gclid ?? "",
       NOME: lead.nome ?? "",
