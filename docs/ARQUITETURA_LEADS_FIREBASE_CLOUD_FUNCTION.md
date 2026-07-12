@@ -91,6 +91,12 @@ A auditoria (`docs/ANALISE_ESPOCRM_OCTADESK_FIREBASE_CLOUDRUN.md`) encontrou uma
 
 1. Lead de teste enviado via `POST /api/lead` local → gravado em `leads_backup/{leadId}` com `environment: "development"`, `espocrm_sent: true`, `octadesk_sent: false` (Octadesk real de produção rejeitou o payload de teste nesta tentativa), `autoSync: true`.
 2. Registro manual de teste criado direto no Realtime Database com `espocrm_sent: false` (simulando falha) — a Cloud Function disparou em segundos, reenviou ao EspoCRM (URL "dev", conforme `environment`), teve sucesso, e atualizou o registro para `espocrm_sent: true`, `autoSync: false`, `status: "synced"`. Confirmado nos logs (`firebase functions:log`).
+3. **Bug real encontrado só depois do deploy em produção real**: o backup nunca era gravado em produção (`leads_backup/{leadId}` inexistente após 3 leads de teste reais em `comparaseguroonline.com.br`), apesar de funcionar em teste local. Causa: `saveLeadBackupToFirebase()` e `enrichLeadWithPh3a()` eram chamadas "fire-and-forget" (sem `await`) em `app/api/lead/route.ts` — o runtime serverless da Vercel pode congelar/encerrar a função assim que a resposta HTTP é enviada, matando qualquer tarefa em segundo plano ainda pendente (não há `waitUntil` disponível no runtime Node usado aqui). Corrigido trocando por `await` nas duas chamadas.
+4. **Reconfirmado em produção real após a correção**: lead de teste gravado corretamente em `leads_backup/{leadId}` com `environment: "staging"` (ambiente real da Vercel nesta fase) e `espocrm_sent: true`. Como o Octadesk de produção rejeitou o payload de teste, `autoSync: true` permaneceu, e a Cloud Function reagiu de verdade — `cf_retry_count` avançou a cada rodada, `octadesk_attempts` acumulando corretamente (4 por rodada). Interrompido manualmente (registro de teste apagado) antes de esgotar as 5 rodadas, para não gerar chamadas de teste demais ao Octadesk real.
+
+## Achado paralelo (não corrigido nesta rodada)
+
+Em todos os testes desta sessão (local e produção), o Octadesk de produção rejeitou consistentemente o payload de teste (nome/telefone claramente fictícios), mesmo depois de múltiplas rodadas de reentrega da Cloud Function. Pode ser uma rejeição legítima do lado do Octadesk (validação de conteúdo) ou um problema real a investigar separadamente — não impede a entrega ao EspoCRM (que sempre funcionou nos testes) e não foi causado por nenhuma mudança deste projeto.
 
 ## Custos esperados
 
