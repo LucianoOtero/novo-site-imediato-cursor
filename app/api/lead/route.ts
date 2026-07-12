@@ -129,16 +129,20 @@ export async function POST(request: NextRequest) {
   // o lead nunca deve depender do sucesso do webhook para existir.
   await leadStore.save(lead);
 
-  // Enriquecimento opcional via PH3A (não-bloqueante) — dispara em
-  // paralelo ao webhook, sem atrasar a resposta ao usuário. Simplificação
-  // deliberada em relação ao site legado: o resultado só atualiza o
-  // nosso próprio LeadRecord (`ph3aSexo`/`ph3aDataNascimento`/
-  // `ph3aEstadoCivil`), sem reenviar uma atualização ao EspoCRM depois
-  // (o legado tinha um fluxo de "criar" + "atualizar" separado no CRM;
-  // replicar isso aqui é trabalho futuro, não crítico enquanto
-  // PH3A_ENRICHMENT_ENABLED continua desabilitado por padrão). Ver
-  // lib/ph3a.ts.
-  void enrichLeadWithPh3a(lead);
+  // Enriquecimento opcional via PH3A. Simplificação deliberada em relação
+  // ao site legado: o resultado só atualiza o nosso próprio LeadRecord
+  // (`ph3aSexo`/`ph3aDataNascimento`/`ph3aEstadoCivil`), sem reenviar uma
+  // atualização ao EspoCRM depois (o legado tinha um fluxo de "criar" +
+  // "atualizar" separado no CRM; replicar isso aqui é trabalho futuro,
+  // não crítico enquanto PH3A_ENRICHMENT_ENABLED continua desabilitado
+  // por padrão). Ver lib/ph3a.ts.
+  //
+  // Precisa ser `await` (correção 2026-07-12, mesmo motivo do backup
+  // Firebase abaixo) — "fire-and-forget" sem `await` não sobrevive ao
+  // possível encerramento da função serverless após a resposta HTTP.
+  // `enrichLeadWithPh3a` é rápida quando desabilitada (retorno imediato)
+  // e nunca lança.
+  await enrichLeadWithPh3a(lead);
 
   const webhookResult = await sendLeadWebhook(lead);
   await leadStore.update(lead.id, {
@@ -149,13 +153,18 @@ export async function POST(request: NextRequest) {
   });
 
   // Backup no Firebase Realtime Database (paridade com o site legado,
-  // 2026-07-12) — não-bloqueante: nunca atrasa nem falha a resposta ao
-  // usuário. Se a entrega direta acima falhou, o registro fica com
-  // `autoSync: true` e a Cloud Function (Fase C) tenta reentregar. Ver
+  // 2026-07-12). Se a entrega direta acima falhou, o registro fica com
+  // `autoSync: true` e a Cloud Function tenta reentregar. Ver
   // lib/leads/firebase-backup.ts.
-  saveLeadBackupToFirebase(lead, webhookResult).catch((error) => {
-    console.warn(`[api/lead] Falha inesperada no backup Firebase do lead ${lead.id} (não bloqueante):`, error);
-  });
+  //
+  // IMPORTANTE: precisa ser `await`, não "fire-and-forget" (correção
+  // 2026-07-12, achado ao validar em produção real na Vercel) — o
+  // runtime serverless da Vercel pode congelar/encerrar a função assim
+  // que a resposta HTTP é enviada, matando qualquer tarefa em segundo
+  // plano ainda pendente (sem `waitUntil`, que não está disponível no
+  // runtime Node usado aqui). `saveLeadBackupToFirebase` nunca lança —
+  // aguardá-la é seguro e não deixa a resposta vulnerável a um erro daqui.
+  await saveLeadBackupToFirebase(lead, webhookResult);
 
   if (webhookResult.delivered) {
     await leadStore.update(lead.id, { status: "sent" });
