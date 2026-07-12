@@ -131,6 +131,24 @@ Você pediu para analisar e criticar o documento com a nova proposta de marca ("
 - **Link "ver todas as coberturas" removido** (2026-07-09, mesmo dia) — perdeu o sentido depois que a lista completa passou a ser exibida direto na página.
 - **Estendido às 10 LPs de ramo** (2026-07-09, mesmo dia — "replicar as alterações da Home para as outras páginas"): como `CoverageCards` já era compartilhado com `RamoLandingPage` (Issue 16), o grid de 4 colunas e a lista completa já valiam para as 10 LPs sem nenhuma mudança — só faltava mapear os nomes de cobertura específicos dos outros 9 ramos (ex.: "RCF (danos a terceiros)" → balança, "Cobertura para uso por aplicativo" → celular, "Aluguéis em atraso" → calendário, "Danos ao imóvel" → casa, entre outros 15 novos mapeamentos), que sem isso cairiam todos no ícone genérico de escudo. Confirmado visualmente nas LPs de Moto e Fiança.
 
+### 3.10 ✅ Resolvido (2026-07-12) — Paridade EspoCRM/Octadesk + Firebase + Cloud Function (dev/UAT/produção)
+Contexto: você pediu para investigar como o site legado chama EspoCRM/Octadesk usando Firebase/Cloud Functions/Cloud Run (análise em `docs/ANALISE_ESPOCRM_OCTADESK_FIREBASE_CLOUDRUN.md`), e depois pediu para reproduzir esse comportamento completo no site novo, respeitando os ambientes dev/UAT/produção. Decisão do cliente: replicar tudo (não só a entrega direta que já existia), incluindo backup no Firebase e uma Cloud Function própria — ver `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md` para o desenho completo.
+
+- **Mapeamento de ambientes**: `LEAD_ESPOCRM_WEBHOOK_URL` (única) foi substituída por `LEAD_ESPOCRM_WEBHOOK_URL_DEV`/`_PROD`, resolvidas automaticamente por `appEnvironment` (`lib/env.ts`) — troca sozinho no dia do go-live real, sem reconfigurar o Vercel. Octadesk continua uma única URL (sempre produção).
+- **Projeto Firebase novo e dedicado**: `imediato-seguros-site-novo` (Realtime Database, service account com permissão restrita, faturamento na mesma conta "Pagamento do Firebase" do legado) — criado, não reaproveitado do `leads-imediato-seguros` do legado, para não misturar dados dos dois sites.
+- **Backup de leads**: `lib/leads/firebase-admin.ts` + `lib/leads/firebase-backup.ts` — todo lead (sucesso ou falha) é gravado em `leads_backup/{leadId}` via Firebase Admin SDK, de forma não-bloqueante, depois da tentativa de entrega direta a EspoCRM/Octadesk.
+- **Cloud Function de reentrega**: `firebase/functions/index.js` (`retryLeadDelivery`) — implantada e testada de fato (diferente do legado, cuja Cloud Function equivalente nunca foi implementada, achado da auditoria). Reenvia automaticamente o que falhou, escolhendo a URL de EspoCRM pelo ambiente do próprio registro.
+- **Validado com testes reais**: lead de teste via `/api/lead` local, e um registro manual simulando falha — a Cloud Function reagiu em segundos e corrigiu o status. Logs confirmados via `firebase functions:log`.
+- Validado com `npm run typecheck` e `npm run check:hardcode` limpos.
+
+### 3.11 ✅ Resolvido (2026-07-12) — Correção do bug "Não foi possível enviar agora" (`lib/leads/store.ts`)
+Correção imediata aprovada em sessão anterior, implementada nesta:
+- `DATA_DIR` passa a usar `os.tmpdir()` (`/tmp` na Vercel) quando `process.env.VERCEL` está definido — o único diretório gravável no runtime serverless da Vercel; continua usando `.data/` localmente (sem mudança no dia a dia de desenvolvimento).
+- `writeFile()` nunca mais lança exceção — falha de gravação (ex.: filesystem somente leitura) fica só como aviso no log; `/api/lead` não retorna mais 500 por causa deste store local.
+- **Validado de verdade** simulando o ambiente Vercel localmente (`VERCEL=1`): lead de teste enviado, gravado corretamente em `%TEMP%\imediato-leads\leads.json` (equivalente Windows do `/tmp` do Linux), sem nenhum erro.
+- **Ainda não é a solução definitiva** — continua sendo um store best-effort (`/tmp` na Vercel é efêmero, não sobrevive a cold starts novos nem é compartilhado entre instâncias); dedupe/idempotência ficam menos confiáveis em produção até haver um Postgres real. Isso é aceitável agora porque, desde a seção 3.10, todo lead **também** é gravado no Firebase Realtime Database (backup real e persistente, independente deste arquivo).
+- Validado com `typecheck`/`check:hardcode` limpos.
+
 ---
 
 ## 4. Sugestão de por onde retomar na segunda-feira
@@ -141,6 +159,7 @@ Pela ordem de "menor esforço, maior impacto":
 2. ~~Se você já tem a API key do Google Places~~ — ✅ feito em 2026-07-08.
 3. **Revisar as pendências de conteúdo da seção 3.3** (cargos da equipe, FAQ/objeções por ramo) — são decisões rápidas que destravam mais conteúdo real.
 4. **Providenciar acessos/credenciais da seção 3.2** conforme forem ficando disponíveis (GTM/GA4/Ads, Vercel, EspoCRM/Octadesk produção) — cada uma pode ser conectada independentemente, sem depender das outras.
+5. ~~Corrigir `lib/leads/store.ts` para o filesystem somente leitura do Vercel~~ — ✅ feito em 2026-07-12 (seção 3.11). Falta só o Postgres real como solução definitiva, sem data prevista.
 
 ---
 

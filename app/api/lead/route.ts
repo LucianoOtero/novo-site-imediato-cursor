@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { saveLeadBackupToFirebase } from "@/lib/leads/firebase-backup";
 import { generateLeadId, leadStore } from "@/lib/leads/store";
 import { checkRateLimit, getClientIp, hashIp, verifyTurnstile } from "@/lib/leads/security";
 import { apiLeadSchema } from "@/lib/leads/types";
@@ -145,6 +146,15 @@ export async function POST(request: NextRequest) {
     espocrmAttempts: webhookResult.espocrm.attempts,
     octadeskStatus: webhookResult.octadesk.delivered ? "sent" : "failed",
     octadeskAttempts: webhookResult.octadesk.attempts,
+  });
+
+  // Backup no Firebase Realtime Database (paridade com o site legado,
+  // 2026-07-12) — não-bloqueante: nunca atrasa nem falha a resposta ao
+  // usuário. Se a entrega direta acima falhou, o registro fica com
+  // `autoSync: true` e a Cloud Function (Fase C) tenta reentregar. Ver
+  // lib/leads/firebase-backup.ts.
+  saveLeadBackupToFirebase(lead, webhookResult).catch((error) => {
+    console.warn(`[api/lead] Falha inesperada no backup Firebase do lead ${lead.id} (não bloqueante):`, error);
   });
 
   if (webhookResult.delivered) {

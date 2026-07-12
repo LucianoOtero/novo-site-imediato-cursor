@@ -27,6 +27,14 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Chaves de service account do Firebase (nunca commitar) — ver
+# docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md
+firebase-*-key.json
+firebase/functions/.env
+firebase/functions/*-key.json
+firebase/functions/node_modules
+firebase/.firebase
+
 # vercel
 .vercel
 

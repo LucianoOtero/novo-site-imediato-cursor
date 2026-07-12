@@ -104,7 +104,16 @@ const envSchema = z.object({
   // (comunicação via WhatsApp, via proxy "Webflow Octa") substituem o
   // destino genérico LEAD_WEBHOOK_URL/CRM_API_URL acima, que passa a ser
   // legado/opcional.
-  LEAD_ESPOCRM_WEBHOOK_URL: z.string().optional(),
+  //
+  // EspoCRM tem URLs distintas por ambiente (dev/staging usam a mesma URL
+  // "dev"; produção usa a URL "prod") — resolvidas automaticamente por
+  // `appEnvironment` em `env.leadEspocrmWebhookUrl` (2026-07-12, projeto de
+  // paridade com o legado — ver docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md).
+  // Isso substitui a antiga `LEAD_ESPOCRM_WEBHOOK_URL` única.
+  LEAD_ESPOCRM_WEBHOOK_URL_DEV: z.string().optional(),
+  LEAD_ESPOCRM_WEBHOOK_URL_PROD: z.string().optional(),
+  // Octadesk não tem ambiente de teste — uma única URL, sempre produção,
+  // usada nos 3 ambientes (decisão do cliente, 2026-07-08).
   LEAD_OCTADESK_WEBHOOK_URL: z.string().optional(),
   // PH3A (enriquecimento de CPF) — server-side, via o mesmo proxy Cloud
   // Run que valida CPF no site legado. Desabilitado por padrão (mesmo
@@ -120,6 +129,17 @@ const envSchema = z.object({
   // confirmado nesta sessão.
   GOOGLE_PLACES_API_KEY: z.string().optional(),
   GOOGLE_PLACE_ID: z.string().optional(),
+
+  // Firebase Realtime Database — backup de leads + gatilho para a Cloud
+  // Function de reentrega assíncrona (projeto de paridade com o legado,
+  // 2026-07-12; ver docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md).
+  // Projeto Firebase dedicado ao site novo (não o `leads-imediato-seguros`
+  // do legado). Opcional: sem essas 4 variáveis, o backup roda em modo mock
+  // (só log, sem gravar nada) — nunca bloqueia o envio do lead.
+  FIREBASE_PROJECT_ID: z.string().optional(),
+  FIREBASE_CLIENT_EMAIL: z.string().optional(),
+  FIREBASE_PRIVATE_KEY: z.string().optional(),
+  FIREBASE_DATABASE_URL: z.string().optional(),
 });
 
 function parseEnv() {
@@ -157,7 +177,7 @@ const REQUIRED_IN_PRODUCTION = [
   "GOOGLE_ADS_CONVERSION_LABEL",
   "NEXT_PUBLIC_WHATSAPP_NUMBER",
   "NEXT_PUBLIC_CONTACT_PHONE",
-  "LEAD_ESPOCRM_WEBHOOK_URL",
+  "LEAD_ESPOCRM_WEBHOOK_URL_PROD",
   "LEAD_OCTADESK_WEBHOOK_URL",
   "LEAD_FALLBACK_EMAIL",
   "IP_HASH_SALT",
@@ -232,9 +252,17 @@ export const env = {
   turnstileSecretKey: parsed.TURNSTILE_SECRET_KEY,
   sentryDsn: parsed.SENTRY_DSN,
   databaseUrl: parsed.DATABASE_URL,
-  /** EspoCRM (via proxy "FlyingDonkeys") — destino real do lead (2026-07-03). Dev: `dev.flyingdonkeys.com.br`. */
-  leadEspocrmWebhookUrl: parsed.LEAD_ESPOCRM_WEBHOOK_URL,
-  /** Octadesk (via proxy "Webflow Octa") — sem ambiente de dev, usa produção mesmo em testes. */
+  /**
+   * EspoCRM (via proxy "FlyingDonkeys") — destino real do lead (2026-07-03).
+   * Resolvido automaticamente por `appEnvironment` (2026-07-12): produção usa
+   * `LEAD_ESPOCRM_WEBHOOK_URL_PROD`; development e staging (UAT) usam
+   * `LEAD_ESPOCRM_WEBHOOK_URL_DEV` (`dev.flyingdonkeys.com.br`) — mesma URL
+   * para os dois, por decisão do cliente (UAT reaproveita o ambiente dev).
+   * Isso troca automaticamente no dia do go-live real, sem reconfigurar o
+   * Vercel: basta o override `NEXT_PUBLIC_APP_ENV` deixar de ser "staging".
+   */
+  leadEspocrmWebhookUrl: isProduction ? parsed.LEAD_ESPOCRM_WEBHOOK_URL_PROD : parsed.LEAD_ESPOCRM_WEBHOOK_URL_DEV,
+  /** Octadesk (via proxy "Webflow Octa") — sem ambiente de dev, usa produção mesmo em testes, nos 3 ambientes. */
   leadOctadeskWebhookUrl: parsed.LEAD_OCTADESK_WEBHOOK_URL,
   /** PH3A — desabilitado por padrão, como no ambiente DEV do Webflow. */
   ph3aEnrichmentEnabled: parsed.PH3A_ENRICHMENT_ENABLED === "true",
@@ -242,7 +270,25 @@ export const env = {
   /** Testimonials via Google Places API — ver lib/google-reviews.ts. Sem valor real: usa fallback com avaliações reais extraídas manualmente. */
   googlePlacesApiKey: parsed.GOOGLE_PLACES_API_KEY,
   googlePlaceId: parsed.GOOGLE_PLACE_ID,
+  /** Firebase Admin SDK (backup de leads) — ver lib/leads/firebase-admin.ts. */
+  firebaseProjectId: parsed.FIREBASE_PROJECT_ID,
+  firebaseClientEmail: parsed.FIREBASE_CLIENT_EMAIL,
+  // `\n` literais viram quebra de linha real — necessário porque a chave
+  // privada, ao ser colada como valor de variável de ambiente, tem suas
+  // quebras de linha escapadas.
+  firebasePrivateKey: parsed.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  firebaseDatabaseUrl: parsed.FIREBASE_DATABASE_URL,
 } as const;
+
+/**
+ * `true` somente quando as 4 credenciais do Firebase Admin SDK estão
+ * presentes — controla se `lib/leads/firebase-backup.ts` grava de fato no
+ * Realtime Database ou só loga em modo mock (nunca bloqueia o envio do lead
+ * em nenhum dos dois casos).
+ */
+export const firebaseBackupEnabled = Boolean(
+  env.firebaseProjectId && env.firebaseClientEmail && env.firebasePrivateKey && env.firebaseDatabaseUrl
+);
 
 /**
  * `true` quando não há credenciais reais dos destinos de lead configuradas

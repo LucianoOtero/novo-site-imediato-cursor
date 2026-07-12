@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 import { env } from "@/lib/env";
@@ -23,10 +24,26 @@ import type { LeadRecord } from "@/lib/leads/types";
  * substitui `fileLeadStore` sem mudar `route.ts` (só a peça que decide
  * qual implementação usar, abaixo).
  *
- * Nota de produção: armazenamento em arquivo local **não sobrevive** a
- * ambientes serverless com filesystem efêmero (ex.: Vercel). Isso é
- * aceitável apenas como placeholder de desenvolvimento — é uma
- * simplificação explícita, não uma escolha de arquitetura final.
+ * Nota de produção / correção 2026-07-12 (diagnóstico de "Não foi
+ * possível enviar agora" no site de teste): o filesystem do runtime
+ * serverless da Vercel é **somente leitura**, exceto `/tmp` — escrever
+ * em `.data/leads.json` (caminho relativo a `process.cwd()`) lançava uma
+ * exceção não tratada em `writeFile()`, que subia sem `try/catch` por
+ * `save()`/`update()`/`saveIdempotentResponse()` até `app/api/lead/route.ts`,
+ * resultando em 500 mesmo com o lead já entregue a EspoCRM/Octadesk.
+ * Correção aplicada (aprovada pelo cliente como solução imediata,
+ * enquanto um banco real não é provisionado):
+ * 1. `DATA_DIR` usa `os.tmpdir()` (`/tmp` na Vercel) quando
+ *    `process.env.VERCEL` está definido — o único diretório gravável.
+ * 2. `writeFile()` nunca lança — falha de gravação é só um aviso no log.
+ * Isso torna o store local **best-effort** (aceitável, já que desde
+ * 2026-07-12 todo lead também é gravado no Firebase Realtime Database
+ * — `lib/leads/firebase-backup.ts` — como backup real e persistente,
+ * independente deste arquivo). Continua **não sendo** a solução
+ * definitiva: `/tmp` na Vercel é efêmero (não sobrevive a cold starts
+ * novos nem é compartilhado entre instâncias) — dedupe/idempotência
+ * usando este store ficam menos confiáveis em produção até o Postgres
+ * real ser provisionado.
  */
 export interface LeadStore {
   /** Busca um lead não-duplicado pela chave de dedupe, dentro da janela informada. */
@@ -43,7 +60,8 @@ type FileShape = {
   idempotency: Record<string, { status: number; body: unknown; createdAt: string }>;
 };
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+/** `/tmp` é o único diretório gravável no runtime serverless da Vercel (`process.env.VERCEL` é definido automaticamente lá). */
+const DATA_DIR = process.env.VERCEL ? path.join(os.tmpdir(), "imediato-leads") : path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "leads.json");
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -57,9 +75,22 @@ class FileLeadStore implements LeadStore {
     }
   }
 
+  /**
+   * Nunca lança — uma falha de gravação (ex.: filesystem somente
+   * leitura) fica só como aviso no log. `/api/lead` não deve retornar
+   * 500 por causa deste store local best-effort (ver nota de produção
+   * no topo do arquivo); o backup real está no Firebase.
+   */
   private async writeFile(data: FileShape): Promise<void> {
-    await mkdir(DATA_DIR, { recursive: true });
-    await writeFile(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+    try {
+      await mkdir(DATA_DIR, { recursive: true });
+      await writeFile(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+    } catch (error) {
+      console.warn(
+        `[lib/leads/store] Falha ao gravar ${DATA_FILE} (não bloqueante — o lead já foi/será enviado a EspoCRM/Octadesk/Firebase independente deste store local):`,
+        error
+      );
+    }
   }
 
   async findRecentByDedupeKey(dedupeKey: string, windowMs: number): Promise<LeadRecord | null> {
@@ -110,7 +141,7 @@ export const isUsingRealDatabase = Boolean(env.databaseUrl) && env.databaseUrl !
 
 if (!isUsingRealDatabase && typeof window === "undefined") {
   console.warn(
-    "[lib/leads/store] DATABASE_URL não configurada (ou é o placeholder) — usando armazenamento em arquivo local (.data/leads.json), apenas para desenvolvimento. Ver nota de produção em lib/leads/store.ts."
+    `[lib/leads/store] DATABASE_URL não configurada (ou é o placeholder) — usando armazenamento em arquivo local best-effort (${DATA_FILE}). Ver nota de produção em lib/leads/store.ts.`
   );
 }
 

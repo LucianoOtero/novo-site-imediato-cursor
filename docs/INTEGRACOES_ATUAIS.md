@@ -24,6 +24,7 @@ Os nomes de URL exatos dos endpoints (`window.LOG_ENDPOINT_URL`, etc.) apontam p
   - Prod: `https://add-flyingdonkeys-prod-br2qvvxwhq-rj.a.run.app/`
 - **Payload confirmado:** `POST {data: {DDD-CELULAR, CELULAR, NOME, CPF, CEP, PLACA, Email, GCLID_FLD, produto, landing_url, utm_source, utm_campaign, ...}, d: <timestamp>, name: <string>}` — sem header de autenticação visível no client.
 - **Decisão de implementação:** ver plano de integração — `lib/leads/espocrm.ts` chamará este proxy a partir de `/api/lead`.
+- **Implementado (2026-07-03), ambientes mapeados (2026-07-12):** a URL usada troca automaticamente por `appEnvironment` (`lib/env.ts`) — dev/staging (UAT) sempre a URL "Dev"; produção sempre a URL "Prod". Ver `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md`.
 
 ### 2. Destino de leads — Octadesk (via proxy "Webflow Octa") — ✅ CONFIRMADO, EM IMPLEMENTAÇÃO
 - **O que é:** sistema de comunicação com o cliente via WhatsApp, também real. Acessado via proxy Cloud Run `window.ADD_WEBFLOW_OCTA_URL` (mesmo padrão obrigatório do item acima).
@@ -82,6 +83,8 @@ Os nomes de URL exatos dos endpoints (`window.LOG_ENDPOINT_URL`, etc.) apontam p
 - **Como é usado:** todo lead capturado pelos modais de WhatsApp/telefone é gravado em `leads_backup/{leadId}` no Firebase **antes** de ser enviado ao EspoCRM/Octadesk — funciona como camada de log/backup com retry (`saveLeadToFirebase`, backoff exponencial), não como CRM em si. Documentação inline no próprio script descreve isso como "Fase 1 (Apenas Registro)" — funcionalidades de sincronização automática futura estão comentadas como "a implementar".
 - **Status:** ✅ Confirmado — ver achado completo em `LEGACY_JS_AUDIT.md` ("Achado crítico — WhatsApp e telefone abrem modal de captura de lead antes de navegar").
 - **Achado de segurança:** a config do Firebase client (`apiKey`, `databaseURL`, etc.) está exposta no JS público — isso é **esperado e normal** para o SDK client-side do Firebase (a segurança real vem das regras do Realtime Database, não do sigilo da apiKey), diferente do achado de SafetyMails/APILayer (itens 8/9) onde chaves de API server-side estavam expostas indevidamente.
+- **Achado crítico (auditoria de 2026-07-12):** o comentário "Fase 1 (Apenas Registro)" citado acima é uma contradição real, não só uma nota de versão antiga — o próprio site legado, com `MODAL_FIREBASE_ONLY = true` ativo em produção, depende dessa sincronização automática (Cloud Function) para entregar o lead a EspoCRM/Octadesk, mas o código carregado documenta explicitamente que essa Cloud Function **nunca foi implementada**. Ver análise completa em `docs/ANALISE_ESPOCRM_OCTADESK_FIREBASE_CLOUDRUN.md`.
+- **Replicado no site novo (2026-07-12):** decisão do cliente de reproduzir o comportamento completo (não só a entrega direta) — implementado com um projeto Firebase **dedicado** (`imediato-seguros-site-novo`, não o `leads-imediato-seguros` do legado) e, diferente do legado, com a Cloud Function de reentrega **implementada e testada de fato**. Ver `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md`.
 
 ### 12. CollectChat (chat ao vivo) — confirmado como integração real, porém obsoleta
 - **O que é:** `window.CollectChatAttributes = { gclid: ... }`, definido explicitamente em `FooterCodeSiteDefinitivoCompleto.js` para passar o GCLID capturado da URL ao widget CollectChat (carregado via GTM, conforme o comentário do Head Code do ambiente DEV — `docs/WEBFLOW_CUSTOM_CODE_DEV.md`, item 2).
@@ -119,7 +122,7 @@ Os nomes de URL exatos dos endpoints (`window.LOG_ENDPOINT_URL`, etc.) apontam p
 | CookieYes | Manter ou substituir | ✅ Resolvido — não usar; manter Consent Mode v2 nativo (banner visual ainda a construir) |
 | Validação CPF/Placa via API própria | Decisão de arquitetura (`lib/validators.ts`) | Mantém-se validação local (checksum/regex) já implementada (Issue 11); reaproveitamento do proxy é só para o enriquecimento PH3A opcional, não substitui a validação de formato |
 | SafetyMails / APILayer (chaves expostas) | Segurança | Ainda **fora de escopo** desta rodada — nenhuma decisão tomada; permanece como risco de segurança do site legado, não do novo site |
-| Firebase Realtime Database (backup de leads) | Confirmado — não bloqueia, é um log/backup, não um CRM | Não replicado — `/api/lead` (Issue 12) já tem persistência própria |
+| Firebase Realtime Database (backup de leads) + Cloud Function de reentrega | Confirmado — não bloqueia, é um log/backup, não um CRM | ✅ Replicado (2026-07-12), com projeto Firebase dedicado ao site novo — ver `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md` |
 | Modal de WhatsApp/telefone (comportamento de captura de lead antes de redirecionar) | Decisão de produto sobre `WhatsAppFAB`/`CallButton`/`StickyCTA` (Issue 19) e `LeadForm` inline no Hero (Issue 15) | Investigação concluída (ver `LEGACY_JS_AUDIT.md`) — decisão de replicar ou não esse padrão específico continua em aberto, não implementada unilateralmente |
 
 ---
