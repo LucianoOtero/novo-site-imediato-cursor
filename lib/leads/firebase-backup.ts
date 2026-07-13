@@ -1,29 +1,35 @@
 import { appEnvironment, firebaseBackupEnabled } from "@/lib/env";
 import { getLeadBackupDatabase } from "@/lib/leads/firebase-admin";
-import type { WebhookResult } from "@/lib/leads/webhook";
 import type { LeadRecord } from "@/lib/leads/types";
 
 /**
- * lib/leads/firebase-backup.ts — backup de todo lead no Firebase Realtime
- * Database (projeto 2026-07-12, paridade com `firebase_backup_leads.js`
- * do site legado — ver `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md`
- * e `docs/ANALISE_ESPOCRM_OCTADESK_FIREBASE_CLOUDRUN.md`).
+ * lib/leads/firebase-backup.ts — grava todo lead no Firebase Realtime
+ * Database (projeto 2026-07-12; reestruturado em 2026-07-13 para a
+ * arquitetura "Firebase-only" — ver
+ * `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md`).
  *
- * Mesma estrutura de registro do legado (`leads_backup/{leadId}`, campos
- * `*_sent`/`*_attempts`/`*_last_error`, flag `autoSync`), com duas
- * diferenças deliberadas:
- * - Grava **depois** de tentar a entrega direta (nunca só "Firebase-Only")
- *   — a entrega direta com retry já aconteceu em `lib/leads/webhook.ts`;
- *   este backup é auditoria + gatilho de reentrega, nunca o único caminho.
- * - `environment` usa o `appEnvironment` do próprio site novo
- *   (development/staging/production), para a Cloud Function (Fase C)
- *   saber qual URL de EspoCRM usar ao reenviar.
+ * **Desde 2026-07-13, esta é a única gravação que `app/api/lead/route.ts`
+ * faz** — não há mais entrega direta a EspoCRM/Octadesk antes disto. A
+ * Cloud Function `deliverLead` (`firebase/functions/index.js`),
+ * disparada por esta própria gravação, é quem chama os proxies Cloud
+ * Run de verdade. Por isso `autoSync` é **sempre `true`** agora (antes,
+ * só era `true` quando a entrega direta síncrona falhava) — réplica
+ * fiel do modo "Firebase-Only" que já é a configuração ativa confirmada
+ * no site legado (`window.MODAL_FIREBASE_ONLY = true`).
+ *
+ * `.update()` em vez de `.set()` (mudança 2026-07-13): um mesmo
+ * `leadId` recebe 2 gravações ao longo da captura em 2 fases
+ * (`stage: "initial"` depois `stage: "complete"`) — `.set()`
+ * substituiria o registro inteiro, apagando os campos que a própria
+ * Cloud Function grava de volta nele entre as 2 gravações do site
+ * (`espocrmLeadId`, `espocrmOpportunityId`, `espocrm_sent`, etc.).
+ * `.update()` só sobrescreve as chaves informadas, preservando o resto.
  *
  * Nunca lança erro — se o Firebase falhar ou não estiver configurado
- * (`firebaseBackupEnabled === false`), só loga um aviso. O envio do lead
- * a EspoCRM/Octadesk (e a resposta ao usuário) nunca depende disto.
+ * (`firebaseBackupEnabled === false`), só loga um aviso. A resposta ao
+ * usuário nunca depende disto.
  */
-export async function saveLeadBackupToFirebase(lead: LeadRecord, result: WebhookResult): Promise<void> {
+export async function saveLeadBackupToFirebase(lead: LeadRecord): Promise<void> {
   const database = getLeadBackupDatabase();
   if (!database) {
     if (!firebaseBackupEnabled) {
@@ -33,8 +39,6 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord, result: Webhook
     }
     return;
   }
-
-  const autoSync = !result.espocrm.delivered || !result.octadesk.delivered;
 
   const record = {
     data: {
@@ -48,29 +52,21 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord, result: Webhook
       veiculoAno: lead.veiculoAno ?? null,
       veiculoMarcaModelo: lead.veiculoMarcaModelo ?? null,
       utm: lead.utm ?? null,
-      // Captura em 2 fases (projeto 2026-07-13) — a Cloud Function
-      // (firebase/functions/index.js) precisa disso para replicar a
-      // mesma lógica de e-mail falso/atualização por ID ao reenviar.
+      // A Cloud Function usa isso para decidir o comportamento por
+      // estágio (Octadesk só no "initial"; EspoCRM sempre atualiza no
+      // "complete") e para o fallback de NOME/Email "falsos".
       stage: lead.stage,
-      espocrmLeadId: lead.espocrmLeadId ?? null,
-      espocrmOpportunityId: lead.espocrmOpportunityId ?? null,
     },
     timestamp: lead.createdAt,
-    status: result.delivered ? "synced" : "pending",
-    synced: result.delivered,
+    status: "pending",
+    synced: false,
     source: "site_novo",
     environment: appEnvironment,
-    autoSync,
-    espocrm_sent: result.espocrm.delivered,
-    espocrm_attempts: result.espocrm.attempts,
-    espocrm_last_error: result.espocrm.delivered ? null : `Falha após ${result.espocrm.attempts} tentativa(s)`,
-    octadesk_sent: result.octadesk.delivered,
-    octadesk_attempts: result.octadesk.attempts,
-    octadesk_last_error: result.octadesk.delivered ? null : `Falha após ${result.octadesk.attempts} tentativa(s)`,
+    autoSync: true,
   };
 
   try {
-    await database.ref(`leads_backup/${lead.id}`).set(record);
+    await database.ref(`leads_backup/${lead.id}`).update(record);
   } catch (error) {
     console.warn(`[lib/leads/firebase-backup] Falha ao gravar backup do lead ${lead.id} no Firebase (não bloqueante):`, error);
   }

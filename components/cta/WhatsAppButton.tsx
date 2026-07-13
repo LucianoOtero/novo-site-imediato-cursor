@@ -3,7 +3,7 @@
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { useContactModal } from "@/components/cta/ContactModalContext";
 import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
-import { buildWhatsappUrl } from "@/lib/whatsapp";
+import { useWhatsappHref } from "@/lib/use-whatsapp-href";
 import { trackEvent } from "@/lib/analytics";
 
 /**
@@ -42,10 +42,11 @@ export interface WhatsAppButtonProps extends Omit<ButtonProps, "href" | "onClick
 
 export function WhatsAppButton({ location, ramo, skipModal, children, iconLeft, variant, ...props }: WhatsAppButtonProps) {
   const { open } = useContactModal();
+  const href = useWhatsappHref(ramo);
 
   return (
     <Button
-      href={buildWhatsappUrl(ramo)}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       variant={variant ?? "whatsapp"}

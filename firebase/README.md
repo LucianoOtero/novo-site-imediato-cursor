@@ -1,6 +1,8 @@
-# Firebase — backup de leads + Cloud Function de reentrega
+# Firebase — entrega de leads (EspoCRM/Octadesk) via Cloud Function
 
 Projeto Firebase **dedicado ao site novo** (`imediato-seguros-site-novo`), distinto do `leads-imediato-seguros` do site legado. Ver `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md` para o desenho completo.
+
+**Desde 2026-07-13 (arquitetura "Firebase-only")**: o site (Vercel) não chama mais EspoCRM/Octadesk direto — só grava em `leads_backup/{leadId}` e responde ao usuário. A Cloud Function `deliverLead` (renomeada de `retryLeadDelivery`) passou a ser a **única** via de entrega, não mais uma rede de segurança.
 
 Este diretório (`firebase/`) é um projeto **separado** do Next.js/Vercel — não é implantado por `git push`/deploy da Vercel. O deploy é manual, via Firebase CLI, só quando a Cloud Function (`firebase/functions/index.js`) mudar.
 
@@ -46,17 +48,19 @@ firebase deploy --only functions,database
 
 ## Como funciona
 
-- A função `retryLeadDelivery` observa gravações em `leads_backup/{leadId}` no Realtime Database.
-- Se o registro tiver `autoSync: true` (a entrega direta do site, com retry, falhou em EspoCRM e/ou Octadesk), ela tenta reentregar a partir do servidor, com o mesmo retry exponencial (1s/4s/9s) usado no site.
+- A função `deliverLead` observa **toda** gravação em `leads_backup/{leadId}` no Realtime Database — o site grava com `autoSync: true` sempre (não só em caso de falha, já que não há mais entrega direta do site).
+- Lógica por `data.stage`:
+  - `"initial"` (só telefone): envia a EspoCRM (cria) e Octadesk (mensagem inicial) o que ainda não tiver sido enviado, com retry exponencial (1s/4s/9s).
+  - `"complete"` (dados completos): sempre atualiza o EspoCRM (usa `espocrmLeadId` salvo no registro) — nunca reenvia ao Octadesk (evita notificar o cliente 2 vezes).
 - Escolhe a URL de EspoCRM pelo campo `environment` do próprio registro (`production` → `ESPOCRM_PROD_URL`; `development`/`staging` → `ESPOCRM_DEV_URL`). Octadesk é sempre `OCTADESK_URL` (sem ambiente de teste).
 - Limite de 5 rodadas por lead (`MAX_CF_ATTEMPTS_TOTAL` em `index.js`) — depois disso, marca `status: "failed_permanently"` e para de tentar (requer olhar manualmente no Realtime Database Console).
 
 ## Como testar
 
 1. Console do Realtime Database: <https://console.firebase.google.com/project/imediato-seguros-site-novo/database/imediato-seguros-site-novo-default-rtdb/data>
-2. Criar manualmente, em `leads_backup/teste-manual-001`, um registro com `autoSync: true`, `espocrm_sent: false`, `octadesk_sent: false`, `environment: "development"` e um `data` mínimo (`phoneE164`, `nome`).
-3. Observar os logs da função: `firebase functions:log --only retryLeadDelivery`.
-4. Confirmar que o registro foi atualizado (`espocrm_sent`/`octadesk_sent`/`autoSync`).
+2. Criar manualmente, em `leads_backup/teste-manual-001`, um registro com `autoSync: true`, `espocrm_sent: false`, `octadesk_sent: false`, `environment: "development"` e um `data` mínimo (`phoneE164`, `stage: "initial"`).
+3. Observar os logs da função: `firebase functions:log --only deliverLead`.
+4. Confirmar que o registro foi atualizado (`espocrm_sent`/`octadesk_sent`/`autoSync`/`espocrmLeadId`).
 5. Apagar o registro de teste ao final.
 
 ## Custos esperados

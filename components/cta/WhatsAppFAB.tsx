@@ -5,7 +5,7 @@ import { useContactModal } from "@/components/cta/ContactModalContext";
 import { useStickyCtaVisible } from "@/components/cta/use-sticky-cta-visible";
 import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { trackEvent } from "@/lib/analytics";
-import { buildWhatsappUrl } from "@/lib/whatsapp";
+import { useWhatsappHref } from "@/lib/use-whatsapp-href";
 import { cn } from "@/lib/utils";
 
 /**
@@ -53,11 +53,12 @@ export function WhatsAppFAB() {
   const ramo = useCurrentRamo();
   const { open } = useContactModal();
   const stickyCtaVisible = useStickyCtaVisible();
+  const href = useWhatsappHref(ramo);
 
   return (
     <div role="complementary" aria-label="Atalho de contato">
       <a
-        href={buildWhatsappUrl(ramo)}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         onClick={(event) => {

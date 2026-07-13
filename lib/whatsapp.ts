@@ -29,7 +29,18 @@ function buildContextSuffix(ramo?: string): string {
   return parts.length > 0 ? `\n\n(${parts.join(" · ")})` : "";
 }
 
-export function buildWhatsappUrl(ramo?: string): string {
-  const message = getWhatsappMessage(ramo) + buildContextSuffix(ramo);
+/**
+ * `withContext` (achado 2026-07-13, investigação de "Application error"
+ * em produção): o sufixo de contexto depende de `captureUtmFromLocation`
+ * (lê `window.location`) — computá-lo direto durante o render causa um
+ * mismatch de hidratação real sempre que a página é acessada com UTM/
+ * gclid na URL (o servidor nunca vê `window`, então monta a URL sem esse
+ * sufixo; o cliente, ao hidratar, já vê `window` e monta uma URL
+ * diferente). Consumidores que definem `href` durante o render (Issue
+ * 19) devem usar `useWhatsappHref()` (abaixo), que já lida com isso —
+ * `withContext=false` só existe para essa finalidade específica.
+ */
+export function buildWhatsappUrl(ramo?: string, withContext = true): string {
+  const message = getWhatsappMessage(ramo) + (withContext ? buildContextSuffix(ramo) : "");
   return `https://wa.me/${company.contact.whatsapp}?text=${encodeURIComponent(message)}`;
 }

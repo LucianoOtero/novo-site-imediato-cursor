@@ -6,21 +6,43 @@ import { generateLeadId, leadStore } from "@/lib/leads/store";
 import { checkRateLimit, getClientIp, hashIp, verifyTurnstile } from "@/lib/leads/security";
 import { apiLeadSchema } from "@/lib/leads/types";
 import type { LeadRecord } from "@/lib/leads/types";
-import { sendFallbackEmail, sendLeadWebhook } from "@/lib/leads/webhook";
 import { enrichLeadWithPh3a } from "@/lib/ph3a";
 
 /**
  * POST /api/lead — Route Handler de captura de lead (Issue 12).
  * Fonte: ESPECIFICACAO v3.md, seções 43/44 (validação/dedup/fallback) e
  * 51 (segurança). Ver `lib/leads/*` para cada camada (store, security,
- * webhook) e seus comentários sobre o que é mock vs. definitivo.
+ * backup no Firebase) e seus comentários sobre o que é mock vs. definitivo.
  *
  * Runtime Node (não edge): o store padrão usa `node:fs` (ver
  * lib/leads/store.ts) — não roda no runtime edge.
  *
- * Ordem das camadas (seção 44/51): idempotência → rate limit → parse/
- * validação → honeypot → Turnstile → normalização E.164 → dedupe →
- * persistência → webhook (retry) → fallback + alerta.
+ * **Arquitetura "Firebase-only" (projeto 2026-07-13)**: esta rota
+ * **não chama mais EspoCRM/Octadesk direto** — só grava no Firebase
+ * Realtime Database (`saveLeadBackupToFirebase`) e responde
+ * imediatamente. A entrega real a EspoCRM/Octadesk passa a ser
+ * responsabilidade exclusiva da Cloud Function `deliverLead`
+ * (`firebase/functions/index.js`, disparada pela própria gravação no
+ * Firebase) — réplica fiel do modo "Firebase-Only" que já é a
+ * configuração **ativa** confirmada no site legado
+ * (`window.MODAL_FIREBASE_ONLY = true`, ver
+ * `docs/ANALISE_ESPOCRM_OCTADESK_FIREBASE_CLOUDRUN.md`).
+ *
+ * Motivo da mudança (achados reais em produção, 2026-07-13): a entrega
+ * direta em paralelo (`stage: "initial"` + `stage: "complete"`, cada
+ * uma chamando EspoCRM **e** Octadesk) fazia o Octadesk notificar o
+ * cliente **2 vezes** por conversão — o modal/formulário legado só
+ * notifica o Octadesk uma vez (na fase inicial); a atualização final
+ * republica só o EspoCRM. Além disso, a espera pelos retries de 2
+ * destinos em paralelo (até ~14s no pior caso) deixava esta rota lenta
+ * o suficiente para aumentar o risco de problemas de timeout. Ver
+ * `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md` para o desenho
+ * completo (inclui a lógica por `stage` que corrige a duplicidade).
+ *
+ * Ordem das camadas (seção 44/51, ajustada): idempotência → rate limit
+ * → parse/validação → honeypot → Turnstile → normalização E.164 →
+ * dedupe → persistência local → backup no Firebase (gatilho da
+ * entrega real) → resposta imediata.
  */
 export const runtime = "nodejs";
 
@@ -189,24 +211,11 @@ export async function POST(request: NextRequest) {
   // e nunca lança.
   await enrichLeadWithPh3a(lead);
 
-  const webhookResult = await sendLeadWebhook(lead);
-  await leadStore.update(lead.id, {
-    espocrmStatus: webhookResult.espocrm.delivered ? "sent" : "failed",
-    espocrmAttempts: webhookResult.espocrm.attempts,
-    octadeskStatus: webhookResult.octadesk.delivered ? "sent" : "failed",
-    octadeskAttempts: webhookResult.octadesk.attempts,
-    // Guarda os IDs do EspoCRM (projeto 2026-07-13, captura em 2 fases)
-    // para a atualização final referenciar o mesmo lead/oportunidade —
-    // preserva o valor anterior se esta chamada não trouxe um novo (ex.:
-    // EspoCRM falhou nesta tentativa, mas já tínhamos o ID de antes).
-    espocrmLeadId: webhookResult.espocrmLeadId ?? lead.espocrmLeadId,
-    espocrmOpportunityId: webhookResult.espocrmOpportunityId ?? lead.espocrmOpportunityId,
-  });
-
-  // Backup no Firebase Realtime Database (paridade com o site legado,
-  // 2026-07-12). Se a entrega direta acima falhou, o registro fica com
-  // `autoSync: true` e a Cloud Function tenta reentregar. Ver
-  // lib/leads/firebase-backup.ts.
+  // Backup no Firebase Realtime Database — desde 2026-07-13, este é o
+  // **único** caminho de entrega a EspoCRM/Octadesk (arquitetura
+  // "Firebase-only", ver nota no topo do arquivo). A Cloud Function
+  // `deliverLead` (firebase/functions/index.js), disparada por esta
+  // gravação, faz a entrega real — esta rota nunca espera por ela.
   //
   // IMPORTANTE: precisa ser `await`, não "fire-and-forget" (correção
   // 2026-07-12, achado ao validar em produção real na Vercel) — o
@@ -215,7 +224,7 @@ export async function POST(request: NextRequest) {
   // plano ainda pendente (sem `waitUntil`, que não está disponível no
   // runtime Node usado aqui). `saveLeadBackupToFirebase` nunca lança —
   // aguardá-la é seguro e não deixa a resposta vulnerável a um erro daqui.
-  await saveLeadBackupToFirebase(lead, webhookResult);
+  await saveLeadBackupToFirebase(lead);
 
   // Contato inicial (projeto 2026-07-13, captura em 2 fases): devolve só
   // o `leadId`, para a próxima chamada (`stage: "complete"`) atualizar
@@ -226,16 +235,6 @@ export async function POST(request: NextRequest) {
     return respond(idempotencyKey, 201, { leadId: lead.id });
   }
 
-  if (webhookResult.delivered) {
-    await leadStore.update(lead.id, { status: "sent" });
-    return respond(idempotencyKey, 201, { leadId: lead.id, redirect: "/obrigado" });
-  }
-
-  await leadStore.update(lead.id, { status: "pending_crm" });
-  await sendFallbackEmail(lead);
-  console.error(
-    `[api/lead] ALERTA: lead ${lead.id} não entregue ao EspoCRM após ${webhookResult.attempts} tentativa(s) — status 'pending_crm' (fila), fallback de e-mail acionado. Encaminhar para Sentry/Slack quando integrados (seção 51).`
-  );
-
-  return respond(idempotencyKey, 201, { leadId: lead.id, redirect: "/obrigado", queued: true });
+  await leadStore.update(lead.id, { status: "sent" });
+  return respond(idempotencyKey, 201, { leadId: lead.id, redirect: "/obrigado" });
 }

@@ -8,7 +8,7 @@ import { z } from "zod";
  * Regras:
  * - Nenhum segredo é lido/exposto fora deste módulo sem necessidade.
  * - Em desenvolvimento/staging, nenhuma variável é obrigatória — o projeto
- *   deve rodar com mocks controlados (ver `isMockMode`).
+ *   deve rodar com mocks controlados (ver `firebaseBackupEnabled`).
  * - Em produção, as variáveis marcadas como obrigatórias na seção 45 DEVEM
  *   existir; o boot falha com uma mensagem clara listando o que falta.
  * - `env` (objeto completo, com segredos) deve ser importado **apenas** em
@@ -99,22 +99,6 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().optional(),
   DATABASE_URL: z.string().optional(),
 
-  // Integrações confirmadas em 2026-07-03 (docs/WEBFLOW_CUSTOM_CODE_DEV.md).
-  // EspoCRM (CRM real, via proxy Cloud Run "FlyingDonkeys") e Octadesk
-  // (comunicação via WhatsApp, via proxy "Webflow Octa") substituem o
-  // destino genérico LEAD_WEBHOOK_URL/CRM_API_URL acima, que passa a ser
-  // legado/opcional.
-  //
-  // EspoCRM tem URLs distintas por ambiente (dev/staging usam a mesma URL
-  // "dev"; produção usa a URL "prod") — resolvidas automaticamente por
-  // `appEnvironment` em `env.leadEspocrmWebhookUrl` (2026-07-12, projeto de
-  // paridade com o legado — ver docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md).
-  // Isso substitui a antiga `LEAD_ESPOCRM_WEBHOOK_URL` única.
-  LEAD_ESPOCRM_WEBHOOK_URL_DEV: z.string().optional(),
-  LEAD_ESPOCRM_WEBHOOK_URL_PROD: z.string().optional(),
-  // Octadesk não tem ambiente de teste — uma única URL, sempre produção,
-  // usada nos 3 ambientes (decisão do cliente, 2026-07-08).
-  LEAD_OCTADESK_WEBHOOK_URL: z.string().optional(),
   // PH3A (enriquecimento de CPF) — server-side, via o mesmo proxy Cloud
   // Run que valida CPF no site legado. Desabilitado por padrão (mesmo
   // comportamento do ambiente DEV do Webflow).
@@ -197,9 +181,6 @@ const REQUIRED_IN_PRODUCTION = [
   "GOOGLE_ADS_CONVERSION_LABEL",
   "NEXT_PUBLIC_WHATSAPP_NUMBER",
   "NEXT_PUBLIC_CONTACT_PHONE",
-  "LEAD_ESPOCRM_WEBHOOK_URL_PROD",
-  "LEAD_OCTADESK_WEBHOOK_URL",
-  "LEAD_FALLBACK_EMAIL",
   "IP_HASH_SALT",
   "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
   "TURNSTILE_SECRET_KEY",
@@ -272,18 +253,6 @@ export const env = {
   turnstileSecretKey: parsed.TURNSTILE_SECRET_KEY,
   sentryDsn: parsed.SENTRY_DSN,
   databaseUrl: parsed.DATABASE_URL,
-  /**
-   * EspoCRM (via proxy "FlyingDonkeys") — destino real do lead (2026-07-03).
-   * Resolvido automaticamente por `appEnvironment` (2026-07-12): produção usa
-   * `LEAD_ESPOCRM_WEBHOOK_URL_PROD`; development e staging (UAT) usam
-   * `LEAD_ESPOCRM_WEBHOOK_URL_DEV` (`dev.flyingdonkeys.com.br`) — mesma URL
-   * para os dois, por decisão do cliente (UAT reaproveita o ambiente dev).
-   * Isso troca automaticamente no dia do go-live real, sem reconfigurar o
-   * Vercel: basta o override `NEXT_PUBLIC_APP_ENV` deixar de ser "staging".
-   */
-  leadEspocrmWebhookUrl: isProduction ? parsed.LEAD_ESPOCRM_WEBHOOK_URL_PROD : parsed.LEAD_ESPOCRM_WEBHOOK_URL_DEV,
-  /** Octadesk (via proxy "Webflow Octa") — sem ambiente de dev, usa produção mesmo em testes, nos 3 ambientes. */
-  leadOctadeskWebhookUrl: parsed.LEAD_OCTADESK_WEBHOOK_URL,
   /** PH3A — desabilitado por padrão, como no ambiente DEV do Webflow. */
   ph3aEnrichmentEnabled: parsed.PH3A_ENRICHMENT_ENABLED === "true",
   cpfValidateProxyUrl: parsed.CPF_VALIDATE_PROXY_URL,
@@ -316,12 +285,3 @@ export const env = {
 export const firebaseBackupEnabled = Boolean(
   env.firebaseProjectId && env.firebaseClientEmail && env.firebasePrivateKey && env.firebaseDatabaseUrl
 );
-
-/**
- * `true` quando não há credenciais reais dos destinos de lead configuradas
- * fora de produção — sinaliza para `lib/leads/*` que deve usar um
- * mock/simulação em vez de chamar os serviços externos reais (EspoCRM/
- * Octadesk). Substitui a checagem anterior baseada em `LEAD_WEBHOOK_URL`/
- * `CRM_API_URL` (destino genérico, nunca confirmado como real).
- */
-export const isMockMode = !isProduction && (!env.leadEspocrmWebhookUrl || !env.leadOctadeskWebhookUrl);
