@@ -46,19 +46,21 @@ export function ObrigadoContent({ ramo }: { ramo?: string }) {
   const hasFired = useRef(false);
 
   // #region agent log
-  fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
-    body: JSON.stringify({
-      sessionId: "0a7fc9",
-      location: "ObrigadoContent.tsx:render",
-      message: "ObrigadoContent renderizando",
-      data: { ramo },
-      timestamp: Date.now(),
-      runId: "run1",
-      hypothesisId: "H3-obrigado-render",
-    }),
-  }).catch(() => {});
+  useEffect(() => {
+    fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
+      body: JSON.stringify({
+        sessionId: "0a7fc9",
+        location: "ObrigadoContent.tsx:mount",
+        message: "ObrigadoContent montou (client-side)",
+        data: { ramo },
+        timestamp: Date.now(),
+        runId: "run2-post-fix",
+        hypothesisId: "H3-obrigado-render",
+      }),
+    }).catch(() => {});
+  }, [ramo]);
   // #endregion agent log
 
   useEffect(() => {
