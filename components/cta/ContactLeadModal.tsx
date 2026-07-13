@@ -145,11 +145,26 @@ export function ContactLeadModal() {
   async function onSubmit(data: LeadInput) {
     setSubmitting(true);
     try {
-      await fetch("/api/lead", {
+      const response = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ ...data, ramo: ramo ?? data.ramo, utm: captureUtmFromLocation() }),
       });
+      // #region agent log
+      fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
+        body: JSON.stringify({
+          sessionId: "0a7fc9",
+          location: "ContactLeadModal.tsx:onSubmit:after-fetch",
+          message: "resposta de /api/lead recebida (modal)",
+          data: { status: response.status, ok: response.ok, channel },
+          timestamp: Date.now(),
+          runId: "run1",
+          hypothesisId: "H4-modal-api-response",
+        }),
+      }).catch(() => {});
+      // #endregion agent log
     } catch (error) {
       // Não-bloqueante: nunca impedir a navegação por causa de uma falha de rede/servidor.
       console.error("[ContactLeadModal] Falha ao enviar lead (não impede a navegação):", error);

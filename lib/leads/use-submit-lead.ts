@@ -38,6 +38,22 @@ export function useSubmitLead(ramo: string) {
       body: JSON.stringify(lead),
     });
 
+    // #region agent log
+    fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
+      body: JSON.stringify({
+        sessionId: "0a7fc9",
+        location: "use-submit-lead.ts:submitLead:after-fetch",
+        message: "resposta de /api/lead recebida",
+        data: { status: response.status, ok: response.ok },
+        timestamp: Date.now(),
+        runId: "run1",
+        hypothesisId: "H2-api-response-status",
+      }),
+    }).catch(() => {});
+    // #endregion agent log
+
     if (!response.ok) {
       throw new Error(`Falha ao enviar lead: ${response.status}`);
     }
@@ -54,6 +70,22 @@ export function useSubmitLead(ramo: string) {
         console.error("[useSubmitLead] Falha ao iniciar RPA (não bloqueia a conversão):", error);
       }
     }
+
+    // #region agent log
+    fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
+      body: JSON.stringify({
+        sessionId: "0a7fc9",
+        location: "use-submit-lead.ts:submitLead:before-redirect",
+        message: "prestes a redirecionar para /obrigado",
+        data: { ramo },
+        timestamp: Date.now(),
+        runId: "run1",
+        hypothesisId: "H3-redirect-reached",
+      }),
+    }).catch(() => {});
+    // #endregion agent log
 
     router.push(`/obrigado?ramo=${encodeURIComponent(ramo)}`);
   }
