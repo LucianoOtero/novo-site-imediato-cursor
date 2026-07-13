@@ -29,7 +29,27 @@ export type WebhookResult = {
   attempts: number;
   espocrm: DestinationResult;
   octadesk: DestinationResult;
+  /**
+   * IDs devolvidos pelo EspoCRM (projeto 2026-07-13, captura em 2 fases)
+   * — extraídos de `espocrm.responseData`, mesmos nomes de campo
+   * confirmados no proxy real (`leadIdFlyingDonkeys`/
+   * `opportunityIdFlyingDonkeys`, ver `MODAL_WHATSAPP_DEFINITIVO.js`
+   * legado). `undefined` se a chamada falhou ou não trouxe esses campos.
+   */
+  espocrmLeadId?: string;
+  espocrmOpportunityId?: string;
 };
+
+function extractEspoCrmIds(responseData: unknown): { leadId?: string; opportunityId?: string } {
+  if (!responseData || typeof responseData !== "object") return {};
+  const data = (responseData as { data?: Record<string, unknown> }).data ?? (responseData as Record<string, unknown>);
+  const leadId = data.leadIdFlyingDonkeys ?? data.lead_id ?? data.contact_id;
+  const opportunityId = data.opportunityIdFlyingDonkeys ?? data.opportunity_id;
+  return {
+    leadId: typeof leadId === "string" ? leadId : undefined,
+    opportunityId: typeof opportunityId === "string" ? opportunityId : undefined,
+  };
+}
 
 /** Tenta entregar o lead a EspoCRM e Octadesk em paralelo, cada um com seu próprio retry exponencial (seção 44.3). */
 export async function sendLeadWebhook(lead: LeadRecord): Promise<WebhookResult> {
@@ -41,7 +61,8 @@ export async function sendLeadWebhook(lead: LeadRecord): Promise<WebhookResult> 
     );
   }
 
-  return { delivered: espocrm.delivered, attempts: espocrm.attempts, espocrm, octadesk };
+  const { leadId, opportunityId } = extractEspoCrmIds(espocrm.responseData);
+  return { delivered: espocrm.delivered, attempts: espocrm.attempts, espocrm, octadesk, espocrmLeadId: leadId, espocrmOpportunityId: opportunityId };
 }
 
 /**

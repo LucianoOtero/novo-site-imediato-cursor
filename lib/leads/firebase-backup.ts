@@ -48,6 +48,12 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord, result: Webhook
       veiculoAno: lead.veiculoAno ?? null,
       veiculoMarcaModelo: lead.veiculoMarcaModelo ?? null,
       utm: lead.utm ?? null,
+      // Captura em 2 fases (projeto 2026-07-13) — a Cloud Function
+      // (firebase/functions/index.js) precisa disso para replicar a
+      // mesma lógica de e-mail falso/atualização por ID ao reenviar.
+      stage: lead.stage,
+      espocrmLeadId: lead.espocrmLeadId ?? null,
+      espocrmOpportunityId: lead.espocrmOpportunityId ?? null,
     },
     timestamp: lead.createdAt,
     status: result.delivered ? "synced" : "pending",

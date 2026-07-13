@@ -39,40 +39,6 @@ function getScrollPercent(): number {
 export function PageAnalytics() {
   const pathname = usePathname();
 
-  // #region agent log
-  useEffect(() => {
-    function reportError(kind: string, err: unknown) {
-      const e = err as { message?: string; stack?: string; reason?: unknown } | undefined;
-      fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
-        body: JSON.stringify({
-          sessionId: "0a7fc9",
-          location: "PageAnalytics.tsx:global-error-listener",
-          message: `client exception (${kind})`,
-          data: { pathname, message: e?.message, stack: e?.stack, reason: String(e?.reason ?? "") },
-          timestamp: Date.now(),
-          runId: "run1",
-          hypothesisId: "H3-global-client-error",
-        }),
-      }).catch(() => {});
-    }
-    const onError = (event: ErrorEvent) => reportError("error", event.error ?? event.message);
-    const onRejection = (event: PromiseRejectionEvent) => reportError("unhandledrejection", { reason: event.reason, stack: event.reason?.stack, message: event.reason?.message });
-    window.addEventListener("error", onError);
-    window.addEventListener("unhandledrejection", onRejection);
-    fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
-      body: JSON.stringify({ sessionId: "0a7fc9", location: "PageAnalytics.tsx:mount", message: "PageAnalytics mounted", data: { pathname }, timestamp: Date.now(), runId: "run1", hypothesisId: "H3-global-client-error" }),
-    }).catch(() => {});
-    return () => {
-      window.removeEventListener("error", onError);
-      window.removeEventListener("unhandledrejection", onRejection);
-    };
-  }, [pathname]);
-  // #endregion agent log
-
   useEffect(() => {
     const firedScrollThresholds = new Set<number>();
     const firedTimeThresholds = new Set<number>();

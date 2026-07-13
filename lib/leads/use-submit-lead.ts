@@ -26,33 +26,25 @@ const RPA_MODAL_MIN_DISPLAY_MS = 4000;
  * `/obrigado` espera só um tempo mínimo fixo (não o processo completo do
  * RPA, que pode demorar bem mais) — "não bloqueante" conforme o plano de
  * integração.
+ *
+ * `leadId` (projeto 2026-07-13, captura em 2 fases): quando o `LeadForm`
+ * já disparou um contato inicial no passo 1, este envio final usa
+ * `stage: "complete"` + o `leadId` recebido, para que `/api/lead`
+ * **atualize** o mesmo registro (dados completos, e-mail/nome reais) em
+ * vez de criar um lead duplicado. Sem `leadId` (chamador antigo/sem
+ * captura em 2 fases), comportamento inalterado: um único envio
+ * `stage: "complete"` (padrão), que cria o lead direto.
  */
 export function useSubmitLead(ramo: string) {
   const router = useRouter();
   const [rpaSessionId, setRpaSessionId] = useState<string | null>(null);
 
-  async function submitLead(lead: LeadInput) {
+  async function submitLead(lead: LeadInput, leadId?: string) {
     const response = await fetch("/api/lead", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-      body: JSON.stringify(lead),
+      body: JSON.stringify({ ...lead, stage: "complete", leadId }),
     });
-
-    // #region agent log
-    fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
-      body: JSON.stringify({
-        sessionId: "0a7fc9",
-        location: "use-submit-lead.ts:submitLead:after-fetch",
-        message: "resposta de /api/lead recebida",
-        data: { status: response.status, ok: response.ok },
-        timestamp: Date.now(),
-        runId: "run1",
-        hypothesisId: "H2-api-response-status",
-      }),
-    }).catch(() => {});
-    // #endregion agent log
 
     if (!response.ok) {
       throw new Error(`Falha ao enviar lead: ${response.status}`);
@@ -70,22 +62,6 @@ export function useSubmitLead(ramo: string) {
         console.error("[useSubmitLead] Falha ao iniciar RPA (não bloqueia a conversão):", error);
       }
     }
-
-    // #region agent log
-    fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
-      body: JSON.stringify({
-        sessionId: "0a7fc9",
-        location: "use-submit-lead.ts:submitLead:before-redirect",
-        message: "prestes a redirecionar para /obrigado",
-        data: { ramo },
-        timestamp: Date.now(),
-        runId: "run1",
-        hypothesisId: "H3-redirect-reached",
-      }),
-    }).catch(() => {});
-    // #endregion agent log
 
     router.push(`/obrigado?ramo=${encodeURIComponent(ramo)}`);
   }

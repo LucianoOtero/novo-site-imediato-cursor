@@ -41,8 +41,37 @@ export const utmSchema = z.object({
 
 export type UtmData = z.infer<typeof utmSchema>;
 
-function onlyDigits(value: string): string {
+export function onlyDigits(value: string): string {
   return value.replace(/\D/g, "");
+}
+
+/**
+ * Checksum de CPF (dígitos verificadores) — replicado de
+ * `validarCPFAlgoritmo` no formulário principal do site legado
+ * (`webflow_injection_limpo.js`), que faz essa validação 100% local (sem
+ * API externa) antes do envio. Projeto de 2026-07-13 ("validar telefone,
+ * CPF e e-mail no momento do input").
+ *
+ * Rejeita também sequências de dígitos repetidos (ex.: "111.111.111-11")
+ * — mesma regra do legado, evita falsos positivos de CPFs "de teste"
+ * que passariam no checksum por coincidência matemática.
+ */
+export function isValidCpf(value: string): boolean {
+  const cpf = onlyDigits(value);
+  if (cpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+  let sum = 0;
+  for (let i = 1; i <= 9; i += 1) sum += parseInt(cpf[i - 1], 10) * (11 - i);
+  let rest = (sum * 10) % 11;
+  if (rest === 10 || rest === 11) rest = 0;
+  if (rest !== parseInt(cpf[9], 10)) return false;
+
+  sum = 0;
+  for (let i = 1; i <= 10; i += 1) sum += parseInt(cpf[i - 1], 10) * (12 - i);
+  rest = (sum * 10) % 11;
+  if (rest === 10 || rest === 11) rest = 0;
+  return rest === parseInt(cpf[10], 10);
 }
 
 /** Campo obrigatório com padrão de dígitos (ex.: DDD, celular). */
@@ -66,17 +95,23 @@ function optionalDigits(pattern: RegExp, message: string) {
 export const leadSchema = z.object({
   ramo: z.enum(ramoSlugs),
   ddd: requiredDigits(/^\d{2}$/, "DDD inválido"),
-  celular: requiredDigits(/^\d{8,9}$/, "Celular inválido"),
+  // Celular (não fixo): sempre 9 dígitos começando em "9" — mesma regra
+  // de `validarCelularLocal` no site legado (projeto 2026-07-13).
+  celular: requiredDigits(/^9\d{8}$/, "Celular inválido — deve ter 9 dígitos e começar com 9"),
   cep: optionalDigits(/^\d{8}$/, "CEP inválido"),
   nome: z
     .string()
     .optional()
     .transform((value) => (value?.trim() ? value.trim() : undefined))
     .refine((value) => value === undefined || value.length >= 2, { message: "Nome muito curto" }),
+  // CPF opcional (vazio é válido), mas se preenchido precisa passar o
+  // checksum dos dígitos verificadores (projeto 2026-07-13) — mesma regra
+  // do formulário principal do site legado.
   cpf: z
     .string()
     .optional()
-    .transform((value) => (value ? onlyDigits(value) : undefined)),
+    .transform((value) => (value ? onlyDigits(value) : undefined))
+    .refine((value) => value === undefined || isValidCpf(value), { message: "CPF inválido" }),
   placa: z
     .string()
     .optional()

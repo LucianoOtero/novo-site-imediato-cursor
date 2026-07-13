@@ -156,6 +156,17 @@ Correção imediata aprovada em sessão anterior, implementada nesta:
 - **Ainda não é a solução definitiva** — continua sendo um store best-effort (`/tmp` na Vercel é efêmero, não sobrevive a cold starts novos nem é compartilhado entre instâncias); dedupe/idempotência ficam menos confiáveis em produção até haver um Postgres real. Isso é aceitável agora porque, desde a seção 3.10, todo lead **também** é gravado no Firebase Realtime Database (backup real e persistente, independente deste arquivo).
 - Validado com `typecheck`/`check:hardcode` limpos.
 
+### 3.13 ✅ Resolvido (2026-07-13) — Validação em tempo real (CPF/celular/e-mail) + captura em 2 fases
+Contexto: depois de investigar por que uma mensagem funcionou no Octadesk mas o lead não chegou ao EspoCRM, você perguntou por que não fazer tudo pelo Firebase (como o site atual) e pediu uma análise profunda do comportamento do modal/formulário legado para planejar a validação em tempo real (CPF, celular, e-mail) e a captura em 2 fases. Ver arquitetura completa em `docs/VALIDACAO_TEMPO_REAL_E_CAPTURA_2_FASES.md`.
+
+- **Validação local**: checksum de CPF (`isValidCpf`, `lib/validators.ts`) e celular sempre com 9 dígitos começando em "9" — mesmas regras do formulário principal legado.
+- **Proxies server-side**: `app/api/validate/phone`/`/email` — testei as credenciais reais do legado (que você forneceu) diretamente antes de implementar. APILayer (celular) funciona de verdade; SafetyMails (e-mail) não respondeu em nenhuma das 2 variantes conhecidas — achado já documentado como não resolvido no próprio site legado, não é um problema introduzido aqui. Implementado mesmo assim, best-effort (nunca bloqueia), a seu pedido.
+- **Captura em 2 fases**: `/api/lead` aceita `stage: "initial"` (só telefone, cria o lead) e `stage: "complete"` (atualiza o mesmo lead com os dados completos, sem duplicar) — replicado no `ContactLeadModal` (2 blocos visuais, etapa 2 aparece só depois do telefone validado) e no `LeadForm` (contato inicial disparado ao confirmar o passo 1, sem bloquear a navegação entre passos).
+- **2 bugs adicionais encontrados e corrigidos** ao testar esse fluxo pela primeira vez: o EspoCRM também exige o campo `NOME` não-vazio (mesma classe de bug do `Email`, corrigido ontem); e o `proxy-sender.ts` não detectava esses erros porque o EspoCRM responde `HTTP 200` mesmo rejeitando o lead no corpo — corrigidos os dois, com testes reais confirmando `leadIdFlyingDonkeys`/`opportunityIdFlyingDonkeys` sendo capturados e reutilizados na atualização final.
+- **Diálogo "Corrigir ou Prosseguir"** (novo `components/ui/alert-dialog.tsx`) no `LeadForm` — se o CPF não passar o checksum no envio final, oferece corrigir ou prosseguir assim mesmo (réplica do `SweetAlert` legado).
+- **Validado de ponta a ponta com chamadas reais** (não só mock) contra o EspoCRM/Octadesk de verdade: fluxo `initial` → `complete` resultando em um único lead atualizado, sem duplicar. `typecheck`/`build`/`check:hardcode` limpos.
+- Aproveitei para remover instrumentação de debug (`#region agent log`) deixada de uma sessão de depuração anterior já concluída, em `ContactLeadModal.tsx`, `use-submit-lead.ts`, `ObrigadoContent.tsx` e `PageAnalytics.tsx`.
+
 ---
 
 ## 4. Sugestão de por onde retomar na segunda-feira

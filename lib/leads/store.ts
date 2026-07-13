@@ -48,6 +48,16 @@ import type { LeadRecord } from "@/lib/leads/types";
 export interface LeadStore {
   /** Busca um lead não-duplicado pela chave de dedupe, dentro da janela informada. */
   findRecentByDedupeKey(dedupeKey: string, windowMs: number): Promise<LeadRecord | null>;
+  /**
+   * Busca um lead pelo `id` (projeto 2026-07-13, captura em 2 fases) —
+   * usado para localizar o registro `stage: "initial"` (contato inicial,
+   * só telefone) na hora da atualização final com os dados completos.
+   * Sujeito à mesma limitação de "best-effort" do resto deste store
+   * (`/tmp` na Vercel não é compartilhado entre instâncias) — se não
+   * encontrar, o chamador deve degradar graciosamente (tratar como um
+   * envio novo), nunca falhar.
+   */
+  findById(id: string): Promise<LeadRecord | null>;
   save(record: LeadRecord): Promise<void>;
   update(id: string, patch: Partial<LeadRecord>): Promise<void>;
   /** Idempotência via `X-Idempotency-Key` (seção 51) — resposta já enviada para a mesma chave. */
@@ -98,6 +108,11 @@ class FileLeadStore implements LeadStore {
     const cutoff = Date.now() - windowMs;
     const match = data.leads.find((lead) => lead.dedupeKey === dedupeKey && new Date(lead.createdAt).getTime() >= cutoff);
     return match ?? null;
+  }
+
+  async findById(id: string): Promise<LeadRecord | null> {
+    const data = await this.readFile();
+    return data.leads.find((lead) => lead.id === id) ?? null;
   }
 
   async save(record: LeadRecord): Promise<void> {

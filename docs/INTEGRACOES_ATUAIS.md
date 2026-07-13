@@ -55,15 +55,15 @@ Os nomes de URL exatos dos endpoints (`window.LOG_ENDPOINT_URL`, etc.) apontam p
 - **O que é:** `window.LOG_ENDPOINT_URL` + função `novo_log(nível, categoria, ...)`, com throttling (`logRateLimited`) e detecção de ambiente (dev/prod pelo hostname).
 - **Paridade sugerida:** pode ser substituído pela combinação Sentry (já usado hoje, ver `LEGACY_JS_AUDIT.md`) + logs de servidor (seção 51 da spec), sem necessidade de manter um microsserviço de log dedicado — **decisão de arquitetura, não desta auditoria**.
 
-### 8. SafetyMails (validação/anti-fraude de e-mail)
+### 8. SafetyMails (validação/anti-fraude de e-mail) — ✅ REPLICADO COM PROXY SERVER-SIDE (2026-07-13)
 - **O que é:** serviço terceirizado (`safetymails.com`), configurado via `SAFETYMAILS_OPTIN_BASE`, `SAFETYMAILS_BASE_DOMAIN`, autenticado com `SAFETY_TICKET` e `SAFETY_API_KEY`.
-- **Achado de segurança:** essas chaves estão **expostas no JavaScript client-side** (`config_env.js`), visíveis a qualquer visitante do site. Isso é uma prática de risco já existente hoje — a nova arquitetura (seção 51 da spec, Issue 03A) deve mover qualquer chave equivalente para **server-only**.
-- **Paridade sugerida:** Turnstile (já previsto na seção 51/Issue 12) cobre anti-spam; SafetyMails parece focar em validação/deliverability de e-mail — **avaliar se é necessário reintroduzir uma verificação equivalente**.
+- **Achado de segurança do legado (corrigido no site novo):** no legado, essas chaves ficam **expostas no JavaScript client-side** (`config_env.js`), visíveis a qualquer visitante. No site novo, a mesma credencial é usada, mas a chamada roda **server-side** (`app/api/validate/email/route.ts` → `lib/validation/email-safetymails.ts`) — a chave nunca chega ao navegador.
+- **Achado funcional (2026-07-13):** testadas diretamente as 2 variantes conhecidas (GET+base64 do formulário principal; POST+HMAC do FooterCode) com credenciais reais de DEV e PROD — **nenhuma respondeu** (uma retorna "Função descontinuada", a outra tem erro de DNS). Problema já documentado como não resolvido no próprio site legado (`INVESTIGACAO_ERRO_403_SAFETYMAILS.md`). Implementado mesmo assim, best-effort: nunca bloqueia o usuário se a chamada falhar (mesmo comportamento de "falha aberta" do legado). Ver `docs/VALIDACAO_TEMPO_REAL_E_CAPTURA_2_FASES.md`.
 
-### 9. APILayer (propósito não confirmado)
-- **O que é:** `APILAYER_BASE_URL` + `APILAYER_KEY`, também exposta no client-side.
-- **Propósito exato:** **não identificado** nesta auditoria (apilayer.net oferece diversas APIs — moeda, telefone, etc.). **Investigar** antes de decidir paridade.
-- **Mesmo achado de segurança do item 8** (chave exposta no client).
+### 9. APILayer (validação de telefone) — ✅ REPLICADO COM PROXY SERVER-SIDE (2026-07-13)
+- **O que é:** `APILAYER_BASE_URL` + `APILAYER_KEY`, também exposta no client-side no legado.
+- **Propósito confirmado (2026-07-13):** Number Verification — validação de celular em tempo real (`validarCelularApi`/`validateCelular` em `webflow_injection_limpo.js`). Testado diretamente com a chave real: **funciona corretamente** (retorna `valid`, `carrier`, `line_type`).
+- **Implementado no site novo:** mesma chave, chamada movida para server-side (`app/api/validate/phone/route.ts` → `lib/validation/phone-apilayer.ts`) — nunca exposta ao navegador. Ver `docs/VALIDACAO_TEMPO_REAL_E_CAPTURA_2_FASES.md`.
 
 ### 10. RPA (automação) — `rpaimediatoseguros.com.br` — ✅ CONFIRMADO, EM IMPLEMENTAÇÃO
 - **O que é:** `window.RPA_API_BASE_URL = "https://rpaimediatoseguros.com.br"` — cotação automatizada real (confirmado lendo `webflow_injection_limpo.js`, script adicional carregado sob demanda), não apenas um nome de sistema.
@@ -121,7 +121,7 @@ Os nomes de URL exatos dos endpoints (`window.LOG_ENDPOINT_URL`, etc.) apontam p
 | CollectChat / Mailchimp | Decisão de implementar ou não | ✅ Resolvido — usuário confirmou que não funcionam mais; não implementar |
 | CookieYes | Manter ou substituir | ✅ Resolvido — não usar; manter Consent Mode v2 nativo (banner visual ainda a construir) |
 | Validação CPF/Placa via API própria | Decisão de arquitetura (`lib/validators.ts`) | Mantém-se validação local (checksum/regex) já implementada (Issue 11); reaproveitamento do proxy é só para o enriquecimento PH3A opcional, não substitui a validação de formato |
-| SafetyMails / APILayer (chaves expostas) | Segurança | Ainda **fora de escopo** desta rodada — nenhuma decisão tomada; permanece como risco de segurança do site legado, não do novo site |
+| SafetyMails / APILayer (chaves expostas) | Segurança | ✅ Resolvido (2026-07-13) — replicados com proxy server-side (`app/api/validate/*`), chaves nunca expostas ao navegador; ver `docs/VALIDACAO_TEMPO_REAL_E_CAPTURA_2_FASES.md` |
 | Firebase Realtime Database (backup de leads) + Cloud Function de reentrega | Confirmado — não bloqueia, é um log/backup, não um CRM | ✅ Replicado (2026-07-12), com projeto Firebase dedicado ao site novo — ver `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md` |
 | Modal de WhatsApp/telefone (comportamento de captura de lead antes de redirecionar) | Decisão de produto sobre `WhatsAppFAB`/`CallButton`/`StickyCTA` (Issue 19) e `LeadForm` inline no Hero (Issue 15) | Investigação concluída (ver `LEGACY_JS_AUDIT.md`) — decisão de replicar ou não esse padrão específico continua em aberto, não implementada unilateralmente |
 

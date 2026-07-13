@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2 } from "lucide-react";
+import type { FieldErrors } from "react-hook-form";
 import type { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Field } from "@/components/lead/fields";
 import { ProgressBar } from "@/components/lead/ProgressBar";
 import {
@@ -19,6 +26,7 @@ import {
   formatDdd,
   formatPlaca,
   leadSchema,
+  onlyDigits,
   type LeadInput,
 } from "@/lib/validators";
 import { trackEvent } from "@/lib/analytics";
@@ -41,12 +49,24 @@ import { trackEvent } from "@/lib/analytics";
  * consumidor; sem ele, o formulário apenas transita para o estado
  * "sucesso" localmente — permitindo compor/testar o formulário antes da
  * Issue 12 existir, sem inventar uma integração real.
+ *
+ * Captura em 2 fases + validação em tempo real (projeto 2026-07-13,
+ * réplica do comportamento do `ContactLeadModal`/site legado): ao
+ * confirmar o passo 1 (DDD+Celular), dispara — em paralelo, sem
+ * bloquear a navegação entre passos — o contato inicial
+ * (`stage: "initial"` em `/api/lead`, que já cria o lead e envia a
+ * mensagem via Octadesk). O `leadId` devolvido é passado a `onSuccess`
+ * para que o envio final atualize esse mesmo lead. No envio final, se o
+ * CPF não passar o checksum, abre um diálogo "Corrigir" (foca o campo)
+ * vs. "Prosseguir assim mesmo" (envia como está, sem bloquear a
+ * conversão) — mesma lógica do `SweetAlert` do formulário legado.
  */
 export interface LeadFormProps {
   ramo: string;
   /** `inline` (dentro do Hero) vs `page` (`/cotacao`, passo a passo completo). */
   variant?: "inline" | "page";
-  onSuccess?: (lead: LeadInput) => void | Promise<void>;
+  /** `leadId`: presente quando um contato inicial (passo 1) já criou o lead — ver nota acima. */
+  onSuccess?: (lead: LeadInput, leadId?: string) => void | Promise<void>;
 }
 
 type FormStatus = "idle" | "validating" | "submitting" | "success" | "error";
@@ -66,12 +86,17 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const [step, setStep] = useState<StepNumber>(1);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [hasStarted, setHasStarted] = useState(false);
+  const [showCorrectOrProceed, setShowCorrectOrProceed] = useState(false);
+  const initialLeadIdRef = useRef<string | null>(null);
+  const initialCallInFlightRef = useRef(false);
 
   const {
     register,
     handleSubmit,
     trigger,
     setFocus,
+    setError,
+    getValues,
     formState: { errors },
   } = useForm<LeadFormValues, unknown, LeadInput>({
     resolver: zodResolver(leadSchema),
@@ -90,6 +115,48 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     if (!hasStarted) {
       setHasStarted(true);
       trackEvent("form_start", { form_id: "lead_form", ramo });
+    }
+  }
+
+  /**
+   * Contato inicial (projeto 2026-07-13) — disparado uma única vez ao
+   * confirmar o passo 1 (DDD+Celular), sem bloquear a navegação entre
+   * passos (mesmo comportamento do `ContactLeadModal`). Falha aqui nunca
+   * impede o avanço de passo nem o envio final.
+   */
+  async function sendInitialContact() {
+    if (initialCallInFlightRef.current) return;
+    initialCallInFlightRef.current = true;
+
+    try {
+      const values = getValues();
+      const response = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify({ ramo, ddd: values.ddd, celular: values.celular, stage: "initial", utm: captureUtmFromLocation() }),
+      });
+      const data = (await response.json().catch(() => null)) as { leadId?: string } | null;
+      if (data?.leadId) initialLeadIdRef.current = data.leadId;
+    } catch (error) {
+      console.error("[LeadForm] Falha no contato inicial (não bloqueante):", error);
+    }
+  }
+
+  /** Validação em tempo real do celular via APILayer (âmbar, não-bloqueante — só usada no passo 1). */
+  async function checkCelularApi() {
+    const { ddd: dddValue, celular: celularValue } = getValues();
+    try {
+      const response = await fetch("/api/validate/phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ddd: dddValue, celular: celularValue }),
+      });
+      const result = (await response.json()) as { ok?: boolean };
+      if (result.ok === false) {
+        setError("celular", { type: "manual", message: "Não conseguimos confirmar esse celular — revise ou prossiga assim mesmo" });
+      }
+    } catch {
+      // Best-effort — nunca bloqueia.
     }
   }
 
@@ -117,6 +184,11 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       return;
     }
 
+    if (step === 1) {
+      void sendInitialContact();
+      void checkCelularApi();
+    }
+
     const nextStep = (step + 1) as StepNumber;
     setStep(nextStep);
     trackEvent("form_step", { step: nextStep, ramo });
@@ -126,16 +198,56 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     setStep((current) => (current > 1 ? ((current - 1) as StepNumber) : current));
   }
 
-  async function onSubmit(data: LeadInput) {
+  async function submitPayload(data: LeadInput) {
     setStatus("submitting");
     try {
       const payload: LeadInput = { ...data, ramo, utm: captureUtmFromLocation() };
-      await onSuccess?.(payload);
+      await onSuccess?.(payload, initialLeadIdRef.current ?? undefined);
       trackEvent("generate_lead", { ramo, method: "form" });
       setStatus("success");
     } catch {
       setStatus("error");
     }
+  }
+
+  async function onSubmit(data: LeadInput) {
+    await submitPayload(data);
+  }
+
+  /**
+   * Diálogo "Corrigir ou Prosseguir" (projeto 2026-07-13, réplica do
+   * `SweetAlert` do formulário legado) — aberto quando `handleSubmit`
+   * detecta erro no envio final (na prática, só o checksum de CPF: DDD/
+   * celular já foram validados no passo 1).
+   */
+  function onInvalidFinalStep(formErrors: FieldErrors<LeadInput>) {
+    if (formErrors.cpf) {
+      setShowCorrectOrProceed(true);
+    }
+  }
+
+  function handleCorrigir() {
+    setShowCorrectOrProceed(false);
+    setFocus("cpf");
+  }
+
+  /** "Prosseguir assim mesmo" — envia com o CPF como está (sem o checksum), sinalizando para acompanhamento manual (sem cotação automatizada). */
+  async function handleProsseguirAssimMesmo() {
+    setShowCorrectOrProceed(false);
+    const raw = getValues();
+    const payload: LeadInput = {
+      ramo,
+      ddd: onlyDigits(raw.ddd),
+      celular: onlyDigits(raw.celular),
+      cep: raw.cep ? onlyDigits(raw.cep) : undefined,
+      nome: raw.nome?.trim() || undefined,
+      cpf: raw.cpf ? onlyDigits(raw.cpf) : undefined,
+      placa: raw.placa ? raw.placa.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined,
+      email: undefined,
+      veiculoAno: undefined,
+      veiculoMarcaModelo: undefined,
+    };
+    await submitPayload(payload);
   }
 
   if (status === "success") {
@@ -157,7 +269,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       onFocus={markStarted}
       onSubmit={
         isFinalStep
-          ? handleSubmit(onSubmit)
+          ? handleSubmit(onSubmit, onInvalidFinalStep)
           : (event) => {
               event.preventDefault();
               void goNext();
@@ -237,6 +349,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               placeholder="000.000.000-00"
               aria-invalid={!!errors.cpf}
               {...cpf}
+              onBlur={(event) => {
+                void cpf.onBlur(event);
+                void trigger("cpf");
+              }}
               onChange={(event) => {
                 event.target.value = formatCpf(event.target.value);
                 void cpf.onChange(event);
@@ -275,6 +391,24 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
           {isFinalStep ? "Enviar" : "Continuar"}
         </Button>
       </div>
+
+      <AlertDialog open={showCorrectOrProceed} onOpenChange={setShowCorrectOrProceed}>
+        <AlertDialogContent>
+          <AlertDialogTitle>CPF parece inválido</AlertDialogTitle>
+          <AlertDialogDescription>
+            O CPF informado não parece válido. Você pode corrigi-lo agora ou prosseguir assim mesmo — nesse caso, um
+            especialista entra em contato para confirmar seus dados (sem cotação automatizada).
+          </AlertDialogDescription>
+          <div className="mt-5 flex gap-3">
+            <Button type="button" variant="ghost" fullWidth onClick={handleCorrigir}>
+              Corrigir
+            </Button>
+            <Button type="button" variant="primary" fullWidth onClick={handleProsseguirAssimMesmo}>
+              Prosseguir assim mesmo
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }

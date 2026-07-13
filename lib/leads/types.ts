@@ -16,6 +16,17 @@ export const apiLeadSchema = leadSchema.extend({
   honeypot: z.string().optional(),
   /** Token do Cloudflare Turnstile — ausente/inválido é tolerado apenas em mock mode (sem chave real configurada). */
   turnstileToken: z.string().optional(),
+  /**
+   * Captura em 2 fases (projeto 2026-07-13, réplica do modal legado):
+   * `"initial"` — só DDD+Celular confirmados (ramo/demais campos podem
+   * vir vazios), dispara o contato inicial (EspoCRM+Octadesk) e devolve
+   * `leadId` para a próxima chamada. `"complete"` (padrão, mantém
+   * compatibilidade com o comportamento anterior a esta issue) — envio
+   * único ou atualização final com os dados completos.
+   */
+  stage: z.enum(["initial", "complete"]).optional(),
+  /** `id` devolvido por uma chamada `stage: "initial"` anterior — se encontrado, atualiza esse registro em vez de criar um novo. */
+  leadId: z.string().optional(),
 });
 
 export type ApiLeadPayload = z.infer<typeof apiLeadSchema>;
@@ -31,6 +42,13 @@ export type DeliveryStatus = "pending" | "sent" | "failed";
 
 export type LeadRecord = {
   id: string;
+  /**
+   * Captura em 2 fases (projeto 2026-07-13): `"initial"` enquanto só o
+   * telefone foi confirmado; `"complete"` depois da atualização final
+   * com os dados completos (ou desde o início, para envios de uma vez
+   * só — comportamento anterior a esta issue, mantido por padrão).
+   */
+  stage: "initial" | "complete";
   ramo: string;
   phoneE164: string;
   cep?: string;
@@ -54,6 +72,16 @@ export type LeadRecord = {
   espocrmAttempts: number;
   octadeskStatus: DeliveryStatus;
   octadeskAttempts: number;
+
+  /**
+   * IDs devolvidos pelo EspoCRM no contato inicial (projeto 2026-07-13,
+   * mesmo padrão de `leadIdFlyingDonkeys`/`opportunityIdFlyingDonkeys`
+   * no `MODAL_WHATSAPP_DEFINITIVO.js` legado) — usados para que a
+   * atualização final referencie o mesmo lead/oportunidade, em vez de
+   * criar um registro novo no CRM.
+   */
+  espocrmLeadId?: string;
+  espocrmOpportunityId?: string;
 
   /** Enriquecimento opcional via PH3A (server-side, não-bloqueante — ver app/api/lead/route.ts). */
   ph3aSexo?: string;

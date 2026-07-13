@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
@@ -28,7 +28,8 @@ import {
 
 /**
  * ContactLeadModal — modal de captura de lead antes de abrir WhatsApp/
- * telefone (integrações 2026-07-08).
+ * telefone (integrações 2026-07-08; captura em 2 fases + validação em
+ * tempo real, projeto 2026-07-13).
  *
  * Réplica, a pedido explícito do cliente, do modal já existente no site
  * legado (`docs/LEGACY_JS_AUDIT.md`, "Achado crítico — WhatsApp e
@@ -40,6 +41,24 @@ import {
  * EspoCRM/Octadesk que o modal legado fazia, reaproveitamos a
  * infraestrutura de lead já existente e mais robusta (idempotência,
  * rate limit, retry, fallback de e-mail).
+ *
+ * **Captura em 2 fases** (projeto 2026-07-13, análise detalhada de
+ * `MODAL_WHATSAPP_DEFINITIVO.js`): só DDD+Celular ficam visíveis no
+ * início (`etapa 1`). No `blur` do celular, se o formato for válido,
+ * `etapa 2` (demais campos) aparece com animação, e — em paralelo, sem
+ * esperar o resto do formulário — dispara `POST /api/lead` com
+ * `stage: "initial"`, que já cria o lead e envia a mensagem inicial via
+ * Octadesk (mesmo comportamento do modal legado). O `leadId` devolvido é
+ * usado no envio final (`stage: "complete"`) para **atualizar** esse
+ * mesmo lead (dados completos), em vez de criar um duplicado.
+ *
+ * Validação em tempo real (CPF/e-mail): reaproveita a infraestrutura já
+ * existente do React Hook Form (`trigger()`/`setError()`) — CPF usa o
+ * checksum local (`lib/validators.ts`), e-mail usa o proxy
+ * `/api/validate/email` (SafetyMails, best-effort). Simplificação
+ * deliberada em relação ao legado: essas validações **nunca bloqueiam**
+ * a navegação final — o link "Prefiro ir direto, sem preencher" sempre
+ * funciona, independente de erros de validação nos campos opcionais.
  *
  * **Correção deliberada em relação ao legado** (decisão do cliente,
  * 2026-07-08): no site legado, fechar o modal no "×" é um "beco sem
@@ -74,11 +93,17 @@ const CHANNEL_COPY = {
 export function ContactLeadModal() {
   const { state, close } = useContactModal();
   const [submitting, setSubmitting] = useState(false);
+  const [step2Visible, setStep2Visible] = useState(false);
+  const initialLeadIdRef = useRef<string | null>(null);
+  const initialCallInFlightRef = useRef(false);
 
   const {
     register,
     handleSubmit,
     reset,
+    trigger,
+    getValues,
+    setError,
     formState: { errors },
   } = useForm<ContactModalFormValues, unknown, LeadInput>({
     resolver: zodResolver(leadSchema),
@@ -102,8 +127,8 @@ export function ContactLeadModal() {
    * `defaultValues` do `useForm` só roda na montagem inicial, então sem
    * este reset o campo `ramo` ficaria travado no valor da 1ª abertura
    * (ou "auto", se a 1ª renderização ocorreu com `state` ainda nulo).
-   * Reseta o formulário a cada nova abertura, usando o `ramo` do gatilho
-   * que acabou de abrir o modal.
+   * Reseta o formulário e o estado da captura em 2 fases a cada nova
+   * abertura, usando o `ramo` do gatilho que acabou de abrir o modal.
    */
   useEffect(() => {
     if (!state) return;
@@ -118,6 +143,9 @@ export function ContactLeadModal() {
       veiculoAno: "",
       veiculoMarcaModelo: "",
     });
+    setStep2Visible(false);
+    initialLeadIdRef.current = null;
+    initialCallInFlightRef.current = false;
   }, [state, reset]);
 
   if (!state) return null;
@@ -142,29 +170,104 @@ export function ContactLeadModal() {
     goToDestination();
   }
 
-  async function onSubmit(data: LeadInput) {
-    setSubmitting(true);
+  /**
+   * Contato inicial (projeto 2026-07-13) — disparado uma única vez
+   * (`initialCallInFlightRef`) quando DDD+Celular passam a validação
+   * local, sem esperar o resto do formulário. Sempre não-bloqueante:
+   * falha aqui nunca impede a expansão da etapa 2 nem o envio final.
+   */
+  async function sendInitialContact() {
+    if (initialCallInFlightRef.current) return;
+    initialCallInFlightRef.current = true;
+
     try {
+      const values = getValues();
       const response = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({ ...data, ramo: ramo ?? data.ramo, utm: captureUtmFromLocation() }),
-      });
-      // #region agent log
-      fetch("http://127.0.0.1:7521/ingest/e065bfa7-e56a-455b-bef5-eb7f128640e3", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "0a7fc9" },
         body: JSON.stringify({
-          sessionId: "0a7fc9",
-          location: "ContactLeadModal.tsx:onSubmit:after-fetch",
-          message: "resposta de /api/lead recebida (modal)",
-          data: { status: response.status, ok: response.ok, channel },
-          timestamp: Date.now(),
-          runId: "run1",
-          hypothesisId: "H4-modal-api-response",
+          ramo: ramo ?? values.ramo,
+          ddd: values.ddd,
+          celular: values.celular,
+          stage: "initial",
+          utm: captureUtmFromLocation(),
         }),
-      }).catch(() => {});
-      // #endregion agent log
+      });
+      const data = (await response.json().catch(() => null)) as { leadId?: string } | null;
+      if (data?.leadId) initialLeadIdRef.current = data.leadId;
+    } catch (error) {
+      console.error("[ContactLeadModal] Falha no contato inicial (não bloqueante):", error);
+    }
+  }
+
+  /**
+   * Validação em tempo real de DDD+Celular (formato local, via o mesmo
+   * schema do envio final) — se válido, expande a etapa 2 e dispara o
+   * contato inicial. A validação via APILayer (`/api/validate/phone`)
+   * roda em paralelo, só para feedback visual (nunca bloqueia a
+   * expansão nem o contato inicial já disparado).
+   */
+  async function handlePhoneBlur() {
+    const valid = await trigger(["ddd", "celular"]);
+    if (!valid) return;
+
+    setStep2Visible(true);
+    void sendInitialContact();
+
+    const { ddd, celular } = getValues();
+    fetch("/api/validate/phone", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ddd, celular }),
+    })
+      .then((response) => response.json())
+      .then((result: { ok?: boolean }) => {
+        if (result.ok === false) {
+          setError("celular", { type: "manual", message: "Não conseguimos confirmar esse celular — revise ou prossiga assim mesmo" });
+        }
+      })
+      .catch(() => {
+        // Best-effort — nunca bloqueia (mesma filosofia do restante do projeto).
+      });
+  }
+
+  /** E-mail é opcional — só valida (formato local + SafetyMails best-effort) se algo foi digitado. */
+  async function handleEmailBlur() {
+    const email = getValues("email");
+    if (!email) return;
+
+    const formatOk = await trigger("email");
+    if (!formatOk) return;
+
+    try {
+      const response = await fetch("/api/validate/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const result = (await response.json()) as { ok?: boolean };
+      if (result.ok === false) {
+        setError("email", { type: "manual", message: "Não conseguimos confirmar esse e-mail — revise ou prossiga assim mesmo" });
+      }
+    } catch {
+      // Best-effort — nunca bloqueia.
+    }
+  }
+
+  async function onSubmit(data: LeadInput) {
+    setSubmitting(true);
+    try {
+      await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify({
+          ...data,
+          ramo: ramo ?? data.ramo,
+          stage: "complete",
+          leadId: initialLeadIdRef.current ?? undefined,
+          utm: captureUtmFromLocation(),
+        }),
+      });
     } catch (error) {
       // Não-bloqueante: nunca impedir a navegação por causa de uma falha de rede/servidor.
       console.error("[ContactLeadModal] Falha ao enviar lead (não impede a navegação):", error);
@@ -201,6 +304,7 @@ export function ContactLeadModal() {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
+            {/* Etapa 1 — sempre visível (projeto 2026-07-13, réplica do modal legado) */}
             <div className="grid grid-cols-[4.5rem_1fr] gap-3">
               <Field label="DDD" htmlFor="modal-ddd" error={errors.ddd?.message}>
                 <Input
@@ -229,71 +333,99 @@ export function ContactLeadModal() {
                     event.target.value = formatCelular(event.target.value);
                     void register("celular").onChange(event);
                   }}
-                />
-              </Field>
-            </div>
-
-            <Field label="E-mail" htmlFor="modal-email" error={errors.email?.message} hint="Opcional">
-              <Input id="modal-email" type="email" autoComplete="email" placeholder="voce@email.com" aria-invalid={!!errors.email} {...register("email")} />
-            </Field>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="CEP" htmlFor="modal-cep" error={errors.cep?.message} hint="Opcional">
-                <Input
-                  id="modal-cep"
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  placeholder="00000-000"
-                  aria-invalid={!!errors.cep}
-                  {...register("cep")}
-                  onChange={(event) => {
-                    event.target.value = formatCep(event.target.value);
-                    void register("cep").onChange(event);
-                  }}
-                />
-              </Field>
-              <Field label="CPF" htmlFor="modal-cpf" error={errors.cpf?.message} hint="Opcional">
-                <Input
-                  id="modal-cpf"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="000.000.000-00"
-                  aria-invalid={!!errors.cpf}
-                  {...register("cpf")}
-                  onChange={(event) => {
-                    event.target.value = formatCpf(event.target.value);
-                    void register("cpf").onChange(event);
+                  onBlur={(event) => {
+                    void register("celular").onBlur(event);
+                    void handlePhoneBlur();
                   }}
                 />
               </Field>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Placa" htmlFor="modal-placa" error={errors.placa?.message} hint="Opcional">
-                <Input
-                  id="modal-placa"
-                  autoComplete="off"
-                  placeholder="ABC1D23"
-                  aria-invalid={!!errors.placa}
-                  {...register("placa")}
-                  onChange={(event) => {
-                    event.target.value = formatPlaca(event.target.value);
-                    void register("placa").onChange(event);
-                  }}
-                />
-              </Field>
-              <Field label="Ano do modelo" htmlFor="modal-ano" error={errors.veiculoAno?.message} hint="Opcional">
-                <Input id="modal-ano" inputMode="numeric" placeholder="2020" maxLength={4} {...register("veiculoAno")} />
-              </Field>
-            </div>
+            {/* Etapa 2 — aparece só depois do telefone validado (projeto 2026-07-13) */}
+            {step2Visible && (
+              <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 flex flex-col gap-3 border-t border-neutral-100 pt-3">
+                <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700">
+                  Esses campos são opcionais, mas ajudam a agilizar sua cotação.
+                </p>
 
-            <Field label="Marca/modelo" htmlFor="modal-veiculo" error={errors.veiculoMarcaModelo?.message} hint="Opcional">
-              <Input id="modal-veiculo" placeholder="Ex.: Fiat Uno Vivace 1.4 flex" {...register("veiculoMarcaModelo")} />
-            </Field>
+                <Field label="E-mail" htmlFor="modal-email" error={errors.email?.message} hint="Opcional">
+                  <Input
+                    id="modal-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="voce@email.com"
+                    aria-invalid={!!errors.email}
+                    {...register("email")}
+                    onBlur={(event) => {
+                      void register("email").onBlur(event);
+                      void handleEmailBlur();
+                    }}
+                  />
+                </Field>
 
-            <Button type="submit" variant={channel === "whatsapp" ? "whatsapp" : "primary"} fullWidth loading={submitting} className="mt-1">
-              {copy.submitLabel}
-            </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="CEP" htmlFor="modal-cep" error={errors.cep?.message} hint="Opcional">
+                    <Input
+                      id="modal-cep"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      placeholder="00000-000"
+                      aria-invalid={!!errors.cep}
+                      {...register("cep")}
+                      onChange={(event) => {
+                        event.target.value = formatCep(event.target.value);
+                        void register("cep").onChange(event);
+                      }}
+                    />
+                  </Field>
+                  <Field label="CPF" htmlFor="modal-cpf" error={errors.cpf?.message} hint="Opcional">
+                    <Input
+                      id="modal-cpf"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="000.000.000-00"
+                      aria-invalid={!!errors.cpf}
+                      {...register("cpf")}
+                      onChange={(event) => {
+                        event.target.value = formatCpf(event.target.value);
+                        void register("cpf").onChange(event);
+                      }}
+                      onBlur={(event) => {
+                        void register("cpf").onBlur(event);
+                        void trigger("cpf");
+                      }}
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Placa" htmlFor="modal-placa" error={errors.placa?.message} hint="Opcional">
+                    <Input
+                      id="modal-placa"
+                      autoComplete="off"
+                      placeholder="ABC1D23"
+                      aria-invalid={!!errors.placa}
+                      {...register("placa")}
+                      onChange={(event) => {
+                        event.target.value = formatPlaca(event.target.value);
+                        void register("placa").onChange(event);
+                      }}
+                    />
+                  </Field>
+                  <Field label="Ano do modelo" htmlFor="modal-ano" error={errors.veiculoAno?.message} hint="Opcional">
+                    <Input id="modal-ano" inputMode="numeric" placeholder="2020" maxLength={4} {...register("veiculoAno")} />
+                  </Field>
+                </div>
+
+                <Field label="Marca/modelo" htmlFor="modal-veiculo" error={errors.veiculoMarcaModelo?.message} hint="Opcional">
+                  <Input id="modal-veiculo" placeholder="Ex.: Fiat Uno Vivace 1.4 flex" {...register("veiculoMarcaModelo")} />
+                </Field>
+
+                <Button type="submit" variant={channel === "whatsapp" ? "whatsapp" : "primary"} fullWidth loading={submitting} className="mt-1">
+                  {copy.submitLabel}
+                </Button>
+              </div>
+            )}
 
             <button
               type="button"

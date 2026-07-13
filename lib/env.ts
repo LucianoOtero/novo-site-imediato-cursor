@@ -140,6 +140,26 @@ const envSchema = z.object({
   FIREBASE_CLIENT_EMAIL: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
   FIREBASE_DATABASE_URL: z.string().optional(),
+
+  // Validação em tempo real de telefone (APILayer) e e-mail (SafetyMails)
+  // — projeto 2026-07-13, réplica do comportamento do formulário principal
+  // do site legado (`webflow_injection_limpo.js`). Chamadas feitas
+  // server-side (`app/api/validate/*`), nunca expondo as chaves ao
+  // navegador — diferente do legado, que chama essas APIs direto do
+  // client. Credenciais reaproveitadas do site legado (decisão do
+  // cliente, 2026-07-13).
+  APILAYER_KEY: z.string().optional(),
+  APILAYER_BASE_URL: z.string().optional(),
+  // SafetyMails: achado 2026-07-13 — testado diretamente com credenciais
+  // reais (DEV e PROD) e nenhuma das 2 variantes conhecidas respondeu
+  // (uma "função descontinuada", outra com erro de DNS) — problema já
+  // documentado como não resolvido no próprio projeto legado
+  // (`INVESTIGACAO_ERRO_403_SAFETYMAILS.md`). Implementado best-effort
+  // (nunca bloqueia o usuário se a API externa falhar), a pedido do
+  // cliente, mesmo sabendo que hoje provavelmente sempre cai no fallback.
+  SAFETY_TICKET: z.string().optional(),
+  SAFETY_API_KEY: z.string().optional(),
+  SAFETYMAILS_BASE_DOMAIN: z.string().optional(),
 });
 
 function parseEnv() {
@@ -278,6 +298,13 @@ export const env = {
   // quebras de linha escapadas.
   firebasePrivateKey: parsed.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
   firebaseDatabaseUrl: parsed.FIREBASE_DATABASE_URL,
+  /** APILayer (validação de telefone em tempo real) — ver lib/validation/phone-apilayer.ts. Sem chave: proxy roda em modo mock (ok: true). */
+  apilayerKey: parsed.APILAYER_KEY,
+  apilayerBaseUrl: parsed.APILAYER_BASE_URL || "https://apilayer.net",
+  /** SafetyMails (validação de e-mail em tempo real) — ver lib/validation/email-safetymails.ts. Best-effort: falha externa nunca bloqueia (mesmo comportamento do legado). */
+  safetyTicket: parsed.SAFETY_TICKET,
+  safetyApiKey: parsed.SAFETY_API_KEY,
+  safetymailsBaseDomain: parsed.SAFETYMAILS_BASE_DOMAIN || "safetymails.com",
 } as const;
 
 /**

@@ -59,23 +59,33 @@ function sleep(ms) {
  * `lib/leads/legacy-proxy-payload.ts`): `DDD-CELULAR` carrega só o DDD,
  * não "DDD-CELULAR" concatenado — validado com chamada real isolada ao
  * proxy Octadesk.
+ *
+ * Correção 2026-07-13 (mesmo achado documentado em
+ * `lib/leads/legacy-proxy-payload.ts`): o EspoCRM exige `Email` e
+ * `NOME` não-vazios — usa valores "falsos" derivados do telefone quando
+ * `stage === "initial"` e ainda não há dados reais. Também inclui
+ * `lead_id`/`contact_id`/`opportunity_id` quando disponíveis, para
+ * atualizar o mesmo lead no EspoCRM em vez de criar um duplicado.
  */
 function buildLegacyProxyPayload(leadData, name) {
   const phoneE164 = leadData.phoneE164 || "";
   const ddd = phoneE164.slice(3, 5);
   const celular = phoneE164.slice(5);
   const utm = leadData.utm || {};
+  const isInitial = leadData.stage === "initial";
+  const email = leadData.email || (isInitial ? `${ddd}${celular}@imediatoseguros.com.br` : "");
+  const nome = leadData.nome || (isInitial ? `${ddd}-${celular}-NOVO CLIENTE WHATSAPP` : "");
 
   return {
     data: {
       "DDD-CELULAR": ddd,
       CELULAR: celular,
       GCLID_FLD: utm.gclid || "",
-      NOME: leadData.nome || "",
+      NOME: nome,
       CPF: leadData.cpf || "",
       CEP: leadData.cep || "",
       PLACA: leadData.placa || "",
-      Email: leadData.email || "",
+      Email: email,
       ANO: leadData.veiculoAno || "",
       VEICULO: leadData.veiculoMarcaModelo || "",
       SEXO: "",
@@ -84,6 +94,8 @@ function buildLegacyProxyPayload(leadData, name) {
       produto: leadData.ramo || "",
       utm_source: utm.utm_source || "",
       utm_campaign: utm.utm_campaign || "",
+      ...(leadData.espocrmLeadId ? { lead_id: leadData.espocrmLeadId, contact_id: leadData.espocrmLeadId } : {}),
+      ...(leadData.espocrmOpportunityId ? { opportunity_id: leadData.espocrmOpportunityId } : {}),
     },
     d: new Date().toISOString(),
     name,

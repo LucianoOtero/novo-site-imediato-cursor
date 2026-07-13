@@ -95,39 +95,84 @@ export async function POST(request: NextRequest) {
 
   const phoneE164 = toE164(data.ddd, data.celular);
   const dedupeKey = buildDedupeKey(phoneE164, data.ramo);
+  // Captura em 2 fases (projeto 2026-07-13, réplica do modal legado):
+  // "initial" — só telefone confirmado, dispara o contato inicial;
+  // "complete" (padrão, preserva o comportamento anterior a esta issue)
+  // — envio único ou atualização final com os dados completos.
+  const stage = data.stage ?? "complete";
+  const now = new Date().toISOString();
 
-  const existing = await leadStore.findRecentByDedupeKey(dedupeKey, DEDUPE_WINDOW_MS);
-  if (existing) {
-    await leadStore.update(existing.id, { utm: data.utm ?? existing.utm });
-    return respond(idempotencyKey, 200, { duplicate: true, leadId: existing.id, redirect: "/obrigado" });
+  // Se for a atualização final de um contato inicial anterior, localiza
+  // o registro original (por `leadId`, e por `dedupeKey` como reforço —
+  // `leadId` pode não ser encontrado se a chamada anterior caiu numa
+  // instância serverless diferente, ver nota de "best-effort" em
+  // lib/leads/store.ts) para atualizar em vez de criar um lead duplicado.
+  let existingInitial: LeadRecord | null = null;
+  if (stage === "complete") {
+    const byId = data.leadId ? await leadStore.findById(data.leadId) : null;
+    const byDedupe = byId ? null : await leadStore.findRecentByDedupeKey(dedupeKey, DEDUPE_WINDOW_MS);
+    const candidate = byId ?? byDedupe;
+    if (candidate && candidate.stage === "initial") {
+      existingInitial = candidate;
+    } else if (candidate) {
+      // Já existe um lead "complete" com o mesmo telefone+ramo — comportamento inalterado desde a Issue 12.
+      await leadStore.update(candidate.id, { utm: data.utm ?? candidate.utm });
+      return respond(idempotencyKey, 200, { duplicate: true, leadId: candidate.id, redirect: "/obrigado" });
+    }
+  } else {
+    // stage === "initial": se já existe um registro (mesmo telefone+ramo,
+    // inicial ou completo), não dispara o contato inicial de novo — só
+    // devolve o `leadId` existente (idempotente, mesma janela de dedupe).
+    const existing = await leadStore.findRecentByDedupeKey(dedupeKey, DEDUPE_WINDOW_MS);
+    if (existing) {
+      return respond(idempotencyKey, 200, { leadId: existing.id });
+    }
   }
 
-  const now = new Date().toISOString();
-  const lead: LeadRecord = {
-    id: generateLeadId(),
-    ramo: data.ramo,
-    phoneE164,
-    cep: data.cep,
-    nome: data.nome,
-    cpf: data.cpf,
-    placa: data.placa,
-    email: data.email,
-    veiculoAno: data.veiculoAno,
-    veiculoMarcaModelo: data.veiculoMarcaModelo,
-    utm: data.utm,
-    status: "received",
-    dedupeKey,
-    createdAt: now,
-    updatedAt: now,
-    espocrmStatus: "pending",
-    espocrmAttempts: 0,
-    octadeskStatus: "pending",
-    octadeskAttempts: 0,
-  };
+  const lead: LeadRecord = existingInitial
+    ? {
+        ...existingInitial,
+        stage: "complete",
+        cep: data.cep ?? existingInitial.cep,
+        nome: data.nome ?? existingInitial.nome,
+        cpf: data.cpf ?? existingInitial.cpf,
+        placa: data.placa ?? existingInitial.placa,
+        email: data.email ?? existingInitial.email,
+        veiculoAno: data.veiculoAno ?? existingInitial.veiculoAno,
+        veiculoMarcaModelo: data.veiculoMarcaModelo ?? existingInitial.veiculoMarcaModelo,
+        utm: data.utm ?? existingInitial.utm,
+        updatedAt: now,
+      }
+    : {
+        id: generateLeadId(),
+        stage,
+        ramo: data.ramo,
+        phoneE164,
+        cep: data.cep,
+        nome: data.nome,
+        cpf: data.cpf,
+        placa: data.placa,
+        email: data.email,
+        veiculoAno: data.veiculoAno,
+        veiculoMarcaModelo: data.veiculoMarcaModelo,
+        utm: data.utm,
+        status: "received",
+        dedupeKey,
+        createdAt: now,
+        updatedAt: now,
+        espocrmStatus: "pending",
+        espocrmAttempts: 0,
+        octadeskStatus: "pending",
+        octadeskAttempts: 0,
+      };
 
   // Persiste ANTES de tentar o CRM — "DB é a fonte da verdade" (seção 51):
   // o lead nunca deve depender do sucesso do webhook para existir.
-  await leadStore.save(lead);
+  if (existingInitial) {
+    await leadStore.update(lead.id, lead);
+  } else {
+    await leadStore.save(lead);
+  }
 
   // Enriquecimento opcional via PH3A. Simplificação deliberada em relação
   // ao site legado: o resultado só atualiza o nosso próprio LeadRecord
@@ -150,6 +195,12 @@ export async function POST(request: NextRequest) {
     espocrmAttempts: webhookResult.espocrm.attempts,
     octadeskStatus: webhookResult.octadesk.delivered ? "sent" : "failed",
     octadeskAttempts: webhookResult.octadesk.attempts,
+    // Guarda os IDs do EspoCRM (projeto 2026-07-13, captura em 2 fases)
+    // para a atualização final referenciar o mesmo lead/oportunidade —
+    // preserva o valor anterior se esta chamada não trouxe um novo (ex.:
+    // EspoCRM falhou nesta tentativa, mas já tínhamos o ID de antes).
+    espocrmLeadId: webhookResult.espocrmLeadId ?? lead.espocrmLeadId,
+    espocrmOpportunityId: webhookResult.espocrmOpportunityId ?? lead.espocrmOpportunityId,
   });
 
   // Backup no Firebase Realtime Database (paridade com o site legado,
@@ -165,6 +216,15 @@ export async function POST(request: NextRequest) {
   // runtime Node usado aqui). `saveLeadBackupToFirebase` nunca lança —
   // aguardá-la é seguro e não deixa a resposta vulnerável a um erro daqui.
   await saveLeadBackupToFirebase(lead, webhookResult);
+
+  // Contato inicial (projeto 2026-07-13, captura em 2 fases): devolve só
+  // o `leadId`, para a próxima chamada (`stage: "complete"`) atualizar
+  // este mesmo registro — sem `redirect` (o modal/formulário decide
+  // sozinho quando navegar, normalmente só depois de o usuário terminar
+  // de preencher o resto).
+  if (stage === "initial") {
+    return respond(idempotencyKey, 201, { leadId: lead.id });
+  }
 
   if (webhookResult.delivered) {
     await leadStore.update(lead.id, { status: "sent" });
