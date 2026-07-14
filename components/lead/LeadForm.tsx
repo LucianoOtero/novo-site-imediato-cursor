@@ -85,6 +85,14 @@ type FormStatus = "idle" | "validating" | "submitting" | "success" | "error";
 type StepNumber = 1 | 2 | 3;
 const TOTAL_STEPS = 3;
 
+/** Título fixo + subtítulo por passo (pedido do cliente, 2026-07-14) — orienta o que preencher em cada etapa. */
+const FORM_TITLE = "Inicie aqui sua cotação";
+const STEP_SUBTITLES: Record<StepNumber, string> = {
+  1: "Informe seu telefone",
+  2: "Informe nome e e-mail",
+  3: "Informe CEP, CPF e placa do veículo",
+};
+
 /**
  * `leadSchema` usa `.transform()` em vários campos (máscaras → dígitos),
  * então o tipo do que o formulário coleta (`LeadFormValues`, antes do
@@ -329,6 +337,11 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       }
       className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-6"
     >
+      <div>
+        <h2 className="font-display text-xl font-bold text-neutral-900 md:text-2xl">{FORM_TITLE}</h2>
+        <p className="mt-1 text-sm text-neutral-500">{STEP_SUBTITLES[step]}</p>
+      </div>
+
       <ProgressBar step={step} totalSteps={TOTAL_STEPS} compact={variant === "inline"} />
 
       {step === 1 && (
