@@ -74,6 +74,29 @@ export function isValidCpf(value: string): boolean {
   return rest === parseInt(cpf[10], 10);
 }
 
+/**
+ * Formato de placa (antigo `ABC1234` ou Mercosul `ABC1D23`) — replicado
+ * de `validarPlacaFormato` no site legado (projeto 2026-07-14). Espera
+ * a placa já normalizada (só `[A-Z0-9]`, maiúsculas — ver `formatPlaca`).
+ */
+export function isValidPlacaFormat(value: string): boolean {
+  const antigo = /^[A-Z]{3}\d{4}$/;
+  const mercosul = /^[A-Z]{3}\d[A-Z]\d{2}$/;
+  return antigo.test(value) || mercosul.test(value);
+}
+
+/**
+ * Formato de e-mail — regex exata de `validarEmailLocal` no site legado
+ * (idêntica em `FooterCodeSiteDefinitivoCompleto.js` e
+ * `webflow_injection_limpo.js`). Trocado no lugar do `.email()` do Zod
+ * (projeto 2026-07-14) para fidelidade total: o Zod usa uma regex bem
+ * mais estrita/diferente da do legado, o que podia aceitar/rejeitar
+ * e-mails de forma diferente do site original.
+ */
+export function isValidEmailFormat(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(value.trim());
+}
+
 /** Campo obrigatório com padrão de dígitos (ex.: DDD, celular). */
 function requiredDigits(pattern: RegExp, message: string) {
   return z
@@ -127,10 +150,15 @@ export const leadSchema = z.object({
     .optional()
     .transform((value) => (value ? onlyDigits(value) : undefined))
     .refine((value) => value === undefined || isValidCpf(value), { message: "CPF inválido" }),
+  // Placa opcional (vazia é válida), mas se preenchida precisa bater com
+  // o formato antigo (ABC1234) ou Mercosul (ABC1D23) — projeto
+  // 2026-07-14, mesma regra de `validarPlacaFormato` no site legado
+  // (`FooterCodeSiteDefinitivoCompleto.js`/`webflow_injection_limpo.js`).
   placa: z
     .string()
     .optional()
-    .transform((value) => (value ? value.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined)),
+    .transform((value) => (value ? value.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined))
+    .refine((value) => value === undefined || isValidPlacaFormat(value), { message: "Placa inválida" }),
   /**
    * `email` — originalmente só preenchido via `ContactLeadModal` (Issue
    * de integrações 2026-07-08, réplica dos "8 campos" do modal legado,
@@ -144,7 +172,7 @@ export const leadSchema = z.object({
     .string()
     .optional()
     .transform((value) => (value?.trim() ? value.trim() : undefined))
-    .refine((value) => value === undefined || z.string().email().safeParse(value).success, { message: "E-mail inválido" }),
+    .refine((value) => value === undefined || isValidEmailFormat(value), { message: "E-mail inválido" }),
   veiculoAno: z
     .string()
     .optional()
@@ -166,6 +194,16 @@ export type LeadInput = z.infer<typeof leadSchema>;
  */
 export const lenientCpf = lenientDigits();
 export const lenientCep = lenientDigits();
+/**
+ * Placa tolerante (só normaliza maiúsculas/remove símbolos, sem exigir
+ * o formato antigo/Mercosul) — projeto 2026-07-14, mesmo motivo de
+ * `lenientCpf`/`lenientCep`: sem isso, "Prosseguir assim mesmo" com
+ * placa fora do formato falharia de novo no servidor.
+ */
+export const lenientPlaca = z
+  .string()
+  .optional()
+  .transform((value) => (value ? value.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined));
 
 /**
  * Campos de cada passo do LeadForm (seção 6.3: passo 1 = mínimo p/ virar

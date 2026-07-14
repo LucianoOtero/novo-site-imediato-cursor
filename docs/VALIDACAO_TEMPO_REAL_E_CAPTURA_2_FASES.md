@@ -1,9 +1,9 @@
-# Validação em tempo real (CPF/celular/e-mail) + captura em 2 fases
+# Validação em tempo real (CPF/CEP/placa/celular/e-mail) + captura em 2 fases
 
 ## Finalidade
-Documentar a arquitetura implementada em 2026-07-13 para replicar, no site novo, o comportamento de:
+Documentar a arquitetura implementada em 2026-07-13 (atualizada em 2026-07-14 com CEP/Placa) para replicar, no site novo, o comportamento de:
 1. **Captura em 2 fases** do modal legado (`MODAL_WHATSAPP_DEFINITIVO.js`) — contato inicial só com telefone, depois atualização com os dados completos.
-2. **Validação em tempo real** do formulário principal legado (`webflow_injection_limpo.js`) — CPF (checksum local), celular (APILayer) e e-mail (SafetyMails).
+2. **Validação em tempo real** do formulário principal legado (`webflow_injection_limpo.js`) — CPF (checksum local), CEP (ViaCEP), placa (Placa Fipe), celular (APILayer) e e-mail (formato local + SafetyMails).
 
 Aplicado nos dois pontos de captura de lead do site novo: `ContactLeadModal` (modal de WhatsApp/telefone) e `LeadForm` (formulário multi-step de `/cotacao` e do Hero).
 
@@ -32,8 +32,11 @@ flowchart TD
 
 ### Formulário principal (`webflow_injection_limpo.js`) — validação em tempo real
 - `validateCPF`: formato + checksum dos dígitos verificadores, 100% local.
+- `validateCEP`: 8 dígitos + consulta ao ViaCEP (`GET https://viacep.com.br/ws/{cep}/json/`) — `{erro: true}` no corpo = CEP inexistente.
+- `validatePlaca`/`validarPlacaApi`: formato local (antigo `ABC1234` ou Mercosul `ABC1D23`, regex `validarPlacaFormato`, duplicada idêntica nos 2 scripts) + `POST` no proxy Cloud Run "Placa Fipe" (`window.PLACA_VALIDATE_URL`, `{placa}` no corpo) — resposta traz marca/modelo/ano reais do veículo, usados para auto-preenchimento (`extractVehicleFromPlacaFipe`).
 - `validateCelular`: formato local + validação opcional via APILayer.
-- `validateEmail`: formato local + SafetyMails.
+- `validateEmail`: formato local (regex `/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i`, idêntica em `FooterCodeSiteDefinitivoCompleto.js` e `webflow_injection_limpo.js`) + SafetyMails.
+  - **Achado 2026-07-14, importante**: no formulário principal (`webflow_injection_limpo.js`), a resposta do SafetyMails **participa da validação bloqueante** (`ok: false` se `StatusEmail !== 'VALIDO'`, contribuindo para o `SweetAlert` de "Corrigir/Prosseguir" no submit final). Já no `FooterCodeSiteDefinitivoCompleto.js` (modal/footer), o e-mail no submit final usa **só** `validarEmailLocal` — SafetyMails ali é chamado só no `change` do campo, como aviso, **nunca bloqueia**. O site novo replica o comportamento do footer/modal (SafetyMails só como aviso best-effort, nunca bloqueia) nos dois pontos de captura (`LeadForm`/`ContactLeadModal`) — decisão deliberada de manter uma única filosofia "nunca bloqueia por falha de API externa", já que o SafetyMails está confirmado fora do ar (ver "Achado 2026-07-13" abaixo).
 - No submit final, se algum campo tiver erro: `SweetAlert` com **"Corrigir"** (foca o campo, bloqueia envio) vs. **"Prosseguir assim mesmo"** (envia o lead sem cotação automatizada).
 
 ---
@@ -42,6 +45,8 @@ flowchart TD
 
 ### Fase A — Validação local (`lib/validators.ts`)
 - `isValidCpf()`: checksum dos dígitos verificadores (mesmo algoritmo do legado), exportado e usado pelo schema Zod (`cpf.refine()`) — CPF continua opcional (vazio é válido), mas se preenchido precisa passar o checksum.
+- `isValidPlacaFormat()` (2026-07-14): formato antigo (`ABC1234`) ou Mercosul (`ABC1D23`), mesma regra de `validarPlacaFormato` do legado — usado pelo schema Zod (`placa.refine()`), mesmo padrão do CPF.
+- `isValidEmailFormat()` (2026-07-14): regex exata de `validarEmailLocal` do legado (`/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i`) — substituiu o `.email()` do Zod, que usa uma regex bem diferente/mais estrita e podia aceitar/rejeitar e-mails de forma diferente do site original.
 - `celular`: regex mais estrita (`/^9\d{8}$/`) — sempre 9 dígitos começando em "9", alinhado ao `validarCelularLocal` do legado (antes aceitava 8 ou 9 dígitos, sem exigir o "9").
 
 ### Fase B — Proxies server-side (`app/api/validate/*`)
@@ -49,8 +54,16 @@ flowchart TD
 |---|---|---|
 | `POST /api/validate/phone` | `lib/validation/phone-apilayer.ts` — formato local + APILayer Number Verification | `APILAYER_KEY`, `APILAYER_BASE_URL` |
 | `POST /api/validate/email` | `lib/validation/email-safetymails.ts` — formato local + SafetyMails (POST+HMAC) | `SAFETY_TICKET`, `SAFETY_API_KEY`, `SAFETYMAILS_BASE_DOMAIN` |
+| `POST /api/validate/cep` (2026-07-14) | `lib/validation/cep-viacep.ts` — 8 dígitos + ViaCEP | `VIACEP_BASE_URL` (opcional, tem padrão público) |
+| `POST /api/validate/placa` (2026-07-14) | `lib/validation/placa-fipe.ts` — formato local + proxy "Placa Fipe", devolve marca/modelo/ano para auto-preenchimento | `PLACA_VALIDATE_URL_DEV`/`PLACA_VALIDATE_URL_PROD` (resolvido por ambiente, mesmo padrão do EspoCRM) |
 
-Ambas as rotas reaproveitam `checkRateLimit`/`hashIp` de `lib/leads/security.ts` (mesma proteção de `/api/lead`) e rodam em modo mock (`ok: true`) sem as credenciais configuradas.
+Todas as rotas reaproveitam `checkRateLimit`/`hashIp` de `lib/leads/security.ts` (mesma proteção de `/api/lead`) e rodam em modo mock (`ok: true`) sem as credenciais configuradas — ViaCEP é pública, então roda de verdade mesmo sem nenhuma variável configurada.
+
+**Achado 2026-07-14 (testado com URLs reais):**
+- **ViaCEP**: funciona — resposta real confirmada para CEP existente e `{erro:true}` para inexistente.
+- **Placa Fipe (DEV)**: funciona — testado com placa real, devolveu marca/modelo/ano corretos do veículo.
+
+**Bug corrigido 2026-07-14 (achado ao reanalisar `FooterCodeSiteDefinitivoCompleto.js`):** o `$CEP.on('change', ...)` do legado SEMPRE chama `validarCepViaCep(val)`, mesmo com o CEP incompleto — a própria função retorna `{ok:false, reason:'formato'}` nesse caso (sem chamar a API), disparando o alerta "CEP inválido" de imediato. A implementação inicial de `handleCepBlur()` (`LeadForm.tsx`/`ContactLeadModal.tsx`) fazia um `return` silencioso quando o CEP não tinha exatamente 8 dígitos, então um CEP mal formatado (ex.: "03") nunca disparava nenhum erro visível no blur — só era pego no envio final. Corrigido para chamar `trigger("cep")` primeiro (mesmo padrão já usado por `handlePlacaBlur`), reportando o formato inválido imediatamente e só chamando a API real quando o formato já é válido.
 
 **Achado 2026-07-13 (testado com credenciais reais):**
 - **APILayer**: funciona — resposta real confirmada (`valid: true`, `carrier`, `line_type`).
@@ -74,15 +87,22 @@ Ambas as rotas reaproveitam `checkRateLimit`/`hashIp` de `lib/leads/security.ts`
 
 ### Fase E — `LeadForm` (formulário principal)
 - Ao confirmar o passo 1 (`goNext()`, DDD+Celular validados), dispara o contato inicial (mesmo padrão do modal) em paralelo com a validação via APILayer (visual, não-bloqueante) — sem esperar nenhuma das duas para avançar de passo.
+- **Correção 2026-07-14**: a validação do celular via APILayer também dispara no `onBlur` do próprio campo Celular, ainda no passo 1 — mesmo ponto do `blur.siPhone` no legado (`FooterCodeSiteDefinitivoCompleto.js`/`webflow_injection_limpo.js`). Antes, só disparava dentro de `goNext()`, já depois de avançar visualmente para o passo 2 — o aviso "celular não confirmado" ficava, na prática, invisível (setado num campo que não estava mais na tela). O disparo em `goNext()` continua existindo como reforço (ex.: usuário confirma com Enter, sem passar pelo `blur`).
+- Passos reorganizados em 2026-07-14 (decisão do cliente): passo 2 = Nome + E-mail (`onBlur` do e-mail chama `/api/validate/email`, best-effort); passo 3 = CPF, CEP, Placa (nessa ordem).
 - CPF (passo 3): `onBlur` chama `trigger("cpf")` — feedback imediato do checksum (Fase A), reaproveitando o slot de erro já existente no `Field`.
-- **Decisão confirmada**: `LeadForm` não coleta e-mail (mantém-se assim) — o e-mail "falso" da Fase C é usado automaticamente quando necessário.
-- No envio final (`handleSubmit(onSubmit, onInvalid)`), se o CPF não passar o checksum, abre `components/ui/alert-dialog.tsx` (novo, baseado em `@base-ui/react/alert-dialog`, mesma família do `Dialog` do modal) com:
-  - **"Corrigir"** — foca o campo CPF, não envia.
-  - **"Prosseguir assim mesmo"** — envia o lead com o CPF como está (sem o checksum), sinalizando para acompanhamento manual — réplica do `SweetAlert` legado.
+- CEP (passo 3, 2026-07-14): `onBlur` chama `/api/validate/cep` — se não encontrado, marca erro manual (best-effort, nunca bloqueia a digitação).
+- Placa (passo 3, 2026-07-14): `onBlur` chama `/api/validate/placa` — se encontrada, auto-preenche `veiculoMarcaModelo`/`veiculoAno` (campos ocultos, enviados no payload final); se não encontrada, marca erro manual.
+- No envio final (`handleSubmit(onSubmit, onInvalid)`), se CPF/CEP/Placa não passarem formato/checksum/API, abre `components/ui/alert-dialog.tsx` (baseado em `@base-ui/react/alert-dialog`, mesma família do `Dialog` do modal) com:
+  - **"Corrigir"** — foca o primeiro campo inválido (nessa ordem: CPF, CEP, Placa), não envia.
+  - **"Prosseguir assim mesmo"** — envia o lead com os valores como estão (sem checksum/formato), sinalizando `skipStrictValidation: true` para acompanhamento manual — réplica do `SweetAlert` legado.
 - `lib/leads/use-submit-lead.ts`: `submitLead(lead, leadId?)` agora envia `stage: "complete"` + o `leadId` da fase inicial (se houver) — sem `leadId`, comportamento inalterado (cria o lead direto).
 
-### Fase F — Documentação (este documento)
-- Atualizado `docs/INTEGRACOES_ATUAIS.md` (itens 8/9 — SafetyMails/APILayer).
+### Fase F — `ContactLeadModal`: mesmo tratamento de CEP/Placa (2026-07-14)
+- CEP/Placa (etapa 2) recebem os mesmos handlers de `onBlur` do `LeadForm` (`/api/validate/cep`/`/api/validate/placa`), com o mesmo auto-preenchimento de `veiculoMarcaModelo`/`veiculoAno` quando a placa é encontrada.
+- **Achado/correção 2026-07-14**: como CPF/CEP/Placa passaram a ter `.refine()` (formato/checksum) no schema compartilhado, o `handleSubmit(onSubmit)` do modal — sem um handler de erro — silenciosamente **não enviava nada** quando um desses campos opcionais estava mal formatado, contradizendo a promessa do modal de nunca bloquear a navegação final. Corrigido com `handleSubmit(onSubmit, onInvalid)`: `onInvalid` monta o payload com os valores como o usuário digitou (sem checksum/formato) e envia com `skipStrictValidation: true`, preservando o comportamento "sempre navega" do modal.
+
+### Fase G — Documentação (este documento)
+- Atualizado `docs/INTEGRACOES_ATUAIS.md` (itens 8/9 — SafetyMails/APILayer; a atualizar também com ViaCEP/Placa Fipe).
 - Ver também `docs/BACKLOG.md`/`docs/PROXIMOS_PASSOS.md` para o registro do item concluído.
 
 ---
@@ -95,10 +115,13 @@ Ambas as rotas reaproveitam `checkRateLimit`/`hashIp` de `lib/leads/security.ts`
 | `SAFETY_TICKET` | Validação de e-mail (HMAC) | Ticket de **produção** (`9bab7f0c...`, confirmado em `VERIFICACAO_SAFETYMAILS_PROD_ATUALIZADO_20251123.md` do legado) — usado nos 3 ambientes do site novo, já que não há um ticket de teste documentado como funcional |
 | `SAFETY_API_KEY` | Assinatura HMAC | Mesma chave em DEV/PROD no legado |
 | `SAFETYMAILS_BASE_DOMAIN` | Domínio base | `safetymails.com` |
+| `VIACEP_BASE_URL` (2026-07-14) | Base do ViaCEP | `https://viacep.com.br` (padrão, API pública sem chave) |
+| `PLACA_VALIDATE_URL_DEV`/`PLACA_VALIDATE_URL_PROD` (2026-07-14) | Proxy "Placa Fipe", resolvido por ambiente | `config_env_dev.js`/`config_env_prod.js` do legado |
 
 Todas server-only (`lib/env.ts`), nunca expostas via `publicEnv`.
 
 ## Riscos e pontos abertos
 - SafetyMails parece genuinamente fora do ar (achado documentado, não específico deste site) — a implementação está pronta para funcionar automaticamente se o vendor resolver o problema (ou se novas credenciais forem obtidas), sem precisar de outro deploy.
 - Credenciais compartilhadas com o site legado — qualquer rate-limit por excesso de uso afeta os dois sites.
+- ViaCEP/Placa Fipe: sem cache — cada `onBlur` gera uma chamada real. Aceitável no volume esperado; se necessário, um cache simples por valor normalizado pode ser adicionado depois.
 - `/tmp` na Vercel (armazenamento local do `LeadStore`) não é compartilhado entre instâncias — a atualização por `leadId` tem um fallback por `dedupeKey` (telefone+ramo) para mitigar, mas na pior hipótese (nenhum dos dois encontrado) o comportamento degrada graciosamente para "criar um novo lead completo", nunca falha.

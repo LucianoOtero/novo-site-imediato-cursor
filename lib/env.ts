@@ -144,6 +144,18 @@ const envSchema = z.object({
   SAFETY_TICKET: z.string().optional(),
   SAFETY_API_KEY: z.string().optional(),
   SAFETYMAILS_BASE_DOMAIN: z.string().optional(),
+
+  // Validação em tempo real de CEP (ViaCEP) e Placa (proxy Cloud Run
+  // "Placa Fipe") — projeto 2026-07-14, réplica de `validarCepViaCep`/
+  // `validarPlacaApi` em `FooterCodeSiteDefinitivoCompleto.js` e
+  // `validateCEP`/`validatePlaca` em `webflow_injection_limpo.js`
+  // (mesma lógica duplicada nos 2 scripts do legado). ViaCEP é pública
+  // (sem chave); a Placa Fipe usa o mesmo padrão dev/prod do EspoCRM
+  // (URLs confirmadas em `config_env_dev.js`/`config_env.js` do
+  // legado). Chamadas sempre server-side (`app/api/validate/*`).
+  VIACEP_BASE_URL: z.string().optional(),
+  PLACA_VALIDATE_URL_DEV: z.string().optional(),
+  PLACA_VALIDATE_URL_PROD: z.string().optional(),
 });
 
 function parseEnv() {
@@ -274,6 +286,15 @@ export const env = {
   safetyTicket: parsed.SAFETY_TICKET,
   safetyApiKey: parsed.SAFETY_API_KEY,
   safetymailsBaseDomain: parsed.SAFETYMAILS_BASE_DOMAIN || "safetymails.com",
+  /** ViaCEP (validação de CEP em tempo real) — API pública, sem chave. Ver lib/validation/cep-viacep.ts. */
+  viacepBaseUrl: parsed.VIACEP_BASE_URL || "https://viacep.com.br",
+  /**
+   * Placa Fipe (validação de placa + dados do veículo) — mesma lógica
+   * de ambiente do EspoCRM (`env.leadEspocrmWebhookUrl`, histórico):
+   * produção usa `PLACA_VALIDATE_URL_PROD`; development/staging usam
+   * `PLACA_VALIDATE_URL_DEV`. Ver lib/validation/placa-fipe.ts.
+   */
+  placaValidateUrl: isProduction ? parsed.PLACA_VALIDATE_URL_PROD : parsed.PLACA_VALIDATE_URL_DEV,
 } as const;
 
 /**

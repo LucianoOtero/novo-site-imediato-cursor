@@ -67,6 +67,29 @@ import { trackEvent } from "@/lib/analytics";
  * passa a coletar Nome + E-mail (com validação em tempo real via
  * SafetyMails, mesmo padrão do `ContactLeadModal`); passo 3 passa a ser
  * CPF, CEP, Placa (nessa ordem) — CEP saiu do passo 2.
+ *
+ * CEP e Placa (passo 3, projeto 2026-07-14, réplica de
+ * `validarCepViaCep`/`validarPlacaApi` do site legado): `onBlur` chama
+ * `/api/validate/cep` (ViaCEP) e `/api/validate/placa` (proxy "Placa
+ * Fipe") — a placa encontrada auto-preenche marca/modelo/ano
+ * (`veiculoMarcaModelo`/`veiculoAno`, enviados no payload final). Os
+ * dois entram no mesmo diálogo "Corrigir ou Prosseguir" do CPF — ver
+ * `docs/VALIDACAO_TEMPO_REAL_E_CAPTURA_2_FASES.md`.
+ *
+ * Celular (passo 1, correção 2026-07-14): `onBlur` chama
+ * `checkCelularApi()` (formato local + APILayer) — antes só disparava
+ * dentro de `goNext()`, já depois de avançar para o passo 2, deixando o
+ * aviso de "celular não confirmado" invisível na tela seguinte. Agora
+ * dispara ainda no passo 1 (mesmo ponto do `blur.siPhone` no
+ * `FooterCodeSiteDefinitivoCompleto.js`/`webflow_injection_limpo.js`
+ * legado), e continua também sendo chamado em `goNext()` como reforço
+ * (ex.: usuário confirma com Enter, sem disparar o `blur` antes).
+ *
+ * DDD (passo 1, correção 2026-07-14): `onBlur` chama `trigger("ddd")` —
+ * réplica de `$DDD.on('blur.siPhone', ...)` do legado (que checa o DDD
+ * de forma independente do celular, mesmo antes do usuário preencher o
+ * celular). Dá feedback imediato ("DDD inválido") ao saltar do campo,
+ * em vez de esperar o clique em "Continuar".
  */
 export interface LeadFormProps {
   ramo: string;
@@ -93,6 +116,10 @@ const STEP_SUBTITLES: Record<StepNumber, string> = {
   3: "Informe CEP, CPF e placa do veículo",
 };
 
+/** Ordem de exibição/foco no passo 3 — mesma ordem dos campos na tela. */
+const STEP_3_FIELDS = ["cpf", "cep", "placa"] as const;
+const STEP_3_FIELD_LABELS: Record<(typeof STEP_3_FIELDS)[number], string> = { cpf: "CPF", cep: "CEP", placa: "Placa" };
+
 /**
  * `leadSchema` usa `.transform()` em vários campos (máscaras → dígitos),
  * então o tipo do que o formulário coleta (`LeadFormValues`, antes do
@@ -116,12 +143,24 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     trigger,
     setFocus,
     setError,
+    setValue,
     getValues,
     formState: { errors },
   } = useForm<LeadFormValues, unknown, LeadInput>({
     resolver: zodResolver(leadSchema),
     mode: "onSubmit",
-    defaultValues: { ramo, ddd: "", celular: "", cep: "", nome: "", email: "", cpf: "", placa: "" },
+    defaultValues: {
+      ramo,
+      ddd: "",
+      celular: "",
+      cep: "",
+      nome: "",
+      email: "",
+      cpf: "",
+      placa: "",
+      veiculoAno: "",
+      veiculoMarcaModelo: "",
+    },
   });
 
   const ddd = register("ddd");
@@ -163,8 +202,20 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     }
   }
 
-  /** Validação em tempo real do celular via APILayer (âmbar, não-bloqueante — só usada no passo 1). */
+  /**
+   * Validação em tempo real do celular via APILayer (projeto 2026-07-13,
+   * réplica de `validarTelefoneAsync`/`validateCelular` do site legado —
+   * mesma lógica em `FooterCodeSiteDefinitivoCompleto.js`/
+   * `webflow_injection_limpo.js`: formato local primeiro, API só se o
+   * formato já passou). Amber, não-bloqueante — dispara no `onBlur` do
+   * campo Celular (ainda no passo 1, mesmo ponto do legado — antes era
+   * disparado só dentro de `goNext()`, já depois de avançar de passo,
+   * deixando o aviso invisível na tela seguinte).
+   */
   async function checkCelularApi() {
+    const formatOk = await trigger(["ddd", "celular"]);
+    if (!formatOk) return;
+
     const { ddd: dddValue, celular: celularValue } = getValues();
     try {
       const response = await fetch("/api/validate/phone", {
@@ -205,6 +256,76 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       if (result.ok === false) {
         setError("email", { type: "manual", message: "Não conseguimos confirmar esse e-mail — revise ou prossiga assim mesmo" });
       }
+    } catch {
+      // Best-effort — nunca bloqueia.
+    }
+  }
+
+  /**
+   * Validação em tempo real de CEP via ViaCEP (projeto 2026-07-14,
+   * réplica de `validarCepViaCep`/`validateCEP` do site legado) — CEP é
+   * opcional, só valida se algo foi digitado.
+   *
+   * Correção 2026-07-14 (achado ao analisar `FooterCodeSiteDefinitivoCompleto.js`
+   * de novo): o legado SEMPRE chama a validação no blur/change do CEP,
+   * mesmo incompleto — `validarCepViaCep` retorna `{ok:false,
+   * reason:'formato'}` nesse caso (sem chamar a API), disparando o
+   * alerta "CEP inválido" imediatamente. A versão anterior aqui fazia
+   * um `return` silencioso quando o CEP não tinha 8 dígitos, então
+   * nunca reportava o erro de formato no blur (só o formato "correto,
+   * mas endereço não encontrado" chegava a aparecer) — corrigido para
+   * chamar `trigger("cep")` primeiro (mesmo padrão de `handlePlacaBlur`
+   * abaixo), garantindo o erro "CEP inválido" apareça de imediato para
+   * qualquer CEP mal formatado, e só chama a API real se o formato já
+   * for válido (evita uma chamada de rede inútil para algo já sabido
+   * inválido — mesmo comportamento do legado).
+   */
+  async function handleCepBlur() {
+    const formatOk = await trigger("cep");
+    const cepValue = getValues("cep");
+    if (!formatOk || !cepValue) return;
+
+    try {
+      const response = await fetch("/api/validate/cep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cep: cepValue }),
+      });
+      const result = (await response.json()) as { ok?: boolean };
+      if (result.ok === false) {
+        setError("cep", { type: "manual", message: "Não encontramos esse CEP — revise ou prossiga assim mesmo" });
+      }
+    } catch {
+      // Best-effort — nunca bloqueia.
+    }
+  }
+
+  /**
+   * Validação em tempo real de placa via proxy "Placa Fipe" (projeto
+   * 2026-07-14, réplica de `validarPlacaApi`/`validatePlaca` do site
+   * legado) — placa é opcional, só valida se o formato local (antigo ou
+   * Mercosul) já passou. Quando o veículo é encontrado, preenche
+   * automaticamente marca/modelo/ano (mesmo auto-preenchimento do
+   * legado). Best-effort: nunca bloqueia.
+   */
+  async function handlePlacaBlur() {
+    const placaValid = await trigger("placa");
+    const placaValue = getValues("placa");
+    if (!placaValid || !placaValue) return;
+
+    try {
+      const response = await fetch("/api/validate/placa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ placa: placaValue }),
+      });
+      const result = (await response.json()) as { ok?: boolean; marcaModelo?: string; ano?: string };
+      if (result.ok === false) {
+        setError("placa", { type: "manual", message: "Não encontramos essa placa — revise ou prossiga assim mesmo" });
+        return;
+      }
+      if (result.marcaModelo) setValue("veiculoMarcaModelo", result.marcaModelo);
+      if (result.ano) setValue("veiculoAno", result.ano);
     } catch {
       // Best-effort — nunca bloqueia.
     }
@@ -267,21 +388,22 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   /**
    * Diálogo "Corrigir ou Prosseguir" (projeto 2026-07-13, réplica do
    * `SweetAlert` do formulário legado) — aberto quando `handleSubmit`
-   * detecta erro no envio final. Cobre CPF (checksum) e, desde
-   * 2026-07-14, também CEP (formato) — os dois agora ficam no passo 3
-   * (último passo, sem `goNext()` intermediário para pegar o erro antes
-   * do envio final).
+   * detecta erro no envio final. Cobre CPF (checksum), CEP (formato +
+   * ViaCEP) e, desde 2026-07-14, também Placa (formato + Placa Fipe) —
+   * os três ficam no passo 3 (último passo, sem `goNext()` intermediário
+   * para pegar o erro antes do envio final).
    */
   function onInvalidFinalStep(formErrors: FieldErrors<LeadInput>) {
-    if (formErrors.cpf || formErrors.cep) {
+    if (formErrors.cpf || formErrors.cep || formErrors.placa) {
       setShowCorrectOrProceed(true);
     }
   }
 
-  /** Foca o primeiro campo inválido entre CPF/CEP (nessa ordem, mesma do passo 3). */
+  /** Foca o primeiro campo inválido entre CPF/CEP/Placa (nessa ordem, mesma do passo 3). */
   function handleCorrigir() {
     setShowCorrectOrProceed(false);
-    setFocus(errors.cpf ? "cpf" : "cep");
+    const firstInvalid = STEP_3_FIELDS.find((field) => errors[field]) ?? "cpf";
+    setFocus(firstInvalid);
   }
 
   /**
@@ -304,8 +426,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       email: raw.email?.trim() || undefined,
       cpf: raw.cpf ? onlyDigits(raw.cpf) : undefined,
       placa: raw.placa ? raw.placa.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined,
-      veiculoAno: undefined,
-      veiculoMarcaModelo: undefined,
+      veiculoAno: raw.veiculoAno?.trim() || undefined,
+      veiculoMarcaModelo: raw.veiculoMarcaModelo?.trim() || undefined,
     };
     await submitPayload(payload, true);
   }
@@ -360,6 +482,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                 event.target.value = formatDdd(event.target.value);
                 void ddd.onChange(event);
               }}
+              onBlur={(event) => {
+                void ddd.onBlur(event);
+                void trigger("ddd");
+              }}
             />
           </Field>
           <Field label="Celular" htmlFor="celular" error={errors.celular?.message}>
@@ -374,6 +500,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               onChange={(event) => {
                 event.target.value = formatCelular(event.target.value);
                 void celular.onChange(event);
+              }}
+              onBlur={(event) => {
+                void celular.onBlur(event);
+                void checkCelularApi();
               }}
             />
           </Field>
@@ -437,6 +567,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                 event.target.value = formatCep(event.target.value);
                 void cep.onChange(event);
               }}
+              onBlur={(event) => {
+                void cep.onBlur(event);
+                void handleCepBlur();
+              }}
             />
           </Field>
           <Field label="Placa" htmlFor="placa" error={errors.placa?.message} hint="Opcional">
@@ -449,6 +583,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               onChange={(event) => {
                 event.target.value = formatPlaca(event.target.value);
                 void placa.onChange(event);
+              }}
+              onBlur={(event) => {
+                void placa.onBlur(event);
+                void handlePlacaBlur();
               }}
             />
           </Field>
@@ -472,25 +610,31 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         </Button>
       </div>
 
-      <AlertDialog open={showCorrectOrProceed} onOpenChange={setShowCorrectOrProceed}>
-        <AlertDialogContent>
-          <AlertDialogTitle>{errors.cpf && errors.cep ? "CPF e CEP parecem inválidos" : errors.cpf ? "CPF parece inválido" : "CEP parece inválido"}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {errors.cpf && errors.cep ? "O CPF e o CEP informados" : errors.cpf ? "O CPF informado" : "O CEP informado"} não
-            parece{errors.cpf && errors.cep ? "m" : ""} válido{errors.cpf && errors.cep ? "s" : ""}. Você pode corrigir agora
-            ou prosseguir assim mesmo — nesse caso, um especialista entra em contato para confirmar seus dados (sem cotação
-            automatizada).
-          </AlertDialogDescription>
-          <div className="mt-5 flex gap-3">
-            <Button type="button" variant="ghost" fullWidth onClick={handleCorrigir}>
-              Corrigir
-            </Button>
-            <Button type="button" variant="primary" fullWidth onClick={handleProsseguirAssimMesmo}>
-              Prosseguir assim mesmo
-            </Button>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      {(() => {
+        const invalidLabels = STEP_3_FIELDS.filter((field) => errors[field]).map((field) => STEP_3_FIELD_LABELS[field]);
+        const isPlural = invalidLabels.length > 1;
+        const fieldsText = invalidLabels.length > 0 ? invalidLabels.join(" e ") : "dado";
+        return (
+          <AlertDialog open={showCorrectOrProceed} onOpenChange={setShowCorrectOrProceed}>
+            <AlertDialogContent>
+              <AlertDialogTitle>{fieldsText} parece{isPlural ? "m" : ""} inválido{isPlural ? "s" : ""}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {isPlural ? `Os dados informados (${fieldsText})` : `O ${fieldsText} informado`} não parece
+                {isPlural ? "m" : ""} válido{isPlural ? "s" : ""}. Você pode corrigir agora ou prosseguir assim mesmo — nesse
+                caso, um especialista entra em contato para confirmar seus dados (sem cotação automatizada).
+              </AlertDialogDescription>
+              <div className="mt-5 flex gap-3">
+                <Button type="button" variant="ghost" fullWidth onClick={handleCorrigir}>
+                  Corrigir
+                </Button>
+                <Button type="button" variant="primary" fullWidth onClick={handleProsseguirAssimMesmo}>
+                  Prosseguir assim mesmo
+                </Button>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
+        );
+      })()}
     </form>
   );
 }

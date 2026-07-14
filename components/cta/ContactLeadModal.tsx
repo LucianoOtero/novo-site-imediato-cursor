@@ -52,13 +52,26 @@ import {
  * usado no envio final (`stage: "complete"`) para **atualizar** esse
  * mesmo lead (dados completos), em vez de criar um duplicado.
  *
- * Validação em tempo real (CPF/e-mail): reaproveita a infraestrutura já
- * existente do React Hook Form (`trigger()`/`setError()`) — CPF usa o
- * checksum local (`lib/validators.ts`), e-mail usa o proxy
+ * DDD (correção 2026-07-14): `onBlur` chama `trigger("ddd")` — réplica
+ * de `$DDD.on('blur.siPhone', ...)` do legado, que valida o DDD de
+ * forma independente do celular (feedback imediato ao saltar do
+ * campo, sem esperar o blur do celular ou o clique em enviar).
+ *
+ * Validação em tempo real (CPF/CEP/placa/e-mail): reaproveita a
+ * infraestrutura já existente do React Hook Form (`trigger()`/
+ * `setError()`) — CPF/CEP/Placa usam checksum/formato local
+ * (`lib/validators.ts`); CEP e Placa também consultam, no `onBlur`,
+ * `/api/validate/cep` (ViaCEP) e `/api/validate/placa` (proxy "Placa
+ * Fipe", que auto-preenche `veiculoMarcaModelo`/`veiculoAno` quando
+ * encontra o veículo — projeto 2026-07-14); e-mail usa o proxy
  * `/api/validate/email` (SafetyMails, best-effort). Simplificação
  * deliberada em relação ao legado: essas validações **nunca bloqueiam**
- * a navegação final — o link "Prefiro ir direto, sem preencher" sempre
- * funciona, independente de erros de validação nos campos opcionais.
+ * a navegação final — o submit sempre chega a `sendLeadAndNavigate`
+ * (com `skipStrictValidation: true` quando o schema estrito falha, via
+ * `onInvalid` — achado 2026-07-14, sem isso o clique no botão não fazia
+ * nada quando CPF/CEP/Placa estavam mal formatados) — e o link "Prefiro
+ * ir direto, sem preencher" sempre funciona, independente de erros de
+ * validação nos campos opcionais.
  *
  * **Correção deliberada em relação ao legado** (decisão do cliente,
  * 2026-07-08): no site legado, fechar o modal no "×" é um "beco sem
@@ -104,6 +117,7 @@ export function ContactLeadModal() {
     trigger,
     getValues,
     setError,
+    setValue,
     formState: { errors },
   } = useForm<ContactModalFormValues, unknown, LeadInput>({
     resolver: zodResolver(leadSchema),
@@ -254,7 +268,66 @@ export function ContactLeadModal() {
     }
   }
 
-  async function onSubmit(data: LeadInput) {
+  /**
+   * CEP é opcional — valida (formato local + ViaCEP best-effort) só se
+   * algo foi digitado. Correção 2026-07-14 (mesma de `LeadForm.tsx`):
+   * chama `trigger("cep")` primeiro para reportar imediatamente um CEP
+   * mal formatado (réplica de `validarCepViaCep`, que retorna
+   * `{ok:false, reason:'formato'}` sem chamar a API nesse caso) — antes
+   * só retornava silenciosamente, sem nunca mostrar o erro de formato.
+   */
+  async function handleCepBlur() {
+    const formatOk = await trigger("cep");
+    const cepValue = getValues("cep");
+    if (!formatOk || !cepValue) return;
+
+    try {
+      const response = await fetch("/api/validate/cep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cep: cepValue }),
+      });
+      const result = (await response.json()) as { ok?: boolean };
+      if (result.ok === false) {
+        setError("cep", { type: "manual", message: "Não encontramos esse CEP — revise ou prossiga assim mesmo" });
+      }
+    } catch {
+      // Best-effort — nunca bloqueia.
+    }
+  }
+
+  /** Placa é opcional — valida (formato local + Placa Fipe best-effort) e auto-preenche ano/marca-modelo quando encontrada. */
+  async function handlePlacaBlur() {
+    const placaValid = await trigger("placa");
+    const placaValue = getValues("placa");
+    if (!placaValid || !placaValue) return;
+
+    try {
+      const response = await fetch("/api/validate/placa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ placa: placaValue }),
+      });
+      const result = (await response.json()) as { ok?: boolean; marcaModelo?: string; ano?: string };
+      if (result.ok === false) {
+        setError("placa", { type: "manual", message: "Não encontramos essa placa — revise ou prossiga assim mesmo" });
+        return;
+      }
+      if (result.marcaModelo) setValue("veiculoMarcaModelo", result.marcaModelo);
+      if (result.ano) setValue("veiculoAno", result.ano);
+    } catch {
+      // Best-effort — nunca bloqueia.
+    }
+  }
+
+  /**
+   * Envia o lead e navega ao destino — usado tanto quando os dados
+   * passam a validação estrita (`onSubmit`) quanto quando não passam
+   * (`onInvalid`, abaixo). `skipStrictValidation` avisa o servidor a
+   * usar o schema tolerante quando os dados vieram sem validação
+   * estrita (mesmo mecanismo do `LeadForm` — ver `lib/leads/types.ts`).
+   */
+  async function sendLeadAndNavigate(data: LeadInput, skipStrictValidation?: boolean) {
     setSubmitting(true);
     try {
       await fetch("/api/lead", {
@@ -266,6 +339,7 @@ export function ContactLeadModal() {
           stage: "complete",
           leadId: initialLeadIdRef.current ?? undefined,
           utm: captureUtmFromLocation(),
+          skipStrictValidation,
         }),
       });
     } catch (error) {
@@ -278,6 +352,36 @@ export function ContactLeadModal() {
       reset();
       goToDestination();
     }
+  }
+
+  async function onSubmit(data: LeadInput) {
+    await sendLeadAndNavigate(data);
+  }
+
+  /**
+   * Achado 2026-07-14: CPF/CEP/Placa têm validação de formato/checksum
+   * no schema compartilhado (`lib/validators.ts`) — sem um handler de
+   * erro aqui, um valor inválido nesses campos opcionais faria
+   * `handleSubmit` não fazer nada (nem enviar, nem navegar),
+   * contradizendo a promessa deste modal de nunca bloquear a navegação
+   * final por causa desses campos. Envia os valores como o usuário
+   * digitou (sem checksum/formato), sinalizando `skipStrictValidation`.
+   */
+  async function onInvalid() {
+    const raw = getValues();
+    const payload: LeadInput = {
+      ramo: ramo ?? raw.ramo,
+      ddd: raw.ddd.replace(/\D/g, ""),
+      celular: raw.celular.replace(/\D/g, ""),
+      nome: undefined,
+      email: raw.email?.trim() || undefined,
+      cep: raw.cep ? raw.cep.replace(/\D/g, "") : undefined,
+      cpf: raw.cpf ? raw.cpf.replace(/\D/g, "") : undefined,
+      placa: raw.placa ? raw.placa.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined,
+      veiculoAno: raw.veiculoAno?.trim() || undefined,
+      veiculoMarcaModelo: raw.veiculoMarcaModelo?.trim() || undefined,
+    };
+    await sendLeadAndNavigate(payload, true);
   }
 
   return (
@@ -303,7 +407,7 @@ export function ContactLeadModal() {
             </DialogPrimitive.Close>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
+          <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
             {/* Etapa 1 — sempre visível (projeto 2026-07-13, réplica do modal legado) */}
             <div className="grid grid-cols-[4.5rem_1fr] gap-3">
               <Field label="DDD" htmlFor="modal-ddd" error={errors.ddd?.message}>
@@ -318,6 +422,10 @@ export function ContactLeadModal() {
                   onChange={(event) => {
                     event.target.value = formatDdd(event.target.value);
                     void register("ddd").onChange(event);
+                  }}
+                  onBlur={(event) => {
+                    void register("ddd").onBlur(event);
+                    void trigger("ddd");
                   }}
                 />
               </Field>
@@ -376,6 +484,10 @@ export function ContactLeadModal() {
                         event.target.value = formatCep(event.target.value);
                         void register("cep").onChange(event);
                       }}
+                      onBlur={(event) => {
+                        void register("cep").onBlur(event);
+                        void handleCepBlur();
+                      }}
                     />
                   </Field>
                   <Field label="CPF" htmlFor="modal-cpf" error={errors.cpf?.message} hint="Opcional">
@@ -409,6 +521,10 @@ export function ContactLeadModal() {
                       onChange={(event) => {
                         event.target.value = formatPlaca(event.target.value);
                         void register("placa").onChange(event);
+                      }}
+                      onBlur={(event) => {
+                        void register("placa").onBlur(event);
+                        void handlePlacaBlur();
                       }}
                     />
                   </Field>
