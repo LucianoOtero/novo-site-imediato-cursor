@@ -42,7 +42,8 @@ export function PageAnalytics() {
   // #region debug-temp (2026-07-14) — investigar "Application error" persistente em /obrigado. REMOVER depois.
   useEffect(() => {
     function report(kind: string, err: unknown) {
-      const e = err as { message?: string; stack?: string; reason?: unknown } | undefined;
+      const e = err as { message?: string; stack?: string; reason?: unknown; digest?: string } | undefined;
+      const reasonObj = e?.reason as { digest?: string; message?: string; stack?: string } | undefined;
       fetch("/api/debug-client-error", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,6 +52,7 @@ export function PageAnalytics() {
           pathname,
           message: e?.message,
           stack: e?.stack,
+          digest: e?.digest ?? reasonObj?.digest,
           reason: String(e?.reason ?? ""),
           href: typeof window !== "undefined" ? window.location.href : undefined,
           timestamp: new Date().toISOString(),
