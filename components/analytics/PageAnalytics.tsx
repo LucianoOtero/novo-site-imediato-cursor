@@ -39,6 +39,36 @@ function getScrollPercent(): number {
 export function PageAnalytics() {
   const pathname = usePathname();
 
+  // #region debug-temp (2026-07-14) — investigar "Application error" persistente em /obrigado. REMOVER depois.
+  useEffect(() => {
+    function report(kind: string, err: unknown) {
+      const e = err as { message?: string; stack?: string; reason?: unknown } | undefined;
+      fetch("/api/debug-client-error", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind,
+          pathname,
+          message: e?.message,
+          stack: e?.stack,
+          reason: String(e?.reason ?? ""),
+          href: typeof window !== "undefined" ? window.location.href : undefined,
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(() => {});
+    }
+    const onError = (event: ErrorEvent) => report("error", event.error ?? event.message);
+    const onRejection = (event: PromiseRejectionEvent) =>
+      report("unhandledrejection", { reason: event.reason, stack: event.reason?.stack, message: event.reason?.message });
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, [pathname]);
+  // #endregion debug-temp
+
   useEffect(() => {
     const firedScrollThresholds = new Set<number>();
     const firedTimeThresholds = new Set<number>();
