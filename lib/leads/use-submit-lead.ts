@@ -34,23 +34,30 @@ const RPA_MODAL_MIN_DISPLAY_MS = 4000;
  * vez de criar um lead duplicado. Sem `leadId` (chamador antigo/sem
  * captura em 2 fases), comportamento inalterado: um único envio
  * `stage: "complete"` (padrão), que cria o lead direto.
+ *
+ * `skipStrictValidation` (projeto 2026-07-14): `true` quando o usuário
+ * escolheu "Prosseguir assim mesmo" com CPF/CEP inválidos no diálogo do
+ * `LeadForm` — repassado a `/api/lead` (ver `lib/leads/types.ts`) para
+ * não rejeitar de novo o mesmo valor. Também **pula o RPA** (cotação
+ * automatizada) nesse caso — mesma lógica do formulário legado
+ * ("especialista entra em contato para coletar os dados").
  */
 export function useSubmitLead(ramo: string) {
   const router = useRouter();
   const [rpaSessionId, setRpaSessionId] = useState<string | null>(null);
 
-  async function submitLead(lead: LeadInput, leadId?: string) {
+  async function submitLead(lead: LeadInput, leadId?: string, skipStrictValidation?: boolean) {
     const response = await fetch("/api/lead", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-      body: JSON.stringify({ ...lead, stage: "complete", leadId }),
+      body: JSON.stringify({ ...lead, stage: "complete", leadId, skipStrictValidation }),
     });
 
     if (!response.ok) {
       throw new Error(`Falha ao enviar lead: ${response.status}`);
     }
 
-    if (publicEnv.rpaEnabled) {
+    if (publicEnv.rpaEnabled && !skipStrictValidation) {
       try {
         const sessionId = await startRpaSession(
           buildRpaPayload({ ddd: lead.ddd, celular: lead.celular, ramo, cep: lead.cep, nome: lead.nome, cpf: lead.cpf, placa: lead.placa })

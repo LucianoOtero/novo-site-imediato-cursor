@@ -57,16 +57,28 @@ import { trackEvent } from "@/lib/analytics";
  * (`stage: "initial"` em `/api/lead`, que já cria o lead e envia a
  * mensagem via Octadesk). O `leadId` devolvido é passado a `onSuccess`
  * para que o envio final atualize esse mesmo lead. No envio final, se o
- * CPF não passar o checksum, abre um diálogo "Corrigir" (foca o campo)
- * vs. "Prosseguir assim mesmo" (envia como está, sem bloquear a
- * conversão) — mesma lógica do `SweetAlert` do formulário legado.
+ * CPF ou o CEP não passarem o checksum/formato, abre um diálogo
+ * "Corrigir" (foca o campo) vs. "Prosseguir assim mesmo" (envia como
+ * está, sem bloquear a conversão, sinalizando `skipStrictValidation` —
+ * ver `lib/leads/types.ts` — para o servidor não rejeitar de novo o
+ * mesmo valor) — mesma lógica do `SweetAlert` do formulário legado.
+ *
+ * Passos reorganizados em 2026-07-14 (decisão do cliente): passo 2
+ * passa a coletar Nome + E-mail (com validação em tempo real via
+ * SafetyMails, mesmo padrão do `ContactLeadModal`); passo 3 passa a ser
+ * CPF, CEP, Placa (nessa ordem) — CEP saiu do passo 2.
  */
 export interface LeadFormProps {
   ramo: string;
   /** `inline` (dentro do Hero) vs `page` (`/cotacao`, passo a passo completo). */
   variant?: "inline" | "page";
-  /** `leadId`: presente quando um contato inicial (passo 1) já criou o lead — ver nota acima. */
-  onSuccess?: (lead: LeadInput, leadId?: string) => void | Promise<void>;
+  /**
+   * `leadId`: presente quando um contato inicial (passo 1) já criou o
+   * lead — ver nota acima. `skipStrictValidation`: `true` quando o
+   * usuário escolheu "Prosseguir assim mesmo" com CPF/CEP inválidos —
+   * ver `lib/leads/types.ts`.
+   */
+  onSuccess?: (lead: LeadInput, leadId?: string, skipStrictValidation?: boolean) => void | Promise<void>;
 }
 
 type FormStatus = "idle" | "validating" | "submitting" | "success" | "error";
@@ -101,13 +113,14 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   } = useForm<LeadFormValues, unknown, LeadInput>({
     resolver: zodResolver(leadSchema),
     mode: "onSubmit",
-    defaultValues: { ramo, ddd: "", celular: "", cep: "", nome: "", cpf: "", placa: "" },
+    defaultValues: { ramo, ddd: "", celular: "", cep: "", nome: "", email: "", cpf: "", placa: "" },
   });
 
   const ddd = register("ddd");
   const celular = register("celular");
   const cep = register("cep");
   const nome = register("nome");
+  const email = register("email");
   const cpf = register("cpf");
   const placa = register("placa");
 
@@ -160,6 +173,35 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     }
   }
 
+  /**
+   * Validação em tempo real de e-mail via SafetyMails (projeto
+   * 2026-07-14, réplica exata de `handleEmailBlur` em
+   * `ContactLeadModal.tsx`) — e-mail é opcional, só valida se algo foi
+   * digitado. Best-effort: nunca bloqueia (o proxy cai em `ok:true` se o
+   * SafetyMails não responder — ver `lib/validation/email-safetymails.ts`).
+   */
+  async function handleEmailBlur() {
+    const emailValue = getValues("email");
+    if (!emailValue) return;
+
+    const formatOk = await trigger("email");
+    if (!formatOk) return;
+
+    try {
+      const response = await fetch("/api/validate/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailValue }),
+      });
+      const result = (await response.json()) as { ok?: boolean };
+      if (result.ok === false) {
+        setError("email", { type: "manual", message: "Não conseguimos confirmar esse e-mail — revise ou prossiga assim mesmo" });
+      }
+    } catch {
+      // Best-effort — nunca bloqueia.
+    }
+  }
+
   async function goNext() {
     setStatus("validating");
 
@@ -198,11 +240,11 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     setStep((current) => (current > 1 ? ((current - 1) as StepNumber) : current));
   }
 
-  async function submitPayload(data: LeadInput) {
+  async function submitPayload(data: LeadInput, skipStrictValidation?: boolean) {
     setStatus("submitting");
     try {
       const payload: LeadInput = { ...data, ramo, utm: captureUtmFromLocation() };
-      await onSuccess?.(payload, initialLeadIdRef.current ?? undefined);
+      await onSuccess?.(payload, initialLeadIdRef.current ?? undefined, skipStrictValidation);
       trackEvent("generate_lead", { ramo, method: "form" });
       setStatus("success");
     } catch {
@@ -217,21 +259,31 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   /**
    * Diálogo "Corrigir ou Prosseguir" (projeto 2026-07-13, réplica do
    * `SweetAlert` do formulário legado) — aberto quando `handleSubmit`
-   * detecta erro no envio final (na prática, só o checksum de CPF: DDD/
-   * celular já foram validados no passo 1).
+   * detecta erro no envio final. Cobre CPF (checksum) e, desde
+   * 2026-07-14, também CEP (formato) — os dois agora ficam no passo 3
+   * (último passo, sem `goNext()` intermediário para pegar o erro antes
+   * do envio final).
    */
   function onInvalidFinalStep(formErrors: FieldErrors<LeadInput>) {
-    if (formErrors.cpf) {
+    if (formErrors.cpf || formErrors.cep) {
       setShowCorrectOrProceed(true);
     }
   }
 
+  /** Foca o primeiro campo inválido entre CPF/CEP (nessa ordem, mesma do passo 3). */
   function handleCorrigir() {
     setShowCorrectOrProceed(false);
-    setFocus("cpf");
+    setFocus(errors.cpf ? "cpf" : "cep");
   }
 
-  /** "Prosseguir assim mesmo" — envia com o CPF como está (sem o checksum), sinalizando para acompanhamento manual (sem cotação automatizada). */
+  /**
+   * "Prosseguir assim mesmo" — envia CPF/CEP como o usuário digitou
+   * (sem checksum/formato), sinalizando `skipStrictValidation: true`
+   * para o servidor não rejeitar de novo o mesmo valor que o usuário já
+   * confirmou querer enviar (achado 2026-07-14 — sem esse sinal, o
+   * `apiLeadSchema` do servidor reaplicaria a mesma validação estrita e
+   * este botão falharia silenciosamente). Ver lib/leads/types.ts.
+   */
   async function handleProsseguirAssimMesmo() {
     setShowCorrectOrProceed(false);
     const raw = getValues();
@@ -241,13 +293,13 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       celular: onlyDigits(raw.celular),
       cep: raw.cep ? onlyDigits(raw.cep) : undefined,
       nome: raw.nome?.trim() || undefined,
+      email: raw.email?.trim() || undefined,
       cpf: raw.cpf ? onlyDigits(raw.cpf) : undefined,
       placa: raw.placa ? raw.placa.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined,
-      email: undefined,
       veiculoAno: undefined,
       veiculoMarcaModelo: undefined,
     };
-    await submitPayload(payload);
+    await submitPayload(payload, true);
   }
 
   if (status === "success") {
@@ -317,30 +369,30 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
       {step === 2 && (
         <>
-          <Field label="CEP" htmlFor="cep" error={errors.cep?.message} hint="Opcional">
-            <Input
-              id="cep"
-              inputMode="numeric"
-              autoComplete="postal-code"
-              placeholder="00000-000"
-              aria-invalid={!!errors.cep}
-              aria-describedby={errors.cep ? "cep-error" : undefined}
-              {...cep}
-              onChange={(event) => {
-                event.target.value = formatCep(event.target.value);
-                void cep.onChange(event);
-              }}
-            />
-          </Field>
           <Field label="Nome" htmlFor="nome" error={errors.nome?.message} hint="Opcional">
             <Input id="nome" autoComplete="name" placeholder="Seu nome" aria-invalid={!!errors.nome} {...nome} />
+          </Field>
+          <Field label="E-mail" htmlFor="email" error={errors.email?.message} hint="Opcional">
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="voce@email.com"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              {...email}
+              onBlur={(event) => {
+                void email.onBlur(event);
+                void handleEmailBlur();
+              }}
+            />
           </Field>
         </>
       )}
 
       {step === 3 && (
         <>
-          <p className="text-sm text-neutral-500">CPF e placa são opcionais — ou deixe que coletamos no contato.</p>
+          <p className="text-sm text-neutral-500">CPF, CEP e placa são opcionais — ou deixe que coletamos no contato.</p>
           <Field label="CPF" htmlFor="cpf" error={errors.cpf?.message} hint="Opcional">
             <Input
               id="cpf"
@@ -356,6 +408,21 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               onChange={(event) => {
                 event.target.value = formatCpf(event.target.value);
                 void cpf.onChange(event);
+              }}
+            />
+          </Field>
+          <Field label="CEP" htmlFor="cep" error={errors.cep?.message} hint="Opcional">
+            <Input
+              id="cep"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              placeholder="00000-000"
+              aria-invalid={!!errors.cep}
+              aria-describedby={errors.cep ? "cep-error" : undefined}
+              {...cep}
+              onChange={(event) => {
+                event.target.value = formatCep(event.target.value);
+                void cep.onChange(event);
               }}
             />
           </Field>
@@ -394,10 +461,12 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
       <AlertDialog open={showCorrectOrProceed} onOpenChange={setShowCorrectOrProceed}>
         <AlertDialogContent>
-          <AlertDialogTitle>CPF parece inválido</AlertDialogTitle>
+          <AlertDialogTitle>{errors.cpf && errors.cep ? "CPF e CEP parecem inválidos" : errors.cpf ? "CPF parece inválido" : "CEP parece inválido"}</AlertDialogTitle>
           <AlertDialogDescription>
-            O CPF informado não parece válido. Você pode corrigi-lo agora ou prosseguir assim mesmo — nesse caso, um
-            especialista entra em contato para confirmar seus dados (sem cotação automatizada).
+            {errors.cpf && errors.cep ? "O CPF e o CEP informados" : errors.cpf ? "O CPF informado" : "O CEP informado"} não
+            parece{errors.cpf && errors.cep ? "m" : ""} válido{errors.cpf && errors.cep ? "s" : ""}. Você pode corrigir agora
+            ou prosseguir assim mesmo — nesse caso, um especialista entra em contato para confirmar seus dados (sem cotação
+            automatizada).
           </AlertDialogDescription>
           <div className="mt-5 flex gap-3">
             <Button type="button" variant="ghost" fullWidth onClick={handleCorrigir}>

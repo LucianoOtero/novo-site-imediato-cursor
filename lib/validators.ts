@@ -92,6 +92,21 @@ function optionalDigits(pattern: RegExp, message: string) {
     .refine((value) => value === undefined || pattern.test(value), { message });
 }
 
+/**
+ * Campo opcional só com extração de dígitos, **sem** checagem de
+ * formato/checksum — usado só quando o usuário escolhe "Prosseguir
+ * assim mesmo" no diálogo do `LeadForm` (projeto 2026-07-14, CPF/CEP).
+ * Sem isso, o servidor (que reaplica o mesmo `leadSchema` estrito)
+ * rejeitaria de novo o valor que o usuário confirmou querer enviar como
+ * está, fazendo o "Prosseguir" falhar silenciosamente.
+ */
+function lenientDigits() {
+  return z
+    .string()
+    .optional()
+    .transform((value) => (value ? onlyDigits(value) : undefined));
+}
+
 export const leadSchema = z.object({
   ramo: z.enum(ramoSlugs),
   ddd: requiredDigits(/^\d{2}$/, "DDD inválido"),
@@ -117,13 +132,13 @@ export const leadSchema = z.object({
     .optional()
     .transform((value) => (value ? value.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined)),
   /**
-   * Campos abaixo (email, ano/modelo do veículo) — Issue de integrações
-   * 2026-07-08, réplica dos campos do modal de captura de lead do site
-   * legado antes de abrir WhatsApp/telefone (`ContactLeadModal`, ver
-   * `docs/LEGACY_JS_AUDIT.md`, "8 campos: DDD, Celular, Email, CEP, CPF,
-   * Placa, Ano do modelo, Marca/modelo"). Opcionais e não usados pelo
-   * `LeadForm` multi-step (Issue 11, "colete o mínimo") — só preenchidos
-   * por quem vem do `ContactLeadModal`.
+   * `email` — originalmente só preenchido via `ContactLeadModal` (Issue
+   * de integrações 2026-07-08, réplica dos "8 campos" do modal legado,
+   * ver `docs/LEGACY_JS_AUDIT.md`). Desde 2026-07-14 (decisão do
+   * cliente), também coletado no passo 2 do `LeadForm` multi-step, com
+   * validação em tempo real via SafetyMails (`/api/validate/email`).
+   * `veiculoAno`/`veiculoMarcaModelo` abaixo continuam exclusivos do
+   * `ContactLeadModal`.
    */
   email: z
     .string()
@@ -143,11 +158,25 @@ export const leadSchema = z.object({
 
 export type LeadInput = z.infer<typeof leadSchema>;
 
-/** Campos de cada passo do LeadForm (seção 6.3: passo 1 = mínimo p/ virar lead). */
+/**
+ * Versão "tolerante" de `cpf`/`cep` (só extrai dígitos, sem checksum/
+ * formato) — usada por `apiLeadSchemaLenient` (`lib/leads/types.ts`)
+ * quando o payload traz `skipStrictValidation: true`. Ver nota em
+ * `lenientDigits()` acima.
+ */
+export const lenientCpf = lenientDigits();
+export const lenientCep = lenientDigits();
+
+/**
+ * Campos de cada passo do LeadForm (seção 6.3: passo 1 = mínimo p/ virar
+ * lead). Reorganizado em 2026-07-14 (decisão do cliente): passo 2 passa
+ * a coletar Nome + E-mail (antes só Nome — CEP saiu daqui); passo 3
+ * passa a ser CPF, CEP, Placa (nessa ordem — CEP entrou aqui).
+ */
 export const LEAD_FORM_STEPS: Record<1 | 2 | 3, (keyof LeadInput)[]> = {
   1: ["ddd", "celular"],
-  2: ["cep", "nome"],
-  3: ["cpf", "placa"],
+  2: ["nome", "email"],
+  3: ["cpf", "cep", "placa"],
 };
 
 /** Máscaras visuais (aplicadas no onChange; o schema normaliza no submit/trigger). */

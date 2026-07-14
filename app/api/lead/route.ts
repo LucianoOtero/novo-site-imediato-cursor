@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { saveLeadBackupToFirebase } from "@/lib/leads/firebase-backup";
 import { generateLeadId, leadStore } from "@/lib/leads/store";
 import { checkRateLimit, getClientIp, hashIp, verifyTurnstile } from "@/lib/leads/security";
-import { apiLeadSchema } from "@/lib/leads/types";
+import { apiLeadSchema, apiLeadSchemaLenient } from "@/lib/leads/types";
 import type { LeadRecord } from "@/lib/leads/types";
 import { enrichLeadWithPh3a } from "@/lib/ph3a";
 
@@ -90,7 +90,12 @@ export async function POST(request: NextRequest) {
     return respond(idempotencyKey, 422, { error: "validation", message: "JSON inválido." });
   }
 
-  const parsed = apiLeadSchema.safeParse(json);
+  // "Prosseguir assim mesmo" (LeadForm, projeto 2026-07-14): usa o
+  // schema tolerante para CPF/CEP quando o usuário confirmou
+  // explicitamente que quer enviar assim — ver nota em lib/leads/types.ts.
+  const skipStrictValidation = Boolean(json && typeof json === "object" && (json as { skipStrictValidation?: unknown }).skipStrictValidation === true);
+  const schema = skipStrictValidation ? apiLeadSchemaLenient : apiLeadSchema;
+  const parsed = schema.safeParse(json);
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
     const fields: Record<string, string> = {};

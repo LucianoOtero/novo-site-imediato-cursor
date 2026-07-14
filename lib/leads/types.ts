@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { leadSchema } from "@/lib/validators";
+import { leadSchema, lenientCep, lenientCpf } from "@/lib/validators";
 
 /**
  * lib/leads/types.ts — contrato do payload/registro de lead (Issue 12).
@@ -27,9 +27,31 @@ export const apiLeadSchema = leadSchema.extend({
   stage: z.enum(["initial", "complete"]).optional(),
   /** `id` devolvido por uma chamada `stage: "initial"` anterior — se encontrado, atualiza esse registro em vez de criar um novo. */
   leadId: z.string().optional(),
+  /**
+   * `true` quando o usuário escolheu explicitamente "Prosseguir assim
+   * mesmo" no diálogo do `LeadForm` (projeto 2026-07-14) apesar de
+   * CPF/CEP não passarem a validação de formato/checksum. Sinaliza
+   * `app/api/lead/route.ts` a usar `apiLeadSchemaLenient` (abaixo) em
+   * vez deste schema estrito — sem isso, o servidor rejeitaria de novo
+   * o mesmo valor que o usuário já confirmou querer enviar como está,
+   * fazendo o "Prosseguir" falhar silenciosamente (achado 2026-07-14).
+   */
+  skipStrictValidation: z.boolean().optional(),
 });
 
 export type ApiLeadPayload = z.infer<typeof apiLeadSchema>;
+
+/**
+ * Variante tolerante de `apiLeadSchema` — CPF/CEP só têm os dígitos
+ * extraídos, sem exigir formato/checksum. Usada por
+ * `app/api/lead/route.ts` apenas quando `skipStrictValidation: true`
+ * (ver comentário acima). Nunca usada para a validação em tempo real do
+ * formulário (`lib/validators.ts` continua estrito ali).
+ */
+export const apiLeadSchemaLenient = apiLeadSchema.extend({
+  cpf: lenientCpf,
+  cep: lenientCep,
+});
 
 export type LeadStatus = "received" | "sent" | "pending_crm" | "duplicate";
 
