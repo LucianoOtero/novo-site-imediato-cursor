@@ -27,8 +27,27 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
  * do `WhatsAppButton`/`ContactLeadModal` usados no resto do site.
  * `./globals.css` é reimportado aqui de propósito, senão as classes do
  * Tailwind não seriam aplicadas nesta árvore isolada.
+ *
+ * **Achado 2026-07-15** (mesma lógica de `app/(marketing)/error.tsx`,
+ * ver `docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md`): "Tentar
+ * novamente" faz um reload completo em vez de `reset()` quando o erro
+ * combina com o padrão de incompatibilidade de versão de deploy
+ * ("version skew" — navegador com bundle de um deploy anterior
+ * tentando renderizar depois que um novo deploy já está no ar).
+ * `reset()` só re-renderiza com o MESMO bundle (possivelmente ainda
+ * desatualizado); um reload garante buscar o build atual.
  */
+const STALE_DEPLOY_ERROR_PATTERN = /Server Components render|ChunkLoadError|Failed to fetch/i;
+
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  function handleRetry() {
+    if (STALE_DEPLOY_ERROR_PATTERN.test(error.message)) {
+      window.location.reload();
+    } else {
+      reset();
+    }
+  }
+
   useEffect(() => {
     fetch("/api/debug-client-error", {
       method: "POST",
@@ -58,7 +77,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           <div className="mt-2 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
-              onClick={reset}
+              onClick={handleRetry}
               className="inline-flex h-12 items-center justify-center rounded-lg bg-brand-500 px-5 text-sm font-medium text-white outline-none hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
             >
               Tentar novamente

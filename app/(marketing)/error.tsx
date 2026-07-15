@@ -35,7 +35,25 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
  * mostra uma UI de recuperação simples e deliberadamente conservadora
  * (sem hooks/contexto além do essencial) — um error boundary que
  * quebra sozinho não tem mais nenhuma rede de segurança abaixo dele.
+ *
+ * **Achado 2026-07-15 (primeira captura real, ver documento)**: o erro
+ * relatado em `/obrigado` é "An error occurred in the Server
+ * Components render" — mensagem genérica que o Next.js usa em
+ * produção tanto para uma exceção real num Server Component quanto
+ * para uma falha ao buscar/interpretar o payload de RSC por
+ * incompatibilidade de versão (o navegador ainda com o bundle de um
+ * deploy anterior tenta navegar depois que um novo deploy já está no
+ * ar — "version skew"). `isLikelyStaleDeployError()` detecta esse
+ * padrão e troca "Tentar novamente" de `reset()` (só re-renderiza com
+ * o MESMO bundle, possivelmente ainda desatualizado) para um reload
+ * completo (`window.location.reload()`, garante buscar o build atual).
  */
+const STALE_DEPLOY_ERROR_PATTERN = /Server Components render|ChunkLoadError|Failed to fetch/i;
+
+function isLikelyStaleDeployError(error: Error): boolean {
+  return STALE_DEPLOY_ERROR_PATTERN.test(error.message);
+}
+
 export default function MarketingError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     fetch("/api/debug-client-error", {
@@ -54,6 +72,14 @@ export default function MarketingError({ error, reset }: { error: Error & { dige
     console.error("[app/(marketing)/error.tsx] Erro capturado:", error);
   }, [error]);
 
+  function handleRetry() {
+    if (isLikelyStaleDeployError(error)) {
+      window.location.reload();
+    } else {
+      reset();
+    }
+  }
+
   return (
     <Section>
       <Container className="mx-auto max-w-lg text-center">
@@ -68,7 +94,7 @@ export default function MarketingError({ error, reset }: { error: Error & { dige
         </div>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button onClick={reset} variant="primary">
+          <Button onClick={handleRetry} variant="primary">
             Tentar novamente
           </Button>
           <Button href={buildWhatsappUrl()} target="_blank" rel="noopener noreferrer" variant="whatsapp">

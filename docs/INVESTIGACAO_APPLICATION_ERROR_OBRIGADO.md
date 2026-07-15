@@ -138,3 +138,31 @@ O plano original previa remover o listener `window.onerror`/`unhandledrejection`
 ### Resultado esperado após o deploy
 - O texto "Application error: a client-side exception has occurred" não deve mais aparecer para o usuário final em nenhuma situação — mesmo que a causa raiz exata ainda não esteja 100% identificada, o usuário agora vê uma tela de recuperação normal.
 - Se o problema persistir (usuário reproduz de novo e vê a nova tela de erro, não mais a genérica), o log em `/api/debug-client-error` (`kind: "error-boundary"` ou `"global-error-boundary"`) vai ter, pela primeira vez, o `message`/`stack`/`digest` reais — permitindo uma correção cirúrgica, sem mais suposições.
+
+---
+
+## Primeira captura real do erro (2026-07-15, ~13:31)
+
+Poucos minutos depois do deploy dos error boundaries, o cliente reproduziu o fluxo de novo e o `app/(marketing)/error.tsx` capturou (e mostrou a UI de recuperação, não mais o texto genérico) o seguinte log real, via `/api/debug-client-error`:
+
+```json
+{
+  "kind": "error-boundary",
+  "pathname": "/obrigado",
+  "message": "An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details. A digest property is included on this error instance which may provide additional details about the nature of the error.",
+  "href": "https://comparaseguroonline.com.br/obrigado?ramo=auto"
+}
+```
+
+**Isso muda o diagnóstico**: o erro não é um bug de render puramente client-side (DOM/observer/modal) — é a mensagem que o Next.js usa, redigida por segurança em produção, para um erro que ocorreu ao buscar/interpretar o **payload de Server Components (RSC)** durante a navegação. Faltou o campo `digest` no log (a mensagem promete um, mas ele veio `undefined` neste caso) — isso é uma pista, não um acaso: um `digest` normalmente é anexado quando uma exceção *de verdade* é lançada dentro de um Server Component; sua ausência aqui é mais consistente com uma falha do **próprio roteador do Next.js** ao buscar/decodificar o payload RSC (não uma exceção do código da aplicação).
+
+### Hipótese líder: incompatibilidade de versão de deploy ("version skew")
+Quando um novo deploy entra no ar enquanto um usuário já tem uma página carregada (bundle JS antigo), uma navegação client-side subsequente (`router.push`) tenta buscar o payload RSC da rota de destino usando referências/IDs de build do bundle **antigo** — mas o servidor já está rodando o build **novo**. O resultado é exatamente esse erro genérico "An error occurred in the Server Components render", sem digest de exceção real.
+
+**Evidência de apoio, cronologia**: o deploy anterior (`d04cf3e`, com os error boundaries) foi publicado por volta de 13:15; o erro capturado ocorreu às 13:31 (~16 min depois) — compatível com uma aba aberta desde antes desse deploy. Esta sessão teve **vários deploys em sequência rápida** enquanto o cliente testava — o cenário ideal para produzir justamente esse tipo de erro repetidamente, independentemente de qualquer bug real no código da aplicação. Isso reencaixa toda a investigação anterior: os "suspeitos" de código (RPA modal, `IntersectionObserver`) eram bugs reais e válidos de corrigir, mas talvez nunca tenham sido a causa do "Application error" relatado — o padrão real pode ter sido, o tempo todo, o próprio ciclo de "corrigir → fazer deploy → cliente testa quase imediatamente".
+
+### Correção aplicada (2026-07-15, mesma rodada)
+`app/(marketing)/error.tsx` e `app/global-error.tsx`: o botão "Tentar novamente" agora detecta esse padrão (`/Server Components render|ChunkLoadError|Failed to fetch/i` na mensagem do erro) e, quando bate, faz um **reload completo** (`window.location.reload()`) em vez de `reset()` — `reset()` só re-renderiza com o mesmo bundle (possivelmente ainda desatualizado); um reload garante buscar o build mais recente do servidor, resolvendo a incompatibilidade na hora.
+
+### O que isso significa para os testes futuros
+Se este for de fato o padrão dominante: **testar num deploy já estável (sem publicar de novo minutos antes) deve eliminar o erro por completo.** Se aparecer de novo mesmo assim (com uma aba recém-aberta, sem deploy recente por perto), o log vai desta vez ter o `digest` populado — sinal de que é uma exceção real do código, não incompatibilidade de versão, e nesse caso o `digest` correlaciona com o log de execução do servidor no painel da Vercel para isolar a linha exata.
