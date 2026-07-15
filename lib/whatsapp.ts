@@ -40,7 +40,14 @@ function buildContextSuffix(ramo?: string): string {
  * 19) devem usar `useWhatsappHref()` (abaixo), que já lida com isso —
  * `withContext=false` só existe para essa finalidade específica.
  */
-export function buildWhatsappUrl(ramo?: string, withContext = true): string {
+/**
+ * `phoneNumber` (2026-07-15, link da Ouvidoria no rodapé): permite montar o
+ * link para um número diferente do WhatsApp principal (`company.contact.
+ * whatsapp`) — aceita E.164 (com "+") ou só dígitos, normalizado aqui
+ * (`wa.me` exige só dígitos, sem "+").
+ */
+export function buildWhatsappUrl(ramo?: string, withContext = true, phoneNumber?: string): string {
   const message = getWhatsappMessage(ramo) + (withContext ? buildContextSuffix(ramo) : "");
-  return `https://wa.me/${company.contact.whatsapp}?text=${encodeURIComponent(message)}`;
+  const target = (phoneNumber ?? company.contact.whatsapp).replace(/\D/g, "");
+  return `https://wa.me/${target}?text=${encodeURIComponent(message)}`;
 }

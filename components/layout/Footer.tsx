@@ -5,6 +5,8 @@ import { Mail, MapPin, Phone, ShieldAlert } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { CookiePreferencesLink } from "@/components/layout/CookiePreferencesLink";
 import { FooterPhoneLink } from "@/components/layout/FooterPhoneLink";
+import { FooterWhatsappLink } from "@/components/layout/FooterWhatsappLink";
+import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { FacebookIcon, InstagramIcon, LinkedinIcon } from "@/components/layout/social-icons";
 import { aImediatoNavLinks, mainNavLinks, segurosNavLinks, type NavLink } from "@/components/layout/nav-data";
 import { company } from "@/lib/company";
@@ -21,6 +23,12 @@ import { company } from "@/lib/company";
  * telefone que abrem o `ContactLeadModal`, integrações 2026-07-08) são
  * isoladas em Client Components próprios (`CookiePreferencesLink`,
  * `FooterPhoneLink`) para não forçar `"use client"` aqui.
+ *
+ * **Exceção — Ouvidoria (2026-07-15, decisão do cliente)**: o telefone
+ * da Ouvidoria não abre o `ContactLeadModal` — vai direto para o
+ * WhatsApp (`FooterWhatsappLink`, mesmo número normalizado para o
+ * formato do `wa.me`), com o ícone do WhatsApp (`WhatsAppIcon`) no
+ * lugar do ícone de telefone genérico.
  *
  * Nota: o texto do bloco de fraude é um resumo genérico, não a cópia
  * oficial do site atual — `docs/DADOS_OFICIAIS.md` marca o "texto oficial
@@ -70,10 +78,10 @@ export function Footer() {
             </p>
             {company.contact.ombudsmanPhone && (
               <p className="flex items-center gap-2">
-                <Phone className="size-4 shrink-0" aria-hidden="true" />
+                <WhatsAppIcon className="size-4 shrink-0" aria-hidden="true" />
                 <span>
                   Ouvidoria:{" "}
-                  <FooterPhoneLink
+                  <FooterWhatsappLink
                     phoneNumber={company.contact.ombudsmanPhone}
                     phoneDisplay={company.contact.ombudsmanPhoneDisplay ?? company.contact.ombudsmanPhone}
                     location="footer_ouvidoria"

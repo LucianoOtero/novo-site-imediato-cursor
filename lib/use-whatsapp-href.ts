@@ -25,13 +25,16 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
  * (o `href` é só lido no clique, e o efeito roda ~instantaneamente após
  * o mount) — nunca perde o contexto de verdade, só adia sua inclusão
  * por uma fração de segundo.
+ *
+ * `phoneNumber` (2026-07-15): opcional — permite montar o link para um
+ * número diferente do WhatsApp principal (ex.: Ouvidoria, no rodapé).
  */
-export function useWhatsappHref(ramo?: string): string {
-  const [href, setHref] = useState(() => buildWhatsappUrl(ramo, false));
+export function useWhatsappHref(ramo?: string, phoneNumber?: string): string {
+  const [href, setHref] = useState(() => buildWhatsappUrl(ramo, false, phoneNumber));
 
   useEffect(() => {
-    setHref(buildWhatsappUrl(ramo, true));
-  }, [ramo]);
+    setHref(buildWhatsappUrl(ramo, true, phoneNumber));
+  }, [ramo, phoneNumber]);
 
   return href;
 }
