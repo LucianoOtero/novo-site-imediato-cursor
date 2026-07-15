@@ -109,6 +109,8 @@ export function ContactLeadModal() {
   const [step2Visible, setStep2Visible] = useState(false);
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
+  /** Guarda contra reenvio duplicado no submit final — mesmo achado/motivo de `finalSubmitInFlightRef` em `LeadForm.tsx` (ver docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md). */
+  const finalSubmitInFlightRef = useRef(false);
 
   const {
     register,
@@ -160,6 +162,7 @@ export function ContactLeadModal() {
     setStep2Visible(false);
     initialLeadIdRef.current = null;
     initialCallInFlightRef.current = false;
+    finalSubmitInFlightRef.current = false;
   }, [state, reset]);
 
   if (!state) return null;
@@ -356,6 +359,7 @@ export function ContactLeadModal() {
 
   async function onSubmit(data: LeadInput) {
     await sendLeadAndNavigate(data);
+    finalSubmitInFlightRef.current = false;
   }
 
   /**
@@ -382,6 +386,17 @@ export function ContactLeadModal() {
       veiculoMarcaModelo: raw.veiculoMarcaModelo?.trim() || undefined,
     };
     await sendLeadAndNavigate(payload, true);
+    finalSubmitInFlightRef.current = false;
+  }
+
+  /** Wrapper síncrono — checa/seta o ref antes do `handleSubmit` do RHF rodar, ver `finalSubmitInFlightRef` acima. */
+  function handleFinalSubmit(event: React.BaseSyntheticEvent) {
+    if (finalSubmitInFlightRef.current) {
+      event.preventDefault();
+      return;
+    }
+    finalSubmitInFlightRef.current = true;
+    void handleSubmit(onSubmit, onInvalid)(event);
   }
 
   return (
@@ -407,7 +422,7 @@ export function ContactLeadModal() {
             </DialogPrimitive.Close>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
+          <form onSubmit={handleFinalSubmit} className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
             {/* Etapa 1 — sempre visível (projeto 2026-07-13, réplica do modal legado) */}
             <div className="grid grid-cols-[4.5rem_1fr] gap-3">
               <Field label="DDD" htmlFor="modal-ddd" error={errors.ddd?.message}>

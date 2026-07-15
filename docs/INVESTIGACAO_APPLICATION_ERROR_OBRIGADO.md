@@ -166,3 +166,21 @@ Quando um novo deploy entra no ar enquanto um usuário já tem uma página carre
 
 ### O que isso significa para os testes futuros
 Se este for de fato o padrão dominante: **testar num deploy já estável (sem publicar de novo minutos antes) deve eliminar o erro por completo.** Se aparecer de novo mesmo assim (com uma aba recém-aberta, sem deploy recente por perto), o log vai desta vez ter o `digest` populado — sinal de que é uma exceção real do código, não incompatibilidade de versão, e nesse caso o `digest` correlaciona com o log de execução do servidor no painel da Vercel para isolar a linha exata.
+
+---
+
+## Segunda captura real (2026-07-15, ~16:49) — hipótese de "version skew" descartada
+
+O cliente reproduziu de novo **3 horas depois** do deploy anterior (sem nenhum deploy no meio) e o erro ocorreu de novo, com a **mesma mensagem exata** ("An error occurred in the Server Components render", sem `digest`). Isso descarta com segurança a hipótese de incompatibilidade de versão de deploy — não há como haver um bundle desatualizado 3h depois de um deploy estável, sem nenhum novo deploy nesse intervalo. O erro é real e reproduzível, não um artefato do ciclo de testes desta sessão.
+
+### Achado novo: múltiplas chamadas a `/api/lead` em rajada
+Nas duas capturas (13:31 e 16:49), os logs mostram **3 a 4 chamadas `POST /api/lead` em menos de 300ms** para um único envio do formulário (esperado: só 1, no envio final) — e também 2 chamadas a `/api/validate/phone` quase simultâneas. Isso indica que o `handleSubmit` do passo final do `LeadForm` estava sendo disparado mais de uma vez por envio.
+
+**Causa raiz identificada**: o botão "Enviar" só fica visualmente desabilitado (`isBusy`) depois que `submitPayload` chama `setStatus("submitting")` — mas isso só acontece **depois** que a validação assíncrona do `handleSubmit` do React Hook Form (`zodResolver`, que valida CPF/CEP/Placa/etc.) já terminou. Nessa janela (validação em andamento, botão ainda clicável/Enter ainda funciona), um clique duplo ou tecla Enter repetida disparava uma 2ª (ou 3ª) chamada a `handleSubmit`, cada uma terminando no seu próprio `router.push("/obrigado?ramo=...")`. Múltiplos `router.push` para o mesmo destino, quase simultâneos, corrompendo o estado do roteador do Next.js durante o fetch do payload de RSC, é consistente com a mensagem genérica sem `digest` (não é uma exceção lançada por um componente — é uma falha do próprio mecanismo de navegação).
+
+### Correção aplicada (2026-07-15, mesma rodada)
+- **`components/lead/LeadForm.tsx`**: novo `finalSubmitInFlightRef` (checado/setado de forma **síncrona**, no exato momento do evento de submit, antes de qualquer validação assíncrona rodar) — bloqueia de verdade cliques/Enter repetidos, diferente de `isBusy` (que só reflete o estado depois de um ciclo de render, chegando tarde demais para essa corrida).
+- **`components/cta/ContactLeadModal.tsx`**: mesma proteção aplicada por consistência (mesmo padrão de `handleSubmit`), embora esse modal não redirecione para `/obrigado` — mitiga o mesmo risco de lead duplicado.
+
+### Por que isso não apareceu antes
+As correções anteriores desta investigação (error boundaries, guard do `IntersectionObserver`, fechar o modal do RPA antes do push) continuam válidas e implementadas — só não eram a causa raiz. A causa real só ficou visível depois que os error boundaries permitiram capturar a mensagem exata do erro pela primeira vez, e a comparação cuidadosa dos timestamps nos dois logs (`/api/lead` disparando 3-4x) revelou o padrão.

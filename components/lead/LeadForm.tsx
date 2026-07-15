@@ -136,6 +136,28 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const [showCorrectOrProceed, setShowCorrectOrProceed] = useState(false);
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
+  /**
+   * Guarda contra reenvio duplicado no passo final (correção 2026-07-15,
+   * ver docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md) — achado real:
+   * logs de produção mostraram 3-4 chamadas a `/api/lead` em rajada por
+   * um único envio do formulário. Causa: o botão "Enviar" só fica
+   * desabilitado (`isBusy`) depois que `submitPayload` chama
+   * `setStatus("submitting")` — mas isso só acontece **depois** da
+   * validação assíncrona do `handleSubmit` do RHF (`zodResolver`) já ter
+   * rodado. Nessa janela (validação em andamento, botão ainda
+   * clicável), um duplo clique/Enter repetido disparava uma 2ª (ou 3ª)
+   * chamada a `handleSubmit`, cada uma terminando em seu próprio
+   * `router.push("/obrigado?...")` — múltiplos `router.push` para o
+   * mesmo destino quase simultâneos é a hipótese líder para o "Server
+   * Components render" sem digest relatado (estado do roteador do
+   * Next.js corrompido pela corrida, não uma exceção real do código da
+   * aplicação). Este ref é checado de forma **síncrona**, no exato
+   * momento do evento de submit — antes de qualquer validação
+   * assíncrona rodar — e por isso bloqueia cliques repetidos de
+   * verdade, diferente de `isBusy` (que só reflete estado depois de um
+   * ciclo de render).
+   */
+  const finalSubmitInFlightRef = useRef(false);
 
   const {
     register,
@@ -378,11 +400,31 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       setStatus("success");
     } catch {
       setStatus("error");
+    } finally {
+      finalSubmitInFlightRef.current = false;
     }
   }
 
   async function onSubmit(data: LeadInput) {
     await submitPayload(data);
+  }
+
+  /**
+   * Wrapper síncrono do `onSubmit` do passo final — ver
+   * `finalSubmitInFlightRef` acima. Precisa ser síncrono e checar/setar
+   * o ref **antes** de chamar `handleSubmit` do RHF, senão a corrida
+   * continua existindo (a checagem chegaria tarde demais).
+   */
+  function handleFinalSubmit(event: React.BaseSyntheticEvent) {
+    if (finalSubmitInFlightRef.current) {
+      event.preventDefault();
+      return;
+    }
+    finalSubmitInFlightRef.current = true;
+    void handleSubmit(onSubmit, (formErrors) => {
+      finalSubmitInFlightRef.current = false;
+      onInvalidFinalStep(formErrors);
+    })(event);
   }
 
   /**
@@ -451,7 +493,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       onFocus={markStarted}
       onSubmit={
         isFinalStep
-          ? handleSubmit(onSubmit, onInvalidFinalStep)
+          ? handleFinalSubmit
           : (event) => {
               event.preventDefault();
               void goNext();
