@@ -70,6 +70,17 @@ export function useSubmitLead(ramo: string) {
       }
     }
 
+    /**
+     * Fecha o `RPAProgressModal` (`setRpaSessionId(null)`) ANTES do
+     * `router.push` (correção 2026-07-15, ver
+     * docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md) — sem isso, o
+     * Dialog podia ainda estar com `open={true}` no momento em que a
+     * árvore de `CotacaoForm`/`Hero` é desmontada pela navegação,
+     * suspeito de causar uma exceção no unmount do Portal. Bug latente
+     * hoje (RPA desligado em produção), mas precisa estar corrigido
+     * antes do RPA ser ativado.
+     */
+    setRpaSessionId(null);
     router.push(`/obrigado?ramo=${encodeURIComponent(ramo)}`);
   }
 

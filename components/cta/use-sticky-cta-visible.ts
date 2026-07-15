@@ -29,7 +29,21 @@ export function useStickyCtaVisible(): boolean {
   useEffect(() => {
     const footer = document.querySelector("footer");
     if (!footer) return;
-    const observer = new IntersectionObserver(([entry]) => setAtFooter(entry.isIntersecting));
+    // Guard (2026-07-15, ver docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md):
+    // o `entries` do callback do IntersectionObserver não é garantido ter
+    // sempre 1 item em todo motor de navegador — sem este guard, um
+    // `entries` vazio faria `entry.isIntersecting` lançar `TypeError`
+    // (`entry` seria `undefined`). Suspeito nº1 do "Application error"
+    // relatado em `/obrigado`: este hook fica montado durante toda a
+    // navegação `/cotacao` → `/obrigado` (via `WhatsAppFAB`/`StickyCTA`,
+    // persistentes no layout), e a troca de conteúdo da página é
+    // exatamente o tipo de evento que pode disparar o observer num
+    // momento sensível.
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      setAtFooter(entry.isIntersecting);
+    });
     observer.observe(footer);
     return () => observer.disconnect();
   }, []);

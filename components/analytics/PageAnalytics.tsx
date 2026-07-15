@@ -39,7 +39,26 @@ function getScrollPercent(): number {
 export function PageAnalytics() {
   const pathname = usePathname();
 
-  // #region debug-temp (2026-07-14) — investigar "Application error" persistente em /obrigado. REMOVER depois.
+  /**
+   * Monitoramento de erros client-side não capturados por erro de
+   * *render* (2026-07-14, revisado 2026-07-15 — ver
+   * `docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md`).
+   *
+   * **Escopo real (corrigido nesta revisão)**: `window.onerror`/
+   * `unhandledrejection` só disparam para exceções verdadeiramente não
+   * capturadas — código fora do ciclo de render do React (ex.: dentro
+   * de um `setTimeout`, de um listener de evento do DOM, de um
+   * callback de `IntersectionObserver`). Erros de *render* do React
+   * (os que produzem a tela "Application error" do Next.js) são
+   * tratados internamente pelo próprio React/Next.js e **nunca**
+   * chegam aqui — por isso este listener nunca capturou o "Application
+   * error" relatado em `/obrigado`, mesmo recorrente. Esse tipo de erro
+   * agora é capturado por `app/(marketing)/error.tsx` e
+   * `app/global-error.tsx` (error boundaries reais, com o objeto
+   * `Error`/`digest` de verdade) — este listener continua útil como
+   * complemento (não substituído, cobre uma categoria diferente de
+   * erro), não como "instrumentação temporária" a remover.
+   */
   useEffect(() => {
     function report(kind: string, err: unknown) {
       const e = err as { message?: string; stack?: string; reason?: unknown; digest?: string } | undefined;
@@ -69,7 +88,6 @@ export function PageAnalytics() {
       window.removeEventListener("unhandledrejection", onRejection);
     };
   }, [pathname]);
-  // #endregion debug-temp
 
   useEffect(() => {
     const firedScrollThresholds = new Set<number>();
