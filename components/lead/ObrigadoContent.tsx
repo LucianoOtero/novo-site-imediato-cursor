@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,8 +42,18 @@ const NEXT_STEPS = [
  * celular no `LeadForm` segundos antes — reabrir o modal pedindo os
  * mesmos dados é fricção redundante. Único ponto do site que usa esse
  * atalho; ver `docs/BACKLOG.md`.
+ *
+ * `ramo` (correção 2026-07-15, ver docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md):
+ * lido aqui via `useSearchParams()` (client-side), não mais recebido
+ * como prop de `searchParams` do Server Component da página — ver
+ * `app/(marketing)/obrigado/page.tsx` para o motivo (API dinâmica no
+ * Server Component correlacionava com o "Application error" só na
+ * navegação client-side). Exige um `<Suspense>` acima (já provido pela
+ * própria página).
  */
-export function ObrigadoContent({ ramo }: { ramo?: string }) {
+export function ObrigadoContent() {
+  const searchParams = useSearchParams();
+  const ramo = searchParams.get("ramo") ?? undefined;
   const hasFired = useRef(false);
 
   useEffect(() => {

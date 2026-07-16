@@ -1,7 +1,7 @@
 # Investigação — "Application error" em `/obrigado` após envio do `LeadForm`
 
 ## Status
-Investigação concluída (2026-07-15); correções implementadas e publicadas na mesma data. Causa raiz ainda não confirmada com 100% de certeza (nenhum stack trace real foi capturado até a implementação) — por isso a correção prioriza (1) capturar o erro real definitivamente, via error boundaries reais, e (2) corrigir, de forma defensiva, os bugs concretos já encontrados por revisão de código. Ver "Correções implementadas" no final deste documento.
+**RESOLVIDO (2026-07-15).** Causa raiz confirmada e corrigida: `/obrigado/page.tsx` era a única página do site a ler `searchParams` (API dinâmica) diretamente no Server Component da página, o que interagia mal com o mecanismo de streaming de metadata do Next.js 15.5 — a promise de metadata (`AsyncMetadataOutlet`) nunca resolvia, quebrando a navegação client-side (mas não o carregamento fresco). Corrigido movendo a leitura de `ramo` para o client (`useSearchParams()`), tornando a página 100% estática de novo. Verificado localmente, end-to-end, com o fluxo completo do formulário. Ver a seção "Causa raiz confirmada" para os detalhes completos da investigação.
 
 ## Reprodução relatada pelo cliente (2026-07-15)
 1. Usuário preenche o `LeadForm` (`/cotacao`) até o fim.
@@ -91,7 +91,35 @@ Se o navegador chamar o callback do `IntersectionObserver` com um array `entries
 ```
 O `router.push` acontece sem nunca chamar `setRpaSessionId(null)`/`clearRpaSession()` antes — o `RPAProgressModal` (um `Dialog` com `Portal`) pode ainda estar com `open={true}` no exato momento em que a árvore da página anterior é desmontada. Hoje **não é a causa ativa** (RPA está desligado em produção — `NEXT_PUBLIC_RPA_ENABLED` não configurado), mas é um bug real que vai se manifestar no dia em que o RPA for ligado.
 
-### 3. `LeadForm.submitPayload` — `setState` depois do `router.push` já disparado
+### 3. Causa raiz confirmada (2026-07-15, ~23:50 UTC) — `searchParams` dinâmico + streaming de metadata
+
+Depois de descartar "version skew" (erro reproduzido 3h depois do último deploy, sem nenhum deploy no meio — impossível ser bundle desatualizado) e o reenvio duplicado (corrigido, mas o erro persistiu com uma navegação limpa, 1 única chamada a `/api/lead`), a reprodução foi feita diretamente pelo assistente (100% reprodutível, toda tentativa) usando o navegador com CDP para inspecionar a resposta real da requisição de RSC (`fetch('/obrigado?ramo=auto', {headers:{RSC:'1'}})`, o mesmo tipo de requisição que o roteador do Next.js faz numa navegação client-side).
+
+**A resposta RSC de `/obrigado` continha um chunk irrecuperável:**
+```
+26:{"metadata":"$undefined","error":"$Z","digest":"$undefined"}
+```
+O campo `"error":"$Z"` referencia um chunk `Z` — que **nunca é enviado** no restante do stream. A promise de metadata (`AsyncMetadataOutlet`, mecanismo de streaming de metadata do Next.js 15) fica pendente para sempre; o stream termina sem nunca resolvê-la.
+
+**Confirmado que esse mesmo padrão aparece também no carregamento fresco** de `/obrigado` (`curl`/`Invoke-WebRequest` simples) — mas ali não trava nada, porque o HTML inicial já contém o conteúdo visível renderizado, e o hidratação não depende de esperar essa promise. Na navegação client-side, porém, o roteador do Next.js precisa processar o stream de RSC por completo para montar a nova página — e uma promise que nunca resolve nem rejeita com um valor entregue quebra esse processamento, produzindo exatamente "An error occurred in the Server Components render" sem `digest` (não é uma exceção de um componente — é uma falha do próprio mecanismo de streaming).
+
+**Por que só `/obrigado`?** Comparado com todas as outras páginas do site (confirmado: nenhuma outra tem o padrão `$Z`), `/obrigado/page.tsx` era a **única página que lia `searchParams`** diretamente no Server Component da própria página:
+```tsx
+export default async function ObrigadoPage({ searchParams }: { searchParams: Promise<{ ramo?: string }> }) {
+  const { ramo } = await searchParams;
+  return <ObrigadoContent ramo={ramo} />;
+}
+```
+Ler `searchParams` (API dinâmica) força a rota inteira a ser renderizada dinamicamente (confirmado no build: `/obrigado` aparecia como `ƒ` — dynamic — enquanto todas as outras páginas do grupo `(marketing)` aparecem como `○` — static). Some interação entre essa renderização dinâmica e o streaming de metadata do Next.js 15.5 deixa a promise de metadata órfã especificamente nesse cenário.
+
+**Correção**: `ramo` deixou de ser lido no Server Component da página — passou a ser lido no client, via `useSearchParams()` dentro de `ObrigadoContent` (envolto num `<Suspense>`, exigido pelo Next.js para esse hook). A página (`app/(marketing)/obrigado/page.tsx`) voltou a ser um componente 100% estático, sem nenhuma API dinâmica.
+
+**Verificado após a correção** (build local + servidor de produção local + reprodução completa via navegador):
+- `/obrigado` passou a aparecer como `○` (Static) no build, igual a todas as outras páginas.
+- A mesma requisição de RSC agora retorna `"error":null` com a lista completa de metadados resolvida (title, Open Graph, Twitter Card, ícone) — sem chunk pendente.
+- Fluxo completo do formulário (preencher os 3 passos → Enviar → redirecionamento para `/obrigado`) testado end-to-end no navegador, localmente: chega em "Recebemos seu pedido!" normalmente, sem erro.
+
+### 4. `LeadForm.submitPayload` — `setState` depois do `router.push` já disparado
 ```319:328:components/lead/LeadForm.tsx
   async function submitPayload(data: LeadInput, skipStrictValidation?: boolean) {
     setStatus("submitting");
@@ -166,6 +194,8 @@ Quando um novo deploy entra no ar enquanto um usuário já tem uma página carre
 
 ### O que isso significa para os testes futuros
 Se este for de fato o padrão dominante: **testar num deploy já estável (sem publicar de novo minutos antes) deve eliminar o erro por completo.** Se aparecer de novo mesmo assim (com uma aba recém-aberta, sem deploy recente por perto), o log vai desta vez ter o `digest` populado — sinal de que é uma exceção real do código, não incompatibilidade de versão, e nesse caso o `digest` correlaciona com o log de execução do servidor no painel da Vercel para isolar a linha exata.
+
+**Atualização**: essa hipótese foi descartada — ver seção seguinte.
 
 ---
 
