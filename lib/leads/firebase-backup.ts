@@ -51,6 +51,11 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord): Promise<void> 
       email: lead.email ?? null,
       veiculoAno: lead.veiculoAno ?? null,
       veiculoMarcaModelo: lead.veiculoMarcaModelo ?? null,
+      // Granulares (projeto 2026-07-16) — uso futuro no cálculo do RPA.
+      veiculoMarca: lead.veiculoMarca ?? null,
+      veiculoModelo: lead.veiculoModelo ?? null,
+      veiculoAnoFabricacao: lead.veiculoAnoFabricacao ?? null,
+      veiculoAnoModelo: lead.veiculoAnoModelo ?? null,
       utm: lead.utm ?? null,
       // A Cloud Function usa isso para decidir o comportamento por
       // estágio (Octadesk só no "initial"; EspoCRM sempre atualiza no

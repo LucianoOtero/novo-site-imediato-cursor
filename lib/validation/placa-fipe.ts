@@ -9,20 +9,38 @@ import { env } from "@/lib/env";
  *
  * Testado diretamente com a URL real de DEV (2026-07-14): responde
  * corretamente, com marca/modelo/ano reais do veículo consultado.
+ *
+ * **Campos granulares (projeto 2026-07-16)**: o legado só usa um único
+ * campo `MARCA` combinado (`"Marca / Modelo"`, ex. `"NISSAN / MARCH
+ * 16SV"`) e um único `ANO` (= ano do modelo) — nunca separou Marca de
+ * Modelo. A pedido do cliente, esta versão devolve os campos granulares
+ * (`marca`, `modelo`, `anoFabricacao`, `anoModelo`) além dos campos
+ * combinados (`marcaModelo`/`ano`), que continuam existindo só para
+ * compatibilidade com a Cloud Function (`ANO`/`VEICULO` no proxy
+ * EspoCRM/Octadesk — ver `firebase/functions/index.js`). `anoFabricacao`
+ * vem do campo `ano` da API; `anoModelo` vem do campo `ano_modelo` —
+ * confirmado com teste real: `{"ano":"2016","ano_modelo":"2016",...}`.
  */
 export type PlacaApiResult = {
   ok: boolean;
+  marca?: string;
+  modelo?: string;
+  anoFabricacao?: string;
+  anoModelo?: string;
+  /** Combinado `"Marca / Modelo"` — mantido só para compatibilidade com a Cloud Function (`VEICULO`). */
   marcaModelo?: string;
+  /** Alias de `anoModelo` — mantido só para compatibilidade com a Cloud Function (`ANO`). */
   ano?: string;
   tipoVeiculo?: string;
 };
 
 /**
- * Extrai marca/modelo/ano/tipo do JSON da API Placa Fipe — réplica de
+ * Extrai marca/modelo/anos/tipo do JSON da API Placa Fipe — réplica de
  * `extractVehicleFromPlacaFipe` do legado (mesma lógica de fallback por
- * marca/modelo conhecidos quando `segmento` não vem preenchido).
+ * marca/modelo conhecidos quando `segmento` não vem preenchido), com os
+ * campos granulares adicionados nesta rodada.
  */
-function extractVehicle(json: unknown): { marcaModelo?: string; ano?: string; tipoVeiculo?: string } {
+function extractVehicle(json: unknown): Omit<PlacaApiResult, "ok"> {
   if (!json || typeof json !== "object") return {};
   const root = json as Record<string, unknown>;
   const info = (root.informacoes_veiculo && typeof root.informacoes_veiculo === "object" ? root.informacoes_veiculo : root) as Record<
@@ -32,8 +50,12 @@ function extractVehicle(json: unknown): { marcaModelo?: string; ano?: string; ti
 
   const marca = typeof info.marca === "string" ? info.marca : "";
   const modelo = typeof info.modelo === "string" ? info.modelo : "";
-  const anoRaw = info.ano_modelo ?? info.ano;
-  const ano = typeof anoRaw === "string" || typeof anoRaw === "number" ? String(anoRaw).replace(/\D/g, "").slice(0, 4) : undefined;
+
+  function digitsOnlyYear(value: unknown): string | undefined {
+    return typeof value === "string" || typeof value === "number" ? String(value).replace(/\D/g, "").slice(0, 4) || undefined : undefined;
+  }
+  const anoFabricacao = digitsOnlyYear(info.ano);
+  const anoModelo = digitsOnlyYear(info.ano_modelo) ?? anoFabricacao;
 
   const segmento = typeof info.segmento === "string" ? info.segmento.toLowerCase() : "";
   const marcaLower = marca.toLowerCase();
@@ -50,7 +72,15 @@ function extractVehicle(json: unknown): { marcaModelo?: string; ano?: string; ti
   const tipoVeiculo = segmento ? (segmento.includes("moto") ? "moto" : "carro") : pareceMoto ? "moto" : "carro";
 
   const marcaModelo = [marca, modelo].filter(Boolean).join(" / ") || undefined;
-  return { marcaModelo, ano, tipoVeiculo };
+  return {
+    marca: marca || undefined,
+    modelo: modelo || undefined,
+    anoFabricacao,
+    anoModelo,
+    marcaModelo,
+    ano: anoModelo,
+    tipoVeiculo,
+  };
 }
 
 /** @param placaNormalizada placa já em formato normalizado (só `[A-Z0-9]`, maiúscula). */

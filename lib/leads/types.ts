@@ -81,8 +81,14 @@ export type LeadRecord = {
   placa?: string;
   /** Preenchidos apenas via `ContactLeadModal` (integrações 2026-07-08) — ver `lib/validators.ts`. */
   email?: string;
+  /** Combinados — compat com a Cloud Function (`ANO`/`VEICULO`). Ver `lib/validators.ts`. */
   veiculoAno?: string;
   veiculoMarcaModelo?: string;
+  /** Granulares (projeto 2026-07-16), populados via Placa Fipe — uso futuro no cálculo do RPA. */
+  veiculoMarca?: string;
+  veiculoModelo?: string;
+  veiculoAnoFabricacao?: string;
+  veiculoAnoModelo?: string;
   utm?: ApiLeadPayload["utm"];
   /** Status agregado (legado — mantido para compatibilidade com o código existente). */
   status: LeadStatus;

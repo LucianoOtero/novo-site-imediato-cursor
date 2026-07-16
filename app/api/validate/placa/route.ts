@@ -41,6 +41,13 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     ok: result.ok,
     reason: result.ok ? "ok" : "nao_encontrada",
+    // Granulares (projeto 2026-07-16) — usados pelo LeadForm/ContactLeadModal
+    // para exibir a ficha do veículo e popular o lead.
+    marca: result.marca,
+    modelo: result.modelo,
+    anoFabricacao: result.anoFabricacao,
+    anoModelo: result.anoModelo,
+    // Combinados — mantidos só por compatibilidade (não usados na UI nova).
     marcaModelo: result.marcaModelo,
     ano: result.ano,
     tipoVeiculo: result.tipoVeiculo,

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Field } from "@/components/lead/fields";
 import { ProgressBar } from "@/components/lead/ProgressBar";
+import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import {
   LEAD_FORM_STEPS,
   captureUtmFromLocation,
@@ -90,6 +91,14 @@ import { trackEvent } from "@/lib/analytics";
  * de forma independente do celular, mesmo antes do usuário preencher o
  * celular). Dá feedback imediato ("DDD inválido") ao saltar do campo,
  * em vez de esperar o clique em "Continuar".
+ *
+ * Ficha do veículo (passo 3, projeto 2026-07-16, a pedido do cliente):
+ * `handlePlacaBlur` também preenche os campos granulares
+ * `veiculoMarca`/`veiculoModelo`/`veiculoAnoFabricacao`/
+ * `veiculoAnoModelo` — exibidos, somente-leitura, por
+ * `VehicleInfoDisplay` logo abaixo do campo Placa. Guardados no lead
+ * para uso futuro no cálculo do RPA (ainda não conectado a
+ * `lib/rpa.ts` nesta rodada).
  */
 export interface LeadFormProps {
   ramo: string;
@@ -167,6 +176,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     setError,
     setValue,
     getValues,
+    watch,
     formState: { errors },
   } = useForm<LeadFormValues, unknown, LeadInput>({
     resolver: zodResolver(leadSchema),
@@ -182,8 +192,18 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       placa: "",
       veiculoAno: "",
       veiculoMarcaModelo: "",
+      veiculoMarca: "",
+      veiculoModelo: "",
+      veiculoAnoFabricacao: "",
+      veiculoAnoModelo: "",
     },
   });
+
+  /** Ficha do veículo (projeto 2026-07-16) — reflete os `setValue` de `handlePlacaBlur` na UI, ver `VehicleInfoDisplay`. */
+  const watchedVeiculoMarca = watch("veiculoMarca");
+  const watchedVeiculoModelo = watch("veiculoModelo");
+  const watchedVeiculoAnoFabricacao = watch("veiculoAnoFabricacao");
+  const watchedVeiculoAnoModelo = watch("veiculoAnoModelo");
 
   const ddd = register("ddd");
   const celular = register("celular");
@@ -329,6 +349,14 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * Mercosul) já passou. Quando o veículo é encontrado, preenche
    * automaticamente marca/modelo/ano (mesmo auto-preenchimento do
    * legado). Best-effort: nunca bloqueia.
+   *
+   * Campos granulares (projeto 2026-07-16, a pedido do cliente):
+   * `veiculoMarca`/`veiculoModelo`/`veiculoAnoFabricacao`/
+   * `veiculoAnoModelo` são preenchidos aqui e exibidos, somente-leitura,
+   * por `VehicleInfoDisplay` — nunca digitados pelo usuário.
+   * `veiculoMarcaModelo`/`veiculoAno` (combinados) continuam sendo
+   * preenchidos também, só por compatibilidade com a Cloud Function
+   * (`VEICULO`/`ANO` no proxy EspoCRM/Octadesk).
    */
   async function handlePlacaBlur() {
     const placaValid = await trigger("placa");
@@ -341,11 +369,23 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ placa: placaValue }),
       });
-      const result = (await response.json()) as { ok?: boolean; marcaModelo?: string; ano?: string };
+      const result = (await response.json()) as {
+        ok?: boolean;
+        marca?: string;
+        modelo?: string;
+        anoFabricacao?: string;
+        anoModelo?: string;
+        marcaModelo?: string;
+        ano?: string;
+      };
       if (result.ok === false) {
         setError("placa", { type: "manual", message: "Não encontramos essa placa — revise ou prossiga assim mesmo" });
         return;
       }
+      if (result.marca) setValue("veiculoMarca", result.marca);
+      if (result.modelo) setValue("veiculoModelo", result.modelo);
+      if (result.anoFabricacao) setValue("veiculoAnoFabricacao", result.anoFabricacao);
+      if (result.anoModelo) setValue("veiculoAnoModelo", result.anoModelo);
       if (result.marcaModelo) setValue("veiculoMarcaModelo", result.marcaModelo);
       if (result.ano) setValue("veiculoAno", result.ano);
     } catch {
@@ -470,6 +510,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       placa: raw.placa ? raw.placa.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined,
       veiculoAno: raw.veiculoAno?.trim() || undefined,
       veiculoMarcaModelo: raw.veiculoMarcaModelo?.trim() || undefined,
+      veiculoMarca: raw.veiculoMarca?.trim() || undefined,
+      veiculoModelo: raw.veiculoModelo?.trim() || undefined,
+      veiculoAnoFabricacao: raw.veiculoAnoFabricacao?.trim() || undefined,
+      veiculoAnoModelo: raw.veiculoAnoModelo?.trim() || undefined,
     };
     await submitPayload(payload, true);
   }
@@ -632,6 +676,12 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               }}
             />
           </Field>
+          <VehicleInfoDisplay
+            marca={watchedVeiculoMarca}
+            modelo={watchedVeiculoModelo}
+            anoFabricacao={watchedVeiculoAnoFabricacao}
+            anoModelo={watchedVeiculoAnoModelo}
+          />
         </>
       )}
 

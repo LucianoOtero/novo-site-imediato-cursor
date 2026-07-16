@@ -10,6 +10,7 @@ import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/lead/fields";
+import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { useContactModal } from "@/components/cta/ContactModalContext";
 import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { company } from "@/lib/company";
@@ -34,13 +35,19 @@ import {
  * Réplica, a pedido explícito do cliente, do modal já existente no site
  * legado (`docs/LEGACY_JS_AUDIT.md`, "Achado crítico — WhatsApp e
  * telefone abrem modal de captura de lead antes de navegar"): card
- * flutuante com 8 campos (DDD/Celular obrigatórios; Email, CEP, CPF,
- * Placa, Ano do modelo, Marca/modelo opcionais), enviado para o mesmo
- * `/api/lead` que já orquestra EspoCRM/Octadesk (Issue 12 + integrações
- * de 2026-07-03) — **não duplicamos** a gravação direta no Firebase/
- * EspoCRM/Octadesk que o modal legado fazia, reaproveitamos a
- * infraestrutura de lead já existente e mais robusta (idempotência,
- * rate limit, retry, fallback de e-mail).
+ * flutuante com DDD/Celular obrigatórios e Email/CEP/CPF/Placa
+ * opcionais, enviado para o mesmo `/api/lead` que já orquestra
+ * EspoCRM/Octadesk (Issue 12 + integrações de 2026-07-03) — **não
+ * duplicamos** a gravação direta no Firebase/EspoCRM/Octadesk que o
+ * modal legado fazia, reaproveitamos a infraestrutura de lead já
+ * existente e mais robusta (idempotência, rate limit, retry, fallback
+ * de e-mail).
+ *
+ * **Ficha do veículo (projeto 2026-07-16)**: os campos "Ano do modelo"
+ * e "Marca/modelo", antes digitáveis manualmente, foram substituídos
+ * por `VehicleInfoDisplay` — uma visualização somente-leitura,
+ * preenchida automaticamente pela consulta à Placa Fipe (nunca
+ * digitada pelo usuário). Ver `handlePlacaBlur` abaixo.
  *
  * **Captura em 2 fases** (projeto 2026-07-13, análise detalhada de
  * `MODAL_WHATSAPP_DEFINITIVO.js`): só DDD+Celular ficam visíveis no
@@ -62,8 +69,9 @@ import {
  * `setError()`) — CPF/CEP/Placa usam checksum/formato local
  * (`lib/validators.ts`); CEP e Placa também consultam, no `onBlur`,
  * `/api/validate/cep` (ViaCEP) e `/api/validate/placa` (proxy "Placa
- * Fipe", que auto-preenche `veiculoMarcaModelo`/`veiculoAno` quando
- * encontra o veículo — projeto 2026-07-14); e-mail usa o proxy
+ * Fipe", que auto-preenche a ficha do veículo quando encontra a placa
+ * — projeto 2026-07-14, estendido em 2026-07-16 com campos granulares
+ * — ver `VehicleInfoDisplay`); e-mail usa o proxy
  * `/api/validate/email` (SafetyMails, best-effort). Simplificação
  * deliberada em relação ao legado: essas validações **nunca bloqueiam**
  * a navegação final — o submit sempre chega a `sendLeadAndNavigate`
@@ -120,6 +128,7 @@ export function ContactLeadModal() {
     getValues,
     setError,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ContactModalFormValues, unknown, LeadInput>({
     resolver: zodResolver(leadSchema),
@@ -134,8 +143,18 @@ export function ContactLeadModal() {
       placa: "",
       veiculoAno: "",
       veiculoMarcaModelo: "",
+      veiculoMarca: "",
+      veiculoModelo: "",
+      veiculoAnoFabricacao: "",
+      veiculoAnoModelo: "",
     },
   });
+
+  /** Ficha do veículo (projeto 2026-07-16) — reflete os `setValue` de `handlePlacaBlur` na UI, ver `VehicleInfoDisplay`. */
+  const watchedVeiculoMarca = watch("veiculoMarca");
+  const watchedVeiculoModelo = watch("veiculoModelo");
+  const watchedVeiculoAnoFabricacao = watch("veiculoAnoFabricacao");
+  const watchedVeiculoAnoModelo = watch("veiculoAnoModelo");
 
   /**
    * `ContactLeadModal` é renderizado uma única vez, sempre montado (só
@@ -158,6 +177,10 @@ export function ContactLeadModal() {
       placa: "",
       veiculoAno: "",
       veiculoMarcaModelo: "",
+      veiculoMarca: "",
+      veiculoModelo: "",
+      veiculoAnoFabricacao: "",
+      veiculoAnoModelo: "",
     });
     setStep2Visible(false);
     initialLeadIdRef.current = null;
@@ -299,7 +322,15 @@ export function ContactLeadModal() {
     }
   }
 
-  /** Placa é opcional — valida (formato local + Placa Fipe best-effort) e auto-preenche ano/marca-modelo quando encontrada. */
+  /**
+   * Placa é opcional — valida (formato local + Placa Fipe best-effort)
+   * e auto-preenche a ficha do veículo quando encontrada. Campos
+   * granulares (`veiculoMarca`/`veiculoModelo`/`veiculoAnoFabricacao`/
+   * `veiculoAnoModelo`, projeto 2026-07-16) exibidos, somente-leitura,
+   * por `VehicleInfoDisplay` — nunca digitados pelo usuário.
+   * `veiculoMarcaModelo`/`veiculoAno` (combinados) continuam sendo
+   * preenchidos também, só por compatibilidade com a Cloud Function.
+   */
   async function handlePlacaBlur() {
     const placaValid = await trigger("placa");
     const placaValue = getValues("placa");
@@ -311,11 +342,23 @@ export function ContactLeadModal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ placa: placaValue }),
       });
-      const result = (await response.json()) as { ok?: boolean; marcaModelo?: string; ano?: string };
+      const result = (await response.json()) as {
+        ok?: boolean;
+        marca?: string;
+        modelo?: string;
+        anoFabricacao?: string;
+        anoModelo?: string;
+        marcaModelo?: string;
+        ano?: string;
+      };
       if (result.ok === false) {
         setError("placa", { type: "manual", message: "Não encontramos essa placa — revise ou prossiga assim mesmo" });
         return;
       }
+      if (result.marca) setValue("veiculoMarca", result.marca);
+      if (result.modelo) setValue("veiculoModelo", result.modelo);
+      if (result.anoFabricacao) setValue("veiculoAnoFabricacao", result.anoFabricacao);
+      if (result.anoModelo) setValue("veiculoAnoModelo", result.anoModelo);
       if (result.marcaModelo) setValue("veiculoMarcaModelo", result.marcaModelo);
       if (result.ano) setValue("veiculoAno", result.ano);
     } catch {
@@ -384,6 +427,10 @@ export function ContactLeadModal() {
       placa: raw.placa ? raw.placa.toUpperCase().replace(/[^A-Z0-9]/g, "") : undefined,
       veiculoAno: raw.veiculoAno?.trim() || undefined,
       veiculoMarcaModelo: raw.veiculoMarcaModelo?.trim() || undefined,
+      veiculoMarca: raw.veiculoMarca?.trim() || undefined,
+      veiculoModelo: raw.veiculoModelo?.trim() || undefined,
+      veiculoAnoFabricacao: raw.veiculoAnoFabricacao?.trim() || undefined,
+      veiculoAnoModelo: raw.veiculoAnoModelo?.trim() || undefined,
     };
     await sendLeadAndNavigate(payload, true);
     finalSubmitInFlightRef.current = false;
@@ -525,32 +572,30 @@ export function ContactLeadModal() {
                   </Field>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Placa" htmlFor="modal-placa" error={errors.placa?.message} hint="Opcional">
-                    <Input
-                      id="modal-placa"
-                      autoComplete="off"
-                      placeholder="ABC1D23"
-                      aria-invalid={!!errors.placa}
-                      {...register("placa")}
-                      onChange={(event) => {
-                        event.target.value = formatPlaca(event.target.value);
-                        void register("placa").onChange(event);
-                      }}
-                      onBlur={(event) => {
-                        void register("placa").onBlur(event);
-                        void handlePlacaBlur();
-                      }}
-                    />
-                  </Field>
-                  <Field label="Ano do modelo" htmlFor="modal-ano" error={errors.veiculoAno?.message} hint="Opcional">
-                    <Input id="modal-ano" inputMode="numeric" placeholder="2020" maxLength={4} {...register("veiculoAno")} />
-                  </Field>
-                </div>
-
-                <Field label="Marca/modelo" htmlFor="modal-veiculo" error={errors.veiculoMarcaModelo?.message} hint="Opcional">
-                  <Input id="modal-veiculo" placeholder="Ex.: Fiat Uno Vivace 1.4 flex" {...register("veiculoMarcaModelo")} />
+                <Field label="Placa" htmlFor="modal-placa" error={errors.placa?.message} hint="Opcional">
+                  <Input
+                    id="modal-placa"
+                    autoComplete="off"
+                    placeholder="ABC1D23"
+                    aria-invalid={!!errors.placa}
+                    {...register("placa")}
+                    onChange={(event) => {
+                      event.target.value = formatPlaca(event.target.value);
+                      void register("placa").onChange(event);
+                    }}
+                    onBlur={(event) => {
+                      void register("placa").onBlur(event);
+                      void handlePlacaBlur();
+                    }}
+                  />
                 </Field>
+
+                <VehicleInfoDisplay
+                  marca={watchedVeiculoMarca}
+                  modelo={watchedVeiculoModelo}
+                  anoFabricacao={watchedVeiculoAnoFabricacao}
+                  anoModelo={watchedVeiculoAnoModelo}
+                />
 
                 <Button type="submit" variant={channel === "whatsapp" ? "whatsapp" : "primary"} fullWidth loading={submitting} className="mt-1">
                   {copy.submitLabel}

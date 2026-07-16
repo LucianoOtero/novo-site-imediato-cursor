@@ -173,11 +173,42 @@ export const leadSchema = z.object({
     .optional()
     .transform((value) => (value?.trim() ? value.trim() : undefined))
     .refine((value) => value === undefined || isValidEmailFormat(value), { message: "E-mail inválido" }),
+  /**
+   * `veiculoAno`/`veiculoMarcaModelo` — combinados, mantidos só para
+   * compatibilidade com a Cloud Function (`ANO`/`VEICULO` no proxy
+   * EspoCRM/Octadesk, ver `firebase/functions/index.js`). Desde
+   * 2026-07-16, a UI (`LeadForm`/`ContactLeadModal`) não os edita mais
+   * diretamente — eles são derivados dos campos granulares abaixo no
+   * momento do envio (ver `submitPayload` em `LeadForm.tsx`).
+   */
   veiculoAno: z
     .string()
     .optional()
     .transform((value) => (value?.trim() ? value.trim() : undefined)),
   veiculoMarcaModelo: z
+    .string()
+    .optional()
+    .transform((value) => (value?.trim() ? value.trim() : undefined)),
+  /**
+   * Campos granulares do veículo (projeto 2026-07-16, a pedido do
+   * cliente) — preenchidos automaticamente a partir da consulta à Placa
+   * Fipe (`/api/validate/placa`), nunca digitados pelo usuário. Guardados
+   * para uso futuro no cálculo do RPA (`lib/rpa.ts`, ainda não conectado
+   * nesta rodada).
+   */
+  veiculoMarca: z
+    .string()
+    .optional()
+    .transform((value) => (value?.trim() ? value.trim() : undefined)),
+  veiculoModelo: z
+    .string()
+    .optional()
+    .transform((value) => (value?.trim() ? value.trim() : undefined)),
+  veiculoAnoFabricacao: z
+    .string()
+    .optional()
+    .transform((value) => (value?.trim() ? value.trim() : undefined)),
+  veiculoAnoModelo: z
     .string()
     .optional()
     .transform((value) => (value?.trim() ? value.trim() : undefined)),
