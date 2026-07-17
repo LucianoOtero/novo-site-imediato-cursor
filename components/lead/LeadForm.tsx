@@ -21,6 +21,7 @@ import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { RpaChoiceStep } from "@/components/lead/RpaChoiceStep";
 import { RpaCalculationScreen } from "@/components/lead/RpaCalculationScreen";
 import { useRpaCalculation } from "@/lib/leads/use-rpa-calculation";
+import type { RpaDisabledReason } from "@/lib/rpa-calculation";
 import { buildRpaPayload } from "@/lib/rpa";
 import {
   LEAD_FORM_STEPS,
@@ -245,6 +246,48 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const watchedVeiculoModelo = watch("veiculoModelo");
   const watchedVeiculoAnoFabricacao = watch("veiculoAnoFabricacao");
   const watchedVeiculoAnoModelo = watch("veiculoAnoModelo");
+
+  /**
+   * Elegibilidade do cálculo automático (RPA) no passo 4 (projeto
+   * 2026-07-17, critérios do cliente):
+   * - Caminhão nunca é cotado automaticamente (exige especialista).
+   * - Caso contrário, só habilita quando TODOS os dados obrigatórios estão
+   *   preenchidos e validados (sem erro) e o veículo foi identificado pela
+   *   placa (marca/modelo preenchidos via Placa Fipe).
+   * Quando desabilitado, o passo 4 mostra o motivo e mantém a opção de
+   * falar com um consultor.
+   */
+  const watchedDdd = watch("ddd");
+  const watchedCelular = watch("celular");
+  const watchedNome = watch("nome");
+  const watchedEmail = watch("email");
+  const watchedCpf = watch("cpf");
+  const watchedCep = watch("cep");
+  const watchedPlaca = watch("placa");
+
+  const rpaDisabledReason: RpaDisabledReason | null = (() => {
+    if (ramo === "caminhao") return "caminhao";
+    const todosPreenchidos = [
+      watchedDdd,
+      watchedCelular,
+      watchedNome,
+      watchedEmail,
+      watchedCpf,
+      watchedCep,
+      watchedPlaca,
+    ].every((v) => typeof v === "string" && v.trim().length > 0);
+    const veiculoIdentificado = Boolean(watchedVeiculoMarca && watchedVeiculoModelo);
+    const semErros =
+      !errors.ddd &&
+      !errors.celular &&
+      !errors.nome &&
+      !errors.email &&
+      !errors.cpf &&
+      !errors.cep &&
+      !errors.placa;
+    return todosPreenchidos && veiculoIdentificado && semErros ? null : "dados_incompletos";
+  })();
+  const rpaEnabled = rpaDisabledReason === null;
 
   const ddd = register("ddd");
   const celular = register("celular");
@@ -609,6 +652,9 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * conversão" do resto do arquivo).
    */
   async function handleChooseWaitForRpa() {
+    // Defesa: o botão já fica desabilitado quando o RPA não é elegível
+    // (caminhão ou dados incompletos), mas garantimos aqui também.
+    if (!rpaEnabled) return;
     if (finalSubmitInFlightRef.current) return;
     finalSubmitInFlightRef.current = true;
     setStatus("submitting");
@@ -856,7 +902,13 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       )}
 
       {step === 4 && (
-        <RpaChoiceStep onChooseWait={handleChooseWaitForRpa} onChooseConsultant={handleChooseConsultant} busy={isBusy} />
+        <RpaChoiceStep
+          onChooseWait={handleChooseWaitForRpa}
+          onChooseConsultant={handleChooseConsultant}
+          busy={isBusy}
+          rpaEnabled={rpaEnabled}
+          rpaDisabledReason={rpaDisabledReason}
+        />
       )}
 
       {status === "error" && (

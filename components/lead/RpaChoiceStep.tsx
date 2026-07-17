@@ -1,7 +1,12 @@
-import { Headset, Timer } from "lucide-react";
+import { Headset, Info, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { RPA_PROFILE_ESTIMATE_NOTICE } from "@/lib/rpa-calculation";
+import {
+  RPA_DISABLED_CAMINHAO_MESSAGE,
+  RPA_DISABLED_INCOMPLETE_MESSAGE,
+  RPA_PROFILE_ESTIMATE_NOTICE,
+  type RpaDisabledReason,
+} from "@/lib/rpa-calculation";
 
 /**
  * RpaChoiceStep — passo 4 do `LeadForm` (projeto 2026-07-16, "etapa de
@@ -16,14 +21,36 @@ import { RPA_PROFILE_ESTIMATE_NOTICE } from "@/lib/rpa-calculation";
  * (2 opções — recomendada e alternativa) e as condições de contratação
  * (feita pelo consultor após a proposta da seguradora, sujeita à
  * aprovação da seguradora).
+ *
+ * Habilitação do cálculo automático (projeto 2026-07-17): o botão
+ * "Aguardar o cálculo" só fica ativo quando `rpaEnabled` é `true` — ou
+ * seja, todos os dados obrigatórios foram preenchidos e validados e o
+ * veículo foi identificado, e o ramo não é caminhão. Quando desabilitado,
+ * mostramos uma mensagem elegante explicando o motivo e mantemos a opção
+ * de falar com um consultor.
  */
 export interface RpaChoiceStepProps {
   onChooseWait: () => void;
   onChooseConsultant: () => void;
   busy?: boolean;
+  rpaEnabled: boolean;
+  rpaDisabledReason?: RpaDisabledReason | null;
 }
 
-export function RpaChoiceStep({ onChooseWait, onChooseConsultant, busy }: RpaChoiceStepProps) {
+export function RpaChoiceStep({
+  onChooseWait,
+  onChooseConsultant,
+  busy,
+  rpaEnabled,
+  rpaDisabledReason,
+}: RpaChoiceStepProps) {
+  const disabledMessage =
+    rpaDisabledReason === "caminhao"
+      ? RPA_DISABLED_CAMINHAO_MESSAGE
+      : rpaDisabledReason === "dados_incompletos"
+        ? RPA_DISABLED_INCOMPLETE_MESSAGE
+        : null;
+
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-neutral-600">
@@ -33,16 +60,27 @@ export function RpaChoiceStep({ onChooseWait, onChooseConsultant, busy }: RpaCho
       <div className="flex flex-col gap-3">
         <div className="rounded-lg border border-neutral-200 p-4">
           <p className="text-sm font-medium text-neutral-900">Aguardar o cálculo agora</p>
-          <p className="mt-1 text-sm text-neutral-500">
-            Acompanhe o progresso em tempo real. Ao final, mostramos 2 opções: a recomendada para o seu perfil e uma alternativa.
-          </p>
+          {rpaEnabled ? (
+            <p className="mt-1 text-sm text-neutral-500">
+              Acompanhe o progresso em tempo real. Ao final, mostramos 2 opções: a recomendada para o seu perfil e uma
+              alternativa.
+            </p>
+          ) : (
+            <div
+              role="note"
+              className="mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+            >
+              <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span>{disabledMessage}</span>
+            </div>
+          )}
           <Button
             type="button"
             variant="primary"
             fullWidth
             className="mt-3"
             iconLeft={<Timer className="size-4" aria-hidden="true" />}
-            disabled={busy}
+            disabled={busy || !rpaEnabled}
             onClick={onChooseWait}
           >
             Aguardar o cálculo
@@ -56,7 +94,7 @@ export function RpaChoiceStep({ onChooseWait, onChooseConsultant, busy }: RpaCho
           </p>
           <Button
             type="button"
-            variant="secondary"
+            variant={rpaEnabled ? "secondary" : "primary"}
             fullWidth
             className="mt-3"
             iconLeft={<Headset className="size-4" aria-hidden="true" />}
@@ -68,7 +106,7 @@ export function RpaChoiceStep({ onChooseWait, onChooseConsultant, busy }: RpaCho
         </div>
       </div>
 
-      <p className="text-xs text-neutral-500">{RPA_PROFILE_ESTIMATE_NOTICE}</p>
+      {rpaEnabled && <p className="text-xs text-neutral-500">{RPA_PROFILE_ESTIMATE_NOTICE}</p>}
 
       <p className="text-xs text-neutral-500">
         A contratação da apólice é feita pelo consultor após a proposta da seguradora escolhida, sempre sujeita à aprovação da

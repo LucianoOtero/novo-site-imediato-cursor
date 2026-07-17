@@ -185,3 +185,18 @@ export const RPA_SUCCESS_NOTICE = "Um especialista da Imediato Seguros vai te ch
  */
 export const RPA_PROFILE_ESTIMATE_NOTICE =
   "Para agilizar o cálculo, alguns dados do seu perfil — como composição familiar, estado civil e a forma de guarda do veículo — são estimados automaticamente pelo sistema com base na média. Na formalização da proposta com a seguradora, esses dados serão confirmados e o valor final pode mudar.";
+
+/**
+ * Motivos pelos quais o cálculo automático (RPA) pode ficar indisponível no
+ * passo 4 (projeto 2026-07-17):
+ * - `caminhao`: categoria não é cotada automaticamente (exige especialista);
+ * - `dados_incompletos`: faltam dados obrigatórios preenchidos/validados
+ *   (nome, e-mail, CPF, CEP e placa com veículo identificado).
+ */
+export type RpaDisabledReason = "caminhao" | "dados_incompletos";
+
+export const RPA_DISABLED_CAMINHAO_MESSAGE =
+  "Seguro de caminhão é cotado por um especialista da Imediato Seguros — o cálculo automático não se aplica a essa categoria. Toque em “Falar com um consultor” e cuidamos de tudo para você.";
+
+export const RPA_DISABLED_INCOMPLETE_MESSAGE =
+  "O cálculo automático precisa de todos os dados preenchidos e validados: nome, e-mail, CPF, CEP e placa com o veículo identificado. Complete os campos anteriores ou fale com um consultor para calcularmos para você.";

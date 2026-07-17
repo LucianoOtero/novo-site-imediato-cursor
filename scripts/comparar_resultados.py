@@ -48,7 +48,9 @@ STATUS_MANUAL = {"cotacao_manual"}
 STATUS_SUCCESS = {"success"}
 # Falhas de execucao (nao e desfecho de calculo). `erro_infra` = o site nao
 # conseguiu nem chamar o RPA (ex.: start sem session_id) — nao e calculo manual.
-STATUS_FALHA = {"erro", "erro_infra", "timeout", "bloqueado_site", "nao_executado"}
+# `rpa_desabilitado` = site nao chamou o RPA por design (caminhao/dados
+# incompletos), conforme criterios de habilitacao (2026-07-17).
+STATUS_FALHA = {"erro", "erro_infra", "timeout", "bloqueado_site", "rpa_desabilitado", "nao_executado"}
 
 # Categorias consideradas fieis ao objetivo (percurso consistente).
 CALCULO_OK = "CALCULO_OK_AMBOS"

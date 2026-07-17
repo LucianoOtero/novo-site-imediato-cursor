@@ -71,6 +71,7 @@ type SiteStatus =
   | "cotacao_manual"
   | "erro_infra"
   | "bloqueado_site"
+  | "rpa_desabilitado"
   | "timeout"
   | "erro";
 
@@ -287,6 +288,15 @@ for (const caso of manifest.casos) {
     // Passo 4 — escolher "Aguardar o cálculo"
     const btnAguardar = page.getByRole("button", { name: "Aguardar o cálculo" });
     await expect(btnAguardar).toBeVisible({ timeout: 15_000 });
+    // Criterios de habilitacao (2026-07-17): o botao fica DESABILITADO para
+    // caminhao ou quando faltam dados validados. Nesse caso o site nao chama
+    // o RPA por design — registramos e seguimos.
+    if (await btnAguardar.isDisabled().catch(() => false)) {
+      registrar("rpa_desabilitado", {
+        detalhe: `Botão 'Aguardar o cálculo' desabilitado (ramo=${caso.ramo}: caminhão ou dados incompletos)`,
+      });
+      return;
+    }
     await btnAguardar.click();
 
     // Aguarda desfecho: sucesso (2 cartões) ou cálculo manual.
