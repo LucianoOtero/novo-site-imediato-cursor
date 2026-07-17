@@ -15,11 +15,12 @@ import { publicEnv } from "@/lib/env";
  * variante de dev). Habilitado via `NEXT_PUBLIC_RPA_ENABLED`.
  *
  * Nota de fidelidade: o formato exato dos valores de `status` que
- * indicam conclusão/erro não foi confirmado nesta rodada (só a
- * existência dos campos `etapa_atual`/`fase_atual`/`status`/`mensagem`
- * foi lida no código do site legado). `RPAProgressModal` (que consome
- * este módulo) usa um timeout de segurança para nunca ficar preso
- * indefinidamente, independente do valor exato de `status`.
+ * indicam conclusão/erro foi confirmado lendo `webflow_injection_limpo.js`
+ * (site legado, só consultado como referência — nunca alterado) na
+ * investigação de 2026-07-16 — ver `lib/rpa-calculation.ts`
+ * (`isRpaErrorStatus`/`isRpaSuccessStatus`) e o hook
+ * `lib/leads/use-rpa-calculation.ts`, que consomem este módulo e usam
+ * um teto de tentativas (10min) para nunca ficar preso indefinidamente.
  */
 export type RpaProgress = {
   etapa_atual?: string;

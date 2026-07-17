@@ -242,10 +242,18 @@ export const lenientPlaca = z
  * a coletar Nome + E-mail (antes só Nome — CEP saiu daqui); passo 3
  * passa a ser CPF, CEP, Placa (nessa ordem — CEP entrou aqui).
  */
-export const LEAD_FORM_STEPS: Record<1 | 2 | 3, (keyof LeadInput)[]> = {
+/**
+ * Campos validados ao avançar de cada passo do `LeadForm` — o passo 4
+ * (`RpaChoiceStep`, projeto 2026-07-16) não tem campos próprios (só as
+ * 2 escolhas de "aguardar o cálculo"/"falar com consultor"), por isso
+ * nunca é indexado por `goNext()`, mas entra no tipo com array vazio
+ * para `LEAD_FORM_STEPS[step]` continuar tipado para as 4 etapas.
+ */
+export const LEAD_FORM_STEPS: Record<1 | 2 | 3 | 4, (keyof LeadInput)[]> = {
   1: ["ddd", "celular"],
   2: ["nome", "email"],
   3: ["cpf", "cep", "placa"],
+  4: [],
 };
 
 /** Máscaras visuais (aplicadas no onChange; o schema normaliza no submit/trigger). */

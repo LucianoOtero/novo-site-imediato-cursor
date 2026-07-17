@@ -18,6 +18,10 @@ import {
 import { Field } from "@/components/lead/fields";
 import { ProgressBar } from "@/components/lead/ProgressBar";
 import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
+import { RpaChoiceStep } from "@/components/lead/RpaChoiceStep";
+import { RpaCalculationScreen } from "@/components/lead/RpaCalculationScreen";
+import { useRpaCalculation } from "@/lib/leads/use-rpa-calculation";
+import { buildRpaPayload } from "@/lib/rpa";
 import {
   LEAD_FORM_STEPS,
   captureUtmFromLocation,
@@ -97,8 +101,33 @@ import { trackEvent } from "@/lib/analytics";
  * `veiculoMarca`/`veiculoModelo`/`veiculoAnoFabricacao`/
  * `veiculoAnoModelo` — exibidos, somente-leitura, por
  * `VehicleInfoDisplay` logo abaixo do campo Placa. Guardados no lead
- * para uso futuro no cálculo do RPA (ainda não conectado a
- * `lib/rpa.ts` nesta rodada).
+ * para uso futuro no cálculo do RPA.
+ *
+ * Passo 4 — decisão do RPA (projeto 2026-07-16, "etapa de decisão RPA
+ * no formulário", a pedido do cliente): depois de CPF/CEP/Placa,
+ * `RpaChoiceStep` pergunta se o usuário quer aguardar o cálculo
+ * automático (18 seguradoras) agora ou preferir que um consultor
+ * calcule depois. "Prefiro consultor" segue **exatamente** o fluxo de
+ * envio final que já existia (`handleChooseConsultant` reaproveita o
+ * mesmo `handleSubmit(onSubmit)` de antes). "Aguardar o cálculo"
+ * (`handleChooseWaitForRpa`) grava o lead direto (mesmo padrão de
+ * `sendInitialContact`, sem passar por `onSuccess` — não queremos o
+ * redirect para `/obrigado` aqui) e então substitui todo o formulário
+ * por `RpaCalculationScreen`, que usa o hook `useRpaCalculation`
+ * (`lib/leads/use-rpa-calculation.ts`) para orquestrar o polling/timer/
+ * resultado — réplica em código novo, só deste projeto, da mecânica do
+ * `ProgressModalRPA` do site legado (`webflow_injection_limpo.js`, só
+ * consultado como referência, nunca alterado). Sem redirect automático
+ * ao final (decisão do cliente): a tela de resultado/erro tem seu
+ * próprio botão de WhatsApp.
+ *
+ * Validação de CPF/CEP/Placa ao avançar do passo 3 (ajuste 2026-07-16):
+ * como o passo 3 deixou de ser o passo final, o diálogo "Corrigir ou
+ * Prosseguir" (que antes só aparecia no envio final) passa a abrir já
+ * em `goNext()`, no momento de sair do passo 3 — mesmo diálogo, só
+ * antecipado um passo. "Prosseguir assim mesmo" continua pulando direto
+ * para o envio final (sem passar pelo passo 4/RPA), mesma lógica de
+ * sempre.
  */
 export interface LeadFormProps {
   ramo: string;
@@ -114,8 +143,8 @@ export interface LeadFormProps {
 }
 
 type FormStatus = "idle" | "validating" | "submitting" | "success" | "error";
-type StepNumber = 1 | 2 | 3;
-const TOTAL_STEPS = 3;
+type StepNumber = 1 | 2 | 3 | 4;
+const TOTAL_STEPS = 4;
 
 /** Título fixo + subtítulo por passo (pedido do cliente, 2026-07-14) — orienta o que preencher em cada etapa. */
 const FORM_TITLE = "Inicie aqui sua cotação";
@@ -123,6 +152,7 @@ const STEP_SUBTITLES: Record<StepNumber, string> = {
   1: "Informe seu telefone",
   2: "Informe nome e e-mail",
   3: "Informe CEP, CPF e placa do veículo",
+  4: "Como você quer receber sua cotação?",
 };
 
 /** Ordem de exibição/foco no passo 3 — mesma ordem dos campos na tela. */
@@ -143,6 +173,9 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [hasStarted, setHasStarted] = useState(false);
   const [showCorrectOrProceed, setShowCorrectOrProceed] = useState(false);
+  /** `true` a partir do momento em que o usuário escolhe "Aguardar o cálculo" no passo 4 — substitui todo o formulário por `RpaCalculationScreen`. */
+  const [rpaActive, setRpaActive] = useState(false);
+  const rpa = useRpaCalculation();
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
   /**
@@ -413,6 +446,14 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     setStatus("idle");
 
     if (firstInvalid) {
+      // Ao sair do passo 3 (CPF/CEP/Placa), abre o mesmo diálogo "Corrigir
+      // ou Prosseguir" que antes só aparecia no envio final — agora o
+      // passo 3 deixou de ser o último, mas a UX de tolerar formato
+      // inválido continua igual (ver docstring do topo do arquivo).
+      if (step === 3 && STEP_3_FIELDS.includes(firstInvalid as (typeof STEP_3_FIELDS)[number])) {
+        setShowCorrectOrProceed(true);
+        return;
+      }
       setFocus(firstInvalid);
       return;
     }
@@ -489,17 +530,16 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   }
 
   /**
-   * "Prosseguir assim mesmo" — envia CPF/CEP como o usuário digitou
-   * (sem checksum/formato), sinalizando `skipStrictValidation: true`
-   * para o servidor não rejeitar de novo o mesmo valor que o usuário já
-   * confirmou querer enviar (achado 2026-07-14 — sem esse sinal, o
-   * `apiLeadSchema` do servidor reaplicaria a mesma validação estrita e
-   * este botão falharia silenciosamente). Ver lib/leads/types.ts.
+   * Normaliza os valores brutos do formulário (`getValues()`, ainda sem
+   * passar pelo `zodResolver`) para o formato final `LeadInput` — mesma
+   * lógica de máscara/trim já usada por `handleProsseguirAssimMesmo`,
+   * extraída para reaproveitar também em `handleChooseWaitForRpa`
+   * (passo 4), que precisa do payload completo sem esperar o
+   * `handleSubmit` do RHF (o passo 4 não passa pelo submit nativo do
+   * formulário).
    */
-  async function handleProsseguirAssimMesmo() {
-    setShowCorrectOrProceed(false);
-    const raw = getValues();
-    const payload: LeadInput = {
+  function buildPayloadFromRawValues(raw: LeadFormValues): LeadInput {
+    return {
       ramo,
       ddd: onlyDigits(raw.ddd),
       celular: onlyDigits(raw.celular),
@@ -515,7 +555,101 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       veiculoAnoFabricacao: raw.veiculoAnoFabricacao?.trim() || undefined,
       veiculoAnoModelo: raw.veiculoAnoModelo?.trim() || undefined,
     };
+  }
+
+  /**
+   * "Prosseguir assim mesmo" — envia CPF/CEP como o usuário digitou
+   * (sem checksum/formato), sinalizando `skipStrictValidation: true`
+   * para o servidor não rejeitar de novo o mesmo valor que o usuário já
+   * confirmou querer enviar (achado 2026-07-14 — sem esse sinal, o
+   * `apiLeadSchema` do servidor reaplicaria a mesma validação estrita e
+   * este botão falharia silenciosamente). Ver lib/leads/types.ts.
+   *
+   * Pula direto para o envio final (mesmo destino de sempre — passo 4/
+   * RPA nunca aparece nesse caso) — dado inválido já significa
+   * "especialista entra em contato", sem cotação automatizada, mesma
+   * lógica do formulário legado.
+   */
+  async function handleProsseguirAssimMesmo() {
+    setShowCorrectOrProceed(false);
+    const payload = buildPayloadFromRawValues(getValues());
     await submitPayload(payload, true);
+  }
+
+  /**
+   * Passo 4, opção "Prefiro falar com um consultor depois" — reaproveita
+   * **exatamente** o envio final que já existia antes deste passo
+   * (mesmo `handleSubmit(onSubmit)`, mesma guarda `finalSubmitInFlightRef`).
+   */
+  function handleChooseConsultant() {
+    if (finalSubmitInFlightRef.current) return;
+    finalSubmitInFlightRef.current = true;
+    void handleSubmit(onSubmit, (formErrors) => {
+      finalSubmitInFlightRef.current = false;
+      onInvalidFinalStep(formErrors);
+    })();
+  }
+
+  /**
+   * Passo 4, opção "Aguardar o cálculo" — grava o lead (`stage:
+   * "complete"`) direto via `fetch`, sem passar por `onSuccess` (que
+   * faria `router.push("/obrigado")`, indesejado aqui: o usuário
+   * precisa continuar na tela para acompanhar o RPA). Mesmo padrão de
+   * `sendInitialContact()` acima. Falha nesse `POST` é só logada — o
+   * contato inicial (passo 1) já garantiu que o telefone está salvo,
+   * então nunca bloqueia o RPA (mesma filosofia "nunca perder a
+   * conversão" do resto do arquivo).
+   */
+  async function handleChooseWaitForRpa() {
+    if (finalSubmitInFlightRef.current) return;
+    finalSubmitInFlightRef.current = true;
+    setStatus("submitting");
+
+    const payload = buildPayloadFromRawValues(getValues());
+    try {
+      await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify({ ...payload, stage: "complete", leadId: initialLeadIdRef.current ?? undefined }),
+      });
+      trackEvent("generate_lead", { ramo, method: "form" });
+    } catch (error) {
+      console.error("[LeadForm] Falha ao gravar lead antes do RPA (não bloqueia — contato inicial já foi salvo):", error);
+    }
+
+    setStatus("idle");
+    finalSubmitInFlightRef.current = false;
+    setRpaActive(true);
+    void rpa.start(
+      buildRpaPayload({
+        ddd: payload.ddd,
+        celular: payload.celular,
+        ramo,
+        cep: payload.cep,
+        nome: payload.nome,
+        cpf: payload.cpf,
+        placa: payload.placa,
+      })
+    );
+  }
+
+  if (rpaActive) {
+    return (
+      <div className="rounded-xl border border-neutral-200 bg-white p-6">
+        <RpaCalculationScreen
+          phase={rpa.phase}
+          currentStep={rpa.currentStep}
+          percentage={rpa.percentage}
+          phaseTitle={rpa.phaseTitle}
+          phaseSubtitle={rpa.phaseSubtitle}
+          result={rpa.result}
+          errorMessage={rpa.errorMessage}
+          timerLabel={rpa.timerLabel}
+          isExtended={rpa.isExtended}
+          ramo={ramo}
+        />
+      </div>
+    );
   }
 
   if (status === "success") {
@@ -528,6 +662,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     );
   }
 
+  /** Passo 4 é o "passo final" no sentido de navegação (`TOTAL_STEPS`), mas não tem submit nativo — as 2 escolhas de `RpaChoiceStep` chamam seus próprios handlers. */
   const isFinalStep = step === TOTAL_STEPS;
   const isBusy = status === "validating" || status === "submitting";
 
@@ -685,6 +820,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         </>
       )}
 
+      {step === 4 && (
+        <RpaChoiceStep onChooseWait={handleChooseWaitForRpa} onChooseConsultant={handleChooseConsultant} busy={isBusy} />
+      )}
+
       {status === "error" && (
         <p role="alert" className="text-sm font-medium text-alert">
           Não foi possível enviar agora. Tente novamente ou fale conosco pelo WhatsApp.
@@ -697,9 +836,11 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
             Voltar
           </Button>
         )}
-        <Button type="submit" variant="primary" fullWidth loading={isBusy}>
-          {isFinalStep ? "Enviar" : "Continuar"}
-        </Button>
+        {!isFinalStep && (
+          <Button type="submit" variant="primary" fullWidth loading={isBusy}>
+            Continuar
+          </Button>
+        )}
       </div>
 
       {(() => {

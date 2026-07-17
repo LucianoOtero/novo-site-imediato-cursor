@@ -5,7 +5,6 @@ import { ShieldCheck } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { LeadForm } from "@/components/lead/LeadForm";
-import { RPAProgressModal } from "@/components/lead/RPAProgressModal";
 import { getRamo } from "@/lib/ramos";
 import { useSubmitLead } from "@/lib/leads/use-submit-lead";
 
@@ -25,7 +24,10 @@ import { useSubmitLead } from "@/lib/leads/use-submit-lead";
  * `LeadForm` já tinha a variante `variant="inline"` desde a Issue 11
  * pensando exatamente neste uso — só estava sem consumidor até a Issue
  * 15. `useSubmitLead` faz o mesmo POST a `/api/lead` e redirect para
- * `/obrigado` que `CotacaoForm` já fazia.
+ * `/obrigado` que `CotacaoForm` já fazia (usado quando o usuário escolhe
+ * "Prefiro falar com um consultor depois" no passo 4 do `LeadForm` — a
+ * opção "Aguardar o cálculo" é orquestrada inteiramente dentro do
+ * próprio `LeadForm`, projeto 2026-07-16, sem passar por aqui).
  *
  * "LCP no hero" (critério de aceite): sem imagem de fundo/hero-image
  * ainda (asset não migrado, ver BRAND_ASSETS.md) — o H1 em si (texto)
@@ -34,7 +36,7 @@ import { useSubmitLead } from "@/lib/leads/use-submit-lead";
  */
 export function Hero({ ramoSlug }: { ramoSlug: string }) {
   const ramo = getRamo(ramoSlug);
-  const { submitLead, rpaSessionId, clearRpaSession } = useSubmitLead(ramoSlug);
+  const { submitLead } = useSubmitLead(ramoSlug);
 
   if (!ramo) return null;
 
@@ -52,7 +54,6 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
         </div>
         <LeadForm ramo={ramoSlug} variant="inline" onSuccess={submitLead} />
       </Container>
-      <RPAProgressModal sessionId={rpaSessionId} onClose={clearRpaSession} />
     </Section>
   );
 }

@@ -39,7 +39,7 @@ type RamoSlug = string;
 type AnalyticsEventMap = {
   page_view: { page_path: string; page_title: string; ramo?: RamoSlug };
   form_start: { form_id: string; ramo?: RamoSlug };
-  form_step: { step: 1 | 2 | 3; ramo?: RamoSlug };
+  form_step: { step: 1 | 2 | 3 | 4; ramo?: RamoSlug };
   generate_lead: { ramo: RamoSlug; value?: number; method: "form" };
   whatsapp_click: { location: "hero" | "sticky" | "fab" | string; ramo?: RamoSlug };
   call_click: { location: string; ramo?: RamoSlug };

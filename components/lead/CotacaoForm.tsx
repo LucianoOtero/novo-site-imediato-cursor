@@ -4,7 +4,6 @@ import { useState } from "react";
 
 import { LeadForm } from "@/components/lead/LeadForm";
 import { RamoSelector } from "@/components/lead/RamoSelector";
-import { RPAProgressModal } from "@/components/lead/RPAProgressModal";
 import { useSubmitLead } from "@/lib/leads/use-submit-lead";
 
 /**
@@ -14,12 +13,14 @@ import { useSubmitLead } from "@/lib/leads/use-submit-lead";
  *
  * Envio via `useSubmitLead` (Issue 15) — chama `/api/lead` de verdade
  * (Issue 12) e navega para `/obrigado` (Issue 14) com o `ramo` na
- * querystring. `RPAProgressModal` (integrações 2026-07-03) aparece
- * quando `NEXT_PUBLIC_RPA_ENABLED=true` e o RPA foi disparado com sucesso.
+ * querystring; usado quando o usuário escolhe "Prefiro falar com um
+ * consultor depois" no passo 4 do `LeadForm`. A opção "Aguardar o
+ * cálculo" (RPA de verdade, projeto 2026-07-16) é orquestrada
+ * inteiramente dentro do próprio `LeadForm`, sem passar por aqui.
  */
 export function CotacaoForm() {
   const [ramo, setRamo] = useState("auto");
-  const { submitLead, rpaSessionId, clearRpaSession } = useSubmitLead(ramo);
+  const { submitLead } = useSubmitLead(ramo);
 
   return (
     <div className="flex flex-col gap-6">
@@ -28,7 +29,6 @@ export function CotacaoForm() {
         <RamoSelector value={ramo} onChange={setRamo} />
       </div>
       <LeadForm ramo={ramo} variant="page" onSuccess={submitLead} />
-      <RPAProgressModal sessionId={rpaSessionId} onClose={clearRpaSession} />
     </div>
   );
 }
