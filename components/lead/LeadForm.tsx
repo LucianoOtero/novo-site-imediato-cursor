@@ -145,6 +145,14 @@ export interface LeadFormProps {
 type FormStatus = "idle" | "validating" | "submitting" | "success" | "error";
 type StepNumber = 1 | 2 | 3 | 4;
 const TOTAL_STEPS = 4;
+/**
+ * Passos de COLETA de dados (1 a 3). O passo 4 (`RpaChoiceStep`) é uma
+ * decisão, não coleta — por isso o contador exibe "Etapa X de 3" e a última
+ * tela não é contada (pedido do cliente, 2026-07-17).
+ */
+const COLLECTION_STEPS = 3;
+/** Teaser de rapidez exibido nos passos de coleta (1 a 3). */
+const FORM_SPEED_TEASER = "Poucos dados por etapa — cada uma leva de 15 a 30 segundos.";
 
 /** Título fixo + subtítulo por passo (pedido do cliente, 2026-07-14) — orienta o que preencher em cada etapa. */
 const FORM_TITLE = "Inicie aqui sua cotação";
@@ -606,12 +614,22 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     setStatus("submitting");
 
     const payload = buildPayloadFromRawValues(getValues());
+    // Perfil derivado da PH3A (projeto 2026-07-17): a resposta de `/api/lead`
+    // traz `perfilRpa` (sexo/data de nascimento/estado civil por idade)
+    // quando a PH3A está habilitada e retornou data de nascimento. Usamos
+    // esse bloco no payload do RPA; se a chamada falhar ou não vier o perfil,
+    // seguimos sem ele (o backend estima, como antes).
+    let perfilRpa: { sexo?: string; dataNascimento?: string; estadoCivil?: string } | undefined;
     try {
-      await fetch("/api/lead", {
+      const response = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ ...payload, stage: "complete", leadId: initialLeadIdRef.current ?? undefined }),
       });
+      const result = (await response.json().catch(() => ({}))) as {
+        perfilRpa?: { sexo?: string; dataNascimento?: string; estadoCivil?: string };
+      };
+      perfilRpa = result.perfilRpa;
       trackEvent("generate_lead", { ramo, method: "form" });
     } catch (error) {
       console.error("[LeadForm] Falha ao gravar lead antes do RPA (não bloqueia — contato inicial já foi salvo):", error);
@@ -629,6 +647,9 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         nome: payload.nome,
         cpf: payload.cpf,
         placa: payload.placa,
+        sexo: perfilRpa?.sexo,
+        dataNascimento: perfilRpa?.dataNascimento,
+        estadoCivil: perfilRpa?.estadoCivil,
       })
     );
   }
@@ -683,9 +704,19 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       <div>
         <h2 className="font-display text-xl font-bold text-neutral-900 md:text-2xl">{FORM_TITLE}</h2>
         <p className="mt-1 text-sm text-neutral-500">{STEP_SUBTITLES[step]}</p>
+        {step <= COLLECTION_STEPS && (
+          <>
+            <p className="mt-1 text-sm font-medium text-neutral-500">
+              Etapa {step} de {COLLECTION_STEPS}
+            </p>
+            <p className="mt-0.5 text-xs text-neutral-400">{FORM_SPEED_TEASER}</p>
+          </>
+        )}
       </div>
 
-      <ProgressBar step={step} totalSteps={TOTAL_STEPS} compact={variant === "inline"} />
+      {step <= COLLECTION_STEPS && (
+        <ProgressBar step={step} totalSteps={COLLECTION_STEPS} compact={variant === "inline"} />
+      )}
 
       {step === 1 && (
         <div className="grid grid-cols-[5rem_1fr] gap-3">

@@ -1,6 +1,7 @@
 import { Headset, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { RPA_PROFILE_ESTIMATE_NOTICE } from "@/lib/rpa-calculation";
 
 /**
  * RpaChoiceStep — passo 4 do `LeadForm` (projeto 2026-07-16, "etapa de
@@ -66,6 +67,8 @@ export function RpaChoiceStep({ onChooseWait, onChooseConsultant, busy }: RpaCho
           </Button>
         </div>
       </div>
+
+      <p className="text-xs text-neutral-500">{RPA_PROFILE_ESTIMATE_NOTICE}</p>
 
       <p className="text-xs text-neutral-500">
         A contratação da apólice é feita pelo consultor após a proposta da seguradora escolhida, sempre sujeita à aprovação da

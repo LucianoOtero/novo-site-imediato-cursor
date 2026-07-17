@@ -42,12 +42,22 @@ export async function startRpaSession(dados: Record<string, unknown>): Promise<s
     throw new RpaError(`Falha ao iniciar sessão RPA: HTTP ${response.status}`);
   }
 
-  const result = (await response.json()) as { sessionId?: string };
-  if (!result.sessionId) {
-    throw new RpaError("Resposta do RPA não trouxe sessionId.");
+  // O backend rpa-v4 responde `{ success: true, session_id: "..." }`
+  // (snake_case) — confirmado lendo `webflow_injection_limpo.js` do site
+  // legado (`result.success && result.session_id`, classe `MainPage`, só
+  // consultado como referência) e via captura de rede no teste de fidelidade
+  // (2026-07-17). Aceitamos também `sessionId` por robustez.
+  const result = (await response.json()) as {
+    success?: boolean;
+    session_id?: string;
+    sessionId?: string;
+  };
+  const sessionId = result.session_id ?? result.sessionId;
+  if (!sessionId) {
+    throw new RpaError("Resposta do RPA não trouxe session_id.");
   }
 
-  return result.sessionId;
+  return sessionId;
 }
 
 export async function fetchRpaProgress(sessionId: string): Promise<RpaProgress> {
@@ -74,8 +84,19 @@ export function buildRpaPayload(dados: {
   nome?: string;
   cpf?: string;
   placa?: string;
+  /**
+   * Bloco demográfico derivado da PH3A (projeto 2026-07-17), vindo do
+   * `perfilRpa` da resposta de `/api/lead`. Quando presente, é enviado ao
+   * RPA em snake_case (`sexo`/`data_nascimento`/`estado_civil` — mesmas
+   * chaves do legado/`parametros.json`), suprimindo a estimativa própria
+   * do backend. `estado_civil` segue a regra de idade (ver
+   * `lib/perfil-rpa.ts`); `data_nascimento` no formato `DD/MM/AAAA`.
+   */
+  sexo?: string;
+  dataNascimento?: string;
+  estadoCivil?: string;
 }): Record<string, unknown> {
-  return {
+  const payload: Record<string, unknown> = {
     "DDD-CELULAR": `${dados.ddd}-${dados.celular}`,
     CELULAR: dados.celular,
     NOME: dados.nome ?? "",
@@ -84,4 +105,10 @@ export function buildRpaPayload(dados: {
     PLACA: dados.placa ?? "",
     produto: dados.ramo,
   };
+
+  if (dados.sexo) payload.sexo = dados.sexo;
+  if (dados.dataNascimento) payload.data_nascimento = dados.dataNascimento;
+  if (dados.estadoCivil) payload.estado_civil = dados.estadoCivil;
+
+  return payload;
 }

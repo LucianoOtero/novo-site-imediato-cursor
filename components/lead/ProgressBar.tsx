@@ -17,19 +17,17 @@ export function ProgressBar({
 }) {
   const percent = Math.round((step / totalSteps) * 100);
 
+  // O texto "Etapa X de Y" fica no cabeçalho do LeadForm (visível também no
+  // Hero, onde a barra é `compact`) — aqui exibimos apenas a barra, evitando
+  // duplicar o contador (projeto 2026-07-17).
   return (
     <div className={cn(compact ? "mb-4" : "mb-6")}>
-      {!compact && (
-        <p className="mb-2 text-sm font-medium text-neutral-500">
-          Passo {step} de {totalSteps}
-        </p>
-      )}
       <div
         role="progressbar"
         aria-valuenow={step}
         aria-valuemin={1}
         aria-valuemax={totalSteps}
-        aria-label={`Passo ${step} de ${totalSteps}`}
+        aria-label={`Etapa ${step} de ${totalSteps}`}
         className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200"
       >
         <div

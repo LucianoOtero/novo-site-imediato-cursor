@@ -174,3 +174,14 @@ export const RPA_MANUAL_QUOTE_MESSAGE =
 
 /** Réplica de `updateSuccessHeader()` do legado. */
 export const RPA_SUCCESS_NOTICE = "Um especialista da Imediato Seguros vai te chamar em instantes para revisar os detalhes.";
+
+/**
+ * Disclosure exibido no passo 4 (antes de "Aguardar o cálculo"): parte do
+ * perfil (composição familiar, estado civil, guarda do veículo, etc.) é
+ * estimada automaticamente pelo sistema pela média — confirmada só na
+ * formalização da proposta, quando o valor pode mudar. Pedido do cliente
+ * (2026-07-17), após confirmarmos que o cálculo automático usa esses dados
+ * estimados quando ainda não foram coletados.
+ */
+export const RPA_PROFILE_ESTIMATE_NOTICE =
+  "Para agilizar o cálculo, alguns dados do seu perfil — como composição familiar, estado civil e a forma de guarda do veículo — são estimados automaticamente pelo sistema com base na média. Na formalização da proposta com a seguradora, esses dados serão confirmados e o valor final pode mudar.";

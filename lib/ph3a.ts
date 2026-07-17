@@ -31,7 +31,7 @@ import type { LeadRecord } from "@/lib/leads/types";
  * ou dentro de `data`) e loga quando o formato não bate, em vez de
  * presumir uma estrutura não confirmada.
  */
-type Ph3aResult = { sexo?: string; dataNascimento?: string; estadoCivil?: string };
+export type Ph3aResult = { sexo?: string; dataNascimento?: string; estadoCivil?: string };
 
 function extractPh3aFields(json: unknown): Ph3aResult {
   if (!json || typeof json !== "object") return {};
@@ -51,13 +51,18 @@ function extractPh3aFields(json: unknown): Ph3aResult {
  * retornados, se houver. Não lança erro — falhas são apenas logadas,
  * pois este enriquecimento nunca deve bloquear ou reverter a captura do
  * lead (que já foi persistido e enviado ao CRM antes desta chamada).
+ *
+ * Retorna o `Ph3aResult` (vazio quando desabilitado/sem dados/erro) para
+ * que o chamador (`app/api/lead/route.ts`) possa derivar o perfil enviado
+ * ao RPA (regra de estado civil por idade — ver `lib/perfil-rpa.ts`), sem
+ * precisar reconsultar o proxy.
  */
-export async function enrichLeadWithPh3a(lead: LeadRecord): Promise<void> {
-  if (!env.ph3aEnrichmentEnabled) return;
-  if (!lead.cpf) return;
+export async function enrichLeadWithPh3a(lead: LeadRecord): Promise<Ph3aResult> {
+  if (!env.ph3aEnrichmentEnabled) return {};
+  if (!lead.cpf) return {};
   if (!env.cpfValidateProxyUrl) {
     console.warn("[lib/ph3a] PH3A_ENRICHMENT_ENABLED=true mas CPF_VALIDATE_PROXY_URL não configurada — pulando.");
-    return;
+    return {};
   }
 
   try {
@@ -69,20 +74,23 @@ export async function enrichLeadWithPh3a(lead: LeadRecord): Promise<void> {
 
     if (!response.ok) {
       console.warn(`[lib/ph3a] Proxy retornou status ${response.status} para o lead ${lead.id} — enriquecimento não aplicado.`);
-      return;
+      return {};
     }
 
     const json = await response.json();
-    const { sexo, dataNascimento, estadoCivil } = extractPh3aFields(json);
+    const result = extractPh3aFields(json);
+    const { sexo, dataNascimento, estadoCivil } = result;
 
     if (!sexo && !dataNascimento && !estadoCivil) {
       console.info(`[lib/ph3a] Nenhum campo de enriquecimento retornado para o lead ${lead.id} (CPF sem dados no PH3A, ou formato de resposta inesperado).`);
-      return;
+      return {};
     }
 
     await leadStore.update(lead.id, { ph3aSexo: sexo, ph3aDataNascimento: dataNascimento, ph3aEstadoCivil: estadoCivil });
     console.info(`[lib/ph3a] Lead ${lead.id} enriquecido via PH3A.`);
+    return result;
   } catch (error) {
     console.error(`[lib/ph3a] Erro ao consultar PH3A para o lead ${lead.id}:`, error);
+    return {};
   }
 }

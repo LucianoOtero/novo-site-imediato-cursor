@@ -55,3 +55,34 @@ flowchart TD
 - **`NEXT_PUBLIC_RPA_ENABLED`** continua controlando se `startRpaSession` de fato funciona em produção — a opção "Aguardar o cálculo" só calcula de verdade com essa flag ligada (ver `docs/PROXIMOS_PASSOS.md`).
 - **`ContactLeadModal`** (modal de WhatsApp/telefone) não recebeu esta etapa — só o `LeadForm` (fluxo em passos).
 - **`RPAProgressModal.tsx`** (modal cosmético antigo) foi removido — substituído por `RpaCalculationScreen`, embutido no próprio `LeadForm`.
+
+## Disclosure de perfil estimado (2026-07-17)
+
+O passo 4 (`RpaChoiceStep`) passou a exibir, antes de "Aguardar o cálculo", um aviso de que **parte do perfil é estimada pelo sistema** (constante `RPA_PROFILE_ESTIMATE_NOTICE` em `lib/rpa-calculation.ts`):
+
+> "Para agilizar o cálculo, alguns dados do seu perfil — como composição familiar, estado civil e a forma de guarda do veículo — são estimados automaticamente pelo sistema com base na média. Na formalização da proposta com a seguradora, esses dados serão confirmados e o valor final pode mudar."
+
+Motivo: o teste de fidelidade (abaixo) confirmou que, quando o site envia apenas os campos do `buildRpaPayload` (DDD/celular, nome, CPF, CEP, placa, produto), o backend `rpaimediatoseguros.com.br` **estima o restante do perfil** — via PH3A (sexo/data de nascimento/estado civil a partir do CPF, quando ausentes) e defaults próprios (condutor, garagem, uso, combustível, etc.). Isso muda o prêmio em relação a um cálculo com o perfil completo. O disclosure alinha a expectativa do cliente.
+
+## Teste de fidelidade RPA (local vs. site)
+
+- Objetivo (revisado 2026-07-17): verificar que **as duas execuções (motor local e site) percorrem todas as etapas e apresentam o cálculo final** — **não** comparar igualdade de valores.
+- A diferença de valor entre as pontas é **esperada e legítima**: prova experimental (`scripts/experimento_divergencia.py`) mostrou que, enviando o payload completo ao backend, o valor bate com o local ao centavo (R$696,24/R$950,47); com o payload mínimo, o backend estima o perfil e o valor sobe (R$3.892,16/R$4.342,92). Mesmo motor; muda só a entrada.
+- Comparador `scripts/comparar_resultados.py`: categorias `CALCULO_OK_AMBOS` (alvo), `MANUAL_AMBOS`, `DIVERGENTE_STATUS`, `FALHA_EXECUCAO`; valores gravados apenas como informativo.
+- Correção de integração encontrada pelo teste: o start do RPA responde `session_id` (snake_case) — `lib/rpa.ts` foi ajustado para ler `session_id` (antes lia `sessionId` e toda cotação pelo site caía em "cálculo manual").
+
+## Estado civil por idade + contador de etapas + teaser (2026-07-17)
+
+### Estado civil derivado da PH3A
+Na opção "Aguardar o cálculo", o site passou a enviar ao RPA um **bloco demográfico** (`sexo`, `data_nascimento`, `estado_civil`) derivado da PH3A, para suprimir a estimativa própria do backend:
+
+- A chamada `/api/lead` (`stage: "complete"`), que o `LeadForm` já faz antes do RPA, agora executa a PH3A (`enrichLeadWithPh3a`, que passou a **retornar** o resultado) e devolve `perfilRpa = { sexo, dataNascimento, estadoCivil }` na resposta.
+- **Regra de estado civil por idade** (`lib/perfil-rpa.ts`, `estadoCivilPorIdade`): idade `< 25` → `"Solteiro"`; `>= 25` → `"Casado ou União Estável"`. A idade vem da data de nascimento da PH3A.
+- `handleChooseWaitForRpa` lê `perfilRpa` e repassa ao `buildRpaPayload`, que emite `sexo`/`data_nascimento`/`estado_civil` (snake_case, formato `DD/MM/AAAA`).
+- **Fallback**: sem CPF, sem PH3A (`PH3A_ENRICHMENT_ENABLED=false`) ou sem data de nascimento, o bloco não é enviado e o backend estima o perfil, como antes.
+- **Pré-requisito** para funcionar: `PH3A_ENRICHMENT_ENABLED=true` e `CPF_VALIDATE_PROXY_URL` válido.
+
+### Contador de etapas e teaser
+- O `LeadForm` agora exibe "Etapa X de 3" nos passos de coleta (1 a 3); a tela de escolha (passo 4) **não** é contada (`COLLECTION_STEPS = 3`, mantendo `TOTAL_STEPS = 4` para a navegação).
+- A `ProgressBar` reflete as 3 etapas e é ocultada no passo 4; o texto do contador vive no cabeçalho (visível também no Hero, onde a barra é `compact`).
+- Teaser discreto nos passos 1-3: "Poucos dados por etapa — cada uma leva de 15 a 30 segundos."

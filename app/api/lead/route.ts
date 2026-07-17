@@ -6,7 +6,8 @@ import { generateLeadId, leadStore } from "@/lib/leads/store";
 import { checkRateLimit, getClientIp, hashIp, verifyTurnstile } from "@/lib/leads/security";
 import { apiLeadSchema, apiLeadSchemaLenient } from "@/lib/leads/types";
 import type { LeadRecord } from "@/lib/leads/types";
-import { enrichLeadWithPh3a } from "@/lib/ph3a";
+import { enrichLeadWithPh3a, type Ph3aResult } from "@/lib/ph3a";
+import { estadoCivilPorIdade, normalizarDataNascimentoBR } from "@/lib/perfil-rpa";
 
 /**
  * POST /api/lead — Route Handler de captura de lead (Issue 12).
@@ -54,6 +55,19 @@ function toE164(ddd: string, celular: string): string {
 
 function buildDedupeKey(phoneE164: string, ramo: string): string {
   return createHash("sha256").update(`${phoneE164}:${ramo}`).digest("hex");
+}
+
+/**
+ * Deriva o `perfilRpa` (bloco demográfico enviado ao RPA) a partir do
+ * resultado da PH3A — regra de estado civil por idade (ver lib/perfil-rpa.ts).
+ * Retorna `undefined` quando não há data de nascimento válida (o RPA segue
+ * sem o bloco e o backend estima). Helper puro reutilizado tanto no caminho
+ * normal quanto no de duplicado (projeto 2026-07-17).
+ */
+function toPerfilRpa(ph3a: Ph3aResult) {
+  const dataNascimento = normalizarDataNascimentoBR(ph3a.dataNascimento);
+  const estadoCivil = estadoCivilPorIdade(ph3a.dataNascimento);
+  return dataNascimento && estadoCivil ? { sexo: ph3a.sexo, dataNascimento, estadoCivil } : undefined;
 }
 
 async function respond(idempotencyKey: string | null, status: number, body: unknown) {
@@ -142,9 +156,15 @@ export async function POST(request: NextRequest) {
     if (candidate && candidate.stage === "initial") {
       existingInitial = candidate;
     } else if (candidate) {
-      // Já existe um lead "complete" com o mesmo telefone+ramo — comportamento inalterado desde a Issue 12.
+      // Já existe um lead "complete" com o mesmo telefone+ramo. Ainda assim,
+      // se o usuário escolheu "Aguardar o cálculo", o RPA precisa do
+      // `perfilRpa` (estado civil por idade via PH3A) — por isso rodamos a
+      // PH3A também neste caminho de duplicado, senão o cálculo do usuário
+      // recorrente ficaria sem o bloco demográfico (projeto 2026-07-17).
       await leadStore.update(candidate.id, { utm: data.utm ?? candidate.utm });
-      return respond(idempotencyKey, 200, { duplicate: true, leadId: candidate.id, redirect: "/obrigado" });
+      const ph3aDup = await enrichLeadWithPh3a({ ...candidate, cpf: data.cpf ?? candidate.cpf });
+      const perfilRpa = toPerfilRpa(ph3aDup);
+      return respond(idempotencyKey, 200, { duplicate: true, leadId: candidate.id, redirect: "/obrigado", perfilRpa });
     }
   } else {
     // stage === "initial": se já existe um registro (mesmo telefone+ramo,
@@ -221,8 +241,9 @@ export async function POST(request: NextRequest) {
   // Firebase abaixo) — "fire-and-forget" sem `await` não sobrevive ao
   // possível encerramento da função serverless após a resposta HTTP.
   // `enrichLeadWithPh3a` é rápida quando desabilitada (retorno imediato)
-  // e nunca lança.
-  await enrichLeadWithPh3a(lead);
+  // e nunca lança. O resultado alimenta o `perfilRpa` devolvido no
+  // `stage: "complete"` (regra de estado civil por idade — ver abaixo).
+  const ph3a = await enrichLeadWithPh3a(lead);
 
   // Backup no Firebase Realtime Database — desde 2026-07-13, este é o
   // **único** caminho de entrega a EspoCRM/Octadesk (arquitetura
@@ -249,5 +270,15 @@ export async function POST(request: NextRequest) {
   }
 
   await leadStore.update(lead.id, { status: "sent" });
-  return respond(idempotencyKey, 201, { leadId: lead.id, redirect: "/obrigado" });
+
+  // Perfil derivado para o RPA (projeto 2026-07-17): a data de nascimento
+  // da PH3A define o estado civil por idade (<25 → Solteiro; senão → Casado
+  // ou União Estável — ver lib/perfil-rpa.ts). Enviado ao cliente para o
+  // `buildRpaPayload` incluir o bloco demográfico (sexo/data_nascimento/
+  // estado_civil), suprimindo a estimativa própria do backend. Só entra na
+  // resposta quando a PH3A trouxe data de nascimento (senão, o RPA segue
+  // sem o bloco e o backend estima, como antes).
+  const perfilRpa = toPerfilRpa(ph3a);
+
+  return respond(idempotencyKey, 201, { leadId: lead.id, redirect: "/obrigado", perfilRpa });
 }
