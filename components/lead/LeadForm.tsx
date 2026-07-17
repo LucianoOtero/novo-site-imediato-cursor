@@ -650,6 +650,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         sexo: perfilRpa?.sexo,
         dataNascimento: perfilRpa?.dataNascimento,
         estadoCivil: perfilRpa?.estadoCivil,
+        marca: payload.veiculoMarca,
+        modelo: payload.veiculoModelo,
+        ano: payload.veiculoAnoModelo || payload.veiculoAnoFabricacao || payload.veiculoAno,
+        email: payload.email,
       })
     );
   }

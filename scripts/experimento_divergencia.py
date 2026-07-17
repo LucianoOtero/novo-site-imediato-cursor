@@ -116,15 +116,34 @@ def main() -> None:
     # Remove blocos que sao so do runner local (nao fazem sentido no payload web).
     payload_full = {k: v for k, v in params_full.items() if k not in ("configuracao", "autenticacao", "url")}
 
+    # Cenario C: completo SEM o bloco demografico do segurado (data de
+    # nascimento/sexo/estado civil) — testa se a cotacao por veiculo ocorre
+    # sem depender da PH3A (que preenche esses campos quando ausentes).
+    payload_sem_demo = {
+        k: v for k, v in payload_full.items() if k not in ("data_nascimento", "sexo", "estado_civil")
+    }
+
+    # Cenario D: C sem o bloco do condutor (para decidir se e necessario
+    # enviar dados de condutor — evitando hardcodar PII de terceiro no site).
+    _condutor_keys = {
+        "nome_condutor",
+        "cpf_condutor",
+        "data_nascimento_condutor",
+        "sexo_condutor",
+        "estado_civil_condutor",
+    }
+    payload_sem_condutor = {k: v for k, v in payload_sem_demo.items() if k not in _condutor_keys}
+
     resultados = {
         "id": args.id,
-        "A_minimo": executar("A_minimo", payload_min),
-        "B_completo": executar("B_completo", payload_full),
+        "D_sem_condutor": executar("D_sem_condutor", payload_sem_condutor),
     }
     OUT.write_text(json.dumps(resultados, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("\n================ RESUMO ================")
-    for k in ("A_minimo", "B_completo"):
+    for k in resultados:
+        if k == "id":
+            continue
         r = resultados[k]
         print(f"{k}: status={r.get('status')} rec={r.get('valor_recomendado')} alt={r.get('valor_alternativo')}")
     print(f"(local ground-truth ren-002: rec=R$696,24 alt=R$950,47)")

@@ -155,6 +155,20 @@ ESTADO_CIVIL_VALIDO = {
 }
 
 
+def normalizar_marca(marca: str) -> str:
+    """Normaliza a marca para o catalogo do To Segurado (2026-07-17).
+
+    Padrao FIPE prefixado ("VW - VolksWagen", "GM - Chevrolet") nao existe no
+    dropdown de fabricante -> no cenario MANUAL a Tela 3 falha. Regra: com
+    prefixo "XX - ", usa o nome apos o prefixo em CAIXA ALTA; sem prefixo,
+    mantem (marcas como Honda/Fiat ja sao aceitas).
+    """
+    m = (marca or "").strip()
+    if " - " in m:
+        return m.split(" - ", 1)[1].strip().upper()
+    return m
+
+
 def combustivel_por_tipo(tipo_veiculo: str, ramo: str) -> str:
     """Combustível não existe na planilha — suposição por tipo de veículo."""
     if ramo == "caminhao" or tipo_veiculo == "caminhao":
@@ -256,7 +270,7 @@ def build_parametros(caso: dict, base: dict) -> dict:
     # --- Campos especificos do caso (planilha) ---
     params["tipo_veiculo"] = tipo_veiculo
     params["placa"] = ff.get("placa", "")
-    params["marca"] = ff.get("veiculoMarca", "")
+    params["marca"] = normalizar_marca(ff.get("veiculoMarca", ""))
     params["modelo"] = ff.get("veiculoModelo", "")
     params["ano"] = str(ff.get("veiculoAnoModelo") or ff.get("veiculoAnoFabricacao") or "")
     params["combustivel"] = combustivel_por_tipo(tipo_veiculo, ramo)

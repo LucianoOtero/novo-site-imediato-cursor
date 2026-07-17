@@ -140,14 +140,26 @@ function writeResults() {
   fs.writeFileSync(OUT_CSV, "\uFEFF" + linhas.join("\n"), "utf-8");
 }
 
-async function stubValidations(page: Page) {
+async function stubValidations(page: Page, ff: ManifestCaso["formFields"]) {
   const okJson = (route: Route, body: Record<string, unknown> = { ok: true }) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
 
   await page.route("**/api/validate/phone", (route) => okJson(route));
   await page.route("**/api/validate/email", (route) => okJson(route));
   await page.route("**/api/validate/cep", (route) => okJson(route));
-  await page.route("**/api/validate/placa", (route) => okJson(route, { ok: true }));
+  // A Placa Fipe local depende de chave de ambiente; no teste devolvemos a
+  // ficha do veiculo do proprio caso (do manifesto) para o formulario
+  // preencher veiculoMarca/Modelo/Ano e o payload do RPA levar o bloco de
+  // veiculo (marca/modelo/ano) — sem isso o backend usa veiculo padrao.
+  await page.route("**/api/validate/placa", (route) =>
+    okJson(route, {
+      ok: true,
+      marca: ff.veiculoMarca,
+      modelo: ff.veiculoModelo,
+      anoFabricacao: ff.veiculoAnoFabricacao,
+      anoModelo: ff.veiculoAnoModelo,
+    }),
+  );
 }
 
 async function fillStep(page: Page, id: string, value: string | undefined) {
@@ -231,9 +243,9 @@ for (const caso of manifest.casos) {
       writeResults();
     };
 
-    await stubValidations(page);
-
     const ff = caso.formFields;
+    await stubValidations(page, ff);
+
     await page.goto("/cotacao");
 
     // Seleciona o ramo (chip). caminhao -> "Caminhão".
@@ -260,6 +272,9 @@ for (const caso of manifest.casos) {
     await fillStep(page, "cep", ff.cep);
     await fillStep(page, "placa", ff.placa);
     await page.locator("#placa").blur();
+    // Aguarda o onBlur da placa (stub) preencher veiculoMarca/Modelo/Ano
+    // antes de prosseguir — esses campos entram no payload do RPA.
+    await page.waitForTimeout(1000);
     await page.getByRole("button", { name: "Continuar" }).click();
 
     // Se o diálogo "Corrigir/Prosseguir" aparecer, o site nao chega ao RPA.
