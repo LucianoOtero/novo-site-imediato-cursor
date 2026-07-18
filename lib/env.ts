@@ -240,14 +240,17 @@ export const publicEnv = {
   turnstileSiteKey: parsed.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
   sentryDsnPublic: parsed.NEXT_PUBLIC_SENTRY_DSN,
   /**
-   * RPA (Issue de integrações 2026-07-03) — desabilitado por padrão, como no
-   * ambiente DEV do Webflow. IMPORTANTE (correção 2026-07-18): referência
-   * DIRETA a `process.env.NEXT_PUBLIC_*` — o Next só faz inline dessas
-   * variáveis no bundle do client quando acessadas assim; via
-   * `safeParse(process.env)` (objeto inteiro) elas NÃO chegam ao client, e o
-   * gate da flag ficava sempre `false` no navegador (onde o `LeadForm` roda).
+   * RPA (Issue de integrações 2026-07-03). **Ligado por padrão** (decisão
+   * 2026-07-18): o cálculo automático fica disponível no build, e o
+   * desligamento é opt-out via `NEXT_PUBLIC_RPA_ENABLED=false` (kill-switch).
+   *
+   * IMPORTANTE (correção 2026-07-18): referência DIRETA a
+   * `process.env.NEXT_PUBLIC_*` — o Next só faz inline dessas variáveis no
+   * bundle do client quando acessadas assim; via `safeParse(process.env)`
+   * (objeto inteiro) elas NÃO chegam ao client, e o gate ficava sempre
+   * `false` no navegador (onde o `LeadForm` roda).
    */
-  rpaEnabled: process.env.NEXT_PUBLIC_RPA_ENABLED === "true",
+  rpaEnabled: process.env.NEXT_PUBLIC_RPA_ENABLED !== "false",
   rpaApiBaseUrl: process.env.NEXT_PUBLIC_RPA_API_BASE_URL || "https://rpaimediatoseguros.com.br",
 } as const;
 
