@@ -35,6 +35,13 @@ export interface RpaChoiceStepProps {
   busy?: boolean;
   rpaEnabled: boolean;
   rpaDisabledReason?: RpaDisabledReason | null;
+  /**
+   * Feature-flag global do cálculo automático (`NEXT_PUBLIC_RPA_ENABLED`,
+   * projeto 2026-07-18). Quando `false`, o cálculo automático ainda não está
+   * no ar: ocultamos a opção "Aguardar o cálculo" e oferecemos apenas o
+   * consultor (kill-switch de produção).
+   */
+  featureEnabled: boolean;
 }
 
 export function RpaChoiceStep({
@@ -43,6 +50,7 @@ export function RpaChoiceStep({
   busy,
   rpaEnabled,
   rpaDisabledReason,
+  featureEnabled,
 }: RpaChoiceStepProps) {
   const disabledMessage =
     rpaDisabledReason === "caminhao"
@@ -50,6 +58,31 @@ export function RpaChoiceStep({
       : rpaDisabledReason === "dados_incompletos"
         ? RPA_DISABLED_INCOMPLETE_MESSAGE
         : null;
+
+  // Cálculo automático desligado globalmente: só oferece o consultor.
+  if (!featureEnabled) {
+    return (
+      <div className="flex flex-col gap-5">
+        <p className="text-sm text-neutral-600">
+          Um consultor Imediato Seguros calcula sua cotação e entra em contato com as melhores condições encontradas.
+        </p>
+        <Button
+          type="button"
+          variant="primary"
+          fullWidth
+          iconLeft={<Headset className="size-4" aria-hidden="true" />}
+          disabled={busy}
+          onClick={onChooseConsultant}
+        >
+          Falar com um consultor
+        </Button>
+        <p className="text-xs text-neutral-500">
+          A contratação da apólice é feita pelo consultor após a proposta da seguradora escolhida, sempre sujeita à aprovação da
+          seguradora.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">

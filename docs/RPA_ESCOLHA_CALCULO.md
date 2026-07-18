@@ -86,3 +86,20 @@ Na opção "Aguardar o cálculo", o site passou a enviar ao RPA um **bloco demog
 - O `LeadForm` agora exibe "Etapa X de 3" nos passos de coleta (1 a 3); a tela de escolha (passo 4) **não** é contada (`COLLECTION_STEPS = 3`, mantendo `TOTAL_STEPS = 4` para a navegação).
 - A `ProgressBar` reflete as 3 etapas e é ocultada no passo 4; o texto do contador vive no cabeçalho (visível também no Hero, onde a barra é `compact`).
 - Teaser discreto nos passos 1-3: "Poucos dados por etapa — cada uma leva de 15 a 30 segundos."
+
+## Critérios de habilitação do cálculo automático (2026-07-17/18)
+
+O passo 4 só ativa "Aguardar o cálculo" quando **todas** as condições são verdadeiras (senão, o botão fica desabilitado com mensagem elegante e resta "Falar com um consultor"):
+
+1. **Feature-flag ligada**: `NEXT_PUBLIC_RPA_ENABLED=true`. Quando desligada, a opção "Aguardar o cálculo" é **ocultada** (kill-switch de produção) — só aparece o consultor.
+2. **Não é caminhão**: ramo `caminhao` nunca é cotado automaticamente (mensagem de especialista).
+3. **Dados completos e validados**: nome, e-mail, CPF, CEP e placa preenchidos e válidos, com o **veículo identificado** (marca/modelo via Placa Fipe). Caso contrário, mensagem pedindo para completar.
+
+Implementação: `lib/rpa-calculation.ts` (mensagens/tipo `RpaDisabledReason`), `components/lead/RpaChoiceStep.tsx` (`featureEnabled`/`rpaEnabled`/`rpaDisabledReason`), `components/lead/LeadForm.tsx` (cálculo da elegibilidade + `publicEnv.rpaEnabled`).
+
+**Correção importante (2026-07-18):** `lib/env.ts` passou a ler `process.env.NEXT_PUBLIC_RPA_ENABLED` **diretamente** (antes vinha de `safeParse(process.env)`). O Next só faz *inline* de `NEXT_PUBLIC_*` no bundle do client em acessos diretos; via objeto inteiro a flag não chegava ao navegador (onde o `LeadForm` roda) e ficava sempre `false`. Sem essa correção, ligar a flag na Vercel não teria efeito no client.
+
+### Como ativar em produção/homologação
+1. Na Vercel, definir `NEXT_PUBLIC_RPA_ENABLED=true` no ambiente desejado (é `NEXT_PUBLIC` → **exige novo build/deploy** para valer no client).
+2. `NEXT_PUBLIC_RPA_API_BASE_URL` pode ficar no default (`https://rpaimediatoseguros.com.br`); CORS já liberado para o domínio novo.
+3. Validar o fluxo em homologação (`comparaseguroonline.com.br`) com o contato de teste — a suíte e2e aceita `SITE_BASE_URL` apontando para o domínio (o webServer local é ignorado nesse caso).

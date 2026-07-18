@@ -49,11 +49,20 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "npm run start",
-    url: "http://localhost:3000",
-    cwd: "..",
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  // Sobe o build local apenas quando o alvo é localhost. Para validar em
+  // homologação, aponte `SITE_BASE_URL` (ex.: https://comparaseguroonline.com.br)
+  // e o webServer é ignorado (testamos o deploy real). Lembre: com a flag
+  // NEXT_PUBLIC_RPA_ENABLED wired (2026-07-18), a opção "Aguardar o cálculo"
+  // só aparece se a flag estiver `true` no ambiente alvo — para rodar a
+  // bateria em localhost, faça o build com NEXT_PUBLIC_RPA_ENABLED=true.
+  webServer:
+    process.env.SITE_BASE_URL && !process.env.SITE_BASE_URL.includes("localhost")
+      ? undefined
+      : {
+          command: "npm run start",
+          url: "http://localhost:3000",
+          cwd: "..",
+          reuseExistingServer: true,
+          timeout: 120_000,
+        },
 });

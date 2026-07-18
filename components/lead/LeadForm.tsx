@@ -23,6 +23,7 @@ import { RpaCalculationScreen } from "@/components/lead/RpaCalculationScreen";
 import { useRpaCalculation } from "@/lib/leads/use-rpa-calculation";
 import type { RpaDisabledReason } from "@/lib/rpa-calculation";
 import { buildRpaPayload } from "@/lib/rpa";
+import { publicEnv } from "@/lib/env";
 import {
   LEAD_FORM_STEPS,
   captureUtmFromLocation,
@@ -652,8 +653,9 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * conversão" do resto do arquivo).
    */
   async function handleChooseWaitForRpa() {
-    // Defesa: o botão já fica desabilitado quando o RPA não é elegível
-    // (caminhão ou dados incompletos), mas garantimos aqui também.
+    // Defesa: a opção só aparece com a feature ligada e fica desabilitada
+    // quando o RPA não é elegível (caminhão/dados incompletos).
+    if (!publicEnv.rpaEnabled) return;
     if (!rpaEnabled) return;
     if (finalSubmitInFlightRef.current) return;
     finalSubmitInFlightRef.current = true;
@@ -908,6 +910,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
           busy={isBusy}
           rpaEnabled={rpaEnabled}
           rpaDisabledReason={rpaDisabledReason}
+          featureEnabled={publicEnv.rpaEnabled}
         />
       )}
 
