@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ShieldCheck } from "lucide-react";
 
 import { Container } from "@/components/ui/container";
@@ -24,15 +25,15 @@ import { useSubmitLead } from "@/lib/leads/use-submit-lead";
  * `LeadForm` já tinha a variante `variant="inline"` desde a Issue 11
  * pensando exatamente neste uso — só estava sem consumidor até a Issue
  * 15. `useSubmitLead` faz o mesmo POST a `/api/lead` e redirect para
- * `/obrigado` que `CotacaoForm` já fazia (usado quando o usuário escolhe
- * "Prefiro falar com um consultor depois" no passo 4 do `LeadForm` — a
- * opção "Aguardar o cálculo" é orquestrada inteiramente dentro do
- * próprio `LeadForm`, projeto 2026-07-16, sem passar por aqui).
+ * `/obrigado` que `CotacaoForm` já fazia.
  *
- * "LCP no hero" (critério de aceite): sem imagem de fundo/hero-image
- * ainda (asset não migrado, ver BRAND_ASSETS.md) — o H1 em si (texto)
- * já é o maior elemento renderizado na dobra, então o próprio texto é o
- * candidato a LCP, sem depender de otimização de imagem.
+ * Versão visual v2 (2026-07-19, branch v2-visual): imagem de fundo
+ * fotográfica gerada via Higgsfield MCP (ver docs/VISUAL_HIGGSFIELD.md,
+ * variação "blue hour" aprovada pelo cliente) com overlay do gradiente
+ * da marca para legibilidade. `next/image` com `priority` + `fill` —
+ * o WebP de 1920px tem ~113 KB (dentro do budget de LCP definido no
+ * plano). Textos passam a claros sobre o fundo escuro; o card do
+ * formulário continua branco (contraste e affordance preservados).
  */
 export function Hero({ ramoSlug }: { ramoSlug: string }) {
   const ramo = getRamo(ramoSlug);
@@ -41,13 +42,28 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
   if (!ramo) return null;
 
   return (
-    <Section className="bg-linear-to-b from-brand-50/60 to-white">
-      <Container className="grid gap-10 py-10 lg:grid-cols-2 lg:items-center lg:py-16">
+    <Section className="relative overflow-hidden">
+      <Image
+        src="/hero/hero-bluehour.webp"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-center"
+        aria-hidden="true"
+      />
+      {/* Overlay do gradiente da marca (navy → azul) para legibilidade do texto claro. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-linear-to-r from-[#0a2540]/90 via-[#0a2540]/70 to-[#0f55b8]/40"
+      />
+
+      <Container className="relative grid gap-10 py-10 lg:grid-cols-2 lg:items-center lg:py-16">
         <div>
-          {ramo.eyebrow && <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-600">{ramo.eyebrow}</p>}
-          <h1 className="font-display text-4xl font-bold tracking-tight text-neutral-900 md:text-5xl">{ramo.headline}</h1>
-          <p className="mt-4 text-lg text-neutral-500">{ramo.subheadline}</p>
-          <p className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700">
+          {ramo.eyebrow && <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-100">{ramo.eyebrow}</p>}
+          <h1 className="font-display text-4xl font-bold tracking-tight text-white md:text-5xl">{ramo.headline}</h1>
+          <p className="mt-4 text-lg text-brand-50/90">{ramo.subheadline}</p>
+          <p className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
             <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
             Cotação grátis, sem compromisso
           </p>
