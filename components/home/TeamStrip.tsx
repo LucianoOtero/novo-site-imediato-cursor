@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { SectionHeader } from "@/components/ui/section-header";
 import { team } from "@/lib/team";
 
 /**
@@ -31,16 +32,15 @@ export function TeamStrip() {
   return (
     <Section>
       <Container>
-        <div className="text-center">
-          <h2 className="font-display text-2xl font-bold text-neutral-900 md:text-3xl">
-            {team.length} especialistas, gente de verdade
-          </h2>
-          <p className="mt-2 text-neutral-500">Uma equipe humana pronta para te atender, do início ao fim.</p>
-        </div>
+        <SectionHeader
+          eyebrow="Atendimento humano"
+          title={`${team.length} especialistas, gente de verdade`}
+          description="Uma equipe humana pronta para te atender, do início ao fim."
+        />
 
-        <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-8">
+        <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-8">
           {visibleMembers.map((member) => (
-            <div key={member.slug} className="flex flex-col items-center gap-2">
+            <div key={member.slug} className="group flex flex-col items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element -- fotos locais em WebP já otimizadas na origem; grid simples sem necessidade do pipeline de otimização do next/image. */}
               <img
                 src={member.photo}
@@ -49,7 +49,7 @@ export function TeamStrip() {
                 decoding="async"
                 width={96}
                 height={96}
-                className="size-20 rounded-full object-cover md:size-24"
+                className="size-20 rounded-full object-cover ring-2 ring-transparent ring-offset-2 transition-all duration-200 group-hover:ring-brand-500 md:size-24"
               />
               <span className="text-sm font-medium text-neutral-900">{member.name}</span>
             </div>

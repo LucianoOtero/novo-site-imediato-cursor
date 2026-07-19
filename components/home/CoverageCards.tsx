@@ -38,6 +38,7 @@ import {
 
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { SectionHeader } from "@/components/ui/section-header";
 import { getRamo } from "@/lib/ramos";
 
 /**
@@ -140,14 +141,14 @@ export function CoverageCards({ ramoSlug }: { ramoSlug: string }) {
   return (
     <Section>
       <Container>
-        <h2 className="text-center font-display text-2xl font-bold text-neutral-900 md:text-3xl">Coberturas principais</h2>
-        <div className="mt-10 grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+        <SectionHeader eyebrow="Proteção completa" title="Coberturas principais" />
+        <div className="mt-12 grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
           {coverages.map((coverage) => {
             const Icon = COVERAGE_ICONS[coverage] ?? Shield;
             return (
               <div
                 key={coverage}
-                className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white p-2.5 text-center"
+                className="group flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white p-2.5 text-center shadow-[0_1px_2px_rgba(11,31,58,0.06)] transition-all duration-200 ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:border-brand-100 hover:shadow-[0_6px_20px_rgba(11,31,58,0.08)]"
               >
                 <Icon className="size-7 shrink-0 text-brand-500" aria-hidden="true" />
                 <span className="text-sm leading-tight font-medium text-neutral-900">{coverage}</span>

@@ -56,20 +56,20 @@ export function InsuranceCard({ ramo, featured = false, className }: InsuranceCa
     <Link
       href={ramo.seo.canonicalPath}
       className={cn(
-        "group relative flex flex-col gap-4 rounded-xl border bg-white p-6 shadow-sm outline-none",
-        "transition-all duration-[var(--dur-fast)] ease-[var(--ease-standard)]",
-        "hover:-translate-y-1 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2",
+        "group relative flex flex-col gap-4 rounded-2xl border bg-white p-6 shadow-[0_1px_2px_rgba(11,31,58,0.06)] outline-none",
+        "transition-all duration-200 ease-[var(--ease-standard)]",
+        "hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(11,31,58,0.12)] focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2",
         featured ? "border-brand-500 ring-1 ring-brand-500" : "border-neutral-200",
         className
       )}
     >
       {featured && (
-        <span className="absolute -top-3 left-6 rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white">
+        <span className="absolute -top-3 left-6 rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white shadow-[0_8px_24px_rgba(19,102,214,0.28)]">
           Mais procurado
         </span>
       )}
 
-      <div className="flex size-12 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+      <div className="flex size-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-500 group-hover:text-white">
         <Icon className="size-6" aria-hidden="true" />
       </div>
 
