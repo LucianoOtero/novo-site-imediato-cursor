@@ -46,10 +46,17 @@ export function CTASection({
   const isBrand = tone === "brand";
 
   return (
-    <Section tone={isBrand ? "brand" : "soft"}>
-      <Container className="flex flex-col items-center gap-4 text-center">
-        <h2 className={cn("font-display text-2xl font-bold md:text-3xl", isBrand ? "text-white" : "text-neutral-900")}>{heading}</h2>
-        {description && <p className={cn("max-w-xl", isBrand ? "text-white/80" : "text-neutral-500")}>{description}</p>}
+    <Section
+      tone={isBrand ? "brand" : "soft"}
+      className={cn(isBrand && "relative overflow-hidden [background-image:var(--gradient-brand)]")}
+    >
+      {/* Glow radial da marca (versão visual v2) — profundidade no bloco azul, sem imagem. */}
+      {isBrand && <div aria-hidden="true" className="absolute inset-0 [background-image:var(--gradient-glow)]" />}
+      <Container className="relative flex flex-col items-center gap-4 text-center">
+        <h2 className={cn("font-display text-3xl font-bold tracking-tight md:text-4xl", isBrand ? "text-white" : "text-neutral-900")}>
+          {heading}
+        </h2>
+        {description && <p className={cn("max-w-xl text-lg", isBrand ? "text-white/80" : "text-neutral-500")}>{description}</p>}
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
           {showCotarButton && (
             <Button

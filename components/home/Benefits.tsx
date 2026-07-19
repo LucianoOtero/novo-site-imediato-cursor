@@ -2,6 +2,7 @@ import { BadgeDollarSign, HeartHandshake, Ruler, ShieldCheck } from "lucide-reac
 
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { SectionHeader } from "@/components/ui/section-header";
 
 /**
  * Benefits — 4 diferenciais da Home (Issue 15).
@@ -12,6 +13,10 @@ import { Section } from "@/components/ui/section";
  * são texto de implementação (proposta de valor genérica, não uma
  * métrica/dado comercial que exija confirmação) — revisáveis por
  * Conteúdo sem impacto em dado regulatório/comercial.
+ *
+ * Versão visual v2 (2026-07-19): cards com sombra em camadas + hover
+ * lift sutil, ícone em "tile" arredondado da marca e `SectionHeader`
+ * (eyebrow + título display) — padrão de agência para fintech/seguros.
  */
 const BENEFITS = [
   { icon: BadgeDollarSign, title: "Preço", description: "Comparamos entre seguradoras parceiras para encontrar o melhor custo-benefício." },
@@ -24,13 +29,18 @@ export function Benefits() {
   return (
     <Section className="bg-neutral-50">
       <Container>
-        <h2 className="text-center font-display text-2xl font-bold text-neutral-900 md:text-3xl">Por que a Imediato</h2>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <SectionHeader eyebrow="Nossos diferenciais" title="Por que a Imediato" />
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {BENEFITS.map((benefit) => (
-            <div key={benefit.title} className="rounded-xl border border-neutral-200 bg-white p-6">
-              <benefit.icon className="size-8 text-brand-500" aria-hidden="true" />
-              <h3 className="mt-4 font-display text-lg font-bold text-neutral-900">{benefit.title}</h3>
-              <p className="mt-2 text-sm text-neutral-500">{benefit.description}</p>
+            <div
+              key={benefit.title}
+              className="group rounded-2xl border border-neutral-200 bg-white p-6 shadow-[0_1px_2px_rgba(11,31,58,0.06)] transition-all duration-200 ease-[var(--ease-standard)] hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(11,31,58,0.12)]"
+            >
+              <div className="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-500 group-hover:text-white">
+                <benefit.icon className="size-5" aria-hidden="true" />
+              </div>
+              <h3 className="mt-5 font-display text-lg font-bold text-neutral-900">{benefit.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-500">{benefit.description}</p>
             </div>
           ))}
         </div>

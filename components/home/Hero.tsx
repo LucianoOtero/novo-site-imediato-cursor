@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Star } from "lucide-react";
 
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { LeadForm } from "@/components/lead/LeadForm";
+import { company } from "@/lib/company";
 import { getRamo } from "@/lib/ramos";
 import { useSubmitLead } from "@/lib/leads/use-submit-lead";
 
@@ -58,15 +59,48 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
         className="absolute inset-0 bg-linear-to-r from-[#0a2540]/90 via-[#0a2540]/70 to-[#0f55b8]/40"
       />
 
-      <Container className="relative grid gap-10 py-10 lg:grid-cols-2 lg:items-center lg:py-16">
+      <Container className="relative grid gap-10 py-12 lg:grid-cols-2 lg:items-center lg:py-20">
         <div>
-          {ramo.eyebrow && <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-100">{ramo.eyebrow}</p>}
-          <h1 className="font-display text-4xl font-bold tracking-tight text-white md:text-5xl">{ramo.headline}</h1>
-          <p className="mt-4 text-lg text-brand-50/90">{ramo.subheadline}</p>
-          <p className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
-            <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
-            Cotação grátis, sem compromisso
-          </p>
+          {ramo.eyebrow && (
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-100 backdrop-blur-sm">
+              {ramo.eyebrow}
+            </p>
+          )}
+          <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight text-white md:text-6xl">
+            {ramo.headline}
+          </h1>
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-brand-50/90">{ramo.subheadline}</p>
+
+          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+              <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
+              Cotação grátis, sem compromisso
+            </p>
+            <p className="inline-flex items-center gap-1.5 text-sm font-medium text-white">
+              <span className="flex" aria-hidden="true">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Star key={index} className="size-4 fill-amber-400 text-amber-400" />
+                ))}
+              </span>
+              {company.business.googleRating.toLocaleString("pt-BR", { minimumFractionDigits: 1 })} no Google · +
+              {company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
+            </p>
+          </div>
+
+          <div className="mt-8 hidden gap-8 border-t border-white/15 pt-6 lg:flex">
+            <div>
+              <p className="font-display text-3xl font-bold text-white">{company.business.yearsExperience}+</p>
+              <p className="mt-0.5 text-sm text-brand-50/80">anos de experiência</p>
+            </div>
+            <div>
+              <p className="font-display text-3xl font-bold text-white">{company.business.insurersCount}</p>
+              <p className="mt-0.5 text-sm text-brand-50/80">seguradoras comparadas</p>
+            </div>
+            <div>
+              <p className="font-display text-3xl font-bold text-white">{company.business.satisfactionRate}%</p>
+              <p className="mt-0.5 text-sm text-brand-50/80">clientes satisfeitos</p>
+            </div>
+          </div>
         </div>
         <LeadForm ramo={ramoSlug} variant="inline" onSuccess={submitLead} />
       </Container>

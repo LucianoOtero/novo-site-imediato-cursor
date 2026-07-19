@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { SectionHeader } from "@/components/ui/section-header";
 import { Hero } from "@/components/home/Hero";
 import { ComoFunciona } from "@/components/home/ComoFunciona";
 import { Benefits } from "@/components/home/Benefits";
@@ -112,8 +113,8 @@ export default async function HomePage() {
 
       <Section tone="soft">
         <Container>
-          <h2 className="text-center font-display text-2xl font-bold text-neutral-900 md:text-3xl">Seguros para todo tipo de veículo</h2>
-          <div className="mt-10">
+          <SectionHeader eyebrow="O que protegemos" title="Seguros para todo tipo de veículo" />
+          <div className="mt-12">
             <RamoGrid />
           </div>
         </Container>
@@ -139,8 +140,8 @@ export default async function HomePage() {
 
       <Section tone="soft">
         <Container className="mx-auto max-w-2xl">
-          <h2 className="text-center font-display text-2xl font-bold text-neutral-900 md:text-3xl">Perguntas frequentes</h2>
-          <div className="mt-8">
+          <SectionHeader eyebrow="Tire suas dúvidas" title="Perguntas frequentes" />
+          <div className="mt-10">
             <FAQ items={HOME_FAQ_ITEMS} />
           </div>
         </Container>

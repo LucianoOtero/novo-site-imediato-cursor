@@ -1,7 +1,6 @@
-import { CheckCircle2, FileEdit, Users } from "lucide-react";
-
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { SectionHeader } from "@/components/ui/section-header";
 import { company } from "@/lib/company";
 
 /**
@@ -10,40 +9,41 @@ import { company } from "@/lib/company";
  * Especialista compara 16 seguradoras → Você escolhe").
  *
  * O número de seguradoras vem de `company.business.insurersCount`
- * (Issue 04) — nunca hardcoded (seção 55), mesmo estando marcado
- * `A_CONFIRMAR` ali (mesma fonte já usada por `CredBar`, Issue 09).
- * Descrições de apoio são texto de implementação (processo real do
- * produto, não um dado comercial/regulatório) — não requerem
- * confirmação separada.
+ * (Issue 04) — nunca hardcoded (seção 55), mesma fonte já usada por
+ * `CredBar` (Issue 09). Descrições de apoio são texto de implementação
+ * (processo real do produto, não um dado comercial/regulatório).
+ *
+ * Versão visual v2 (2026-07-19): passos com numerais display grandes
+ * ("01/02/03", padrão editorial de agência) e linha-guia sutil ligando
+ * os passos no desktop — substitui os círculos com ícone genéricos.
  */
 export function ComoFunciona() {
   const steps = [
-    { icon: FileEdit, title: "Cote", description: "Preencha o formulário em poucos passos — leva menos de 1 minuto." },
+    { title: "Cote", description: "Preencha o formulário em poucos passos — leva menos de 1 minuto." },
     {
-      icon: Users,
       title: "Especialista compara",
       description: `Um especialista compara as condições entre ${company.business.insurersCount} seguradoras parceiras.`,
     },
-    { icon: CheckCircle2, title: "Você escolhe", description: "Você recebe a melhor opção e decide com calma, sem compromisso." },
+    { title: "Você escolhe", description: "Você recebe a melhor opção e decide com calma, sem compromisso." },
   ];
 
   return (
     <Section>
       <Container>
-        <h2 className="text-center font-display text-2xl font-bold text-neutral-900 md:text-3xl">Como funciona</h2>
-        <div className="mt-10 grid gap-8 sm:grid-cols-3">
+        <SectionHeader eyebrow="Processo simples" title="Como funciona" />
+        <ol className="relative mt-12 grid gap-10 sm:grid-cols-3 sm:gap-8">
+          {/* Linha-guia entre os passos (só desktop; decorativa). */}
+          <div aria-hidden="true" className="absolute left-0 right-0 top-7 hidden h-px bg-neutral-200 sm:block" />
           {steps.map((step, index) => (
-            <div key={step.title} className="flex flex-col items-center text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-                <step.icon className="size-6" aria-hidden="true" />
-              </div>
-              <h3 className="mt-4 font-display text-lg font-bold text-neutral-900">
-                {index + 1}. {step.title}
-              </h3>
-              <p className="mt-2 max-w-xs text-sm text-neutral-500">{step.description}</p>
-            </div>
+            <li key={step.title} className="relative">
+              <span className="relative inline-flex size-14 items-center justify-center rounded-2xl bg-brand-700 font-display text-xl font-bold text-white shadow-[0_8px_24px_rgba(10,37,64,0.25)]">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h3 className="mt-5 font-display text-lg font-bold text-neutral-900">{step.title}</h3>
+              <p className="mt-2 max-w-xs text-sm leading-relaxed text-neutral-500">{step.description}</p>
+            </li>
           ))}
-        </div>
+        </ol>
       </Container>
     </Section>
   );
