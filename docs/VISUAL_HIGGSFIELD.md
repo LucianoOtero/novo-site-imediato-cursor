@@ -35,7 +35,14 @@ Base comum (todas as gerações de hero):
 ## Log de gerações
 | Data | Asset | Modelo | Créditos | Status |
 |---|---|---|---|---|
-| 2026-07-19 | Hero home — lote 1 (A×2, B×2) | nano_banana_pro | 8 | em avaliação |
+| 2026-07-19 | Hero home — lote 1 (A×2, B×2) | nano_banana_pro | 8 | **A2 aprovada** → `public/hero/hero-bluehour.webp` |
+| 2026-07-19 | Ícones 3D piloto (4 Benefits) | nano_banana_pro | 8 | **aprovados** → `public/icons-3d/` |
+| 2026-07-19 | Ícones 3D set completo (10 ramos + 16 coberturas auto) | nano_banana_pro | ~52 | integrados → `public/icons-3d/ramo-*.webp`, `cov-*.webp` |
+
+### Prompt kit — ícones 3D (aprovado)
+> Minimal 3D rendered icon of {SUJEITO}, soft studio lighting, glossy deep navy blue and vibrant blue materials with subtle white accents, floating centered on a plain pure white background, soft shadow below, product-render style, high detail, no text, square composition
+- `1:1`, otimizados para WebP 256px (~4-5 KB cada).
+- Consumidores: `Benefits`, `InsuranceCard` (`RAMO_ICON_SRC`), `CoverageCards` (`COVERAGE_ICON_SRC`, com fallback Lucide para coberturas de outros ramos ainda sem ícone 3D).
 
 ## Integração (referência)
 - Sempre `next/image` com `sizes` corretos; hero com `priority`; demais lazy.
