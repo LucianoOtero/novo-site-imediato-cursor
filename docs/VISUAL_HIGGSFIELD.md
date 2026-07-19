@@ -39,7 +39,7 @@ Base comum (todas as gerações de hero):
 | 2026-07-19 | Ícones 3D piloto (4 Benefits) | nano_banana_pro | 8 | **aprovados** → `public/icons-3d/` |
 | 2026-07-19 | Ícones 3D set completo (10 ramos + 16 coberturas auto) | nano_banana_pro | ~52 | integrados → `public/icons-3d/ramo-*.webp`, `cov-*.webp` |
 | 2026-07-19 | Ícones 3D coberturas dos demais 9 ramos (17 renders; RCF/assistência reutilizam asset) | nano_banana_pro | ~34 | integrados → `public/icons-3d/cov-*.webp` |
-| 2026-07-19 | Vídeo hero experimental (avenida blue hour, ~5s) | seedance_2_0 | ~45 (1 bloqueado por filtro + 1 ok) | **em avaliação** → `public/v2-candidatas/hero-video-bluehour.mp4` (3,1 MB — não integrado; ver critério de adoção) |
+| 2026-07-19 | Vídeo hero experimental (avenida blue hour, ~5s) | seedance_2_0 | ~45 (1 bloqueado por filtro + 1 ok) | **reprovado pelo cliente** — hero permanece com a imagem estática (LCP ~108 ms); experimento encerrado |
 
 ### Prompt kit — ícones 3D (aprovado)
 > Minimal 3D rendered icon of {SUJEITO}, soft studio lighting, glossy deep navy blue and vibrant blue materials with subtle white accents, floating centered on a plain pure white background, soft shadow below, product-render style, high detail, no text, square composition
