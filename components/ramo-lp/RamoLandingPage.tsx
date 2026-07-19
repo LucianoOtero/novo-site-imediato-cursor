@@ -6,6 +6,8 @@ import { InsurersGrid } from "@/components/home/InsurersGrid";
 import { Arguments } from "@/components/ramo-lp/Arguments";
 import { CTASection } from "@/components/cta/CTASection";
 import { getRamo } from "@/lib/ramos";
+import { buildBreadcrumbSchema } from "@/lib/schema";
+import { publicEnv } from "@/lib/env";
 
 /**
  * RamoLandingPage — template compartilhado das 10 LPs de ramo (Issue 16).
@@ -46,8 +48,25 @@ export function RamoLandingPage({ ramoSlug }: { ramoSlug: string }) {
   const ramo = getRamo(ramoSlug);
   if (!ramo) return null;
 
+  // JSON-LD BreadcrumbList (Fase 4 do redesign v2, 2026-07-19) — o builder
+  // existia em lib/schema.ts desde a Issue 20 mas nunca tinha sido usado.
+  // Só emite com siteUrl configurada (URLs do schema precisam ser absolutas).
+  const breadcrumbSchema = publicEnv.siteUrl
+    ? buildBreadcrumbSchema([
+        { name: "Início", url: publicEnv.siteUrl },
+        { name: ramo.shortName, url: `${publicEnv.siteUrl}${ramo.seo.canonicalPath}` },
+      ])
+    : null;
+
   return (
     <>
+      {breadcrumbSchema && (
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger -- JSON-LD precisa ser injetado como script inline; conteúdo vem de buildBreadcrumbSchema, não de input de usuário.
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        />
+      )}
       <Hero ramoSlug={ramoSlug} />
       <Arguments ramoSlug={ramoSlug} />
       <CoverageCards ramoSlug={ramoSlug} />

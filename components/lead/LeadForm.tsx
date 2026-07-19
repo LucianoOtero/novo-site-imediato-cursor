@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Lock } from "lucide-react";
 import type { FieldErrors } from "react-hook-form";
 import type { z } from "zod";
 
@@ -24,6 +24,7 @@ import { useRpaCalculation } from "@/lib/leads/use-rpa-calculation";
 import type { RpaDisabledReason } from "@/lib/rpa-calculation";
 import { buildRpaPayload } from "@/lib/rpa";
 import { publicEnv } from "@/lib/env";
+import { company } from "@/lib/company";
 import {
   LEAD_FORM_STEPS,
   captureUtmFromLocation,
@@ -932,6 +933,14 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
           </Button>
         )}
       </div>
+
+      {/* Trust microcopy (versão visual v2, 2026-07-19) — sinais de confiança
+          junto ao formulário, padrão de LP financeira de alta conversão.
+          SUSEP vem de lib/company (fonte única, nunca hardcoded). */}
+      <p className="flex items-center justify-center gap-1.5 text-xs text-neutral-400">
+        <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+        Dados protegidos (LGPD) · Corretora registrada SUSEP {company.susep}
+      </p>
 
       {(() => {
         const invalidLabels = STEP_3_FIELDS.filter((field) => errors[field]).map((field) => STEP_3_FIELD_LABELS[field]);

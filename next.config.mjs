@@ -4,6 +4,13 @@ const nextConfig = {
   // package-lock.json adicional fora desta pasta e inferiu a raiz errada.
   outputFileTracingRoot: import.meta.dirname,
 
+  // Fase 4 do redesign v2 (2026-07-19): AVIF antes de WebP no pipeline do
+  // next/image — compressão ~20-30% melhor para as imagens fotográficas do
+  // hero (Higgsfield), com fallback automático para WebP.
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
+
   /**
    * Redirects 301 da migração (Issue 24).
    * Fonte: docs/INVENTARIO_URLS.md, seção 59 (tabela de migração).
