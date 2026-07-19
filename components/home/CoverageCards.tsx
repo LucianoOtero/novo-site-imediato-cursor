@@ -1,26 +1,5 @@
 import Image from "next/image";
-import {
-  Briefcase,
-  CalendarClock,
-  ClipboardList,
-  FileText,
-  FileWarning,
-  Home,
-  LifeBuoy,
-  Package,
-  PackageCheck,
-  Phone,
-  Receipt,
-  Scale,
-  Shield,
-  ShieldCheck,
-  Siren,
-  Smartphone,
-  Stethoscope,
-  Truck,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Shield } from "lucide-react";
 
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
@@ -38,14 +17,17 @@ import { getRamo } from "@/lib/ramos";
  * 05). **Mostra todas as coberturas** (2026-07-09, pedido do cliente) em
  * grid fixo de 4 colunas — ver histórico completo no git.
  *
- * Versão visual v2 — Fase 5 (2026-07-19, aprovada pelo cliente): as 16
- * coberturas do ramo Auto ganharam ícones 3D exclusivos no estilo da
- * marca (renders navy/azul via Higgsfield MCP, `COVERAGE_ICON_SRC` →
- * `/public/icons-3d/cov-*.webp`, ~4 KB cada, lazy). As coberturas dos
- * demais ramos (rascunho genérico) continuam com o fallback Lucide
- * (`COVERAGE_ICONS`) até o set 3D ser estendido a elas.
+ * Versão visual v2 — Fase 5 completa (2026-07-19, estilo aprovado pelo
+ * cliente): TODAS as coberturas (16 do auto + as dos outros 9 ramos)
+ * usam ícones 3D exclusivos no estilo da marca (renders navy/azul via
+ * Higgsfield MCP, prompt kit em docs/VISUAL_HIGGSFIELD.md) — WebP 256px
+ * ~4 KB cada, lazy via next/image. Nomes equivalentes reutilizam o
+ * mesmo asset (RCF/RCF-V; as 3 variações de assistência). `Shield`
+ * (Lucide) permanece apenas como fallback para nomes futuros fora do
+ * mapa.
  */
 const COVERAGE_ICON_SRC: Record<string, string> = {
+  // Auto (16)
   Colisão: "/icons-3d/cov-colisao.webp",
   "Roubo e furto": "/icons-3d/cov-roubo.webp",
   Incêndio: "/icons-3d/cov-incendio.webp",
@@ -62,30 +44,27 @@ const COVERAGE_ICON_SRC: Record<string, string> = {
   Retrovisores: "/icons-3d/cov-retrovisores.webp",
   Pneus: "/icons-3d/cov-pneus.webp",
   "Carro reserva": "/icons-3d/cov-carro-reserva.webp",
-};
-
-/** Fallback Lucide para coberturas ainda sem ícone 3D (ramos além de auto). */
-const COVERAGE_ICONS: Record<string, LucideIcon> = {
-  "RCF (danos a terceiros)": Scale,
-  "RCF-V (danos a terceiros)": Scale,
-  "Reposição de acessórios": PackageCheck,
-  "Casco (colisão, roubo e incêndio)": ShieldCheck,
-  "Carga transportada (opcional)": Package,
-  "Assistência 24h para veículos pesados": LifeBuoy,
-  "Assistência 24h para toda a frota": LifeBuoy,
-  "Cobertura para uso por aplicativo": Smartphone,
-  "Danos a passageiros": Users,
-  "Uso profissional coberto": Briefcase,
-  "Gestão centralizada de apólices": FileText,
-  "Consultas em rede credenciada": Stethoscope,
-  "Emergência veterinária 24h": Siren,
-  "Exames básicos": ClipboardList,
-  "Orientação veterinária por telefone": Phone,
-  "Aluguéis em atraso": CalendarClock,
-  "Multas contratuais": FileWarning,
-  "Danos ao imóvel": Home,
-  "Encargos condominiais e de consumo (conforme plano)": Receipt,
-  Guincho: Truck,
+  // Demais ramos (mesmo prompt kit; nomes equivalentes reutilizam o asset)
+  "RCF (danos a terceiros)": "/icons-3d/cov-rcf.webp",
+  "RCF-V (danos a terceiros)": "/icons-3d/cov-rcf.webp",
+  "Reposição de acessórios": "/icons-3d/cov-reposicao-acessorios.webp",
+  "Casco (colisão, roubo e incêndio)": "/icons-3d/cov-casco.webp",
+  "Carga transportada (opcional)": "/icons-3d/cov-carga.webp",
+  "Assistência 24h para veículos pesados": "/icons-3d/cov-assistencia.webp",
+  "Assistência 24h para toda a frota": "/icons-3d/cov-assistencia.webp",
+  "Cobertura para uso por aplicativo": "/icons-3d/cov-app.webp",
+  "Danos a passageiros": "/icons-3d/cov-danos-passageiros.webp",
+  "Uso profissional coberto": "/icons-3d/cov-uso-profissional.webp",
+  "Gestão centralizada de apólices": "/icons-3d/cov-gestao-apolices.webp",
+  "Consultas em rede credenciada": "/icons-3d/cov-consultas-rede.webp",
+  "Emergência veterinária 24h": "/icons-3d/cov-emergencia-vet.webp",
+  "Exames básicos": "/icons-3d/cov-exames.webp",
+  "Orientação veterinária por telefone": "/icons-3d/cov-orientacao-telefone.webp",
+  "Aluguéis em atraso": "/icons-3d/cov-alugueis.webp",
+  "Multas contratuais": "/icons-3d/cov-multas.webp",
+  "Danos ao imóvel": "/icons-3d/cov-danos-imovel.webp",
+  "Encargos condominiais e de consumo (conforme plano)": "/icons-3d/cov-encargos.webp",
+  Guincho: "/icons-3d/cov-guincho.webp",
 };
 
 export function CoverageCards({ ramoSlug }: { ramoSlug: string }) {
@@ -101,7 +80,6 @@ export function CoverageCards({ ramoSlug }: { ramoSlug: string }) {
         <div className="mt-12 grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
           {coverages.map((coverage) => {
             const iconSrc = COVERAGE_ICON_SRC[coverage];
-            const Icon = COVERAGE_ICONS[coverage] ?? Shield;
             return (
               <div
                 key={coverage}
@@ -117,7 +95,7 @@ export function CoverageCards({ ramoSlug }: { ramoSlug: string }) {
                     aria-hidden="true"
                   />
                 ) : (
-                  <Icon className="size-7 shrink-0 text-brand-500" aria-hidden="true" />
+                  <Shield className="size-7 shrink-0 text-brand-500" aria-hidden="true" />
                 )}
                 <span className="text-sm leading-tight font-medium text-neutral-900">{coverage}</span>
               </div>
