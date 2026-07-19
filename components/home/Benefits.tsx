@@ -1,4 +1,4 @@
-import { BadgeDollarSign, HeartHandshake, Ruler, ShieldCheck } from "lucide-react";
+import Image from "next/image";
 
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
@@ -15,14 +15,16 @@ import { SectionHeader } from "@/components/ui/section-header";
  * Conteúdo sem impacto em dado regulatório/comercial.
  *
  * Versão visual v2 (2026-07-19): cards com sombra em camadas + hover
- * lift sutil, ícone em "tile" arredondado da marca e `SectionHeader`
- * (eyebrow + título display) — padrão de agência para fintech/seguros.
+ * lift e `SectionHeader` (eyebrow + título display). Fase 5 do redesign:
+ * ícones 3D exclusivos gerados via Higgsfield MCP no estilo da marca
+ * (render 3D navy/azul, ver docs/VISUAL_HIGGSFIELD.md) substituem os
+ * ícones genéricos do Lucide — WebP 256px, ~5 KB cada, lazy.
  */
 const BENEFITS = [
-  { icon: BadgeDollarSign, title: "Preço", description: "Comparamos entre seguradoras parceiras para encontrar o melhor custo-benefício." },
-  { icon: ShieldCheck, title: "Bônus integral", description: "Você mantém sua classe de bônus ao migrar seu seguro para a Imediato." },
-  { icon: Ruler, title: "Sob medida", description: "Cobertura ajustada ao seu perfil, veículo e necessidade — sem pacote genérico." },
-  { icon: HeartHandshake, title: "Apoio no sinistro", description: "Suporte humano do início ao fim, inclusive na hora que mais importa." },
+  { icon: "/icons-3d/preco.webp", title: "Preço", description: "Comparamos entre seguradoras parceiras para encontrar o melhor custo-benefício." },
+  { icon: "/icons-3d/bonus.webp", title: "Bônus integral", description: "Você mantém sua classe de bônus ao migrar seu seguro para a Imediato." },
+  { icon: "/icons-3d/sobmedida.webp", title: "Sob medida", description: "Cobertura ajustada ao seu perfil, veículo e necessidade — sem pacote genérico." },
+  { icon: "/icons-3d/sinistro.webp", title: "Apoio no sinistro", description: "Suporte humano do início ao fim, inclusive na hora que mais importa." },
 ];
 
 export function Benefits() {
@@ -36,10 +38,15 @@ export function Benefits() {
               key={benefit.title}
               className="group rounded-2xl border border-neutral-200 bg-white p-6 shadow-[0_1px_2px_rgba(11,31,58,0.06)] transition-all duration-200 ease-[var(--ease-standard)] hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(11,31,58,0.12)]"
             >
-              <div className="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-500 group-hover:text-white">
-                <benefit.icon className="size-5" aria-hidden="true" />
-              </div>
-              <h3 className="mt-5 font-display text-lg font-bold text-neutral-900">{benefit.title}</h3>
+              <Image
+                src={benefit.icon}
+                alt=""
+                width={64}
+                height={64}
+                className="size-16 transition-transform duration-200 group-hover:scale-110"
+                aria-hidden="true"
+              />
+              <h3 className="mt-4 font-display text-lg font-bold text-neutral-900">{benefit.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-neutral-500">{benefit.description}</p>
             </div>
           ))}
