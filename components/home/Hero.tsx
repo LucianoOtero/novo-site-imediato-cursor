@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { getImageProps } from "next/image";
 import { ShieldCheck, Star } from "lucide-react";
 
 import { Container } from "@/components/ui/container";
@@ -30,12 +30,60 @@ import { useSubmitLead } from "@/lib/leads/use-submit-lead";
  *
  * Versão visual v2 (2026-07-19, branch v2-visual): imagem de fundo
  * fotográfica gerada via Higgsfield MCP (ver docs/VISUAL_HIGGSFIELD.md,
- * variação "blue hour" aprovada pelo cliente) com overlay do gradiente
- * da marca para legibilidade. `next/image` com `priority` + `fill` —
- * o WebP de 1920px tem ~113 KB (dentro do budget de LCP definido no
- * plano). Textos passam a claros sobre o fundo escuro; o card do
- * formulário continua branco (contraste e affordance preservados).
+ * estilo "blue hour" aprovado pelo cliente) com overlay do gradiente
+ * da marca para legibilidade. Textos claros sobre o fundo escuro; o
+ * card do formulário continua branco.
+ *
+ * **Heros por ramo + direção de arte responsiva** (2026-07-19, pedido
+ * do cliente: "a adaptação da imagem para o mobile perdeu o sentido"):
+ * cada ramo tem sua própria imagem, em DUAS composições distintas —
+ * 16:9 para desktop (veículo à direita, copy space à esquerda) e 9:16
+ * para mobile (veículo em destaque na metade inferior, céu no topo para
+ * o texto). Implementado com `<picture>` + `getImageProps` (padrão
+ * oficial do Next para art direction): o navegador baixa APENAS a
+ * variante do breakpoint ativo (`md` = 768px), sem custo duplo.
  */
+const HERO_IMAGES: Record<string, { desktop: string; mobile: string }> = {
+  auto: { desktop: "/hero/hero-bluehour.webp", mobile: "/hero/auto-mobile.webp" },
+  moto: { desktop: "/hero/moto-desktop.webp", mobile: "/hero/moto-mobile.webp" },
+  caminhao: { desktop: "/hero/caminhao-desktop.webp", mobile: "/hero/caminhao-mobile.webp" },
+  uber: { desktop: "/hero/uber-desktop.webp", mobile: "/hero/uber-mobile.webp" },
+  taxi: { desktop: "/hero/taxi-desktop.webp", mobile: "/hero/taxi-mobile.webp" },
+  utilitario: { desktop: "/hero/utilitario-desktop.webp", mobile: "/hero/utilitario-mobile.webp" },
+  frota: { desktop: "/hero/frota-desktop.webp", mobile: "/hero/frota-mobile.webp" },
+  pet: { desktop: "/hero/pet-desktop.webp", mobile: "/hero/pet-mobile.webp" },
+  fianca: { desktop: "/hero/fianca-desktop.webp", mobile: "/hero/fianca-mobile.webp" },
+  "assistencia-24-horas": { desktop: "/hero/assistencia-desktop.webp", mobile: "/hero/assistencia-mobile.webp" },
+};
+
+function HeroBackground({ ramoSlug }: { ramoSlug: string }) {
+  const images = HERO_IMAGES[ramoSlug] ?? HERO_IMAGES.auto;
+
+  const common = { alt: "", sizes: "100vw", quality: 80 } as const;
+  const {
+    props: { srcSet: desktopSrcSet },
+  } = getImageProps({ ...common, src: images.desktop, width: 1920, height: 1072 });
+  const {
+    props: { srcSet: mobileSrcSet, src: mobileSrc },
+  } = getImageProps({ ...common, src: images.mobile, width: 828, height: 1472 });
+
+  return (
+    <picture>
+      <source media="(min-width: 768px)" srcSet={desktopSrcSet} />
+      <source media="(max-width: 767px)" srcSet={mobileSrcSet} />
+      {/* eslint-disable-next-line @next/next/no-img-element -- art direction exige <picture> com media queries; srcSet/otimização vêm de getImageProps (pipeline do next/image). */}
+      <img
+        src={mobileSrc}
+        alt=""
+        fetchPriority="high"
+        decoding="async"
+        className="absolute inset-0 size-full object-cover object-center"
+        aria-hidden="true"
+      />
+    </picture>
+  );
+}
+
 export function Hero({ ramoSlug }: { ramoSlug: string }) {
   const ramo = getRamo(ramoSlug);
   const { submitLead } = useSubmitLead(ramoSlug);
@@ -44,15 +92,7 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
 
   return (
     <Section className="relative overflow-hidden">
-      <Image
-        src="/hero/hero-bluehour.webp"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover object-center"
-        aria-hidden="true"
-      />
+      <HeroBackground ramoSlug={ramoSlug} />
       {/* Overlay do gradiente da marca (navy → azul) para legibilidade do texto claro. */}
       <div
         aria-hidden="true"

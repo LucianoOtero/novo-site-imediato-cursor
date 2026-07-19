@@ -40,6 +40,12 @@ Base comum (todas as gerações de hero):
 | 2026-07-19 | Ícones 3D set completo (10 ramos + 16 coberturas auto) | nano_banana_pro | ~52 | integrados → `public/icons-3d/ramo-*.webp`, `cov-*.webp` |
 | 2026-07-19 | Ícones 3D coberturas dos demais 9 ramos (17 renders; RCF/assistência reutilizam asset) | nano_banana_pro | ~34 | integrados → `public/icons-3d/cov-*.webp` |
 | 2026-07-19 | Vídeo hero experimental (avenida blue hour, ~5s) | seedance_2_0 | ~45 (1 bloqueado por filtro + 1 ok) | **reprovado pelo cliente** — hero permanece com a imagem estática (LCP ~108 ms); experimento encerrado |
+| 2026-07-19 | Heros por ramo, responsivos (9 desktop 16:9 + 10 mobile 9:16) | nano_banana_pro | ~38 | integrados → `public/hero/{ramo}-{desktop,mobile}.webp` + art direction via `<picture>`/`getImageProps` |
+
+### Heros responsivos (art direction)
+- **Motivo** (feedback do cliente): o crop do 16:9 no mobile "perdia o sentido — só o fundo da cidade, sem detalhe".
+- **Solução**: composição própria por breakpoint — 16:9 (veículo à direita, copy space à esquerda) para ≥768px; 9:16 (veículo em destaque na metade inferior, céu no topo para o texto) para <768px. O `<picture>` com media queries garante que o navegador baixa **só** a variante ativa.
+- Prompt mobile: mesmo kit, com "vertical portrait… subject prominent and centered in the lower half, sky occupying the top third for website text overlay" e `aspect_ratio: 9:16`.
 
 ### Prompt kit — ícones 3D (aprovado)
 > Minimal 3D rendered icon of {SUJEITO}, soft studio lighting, glossy deep navy blue and vibrant blue materials with subtle white accents, floating centered on a plain pure white background, soft shadow below, product-render style, high detail, no text, square composition
