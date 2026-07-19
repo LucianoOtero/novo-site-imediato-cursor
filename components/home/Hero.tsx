@@ -59,28 +59,54 @@ const HERO_IMAGES: Record<string, { desktop: string; mobile: string }> = {
 function HeroBackground({ ramoSlug }: { ramoSlug: string }) {
   const images = HERO_IMAGES[ramoSlug] ?? HERO_IMAGES.auto;
 
-  const common = { alt: "", sizes: "100vw", quality: 80 } as const;
+  // quality 70 (era 80) — otimização de LCP 2026-07-19: nas fotos noturnas
+  // "blue hour" a diferença é imperceptível e corta ~25% dos bytes.
+  const common = { alt: "", sizes: "100vw", quality: 70 } as const;
   const {
-    props: { srcSet: desktopSrcSet },
+    props: { srcSet: desktopSrcSet, src: desktopSrc },
   } = getImageProps({ ...common, src: images.desktop, width: 1920, height: 1072 });
   const {
     props: { srcSet: mobileSrcSet, src: mobileSrc },
   } = getImageProps({ ...common, src: images.mobile, width: 828, height: 1472 });
 
   return (
-    <picture>
-      <source media="(min-width: 768px)" srcSet={desktopSrcSet} />
-      <source media="(max-width: 767px)" srcSet={mobileSrcSet} />
-      {/* eslint-disable-next-line @next/next/no-img-element -- art direction exige <picture> com media queries; srcSet/otimização vêm de getImageProps (pipeline do next/image). */}
-      <img
-        src={mobileSrc}
-        alt=""
+    <>
+      {/* Preload da imagem do hero (otimização de LCP 2026-07-19): sem isso o
+          navegador só descobre a imagem ao processar o <picture> no corpo da
+          página. React 19 iça estes <link> para o <head> — mas SÓ quando têm
+          `href` (links de preload sem href são descartados na hoistagem);
+          navegadores que suportam `imagesrcset` ignoram o href. O atributo
+          media garante que cada dispositivo pré-carrega SÓ a sua variante. */}
+      <link
+        rel="preload"
+        as="image"
+        href={desktopSrc}
+        imageSrcSet={desktopSrcSet}
+        media="(min-width: 768px)"
         fetchPriority="high"
-        decoding="async"
-        className="absolute inset-0 size-full object-cover object-center"
-        aria-hidden="true"
       />
-    </picture>
+      <link
+        rel="preload"
+        as="image"
+        href={mobileSrc}
+        imageSrcSet={mobileSrcSet}
+        media="(max-width: 767px)"
+        fetchPriority="high"
+      />
+      <picture>
+        <source media="(min-width: 768px)" srcSet={desktopSrcSet} />
+        <source media="(max-width: 767px)" srcSet={mobileSrcSet} />
+        {/* eslint-disable-next-line @next/next/no-img-element -- art direction exige <picture> com media queries; srcSet/otimização vêm de getImageProps (pipeline do next/image). */}
+        <img
+          src={mobileSrc}
+          alt=""
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 size-full object-cover object-center"
+          aria-hidden="true"
+        />
+      </picture>
+    </>
   );
 }
 
