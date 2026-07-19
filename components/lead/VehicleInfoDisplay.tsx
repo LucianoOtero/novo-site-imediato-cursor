@@ -1,5 +1,8 @@
 import { Car } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+import type { FormTone } from "@/components/lead/fields";
+
 /**
  * VehicleInfoDisplay — ficha somente-leitura do veículo identificado
  * pela Placa Fipe (projeto 2026-07-16, a pedido do cliente).
@@ -23,12 +26,16 @@ export function VehicleInfoDisplay({
   modelo,
   anoFabricacao,
   anoModelo,
+  tone = "light",
 }: {
   marca?: string;
   modelo?: string;
   anoFabricacao?: string;
   anoModelo?: string;
+  /** `glass` (v2 visual): ficha em vidro branco suave com textos claros, para o card navy do Hero. */
+  tone?: FormTone;
 }) {
+  const glass = tone === "glass";
   if (!marca && !modelo && !anoFabricacao && !anoModelo) return null;
 
   const items: { label: string; value?: string }[] = [
@@ -41,16 +48,26 @@ export function VehicleInfoDisplay({
   return (
     <div
       role="status"
-      className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 flex items-start gap-2.5 rounded-lg bg-neutral-50 px-3.5 py-3"
+      className={cn(
+        "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 flex items-start gap-2.5 rounded-lg px-3.5 py-3",
+        glass ? "bg-white/10" : "bg-neutral-50"
+      )}
     >
-      <Car className="mt-0.5 size-4 shrink-0 text-neutral-400" aria-hidden="true" />
+      <Car className={cn("mt-0.5 size-4 shrink-0", glass ? "text-brand-50/60" : "text-neutral-400")} aria-hidden="true" />
       <div className="flex flex-col gap-1">
-        <p className="text-[11px] font-medium tracking-wide text-neutral-400 uppercase">Veículo identificado</p>
+        <p
+          className={cn(
+            "text-[11px] font-medium tracking-wide uppercase",
+            glass ? "text-brand-50/60" : "text-neutral-400"
+          )}
+        >
+          Veículo identificado
+        </p>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-0.5">
           {items.map((item) => (
-            <div key={item.label} className="text-xs text-neutral-500">
+            <div key={item.label} className={cn("text-xs", glass ? "text-brand-50/70" : "text-neutral-500")}>
               <dt className="inline">{item.label}: </dt>
-              <dd className="inline font-medium text-neutral-700">{item.value}</dd>
+              <dd className={cn("inline font-medium", glass ? "text-white" : "text-neutral-700")}>{item.value}</dd>
             </div>
           ))}
         </dl>

@@ -15,7 +15,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Field } from "@/components/lead/fields";
+import { Field, type FormTone } from "@/components/lead/fields";
 import { ProgressBar } from "@/components/lead/ProgressBar";
 import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { RpaChoiceStep } from "@/components/lead/RpaChoiceStep";
@@ -38,6 +38,7 @@ import {
   type LeadInput,
 } from "@/lib/validators";
 import { trackEvent } from "@/lib/analytics";
+import { cn } from "@/lib/utils";
 
 /**
  * LeadForm — formulário multi-step de captura de lead (Issue 11).
@@ -166,6 +167,27 @@ const STEP_SUBTITLES: Record<StepNumber, string> = {
   4: "Como você quer receber sua cotação?",
 };
 
+/**
+ * Tone "glass" (v2 visual, 2026-07-19, pedido do cliente): na variante
+ * `inline` (Hero), o card deixa de ser branco opaco e vira navy
+ * translúcido com backdrop-blur — a imagem do hero continua visível por
+ * trás sem comprometer a legibilidade. Campos ganham vidro branco suave
+ * (`bg-white/10`) com texto branco; erros usam red-300 (o `text-alert`
+ * padrão é escuro demais sobre navy). A variante `page` (/cotacao) e o
+ * `ContactLeadModal` continuam com o card branco de sempre.
+ *
+ * Fallback: navegadores sem `backdrop-filter` recebem navy a 90% de
+ * opacidade (via `supports-[backdrop-filter]`) — sem blur, a opacidade
+ * maior garante a legibilidade sozinha.
+ */
+const GLASS_CARD_CLASS =
+  "border-white/15 bg-[#0a2540]/90 supports-[backdrop-filter]:bg-[#0a2540]/65 backdrop-blur-xl shadow-2xl";
+const GLASS_INPUT_CLASS = [
+  "border-white/25 bg-white/10 text-white placeholder:text-white/40",
+  "focus-visible:border-white/60 focus-visible:ring-white/25",
+  "aria-invalid:border-red-300 aria-invalid:focus-visible:ring-red-300/30",
+].join(" ");
+
 /** Ordem de exibição/foco no passo 3 — mesma ordem dos campos na tela. */
 const STEP_3_FIELDS = ["cpf", "cep", "placa"] as const;
 const STEP_3_FIELD_LABELS: Record<(typeof STEP_3_FIELDS)[number], string> = { cpf: "CPF", cep: "CEP", placa: "Placa" };
@@ -180,6 +202,8 @@ const STEP_3_FIELD_LABELS: Record<(typeof STEP_3_FIELDS)[number], string> = { cp
 type LeadFormValues = z.input<typeof leadSchema>;
 
 export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
+  const tone: FormTone = variant === "inline" ? "glass" : "light";
+  const glass = tone === "glass";
   const [step, setStep] = useState<StepNumber>(1);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [hasStarted, setHasStarted] = useState(false);
@@ -728,10 +752,20 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
   if (status === "success") {
     return (
-      <div role="status" className="flex flex-col items-center gap-3 rounded-xl border border-neutral-200 bg-white p-8 text-center">
-        <CheckCircle2 className="size-10 text-brand-500" aria-hidden="true" />
-        <p className="font-display text-lg font-bold text-neutral-900">Recebemos seus dados!</p>
-        <p className="text-sm text-neutral-500">Em breve um especialista entra em contato para finalizar sua cotação.</p>
+      <div
+        role="status"
+        className={cn(
+          "flex flex-col items-center gap-3 rounded-xl border p-8 text-center",
+          glass ? GLASS_CARD_CLASS : "border-neutral-200 bg-white"
+        )}
+      >
+        <CheckCircle2 className={cn("size-10", glass ? "text-brand-100" : "text-brand-500")} aria-hidden="true" />
+        <p className={cn("font-display text-lg font-bold", glass ? "text-white" : "text-neutral-900")}>
+          Recebemos seus dados!
+        </p>
+        <p className={cn("text-sm", glass ? "text-brand-50/70" : "text-neutral-500")}>
+          Em breve um especialista entra em contato para finalizar sua cotação.
+        </p>
       </div>
     );
   }
@@ -752,30 +786,36 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               void goNext();
             }
       }
-      className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-6"
+      className={cn(
+        "flex flex-col gap-4 rounded-xl border p-6",
+        glass ? GLASS_CARD_CLASS : "border-neutral-200 bg-white"
+      )}
     >
       <div>
-        <h2 className="font-display text-xl font-bold text-neutral-900 md:text-2xl">{FORM_TITLE}</h2>
-        <p className="mt-1 text-sm text-neutral-500">{STEP_SUBTITLES[step]}</p>
+        <h2 className={cn("font-display text-xl font-bold md:text-2xl", glass ? "text-white" : "text-neutral-900")}>
+          {FORM_TITLE}
+        </h2>
+        <p className={cn("mt-1 text-sm", glass ? "text-brand-50/80" : "text-neutral-500")}>{STEP_SUBTITLES[step]}</p>
         {step <= COLLECTION_STEPS && (
           <>
-            <p className="mt-1 text-sm font-medium text-neutral-500">
+            <p className={cn("mt-1 text-sm font-medium", glass ? "text-brand-50/70" : "text-neutral-500")}>
               Etapa {step} de {COLLECTION_STEPS}
             </p>
-            <p className="mt-0.5 text-xs text-neutral-400">{FORM_SPEED_TEASER}</p>
+            <p className={cn("mt-0.5 text-xs", glass ? "text-brand-50/50" : "text-neutral-400")}>{FORM_SPEED_TEASER}</p>
           </>
         )}
       </div>
 
       {step <= COLLECTION_STEPS && (
-        <ProgressBar step={step} totalSteps={COLLECTION_STEPS} compact={variant === "inline"} />
+        <ProgressBar step={step} totalSteps={COLLECTION_STEPS} compact={variant === "inline"} tone={tone} />
       )}
 
       {step === 1 && (
         <div className="grid grid-cols-[5rem_1fr] gap-3">
-          <Field label="DDD" htmlFor="ddd" error={errors.ddd?.message}>
+          <Field label="DDD" htmlFor="ddd" error={errors.ddd?.message} tone={tone}>
             <Input
               id="ddd"
+              className={glass ? GLASS_INPUT_CLASS : undefined}
               inputMode="numeric"
               autoComplete="tel-area-code"
               placeholder="11"
@@ -793,9 +833,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               }}
             />
           </Field>
-          <Field label="Celular" htmlFor="celular" error={errors.celular?.message}>
+          <Field label="Celular" htmlFor="celular" error={errors.celular?.message} tone={tone}>
             <Input
               id="celular"
+              className={glass ? GLASS_INPUT_CLASS : undefined}
               inputMode="numeric"
               autoComplete="tel-national"
               placeholder="98765-4321"
@@ -817,12 +858,20 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
       {step === 2 && (
         <>
-          <Field label="Nome" htmlFor="nome" error={errors.nome?.message} hint="Opcional">
-            <Input id="nome" autoComplete="name" placeholder="Seu nome" aria-invalid={!!errors.nome} {...nome} />
+          <Field label="Nome" htmlFor="nome" error={errors.nome?.message} hint="Opcional" tone={tone}>
+            <Input
+              id="nome"
+              className={glass ? GLASS_INPUT_CLASS : undefined}
+              autoComplete="name"
+              placeholder="Seu nome"
+              aria-invalid={!!errors.nome}
+              {...nome}
+            />
           </Field>
-          <Field label="E-mail" htmlFor="email" error={errors.email?.message} hint="Opcional">
+          <Field label="E-mail" htmlFor="email" error={errors.email?.message} hint="Opcional" tone={tone}>
             <Input
               id="email"
+              className={glass ? GLASS_INPUT_CLASS : undefined}
               type="email"
               autoComplete="email"
               placeholder="voce@email.com"
@@ -840,10 +889,13 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
       {step === 3 && (
         <>
-          <p className="text-sm text-neutral-500">CPF, CEP e placa são opcionais — ou deixe que coletamos no contato.</p>
-          <Field label="CPF" htmlFor="cpf" error={errors.cpf?.message} hint="Opcional">
+          <p className={cn("text-sm", glass ? "text-brand-50/70" : "text-neutral-500")}>
+            CPF, CEP e placa são opcionais — ou deixe que coletamos no contato.
+          </p>
+          <Field label="CPF" htmlFor="cpf" error={errors.cpf?.message} hint="Opcional" tone={tone}>
             <Input
               id="cpf"
+              className={glass ? GLASS_INPUT_CLASS : undefined}
               inputMode="numeric"
               autoComplete="off"
               placeholder="000.000.000-00"
@@ -859,9 +911,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               }}
             />
           </Field>
-          <Field label="CEP" htmlFor="cep" error={errors.cep?.message} hint="Opcional">
+          <Field label="CEP" htmlFor="cep" error={errors.cep?.message} hint="Opcional" tone={tone}>
             <Input
               id="cep"
+              className={glass ? GLASS_INPUT_CLASS : undefined}
               inputMode="numeric"
               autoComplete="postal-code"
               placeholder="00000-000"
@@ -878,9 +931,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               }}
             />
           </Field>
-          <Field label="Placa" htmlFor="placa" error={errors.placa?.message} hint="Opcional">
+          <Field label="Placa" htmlFor="placa" error={errors.placa?.message} hint="Opcional" tone={tone}>
             <Input
               id="placa"
+              className={glass ? GLASS_INPUT_CLASS : undefined}
               autoComplete="off"
               placeholder="ABC1D23"
               aria-invalid={!!errors.placa}
@@ -900,6 +954,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
             modelo={watchedVeiculoModelo}
             anoFabricacao={watchedVeiculoAnoFabricacao}
             anoModelo={watchedVeiculoAnoModelo}
+            tone={tone}
           />
         </>
       )}
@@ -912,18 +967,25 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
           rpaEnabled={rpaEnabled}
           rpaDisabledReason={rpaDisabledReason}
           featureEnabled={publicEnv.rpaEnabled}
+          tone={tone}
         />
       )}
 
       {status === "error" && (
-        <p role="alert" className="text-sm font-medium text-alert">
+        <p role="alert" className={cn("text-sm font-medium", glass ? "text-red-300" : "text-alert")}>
           Não foi possível enviar agora. Tente novamente ou fale conosco pelo WhatsApp.
         </p>
       )}
 
       <div className="flex gap-3">
         {step > 1 && (
-          <Button type="button" variant="ghost" onClick={goBack} disabled={isBusy}>
+          <Button
+            type="button"
+            variant="ghost"
+            className={glass ? "text-white hover:bg-white/10" : undefined}
+            onClick={goBack}
+            disabled={isBusy}
+          >
             Voltar
           </Button>
         )}
@@ -937,7 +999,12 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       {/* Trust microcopy (versão visual v2, 2026-07-19) — sinais de confiança
           junto ao formulário, padrão de LP financeira de alta conversão.
           SUSEP vem de lib/company (fonte única, nunca hardcoded). */}
-      <p className="flex items-center justify-center gap-1.5 text-xs text-neutral-400">
+      <p
+        className={cn(
+          "flex items-center justify-center gap-1.5 text-xs",
+          glass ? "text-brand-50/60" : "text-neutral-400"
+        )}
+      >
         <Lock className="size-3.5 shrink-0" aria-hidden="true" />
         Dados protegidos (LGPD) · Corretora registrada SUSEP {company.susep}
       </p>
