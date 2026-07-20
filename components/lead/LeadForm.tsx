@@ -219,8 +219,17 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [hasStarted, setHasStarted] = useState(false);
   const [showCorrectOrProceed, setShowCorrectOrProceed] = useState(false);
-  /** `true` a partir do momento em que o usuário escolhe "Aguardar o cálculo" no passo 4 — substitui todo o formulário por `RpaCalculationScreen`. */
+  /** `true` a partir do momento em que o usuário escolhe "Quero calcular agora" no passo 4 — substitui todo o formulário por `RpaCalculationScreen`. */
   const [rpaActive, setRpaActive] = useState(false);
+  /**
+   * Validações assíncronas em andamento (placa/CEP/celular/e-mail) — pedido
+   * do cliente, 2026-07-20: ao chegar no passo 4 com a consulta da placa
+   * ainda em voo, a mensagem "dados incompletos" aparecia por um instante e
+   * sumia quando a API respondia, parecendo um erro. Enquanto este contador
+   * for > 0, o passo 4 mostra "Aguarde, validando os dados apresentados…"
+   * (ampulheta) em vez do aviso de dados incompletos.
+   */
+  const [pendingValidations, setPendingValidations] = useState(0);
   const rpa = useRpaCalculation();
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
@@ -407,6 +416,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     if (!formatOk) return;
 
     const { ddd: dddValue, celular: celularValue } = getValues();
+    setPendingValidations((count) => count + 1);
     try {
       const response = await fetch("/api/validate/phone", {
         method: "POST",
@@ -422,6 +432,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       }
     } catch {
       // Best-effort — nunca bloqueia.
+    } finally {
+      setPendingValidations((count) => count - 1);
     }
   }
 
@@ -439,6 +451,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     const formatOk = await trigger("email");
     if (!formatOk) return;
 
+    setPendingValidations((count) => count + 1);
     try {
       const response = await fetch("/api/validate/email", {
         method: "POST",
@@ -454,6 +467,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       }
     } catch {
       // Best-effort — nunca bloqueia.
+    } finally {
+      setPendingValidations((count) => count - 1);
     }
   }
 
@@ -481,6 +496,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     const cepValue = getValues("cep");
     if (!formatOk || !cepValue) return;
 
+    setPendingValidations((count) => count + 1);
     try {
       const response = await fetch("/api/validate/cep", {
         method: "POST",
@@ -496,6 +512,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       }
     } catch {
       // Best-effort — nunca bloqueia.
+    } finally {
+      setPendingValidations((count) => count - 1);
     }
   }
 
@@ -520,6 +538,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     const placaValue = getValues("placa");
     if (!placaValid || !placaValue) return;
 
+    setPendingValidations((count) => count + 1);
     try {
       const response = await fetch("/api/validate/placa", {
         method: "POST",
@@ -550,6 +569,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       if (result.ano) setValue("veiculoAno", result.ano);
     } catch {
       // Best-effort — nunca bloqueia.
+    } finally {
+      setPendingValidations((count) => count - 1);
     }
   }
 
@@ -1104,9 +1125,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
             busy={isBusy}
             rpaEnabled={rpaEnabled}
             rpaDisabledReason={rpaDisabledReason}
-            featureEnabled={publicEnv.rpaEnabled}
-            tone={tone}
-          />
+          featureEnabled={publicEnv.rpaEnabled}
+          tone={tone}
+          validating={pendingValidations > 0}
+        />
         )}
       </div>
 

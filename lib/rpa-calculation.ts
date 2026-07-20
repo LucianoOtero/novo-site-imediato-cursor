@@ -196,7 +196,15 @@ export const RPA_PROFILE_ESTIMATE_NOTICE =
 export type RpaDisabledReason = "caminhao" | "dados_incompletos";
 
 export const RPA_DISABLED_CAMINHAO_MESSAGE =
-  "Seguro de caminhão é cotado por um especialista da Imediato Seguros — o cálculo automático não se aplica a essa categoria. Toque em “Falar com um consultor” e cuidamos de tudo para você.";
+  "Seguro de caminhão é cotado por um especialista da Imediato Seguros — o cálculo automático não se aplica a essa categoria. Toque em “Prefiro receber o cálculo completo depois” e cuidamos de tudo para você.";
 
 export const RPA_DISABLED_INCOMPLETE_MESSAGE =
-  "O cálculo automático precisa de todos os dados preenchidos e validados: nome, e-mail, CPF, CEP e placa com o veículo identificado. Complete os campos anteriores ou fale com um consultor para calcularmos para você.";
+  "O cálculo automático precisa de todos os dados preenchidos e validados: nome, e-mail, CPF, CEP e placa com o veículo identificado. Complete os campos anteriores ou receba o cálculo completo depois com um especialista.";
+
+/**
+ * Exibida no passo 4 enquanto as validações assíncronas (placa/CEP/celular/
+ * e-mail) ainda estão em andamento (pedido do cliente, 2026-07-20): antes,
+ * a mensagem de "dados incompletos" aparecia por um instante e era trocada
+ * pelo botão habilitado assim que a validação terminava — parecia um erro.
+ */
+export const RPA_VALIDATING_MESSAGE = "Aguarde, validando os dados apresentados…";

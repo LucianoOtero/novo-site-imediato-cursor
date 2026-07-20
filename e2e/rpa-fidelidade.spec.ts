@@ -285,15 +285,15 @@ for (const caso of manifest.casos) {
       return;
     }
 
-    // Passo 4 — escolher "Aguardar o cálculo"
-    const btnAguardar = page.getByRole("button", { name: "Aguardar o cálculo" });
+    // Passo 4 — escolher "Quero calcular agora" (CTA renomeado em 2026-07-20; antes "Aguardar o cálculo")
+    const btnAguardar = page.getByRole("button", { name: "Quero calcular agora" });
     await expect(btnAguardar).toBeVisible({ timeout: 15_000 });
     // Criterios de habilitacao (2026-07-17): o botao fica DESABILITADO para
     // caminhao ou quando faltam dados validados. Nesse caso o site nao chama
     // o RPA por design — registramos e seguimos.
     if (await btnAguardar.isDisabled().catch(() => false)) {
       registrar("rpa_desabilitado", {
-        detalhe: `Botão 'Aguardar o cálculo' desabilitado (ramo=${caso.ramo}: caminhão ou dados incompletos)`,
+        detalhe: `Botão 'Quero calcular agora' desabilitado (ramo=${caso.ramo}: caminhão ou dados incompletos)`,
       });
       return;
     }

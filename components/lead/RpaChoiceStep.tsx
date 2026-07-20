@@ -1,4 +1,4 @@
-import { Headset, Info, Timer } from "lucide-react";
+import { Headset, Hourglass, Info, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import {
   RPA_DISABLED_CAMINHAO_MESSAGE,
   RPA_DISABLED_INCOMPLETE_MESSAGE,
   RPA_PROFILE_ESTIMATE_NOTICE,
+  RPA_VALIDATING_MESSAGE,
   type RpaDisabledReason,
 } from "@/lib/rpa-calculation";
 
@@ -46,6 +47,13 @@ export interface RpaChoiceStepProps {
   featureEnabled: boolean;
   /** `glass` (v2 visual, 2026-07-19): textos claros e cards internos translúcidos, para o card navy do Hero. */
   tone?: FormTone;
+  /**
+   * `true` enquanto validações assíncronas (placa/CEP/celular/e-mail) ainda
+   * estão em andamento (pedido do cliente, 2026-07-20) — mostra a ampulheta
+   * "Aguarde, validando os dados apresentados…" em vez do aviso de dados
+   * incompletos, que piscava e sumia parecendo um erro.
+   */
+  validating?: boolean;
 }
 
 export function RpaChoiceStep({
@@ -56,6 +64,7 @@ export function RpaChoiceStep({
   rpaDisabledReason,
   featureEnabled,
   tone = "light",
+  validating = false,
 }: RpaChoiceStepProps) {
   const glass = tone === "glass";
   const bodyText = glass ? "text-brand-50/80" : "text-neutral-600";
@@ -102,12 +111,24 @@ export function RpaChoiceStep({
 
       <div className="flex flex-col gap-3">
         <div className={cn("rounded-lg border p-4", innerCard)}>
-          <p className={cn("text-sm font-medium", titleText)}>Aguardar o cálculo agora</p>
+          <p className={cn("text-sm font-medium", titleText)}>Calcular agora, em tempo real</p>
           {rpaEnabled ? (
             <p className={cn("mt-1 text-sm", mutedText)}>
               Acompanhe o progresso em tempo real. Ao final, mostramos 2 opções: a recomendada para o seu perfil e uma
               alternativa.
             </p>
+          ) : validating ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className={cn(
+                "mt-2 flex items-start gap-2 rounded-md border p-3 text-sm",
+                glass ? "border-white/20 bg-white/10 text-brand-50/80" : "border-brand-100 bg-brand-50 text-brand-700"
+              )}
+            >
+              <Hourglass className="mt-0.5 size-4 shrink-0 motion-safe:animate-pulse" aria-hidden="true" />
+              <span>{RPA_VALIDATING_MESSAGE}</span>
+            </div>
           ) : (
             <div
               role="note"
@@ -128,15 +149,15 @@ export function RpaChoiceStep({
             fullWidth
             className="mt-3"
             iconLeft={<Timer className="size-4" aria-hidden="true" />}
-            disabled={busy || !rpaEnabled}
+            disabled={busy || !rpaEnabled || validating}
             onClick={onChooseWait}
           >
-            Aguardar o cálculo
+            Quero calcular agora
           </Button>
         </div>
 
         <div className={cn("rounded-lg border p-4", innerCard)}>
-          <p className={cn("text-sm font-medium", titleText)}>Prefiro que cuidem disso para mim</p>
+          <p className={cn("text-sm font-medium", titleText)}>Deixe com um especialista</p>
           <p className={cn("mt-1 text-sm", mutedText)}>
             Um consultor Imediato Seguros faz o cálculo e entra em contato com as melhores condições encontradas.
           </p>
@@ -149,7 +170,7 @@ export function RpaChoiceStep({
             disabled={busy}
             onClick={onChooseConsultant}
           >
-            Falar com um consultor depois
+            Prefiro receber o cálculo completo depois
           </Button>
         </div>
       </div>
