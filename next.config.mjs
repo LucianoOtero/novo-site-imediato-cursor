@@ -4,6 +4,18 @@ const nextConfig = {
   // package-lock.json adicional fora desta pasta e inferiu a raiz errada.
   outputFileTracingRoot: import.meta.dirname,
 
+  // Fase 4 do redesign v2 (2026-07-19): AVIF antes de WebP no pipeline do
+  // next/image — compressão ~20-30% melhor para as imagens fotográficas do
+  // hero (Higgsfield), com fallback automático para WebP.
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
+
+  // Nota (2026-07-20): `experimental.inlineCss` foi testado e REVERTIDO —
+  // melhorou o FCP (~150 ms) mas piorou o LCP (~200-400 ms no 4G simulado):
+  // os ~62 KB de CSS inline aumentam o HTML e atrasam o início do download
+  // da imagem do hero, que é o elemento LCP. Não reativar sem medir.
+
   /**
    * Redirects 301 da migração (Issue 24).
    * Fonte: docs/INVENTARIO_URLS.md, seção 59 (tabela de migração).

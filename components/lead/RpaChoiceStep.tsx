@@ -1,6 +1,8 @@
 import { Headset, Info, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { FormTone } from "@/components/lead/fields";
 import {
   RPA_DISABLED_CAMINHAO_MESSAGE,
   RPA_DISABLED_INCOMPLETE_MESSAGE,
@@ -42,6 +44,8 @@ export interface RpaChoiceStepProps {
    * consultor (kill-switch de produção).
    */
   featureEnabled: boolean;
+  /** `glass` (v2 visual, 2026-07-19): textos claros e cards internos translúcidos, para o card navy do Hero. */
+  tone?: FormTone;
 }
 
 export function RpaChoiceStep({
@@ -51,7 +55,13 @@ export function RpaChoiceStep({
   rpaEnabled,
   rpaDisabledReason,
   featureEnabled,
+  tone = "light",
 }: RpaChoiceStepProps) {
+  const glass = tone === "glass";
+  const bodyText = glass ? "text-brand-50/80" : "text-neutral-600";
+  const mutedText = glass ? "text-brand-50/60" : "text-neutral-500";
+  const titleText = glass ? "text-white" : "text-neutral-900";
+  const innerCard = glass ? "border-white/20" : "border-neutral-200";
   const disabledMessage =
     rpaDisabledReason === "caminhao"
       ? RPA_DISABLED_CAMINHAO_MESSAGE
@@ -63,7 +73,7 @@ export function RpaChoiceStep({
   if (!featureEnabled) {
     return (
       <div className="flex flex-col gap-5">
-        <p className="text-sm text-neutral-600">
+        <p className={cn("text-sm", bodyText)}>
           Um consultor Imediato Seguros calcula sua cotação e entra em contato com as melhores condições encontradas.
         </p>
         <Button
@@ -76,7 +86,7 @@ export function RpaChoiceStep({
         >
           Falar com um consultor
         </Button>
-        <p className="text-xs text-neutral-500">
+        <p className={cn("text-xs", mutedText)}>
           A contratação da apólice é feita pelo consultor após a proposta da seguradora escolhida, sempre sujeita à aprovação da
           seguradora.
         </p>
@@ -86,22 +96,27 @@ export function RpaChoiceStep({
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-sm text-neutral-600">
+      <p className={cn("text-sm", bodyText)}>
         Comparamos sua cotação em tempo real entre 18 seguradoras parceiras — o cálculo pode levar de 2 a 10 minutos.
       </p>
 
       <div className="flex flex-col gap-3">
-        <div className="rounded-lg border border-neutral-200 p-4">
-          <p className="text-sm font-medium text-neutral-900">Aguardar o cálculo agora</p>
+        <div className={cn("rounded-lg border p-4", innerCard)}>
+          <p className={cn("text-sm font-medium", titleText)}>Aguardar o cálculo agora</p>
           {rpaEnabled ? (
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className={cn("mt-1 text-sm", mutedText)}>
               Acompanhe o progresso em tempo real. Ao final, mostramos 2 opções: a recomendada para o seu perfil e uma
               alternativa.
             </p>
           ) : (
             <div
               role="note"
-              className="mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+              className={cn(
+                "mt-2 flex items-start gap-2 rounded-md border p-3 text-sm",
+                glass
+                  ? "border-amber-300/30 bg-amber-400/15 text-amber-200"
+                  : "border-amber-200 bg-amber-50 text-amber-800"
+              )}
             >
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <span>{disabledMessage}</span>
@@ -120,9 +135,9 @@ export function RpaChoiceStep({
           </Button>
         </div>
 
-        <div className="rounded-lg border border-neutral-200 p-4">
-          <p className="text-sm font-medium text-neutral-900">Prefiro que cuidem disso para mim</p>
-          <p className="mt-1 text-sm text-neutral-500">
+        <div className={cn("rounded-lg border p-4", innerCard)}>
+          <p className={cn("text-sm font-medium", titleText)}>Prefiro que cuidem disso para mim</p>
+          <p className={cn("mt-1 text-sm", mutedText)}>
             Um consultor Imediato Seguros faz o cálculo e entra em contato com as melhores condições encontradas.
           </p>
           <Button
@@ -139,9 +154,9 @@ export function RpaChoiceStep({
         </div>
       </div>
 
-      {rpaEnabled && <p className="text-xs text-neutral-500">{RPA_PROFILE_ESTIMATE_NOTICE}</p>}
+      {rpaEnabled && <p className={cn("text-xs", mutedText)}>{RPA_PROFILE_ESTIMATE_NOTICE}</p>}
 
-      <p className="text-xs text-neutral-500">
+      <p className={cn("text-xs", mutedText)}>
         A contratação da apólice é feita pelo consultor após a proposta da seguradora escolhida, sempre sujeita à aprovação da
         seguradora.
       </p>

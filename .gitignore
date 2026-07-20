@@ -55,6 +55,10 @@ next-env.d.ts
 novo site imediato cursor.zip
 *.zip
 
+# Candidatas de imagem geradas via Higgsfield (rascunhos p/ aprovação) —
+# só o asset aprovado/otimizado vai para public/hero/.
+/public/v2-candidatas/
+
 # Playwright (teste de fidelidade RPA) — browsers, relatórios e artefatos.
 /e2e/playwright-report/
 /e2e/test-results/

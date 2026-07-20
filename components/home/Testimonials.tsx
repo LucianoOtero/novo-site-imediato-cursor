@@ -105,10 +105,21 @@ export function Testimonials({ reviews, rating, reviewCount }: { reviews: Google
             <div className="flex">
               {reviews.map((review) => (
                 <div key={`${review.author}-${review.text.slice(0, 20)}`} className="min-w-0 flex-[0_0_100%] px-2 sm:flex-[0_0_50%] lg:flex-[0_0_33.333%]">
-                  <div className="flex h-full flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+                  <div className="flex h-full flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-6 shadow-[0_6px_20px_rgba(11,31,58,0.06)]">
                     <StarRating rating={review.rating} />
-                    <p className="flex-1 text-sm text-neutral-700">&ldquo;{review.text}&rdquo;</p>
-                    <p className="text-sm font-medium text-neutral-900">{review.author}</p>
+                    <p className="flex-1 text-sm leading-relaxed text-neutral-700">&ldquo;{review.text}&rdquo;</p>
+                    <div className="flex items-center gap-3 border-t border-neutral-100 pt-3">
+                      <span
+                        aria-hidden="true"
+                        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-50 font-display text-sm font-bold text-brand-600"
+                      >
+                        {review.author.trim().charAt(0).toUpperCase()}
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-neutral-900">{review.author}</p>
+                        <p className="text-xs text-neutral-500">Avaliação no Google</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

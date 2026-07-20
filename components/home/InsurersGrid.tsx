@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { SectionHeader } from "@/components/ui/section-header";
 import { company } from "@/lib/company";
 import { seguradoras } from "@/lib/seguradoras";
 
@@ -39,13 +40,11 @@ export function InsurersGrid() {
   return (
     <Section className="bg-neutral-50">
       <Container>
-        <div className="text-center">
-          <h2 className="font-display text-2xl font-bold text-neutral-900 md:text-3xl">Seguradoras parceiras</h2>
-          <p className="mt-2 text-neutral-500">
-            Comparamos condições entre {company.business.insurersCount} seguradoras registradas na SUSEP para
-            encontrar a melhor opção para você.
-          </p>
-        </div>
+        <SectionHeader
+          eyebrow="Rede de parceiras"
+          title="Seguradoras parceiras"
+          description={`Comparamos condições entre ${company.business.insurersCount} seguradoras registradas na SUSEP para encontrar a melhor opção para você.`}
+        />
 
         {/*
           Tamanho do logo no desktop — a pedido do cliente (2026-07-08):

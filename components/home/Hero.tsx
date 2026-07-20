@@ -1,12 +1,15 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
+import { getImageProps } from "next/image";
+import { ShieldCheck, Star } from "lucide-react";
 
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { LeadForm } from "@/components/lead/LeadForm";
+import { company } from "@/lib/company";
 import { getRamo } from "@/lib/ramos";
 import { useSubmitLead } from "@/lib/leads/use-submit-lead";
+import { HERO_BLUR } from "@/lib/hero-blur.generated";
 
 /**
  * Hero — seção de abertura (Home, Issue 15; generalizado para LPs de
@@ -24,16 +27,104 @@ import { useSubmitLead } from "@/lib/leads/use-submit-lead";
  * `LeadForm` já tinha a variante `variant="inline"` desde a Issue 11
  * pensando exatamente neste uso — só estava sem consumidor até a Issue
  * 15. `useSubmitLead` faz o mesmo POST a `/api/lead` e redirect para
- * `/obrigado` que `CotacaoForm` já fazia (usado quando o usuário escolhe
- * "Prefiro falar com um consultor depois" no passo 4 do `LeadForm` — a
- * opção "Aguardar o cálculo" é orquestrada inteiramente dentro do
- * próprio `LeadForm`, projeto 2026-07-16, sem passar por aqui).
+ * `/obrigado` que `CotacaoForm` já fazia.
  *
- * "LCP no hero" (critério de aceite): sem imagem de fundo/hero-image
- * ainda (asset não migrado, ver BRAND_ASSETS.md) — o H1 em si (texto)
- * já é o maior elemento renderizado na dobra, então o próprio texto é o
- * candidato a LCP, sem depender de otimização de imagem.
+ * Versão visual v2 (2026-07-19, branch v2-visual): imagem de fundo
+ * fotográfica gerada via Higgsfield MCP (ver docs/VISUAL_HIGGSFIELD.md,
+ * estilo "blue hour" aprovado pelo cliente) com overlay do gradiente
+ * da marca para legibilidade. Textos claros sobre o fundo escuro; o
+ * card do formulário continua branco.
+ *
+ * **Heros por ramo + direção de arte responsiva** (2026-07-19, pedido
+ * do cliente: "a adaptação da imagem para o mobile perdeu o sentido"):
+ * cada ramo tem sua própria imagem, em DUAS composições distintas —
+ * 16:9 para desktop (veículo à direita, copy space à esquerda) e 9:16
+ * para mobile (veículo em destaque na metade inferior, céu no topo para
+ * o texto). Implementado com `<picture>` + `getImageProps` (padrão
+ * oficial do Next para art direction): o navegador baixa APENAS a
+ * variante do breakpoint ativo (`md` = 768px), sem custo duplo.
  */
+const HERO_IMAGES: Record<string, { desktop: string; mobile: string }> = {
+  auto: { desktop: "/hero/hero-bluehour.webp", mobile: "/hero/auto-mobile.webp" },
+  moto: { desktop: "/hero/moto-desktop.webp", mobile: "/hero/moto-mobile.webp" },
+  caminhao: { desktop: "/hero/caminhao-desktop.webp", mobile: "/hero/caminhao-mobile.webp" },
+  uber: { desktop: "/hero/uber-desktop.webp", mobile: "/hero/uber-mobile.webp" },
+  taxi: { desktop: "/hero/taxi-desktop.webp", mobile: "/hero/taxi-mobile.webp" },
+  utilitario: { desktop: "/hero/utilitario-desktop.webp", mobile: "/hero/utilitario-mobile.webp" },
+  frota: { desktop: "/hero/frota-desktop.webp", mobile: "/hero/frota-mobile.webp" },
+  pet: { desktop: "/hero/pet-desktop.webp", mobile: "/hero/pet-mobile.webp" },
+  fianca: { desktop: "/hero/fianca-desktop.webp", mobile: "/hero/fianca-mobile.webp" },
+  "assistencia-24-horas": {
+    desktop: "/hero/assistencia-desktop.webp",
+    mobile: "/hero/assistencia-mobile.webp",
+  },
+};
+
+function HeroBackground({ ramoSlug }: { ramoSlug: string }) {
+  const images = HERO_IMAGES[ramoSlug] ?? HERO_IMAGES.auto;
+
+  // quality 65 (era 80, depois 70) — otimização de LCP 2026-07-19/20: nas
+  // fotos noturnas "blue hour" (sempre atrás de overlay navy) a diferença é
+  // imperceptível; cada ponto a menos corta bytes do maior download da página.
+  const common = { alt: "", sizes: "100vw", quality: 65 } as const;
+  const {
+    props: { srcSet: desktopSrcSet, src: desktopSrc },
+  } = getImageProps({ ...common, src: images.desktop, width: 1920, height: 1072 });
+  const {
+    props: { srcSet: mobileSrcSet, src: mobileSrc },
+  } = getImageProps({ ...common, src: images.mobile, width: 828, height: 1472 });
+
+  return (
+    <>
+      {/* Preload da imagem do hero (otimização de LCP 2026-07-19): sem isso o
+          navegador só descobre a imagem ao processar o <picture> no corpo da
+          página. React 19 iça estes <link> para o <head> — mas SÓ quando têm
+          `href` (links de preload sem href são descartados na hoistagem);
+          navegadores que suportam `imagesrcset` ignoram o href. O atributo
+          media garante que cada dispositivo pré-carrega SÓ a sua variante. */}
+      <link
+        rel="preload"
+        as="image"
+        href={desktopSrc}
+        imageSrcSet={desktopSrcSet}
+        media="(min-width: 768px)"
+        fetchPriority="high"
+      />
+      <link
+        rel="preload"
+        as="image"
+        href={mobileSrc}
+        imageSrcSet={mobileSrcSet}
+        media="(max-width: 767px)"
+        fetchPriority="high"
+      />
+      <picture>
+        <source media="(min-width: 768px)" srcSet={desktopSrcSet} />
+        <source media="(max-width: 767px)" srcSet={mobileSrcSet} />
+        {/* eslint-disable-next-line @next/next/no-img-element -- art direction exige <picture> com media queries; srcSet/otimização vêm de getImageProps (pipeline do next/image). */}
+        <img
+          src={mobileSrc}
+          alt=""
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 size-full object-cover object-center"
+          // LQIP (itens de conversão, 2026-07-20): miniatura de 16px como
+          // background — prévia desfocada instantânea (viaja no HTML, ~220
+          // bytes) enquanto a foto real baixa. Gerada por
+          // scripts/generate-hero-blur.mjs. Usamos a variante mobile como
+          // placeholder único: em 16px as duas composições são indistinguíveis.
+          style={{
+            backgroundImage: `url(${HERO_BLUR[images.mobile] ?? ""})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+          aria-hidden="true"
+        />
+      </picture>
+    </>
+  );
+}
+
 export function Hero({ ramoSlug }: { ramoSlug: string }) {
   const ramo = getRamo(ramoSlug);
   const { submitLead } = useSubmitLead(ramoSlug);
@@ -41,16 +132,64 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
   if (!ramo) return null;
 
   return (
-    <Section className="bg-linear-to-b from-brand-50/60 to-white">
-      <Container className="grid gap-10 py-10 lg:grid-cols-2 lg:items-center lg:py-16">
+    <Section className="relative overflow-hidden">
+      <HeroBackground ramoSlug={ramoSlug} />
+      {/* Overlay do gradiente da marca (navy → azul) para legibilidade do texto claro. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-linear-to-r from-[#0a2540]/90 via-[#0a2540]/70 to-[#0f55b8]/40"
+      />
+
+      <Container className="relative grid gap-10 py-12 lg:grid-cols-2 lg:items-center lg:py-20">
         <div>
-          {ramo.eyebrow && <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-600">{ramo.eyebrow}</p>}
-          <h1 className="font-display text-4xl font-bold tracking-tight text-neutral-900 md:text-5xl">{ramo.headline}</h1>
-          <p className="mt-4 text-lg text-neutral-500">{ramo.subheadline}</p>
-          <p className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700">
-            <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
-            Cotação grátis, sem compromisso
+          {ramo.eyebrow && (
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-100 backdrop-blur-sm">
+              {ramo.eyebrow}
+            </p>
+          )}
+          <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight text-white md:text-6xl">
+            {ramo.headline}
+          </h1>
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-brand-50/90">
+            {ramo.subheadline}
           </p>
+
+          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+              <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
+              Cotação grátis, sem compromisso
+            </p>
+            <p className="inline-flex items-center gap-1.5 text-sm font-medium text-white">
+              <span className="flex" aria-hidden="true">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Star key={index} className="size-4 fill-amber-400 text-amber-400" />
+                ))}
+              </span>
+              {company.business.googleRating.toLocaleString("pt-BR", { minimumFractionDigits: 1 })}{" "}
+              no Google · +{company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
+            </p>
+          </div>
+
+          <div className="mt-8 hidden gap-8 border-t border-white/15 pt-6 lg:flex">
+            <div>
+              <p className="font-display text-3xl font-bold text-white">
+                {company.business.yearsExperience}+
+              </p>
+              <p className="mt-0.5 text-sm text-brand-50/80">anos de experiência</p>
+            </div>
+            <div>
+              <p className="font-display text-3xl font-bold text-white">
+                {company.business.insurersCount}
+              </p>
+              <p className="mt-0.5 text-sm text-brand-50/80">seguradoras comparadas</p>
+            </div>
+            <div>
+              <p className="font-display text-3xl font-bold text-white">
+                {company.business.satisfactionRate}%
+              </p>
+              <p className="mt-0.5 text-sm text-brand-50/80">clientes satisfeitos</p>
+            </div>
+          </div>
         </div>
         <LeadForm ramo={ramoSlug} variant="inline" onSuccess={submitLead} />
       </Container>

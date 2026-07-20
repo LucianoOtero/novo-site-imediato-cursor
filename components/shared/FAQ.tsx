@@ -41,11 +41,14 @@ export function FAQ({ items, type = "single", emitSchema = true, className }: FA
           dangerouslySetInnerHTML={{ __html: JSON.stringify(buildFaqSchema(items)) }}
         />
       )}
-      <Accordion.Root multiple={type === "multiple"} className="flex flex-col divide-y divide-neutral-200 border-y border-neutral-200">
+      {/* Versão visual v2 (2026-07-19): cada item vira um card arredondado
+          com borda (padrão de agência), no lugar da lista com divisores. */}
+      <Accordion.Root multiple={type === "multiple"} className="flex flex-col gap-3">
         {items.map((item) => (
           <Accordion.Item
             key={item.question}
             value={item.question}
+            className="rounded-xl border border-neutral-200 bg-white px-5 shadow-[0_1px_2px_rgba(11,31,58,0.06)] transition-colors data-[open]:border-brand-100"
             onOpenChange={(open) => {
               if (open) trackEvent("faq_open", { question: item.question });
             }}
@@ -61,7 +64,7 @@ export function FAQ({ items, type = "single", emitSchema = true, className }: FA
             </Accordion.Header>
             <Accordion.Panel
               className={cn(
-                "h-[var(--collapsible-panel-height)] overflow-hidden text-sm text-neutral-500",
+                "h-[var(--collapsible-panel-height)] overflow-hidden text-sm leading-relaxed text-neutral-500",
                 "transition-all duration-[220ms] ease-[var(--ease-standard)]",
                 "data-[starting-style]:h-0 data-[starting-style]:opacity-0",
                 "data-[ending-style]:h-0 data-[ending-style]:opacity-0"

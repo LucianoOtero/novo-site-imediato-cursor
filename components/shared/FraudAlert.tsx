@@ -43,10 +43,18 @@ function setDismissCookie(): void {
 }
 
 export function FraudAlert() {
-  const [visible, setVisible] = useState(false);
+  // Visível por padrão (otimização de CLS 2026-07-19): o estado inicial
+  // `false` fazia o banner só aparecer após a hidratação, empurrando a
+  // página inteira para baixo — CLS de ~0,11 medido no Lighthouse em TODAS
+  // as páginas. Invertido: o banner já vem no HTML do servidor (estado
+  // padrão para novos visitantes, robôs e métricas) e o `useEffect` apenas
+  // OCULTA para a minoria que já o dispensou (cookie) — nesse caso o
+  // conteúdo sobe, um shift bem menos penalizado e restrito a visitantes
+  // recorrentes.
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    if (!hasDismissCookie()) setVisible(true);
+    if (hasDismissCookie()) setVisible(false);
   }, []);
 
   if (!visible) return null;

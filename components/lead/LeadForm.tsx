@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Lock } from "lucide-react";
 import type { FieldErrors } from "react-hook-form";
 import type { z } from "zod";
 
@@ -15,7 +15,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Field } from "@/components/lead/fields";
+import { Field, type FormTone } from "@/components/lead/fields";
 import { ProgressBar } from "@/components/lead/ProgressBar";
 import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { RpaChoiceStep } from "@/components/lead/RpaChoiceStep";
@@ -24,6 +24,7 @@ import { useRpaCalculation } from "@/lib/leads/use-rpa-calculation";
 import type { RpaDisabledReason } from "@/lib/rpa-calculation";
 import { buildRpaPayload } from "@/lib/rpa";
 import { publicEnv } from "@/lib/env";
+import { company } from "@/lib/company";
 import {
   LEAD_FORM_STEPS,
   captureUtmFromLocation,
@@ -37,6 +38,7 @@ import {
   type LeadInput,
 } from "@/lib/validators";
 import { trackEvent } from "@/lib/analytics";
+import { cn } from "@/lib/utils";
 
 /**
  * LeadForm — formulário multi-step de captura de lead (Issue 11).
@@ -141,7 +143,11 @@ export interface LeadFormProps {
    * usuário escolheu "Prosseguir assim mesmo" com CPF/CEP inválidos —
    * ver `lib/leads/types.ts`.
    */
-  onSuccess?: (lead: LeadInput, leadId?: string, skipStrictValidation?: boolean) => void | Promise<void>;
+  onSuccess?: (
+    lead: LeadInput,
+    leadId?: string,
+    skipStrictValidation?: boolean
+  ) => void | Promise<void>;
 }
 
 type FormStatus = "idle" | "validating" | "submitting" | "success" | "error";
@@ -165,9 +171,37 @@ const STEP_SUBTITLES: Record<StepNumber, string> = {
   4: "Como você quer receber sua cotação?",
 };
 
+/**
+ * Tone "glass" (v2 visual, 2026-07-19, pedido do cliente): na variante
+ * `inline` (Hero), o card deixa de ser branco opaco e vira navy
+ * translúcido com backdrop-blur — a imagem do hero continua visível por
+ * trás sem comprometer a legibilidade. Campos ganham vidro branco suave
+ * (`bg-white/10`) com texto branco; erros usam red-300 (o `text-alert`
+ * padrão é escuro demais sobre navy). A variante `page` (/cotacao) e o
+ * `ContactLeadModal` continuam com o card branco de sempre.
+ *
+ * Fallback: navegadores sem `backdrop-filter` recebem navy a 90% de
+ * opacidade (via `supports-[backdrop-filter]`) — sem blur, a opacidade
+ * maior garante a legibilidade sozinha.
+ */
+// blur-md (era xl, 2026-07-20): raio de desfoque menor corta o custo de
+// pintura do backdrop-filter em CPUs de celular (medido no Lighthouse) —
+// visualmente quase idêntico, pois o fundo já é uma foto noturna suave.
+const GLASS_CARD_CLASS =
+  "border-white/15 bg-[#0a2540]/90 supports-[backdrop-filter]:bg-[#0a2540]/65 backdrop-blur-md shadow-2xl";
+const GLASS_INPUT_CLASS = [
+  "border-white/25 bg-white/10 text-white placeholder:text-white/40",
+  "focus-visible:border-white/60 focus-visible:ring-white/25",
+  "aria-invalid:border-red-300 aria-invalid:focus-visible:ring-red-300/30",
+].join(" ");
+
 /** Ordem de exibição/foco no passo 3 — mesma ordem dos campos na tela. */
 const STEP_3_FIELDS = ["cpf", "cep", "placa"] as const;
-const STEP_3_FIELD_LABELS: Record<(typeof STEP_3_FIELDS)[number], string> = { cpf: "CPF", cep: "CEP", placa: "Placa" };
+const STEP_3_FIELD_LABELS: Record<(typeof STEP_3_FIELDS)[number], string> = {
+  cpf: "CPF",
+  cep: "CEP",
+  placa: "Placa",
+};
 
 /**
  * `leadSchema` usa `.transform()` em vários campos (máscaras → dígitos),
@@ -179,6 +213,8 @@ const STEP_3_FIELD_LABELS: Record<(typeof STEP_3_FIELDS)[number], string> = { cp
 type LeadFormValues = z.input<typeof leadSchema>;
 
 export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
+  const tone: FormTone = variant === "inline" ? "glass" : "light";
+  const glass = tone === "glass";
   const [step, setStep] = useState<StepNumber>(1);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [hasStarted, setHasStarted] = useState(false);
@@ -220,7 +256,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     setValue,
     getValues,
     watch,
-    formState: { errors },
+    formState: { errors, touchedFields },
   } = useForm<LeadFormValues, unknown, LeadInput>({
     resolver: zodResolver(leadSchema),
     mode: "onSubmit",
@@ -290,6 +326,27 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   })();
   const rpaEnabled = rpaDisabledReason === null;
 
+  /**
+   * Check de campo válido (itens de conversão, 2026-07-20): tocado +
+   * preenchido + sem erro. Campos opcionais vazios não mostram check —
+   * feedback positivo só quando o usuário de fato preencheu algo válido.
+   */
+  const fieldValues: Record<string, string | undefined> = {
+    ddd: watchedDdd,
+    celular: watchedCelular,
+    nome: watchedNome,
+    email: watchedEmail,
+    cpf: watchedCpf,
+    cep: watchedCep,
+    placa: watchedPlaca,
+  };
+  function isFieldValid(
+    field: "ddd" | "celular" | "nome" | "email" | "cpf" | "cep" | "placa"
+  ): boolean {
+    const value = fieldValues[field];
+    return Boolean(touchedFields[field] && value && value.trim().length > 0 && !errors[field]);
+  }
+
   const ddd = register("ddd");
   const celular = register("celular");
   const cep = register("cep");
@@ -320,7 +377,13 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       const response = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({ ramo, ddd: values.ddd, celular: values.celular, stage: "initial", utm: captureUtmFromLocation() }),
+        body: JSON.stringify({
+          ramo,
+          ddd: values.ddd,
+          celular: values.celular,
+          stage: "initial",
+          utm: captureUtmFromLocation(),
+        }),
       });
       const data = (await response.json().catch(() => null)) as { leadId?: string } | null;
       if (data?.leadId) initialLeadIdRef.current = data.leadId;
@@ -352,7 +415,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       });
       const result = (await response.json()) as { ok?: boolean };
       if (result.ok === false) {
-        setError("celular", { type: "manual", message: "Não conseguimos confirmar esse celular — revise ou prossiga assim mesmo" });
+        setError("celular", {
+          type: "manual",
+          message: "Não conseguimos confirmar esse celular — revise ou prossiga assim mesmo",
+        });
       }
     } catch {
       // Best-effort — nunca bloqueia.
@@ -381,7 +447,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       });
       const result = (await response.json()) as { ok?: boolean };
       if (result.ok === false) {
-        setError("email", { type: "manual", message: "Não conseguimos confirmar esse e-mail — revise ou prossiga assim mesmo" });
+        setError("email", {
+          type: "manual",
+          message: "Não conseguimos confirmar esse e-mail — revise ou prossiga assim mesmo",
+        });
       }
     } catch {
       // Best-effort — nunca bloqueia.
@@ -420,7 +489,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       });
       const result = (await response.json()) as { ok?: boolean };
       if (result.ok === false) {
-        setError("cep", { type: "manual", message: "Não encontramos esse CEP — revise ou prossiga assim mesmo" });
+        setError("cep", {
+          type: "manual",
+          message: "Não encontramos esse CEP — revise ou prossiga assim mesmo",
+        });
       }
     } catch {
       // Best-effort — nunca bloqueia.
@@ -464,7 +536,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         ano?: string;
       };
       if (result.ok === false) {
-        setError("placa", { type: "manual", message: "Não encontramos essa placa — revise ou prossiga assim mesmo" });
+        setError("placa", {
+          type: "manual",
+          message: "Não encontramos essa placa — revise ou prossiga assim mesmo",
+        });
         return;
       }
       if (result.marca) setValue("veiculoMarca", result.marca);
@@ -672,7 +747,11 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       const response = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({ ...payload, stage: "complete", leadId: initialLeadIdRef.current ?? undefined }),
+        body: JSON.stringify({
+          ...payload,
+          stage: "complete",
+          leadId: initialLeadIdRef.current ?? undefined,
+        }),
       });
       const result = (await response.json().catch(() => ({}))) as {
         perfilRpa?: { sexo?: string; dataNascimento?: string; estadoCivil?: string };
@@ -680,7 +759,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       perfilRpa = result.perfilRpa;
       trackEvent("generate_lead", { ramo, method: "form" });
     } catch (error) {
-      console.error("[LeadForm] Falha ao gravar lead antes do RPA (não bloqueia — contato inicial já foi salvo):", error);
+      console.error(
+        "[LeadForm] Falha ao gravar lead antes do RPA (não bloqueia — contato inicial já foi salvo):",
+        error
+      );
     }
 
     setStatus("idle");
@@ -727,10 +809,28 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
   if (status === "success") {
     return (
-      <div role="status" className="flex flex-col items-center gap-3 rounded-xl border border-neutral-200 bg-white p-8 text-center">
-        <CheckCircle2 className="size-10 text-brand-500" aria-hidden="true" />
-        <p className="font-display text-lg font-bold text-neutral-900">Recebemos seus dados!</p>
-        <p className="text-sm text-neutral-500">Em breve um especialista entra em contato para finalizar sua cotação.</p>
+      <div
+        role="status"
+        className={cn(
+          "flex flex-col items-center gap-3 rounded-xl border p-8 text-center",
+          glass ? GLASS_CARD_CLASS : "border-neutral-200 bg-white"
+        )}
+      >
+        <CheckCircle2
+          className={cn("size-10", glass ? "text-brand-100" : "text-brand-500")}
+          aria-hidden="true"
+        />
+        <p
+          className={cn(
+            "font-display text-lg font-bold",
+            glass ? "text-white" : "text-neutral-900"
+          )}
+        >
+          Recebemos seus dados!
+        </p>
+        <p className={cn("text-sm", glass ? "text-brand-50/70" : "text-neutral-500")}>
+          Em breve um especialista entra em contato para finalizar sua cotação.
+        </p>
       </div>
     );
   }
@@ -751,178 +851,283 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               void goNext();
             }
       }
-      className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-6"
+      className={cn(
+        "flex flex-col gap-4 rounded-xl border p-6",
+        glass ? GLASS_CARD_CLASS : "border-neutral-200 bg-white"
+      )}
     >
       <div>
-        <h2 className="font-display text-xl font-bold text-neutral-900 md:text-2xl">{FORM_TITLE}</h2>
-        <p className="mt-1 text-sm text-neutral-500">{STEP_SUBTITLES[step]}</p>
+        <h2
+          className={cn(
+            "font-display text-xl font-bold md:text-2xl",
+            glass ? "text-white" : "text-neutral-900"
+          )}
+        >
+          {FORM_TITLE}
+        </h2>
+        <p className={cn("mt-1 text-sm", glass ? "text-brand-50/80" : "text-neutral-500")}>
+          {STEP_SUBTITLES[step]}
+        </p>
         {step <= COLLECTION_STEPS && (
           <>
-            <p className="mt-1 text-sm font-medium text-neutral-500">
+            <p
+              className={cn(
+                "mt-1 text-sm font-medium",
+                glass ? "text-brand-50/70" : "text-neutral-500"
+              )}
+            >
               Etapa {step} de {COLLECTION_STEPS}
             </p>
-            <p className="mt-0.5 text-xs text-neutral-400">{FORM_SPEED_TEASER}</p>
+            <p className={cn("mt-0.5 text-xs", glass ? "text-brand-50/50" : "text-neutral-400")}>
+              {FORM_SPEED_TEASER}
+            </p>
           </>
         )}
       </div>
 
       {step <= COLLECTION_STEPS && (
-        <ProgressBar step={step} totalSteps={COLLECTION_STEPS} compact={variant === "inline"} />
-      )}
-
-      {step === 1 && (
-        <div className="grid grid-cols-[5rem_1fr] gap-3">
-          <Field label="DDD" htmlFor="ddd" error={errors.ddd?.message}>
-            <Input
-              id="ddd"
-              inputMode="numeric"
-              autoComplete="tel-area-code"
-              placeholder="11"
-              maxLength={2}
-              aria-invalid={!!errors.ddd}
-              aria-describedby={errors.ddd ? "ddd-error" : undefined}
-              {...ddd}
-              onChange={(event) => {
-                event.target.value = formatDdd(event.target.value);
-                void ddd.onChange(event);
-              }}
-              onBlur={(event) => {
-                void ddd.onBlur(event);
-                void trigger("ddd");
-              }}
-            />
-          </Field>
-          <Field label="Celular" htmlFor="celular" error={errors.celular?.message}>
-            <Input
-              id="celular"
-              inputMode="numeric"
-              autoComplete="tel-national"
-              placeholder="98765-4321"
-              aria-invalid={!!errors.celular}
-              aria-describedby={errors.celular ? "celular-error" : undefined}
-              {...celular}
-              onChange={(event) => {
-                event.target.value = formatCelular(event.target.value);
-                void celular.onChange(event);
-              }}
-              onBlur={(event) => {
-                void celular.onBlur(event);
-                void checkCelularApi();
-              }}
-            />
-          </Field>
-        </div>
-      )}
-
-      {step === 2 && (
-        <>
-          <Field label="Nome" htmlFor="nome" error={errors.nome?.message} hint="Opcional">
-            <Input id="nome" autoComplete="name" placeholder="Seu nome" aria-invalid={!!errors.nome} {...nome} />
-          </Field>
-          <Field label="E-mail" htmlFor="email" error={errors.email?.message} hint="Opcional">
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="voce@email.com"
-              aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? "email-error" : undefined}
-              {...email}
-              onBlur={(event) => {
-                void email.onBlur(event);
-                void handleEmailBlur();
-              }}
-            />
-          </Field>
-        </>
-      )}
-
-      {step === 3 && (
-        <>
-          <p className="text-sm text-neutral-500">CPF, CEP e placa são opcionais — ou deixe que coletamos no contato.</p>
-          <Field label="CPF" htmlFor="cpf" error={errors.cpf?.message} hint="Opcional">
-            <Input
-              id="cpf"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="000.000.000-00"
-              aria-invalid={!!errors.cpf}
-              {...cpf}
-              onBlur={(event) => {
-                void cpf.onBlur(event);
-                void trigger("cpf");
-              }}
-              onChange={(event) => {
-                event.target.value = formatCpf(event.target.value);
-                void cpf.onChange(event);
-              }}
-            />
-          </Field>
-          <Field label="CEP" htmlFor="cep" error={errors.cep?.message} hint="Opcional">
-            <Input
-              id="cep"
-              inputMode="numeric"
-              autoComplete="postal-code"
-              placeholder="00000-000"
-              aria-invalid={!!errors.cep}
-              aria-describedby={errors.cep ? "cep-error" : undefined}
-              {...cep}
-              onChange={(event) => {
-                event.target.value = formatCep(event.target.value);
-                void cep.onChange(event);
-              }}
-              onBlur={(event) => {
-                void cep.onBlur(event);
-                void handleCepBlur();
-              }}
-            />
-          </Field>
-          <Field label="Placa" htmlFor="placa" error={errors.placa?.message} hint="Opcional">
-            <Input
-              id="placa"
-              autoComplete="off"
-              placeholder="ABC1D23"
-              aria-invalid={!!errors.placa}
-              {...placa}
-              onChange={(event) => {
-                event.target.value = formatPlaca(event.target.value);
-                void placa.onChange(event);
-              }}
-              onBlur={(event) => {
-                void placa.onBlur(event);
-                void handlePlacaBlur();
-              }}
-            />
-          </Field>
-          <VehicleInfoDisplay
-            marca={watchedVeiculoMarca}
-            modelo={watchedVeiculoModelo}
-            anoFabricacao={watchedVeiculoAnoFabricacao}
-            anoModelo={watchedVeiculoAnoModelo}
-          />
-        </>
-      )}
-
-      {step === 4 && (
-        <RpaChoiceStep
-          onChooseWait={handleChooseWaitForRpa}
-          onChooseConsultant={handleChooseConsultant}
-          busy={isBusy}
-          rpaEnabled={rpaEnabled}
-          rpaDisabledReason={rpaDisabledReason}
-          featureEnabled={publicEnv.rpaEnabled}
+        <ProgressBar
+          step={step}
+          totalSteps={COLLECTION_STEPS}
+          compact={variant === "inline"}
+          tone={tone}
         />
       )}
 
+      {/* `key={step}` remonta o wrapper a cada passo, disparando a entrada
+          animada (fade + slide da direita, ~200ms — motion da spec, seção
+          30.2 "Form passo"). `motion-safe` respeita prefers-reduced-motion. */}
+      <div
+        key={step}
+        className="flex flex-col gap-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-2 motion-safe:duration-200"
+      >
+        {step === 1 && (
+          <div className="grid grid-cols-[5rem_1fr] gap-3">
+            <Field
+              label="DDD"
+              htmlFor="ddd"
+              error={errors.ddd?.message}
+              tone={tone}
+              valid={isFieldValid("ddd")}
+            >
+              <Input
+                id="ddd"
+                className={glass ? GLASS_INPUT_CLASS : undefined}
+                inputMode="numeric"
+                autoComplete="tel-area-code"
+                placeholder="11"
+                maxLength={2}
+                aria-invalid={!!errors.ddd}
+                aria-describedby={errors.ddd ? "ddd-error" : undefined}
+                {...ddd}
+                onChange={(event) => {
+                  event.target.value = formatDdd(event.target.value);
+                  void ddd.onChange(event);
+                }}
+                onBlur={(event) => {
+                  void ddd.onBlur(event);
+                  void trigger("ddd");
+                }}
+              />
+            </Field>
+            <Field
+              label="Celular"
+              htmlFor="celular"
+              error={errors.celular?.message}
+              tone={tone}
+              valid={isFieldValid("celular")}
+            >
+              <Input
+                id="celular"
+                className={glass ? GLASS_INPUT_CLASS : undefined}
+                inputMode="numeric"
+                autoComplete="tel-national"
+                placeholder="98765-4321"
+                aria-invalid={!!errors.celular}
+                aria-describedby={errors.celular ? "celular-error" : undefined}
+                {...celular}
+                onChange={(event) => {
+                  event.target.value = formatCelular(event.target.value);
+                  void celular.onChange(event);
+                }}
+                onBlur={(event) => {
+                  void celular.onBlur(event);
+                  void checkCelularApi();
+                }}
+              />
+            </Field>
+          </div>
+        )}
+
+        {step === 2 && (
+          <>
+            <Field
+              label="Nome"
+              htmlFor="nome"
+              error={errors.nome?.message}
+              hint="Opcional"
+              tone={tone}
+              valid={isFieldValid("nome")}
+            >
+              <Input
+                id="nome"
+                className={glass ? GLASS_INPUT_CLASS : undefined}
+                autoComplete="name"
+                placeholder="Seu nome"
+                aria-invalid={!!errors.nome}
+                {...nome}
+              />
+            </Field>
+            <Field
+              label="E-mail"
+              htmlFor="email"
+              error={errors.email?.message}
+              hint="Opcional"
+              tone={tone}
+              valid={isFieldValid("email")}
+            >
+              <Input
+                id="email"
+                className={glass ? GLASS_INPUT_CLASS : undefined}
+                type="email"
+                autoComplete="email"
+                placeholder="voce@email.com"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
+                {...email}
+                onBlur={(event) => {
+                  void email.onBlur(event);
+                  void handleEmailBlur();
+                }}
+              />
+            </Field>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <p className={cn("text-sm", glass ? "text-brand-50/70" : "text-neutral-500")}>
+              CPF, CEP e placa são opcionais — ou deixe que coletamos no contato.
+            </p>
+            <Field
+              label="CPF"
+              htmlFor="cpf"
+              error={errors.cpf?.message}
+              hint="Opcional"
+              tone={tone}
+              valid={isFieldValid("cpf")}
+            >
+              <Input
+                id="cpf"
+                className={glass ? GLASS_INPUT_CLASS : undefined}
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="000.000.000-00"
+                aria-invalid={!!errors.cpf}
+                {...cpf}
+                onBlur={(event) => {
+                  void cpf.onBlur(event);
+                  void trigger("cpf");
+                }}
+                onChange={(event) => {
+                  event.target.value = formatCpf(event.target.value);
+                  void cpf.onChange(event);
+                }}
+              />
+            </Field>
+            <Field
+              label="CEP"
+              htmlFor="cep"
+              error={errors.cep?.message}
+              hint="Opcional"
+              tone={tone}
+              valid={isFieldValid("cep")}
+            >
+              <Input
+                id="cep"
+                className={glass ? GLASS_INPUT_CLASS : undefined}
+                inputMode="numeric"
+                autoComplete="postal-code"
+                placeholder="00000-000"
+                aria-invalid={!!errors.cep}
+                aria-describedby={errors.cep ? "cep-error" : undefined}
+                {...cep}
+                onChange={(event) => {
+                  event.target.value = formatCep(event.target.value);
+                  void cep.onChange(event);
+                }}
+                onBlur={(event) => {
+                  void cep.onBlur(event);
+                  void handleCepBlur();
+                }}
+              />
+            </Field>
+            <Field
+              label="Placa"
+              htmlFor="placa"
+              error={errors.placa?.message}
+              hint="Opcional"
+              tone={tone}
+              valid={isFieldValid("placa")}
+            >
+              <Input
+                id="placa"
+                className={glass ? GLASS_INPUT_CLASS : undefined}
+                autoComplete="off"
+                placeholder="ABC1D23"
+                aria-invalid={!!errors.placa}
+                {...placa}
+                onChange={(event) => {
+                  event.target.value = formatPlaca(event.target.value);
+                  void placa.onChange(event);
+                }}
+                onBlur={(event) => {
+                  void placa.onBlur(event);
+                  void handlePlacaBlur();
+                }}
+              />
+            </Field>
+            <VehicleInfoDisplay
+              marca={watchedVeiculoMarca}
+              modelo={watchedVeiculoModelo}
+              anoFabricacao={watchedVeiculoAnoFabricacao}
+              anoModelo={watchedVeiculoAnoModelo}
+              tone={tone}
+            />
+          </>
+        )}
+
+        {step === 4 && (
+          <RpaChoiceStep
+            onChooseWait={handleChooseWaitForRpa}
+            onChooseConsultant={handleChooseConsultant}
+            busy={isBusy}
+            rpaEnabled={rpaEnabled}
+            rpaDisabledReason={rpaDisabledReason}
+            featureEnabled={publicEnv.rpaEnabled}
+            tone={tone}
+          />
+        )}
+      </div>
+
       {status === "error" && (
-        <p role="alert" className="text-sm font-medium text-alert">
+        <p
+          role="alert"
+          className={cn("text-sm font-medium", glass ? "text-red-300" : "text-alert")}
+        >
           Não foi possível enviar agora. Tente novamente ou fale conosco pelo WhatsApp.
         </p>
       )}
 
       <div className="flex gap-3">
         {step > 1 && (
-          <Button type="button" variant="ghost" onClick={goBack} disabled={isBusy}>
+          <Button
+            type="button"
+            variant="ghost"
+            className={glass ? "text-white hover:bg-white/10" : undefined}
+            onClick={goBack}
+            disabled={isBusy}
+          >
             Voltar
           </Button>
         )}
@@ -933,24 +1138,48 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         )}
       </div>
 
+      {/* Trust microcopy (versão visual v2, 2026-07-19) — sinais de confiança
+          junto ao formulário, padrão de LP financeira de alta conversão.
+          SUSEP vem de lib/company (fonte única, nunca hardcoded). */}
+      <p
+        className={cn(
+          "flex items-center justify-center gap-1.5 text-xs",
+          glass ? "text-brand-50/60" : "text-neutral-400"
+        )}
+      >
+        <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+        Dados protegidos (LGPD) · Corretora registrada SUSEP {company.susep}
+      </p>
+
       {(() => {
-        const invalidLabels = STEP_3_FIELDS.filter((field) => errors[field]).map((field) => STEP_3_FIELD_LABELS[field]);
+        const invalidLabels = STEP_3_FIELDS.filter((field) => errors[field]).map(
+          (field) => STEP_3_FIELD_LABELS[field]
+        );
         const isPlural = invalidLabels.length > 1;
         const fieldsText = invalidLabels.length > 0 ? invalidLabels.join(" e ") : "dado";
         return (
           <AlertDialog open={showCorrectOrProceed} onOpenChange={setShowCorrectOrProceed}>
             <AlertDialogContent>
-              <AlertDialogTitle>{fieldsText} parece{isPlural ? "m" : ""} inválido{isPlural ? "s" : ""}</AlertDialogTitle>
+              <AlertDialogTitle>
+                {fieldsText} parece{isPlural ? "m" : ""} inválido{isPlural ? "s" : ""}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                {isPlural ? `Os dados informados (${fieldsText})` : `O ${fieldsText} informado`} não parece
-                {isPlural ? "m" : ""} válido{isPlural ? "s" : ""}. Você pode corrigir agora ou prosseguir assim mesmo — nesse
-                caso, um especialista entra em contato para confirmar seus dados (sem cotação automatizada).
+                {isPlural ? `Os dados informados (${fieldsText})` : `O ${fieldsText} informado`} não
+                parece
+                {isPlural ? "m" : ""} válido{isPlural ? "s" : ""}. Você pode corrigir agora ou
+                prosseguir assim mesmo — nesse caso, um especialista entra em contato para confirmar
+                seus dados (sem cotação automatizada).
               </AlertDialogDescription>
               <div className="mt-5 flex gap-3">
                 <Button type="button" variant="ghost" fullWidth onClick={handleCorrigir}>
                   Corrigir
                 </Button>
-                <Button type="button" variant="primary" fullWidth onClick={handleProsseguirAssimMesmo}>
+                <Button
+                  type="button"
+                  variant="primary"
+                  fullWidth
+                  onClick={handleProsseguirAssimMesmo}
+                >
                   Prosseguir assim mesmo
                 </Button>
               </div>
