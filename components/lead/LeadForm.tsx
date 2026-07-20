@@ -180,8 +180,11 @@ const STEP_SUBTITLES: Record<StepNumber, string> = {
  * opacidade (via `supports-[backdrop-filter]`) — sem blur, a opacidade
  * maior garante a legibilidade sozinha.
  */
+// blur-md (era xl, 2026-07-20): raio de desfoque menor corta o custo de
+// pintura do backdrop-filter em CPUs de celular (medido no Lighthouse) —
+// visualmente quase idêntico, pois o fundo já é uma foto noturna suave.
 const GLASS_CARD_CLASS =
-  "border-white/15 bg-[#0a2540]/90 supports-[backdrop-filter]:bg-[#0a2540]/65 backdrop-blur-xl shadow-2xl";
+  "border-white/15 bg-[#0a2540]/90 supports-[backdrop-filter]:bg-[#0a2540]/65 backdrop-blur-md shadow-2xl";
 const GLASS_INPUT_CLASS = [
   "border-white/25 bg-white/10 text-white placeholder:text-white/40",
   "focus-visible:border-white/60 focus-visible:ring-white/25",

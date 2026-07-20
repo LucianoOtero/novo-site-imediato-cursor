@@ -59,9 +59,10 @@ const HERO_IMAGES: Record<string, { desktop: string; mobile: string }> = {
 function HeroBackground({ ramoSlug }: { ramoSlug: string }) {
   const images = HERO_IMAGES[ramoSlug] ?? HERO_IMAGES.auto;
 
-  // quality 70 (era 80) — otimização de LCP 2026-07-19: nas fotos noturnas
-  // "blue hour" a diferença é imperceptível e corta ~25% dos bytes.
-  const common = { alt: "", sizes: "100vw", quality: 70 } as const;
+  // quality 65 (era 80, depois 70) — otimização de LCP 2026-07-19/20: nas
+  // fotos noturnas "blue hour" (sempre atrás de overlay navy) a diferença é
+  // imperceptível; cada ponto a menos corta bytes do maior download da página.
+  const common = { alt: "", sizes: "100vw", quality: 65 } as const;
   const {
     props: { srcSet: desktopSrcSet, src: desktopSrc },
   } = getImageProps({ ...common, src: images.desktop, width: 1920, height: 1072 });
