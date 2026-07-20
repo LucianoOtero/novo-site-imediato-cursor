@@ -9,6 +9,7 @@ import { LeadForm } from "@/components/lead/LeadForm";
 import { company } from "@/lib/company";
 import { getRamo } from "@/lib/ramos";
 import { useSubmitLead } from "@/lib/leads/use-submit-lead";
+import { HERO_BLUR } from "@/lib/hero-blur.generated";
 
 /**
  * Hero — seção de abertura (Home, Issue 15; generalizado para LPs de
@@ -53,7 +54,10 @@ const HERO_IMAGES: Record<string, { desktop: string; mobile: string }> = {
   frota: { desktop: "/hero/frota-desktop.webp", mobile: "/hero/frota-mobile.webp" },
   pet: { desktop: "/hero/pet-desktop.webp", mobile: "/hero/pet-mobile.webp" },
   fianca: { desktop: "/hero/fianca-desktop.webp", mobile: "/hero/fianca-mobile.webp" },
-  "assistencia-24-horas": { desktop: "/hero/assistencia-desktop.webp", mobile: "/hero/assistencia-mobile.webp" },
+  "assistencia-24-horas": {
+    desktop: "/hero/assistencia-desktop.webp",
+    mobile: "/hero/assistencia-mobile.webp",
+  },
 };
 
 function HeroBackground({ ramoSlug }: { ramoSlug: string }) {
@@ -104,6 +108,16 @@ function HeroBackground({ ramoSlug }: { ramoSlug: string }) {
           fetchPriority="high"
           decoding="async"
           className="absolute inset-0 size-full object-cover object-center"
+          // LQIP (itens de conversão, 2026-07-20): miniatura de 16px como
+          // background — prévia desfocada instantânea (viaja no HTML, ~220
+          // bytes) enquanto a foto real baixa. Gerada por
+          // scripts/generate-hero-blur.mjs. Usamos a variante mobile como
+          // placeholder único: em 16px as duas composições são indistinguíveis.
+          style={{
+            backgroundImage: `url(${HERO_BLUR[images.mobile] ?? ""})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
           aria-hidden="true"
         />
       </picture>
@@ -136,7 +150,9 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
           <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight text-white md:text-6xl">
             {ramo.headline}
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-brand-50/90">{ramo.subheadline}</p>
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-brand-50/90">
+            {ramo.subheadline}
+          </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
             <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
@@ -149,22 +165,28 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
                   <Star key={index} className="size-4 fill-amber-400 text-amber-400" />
                 ))}
               </span>
-              {company.business.googleRating.toLocaleString("pt-BR", { minimumFractionDigits: 1 })} no Google · +
-              {company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
+              {company.business.googleRating.toLocaleString("pt-BR", { minimumFractionDigits: 1 })}{" "}
+              no Google · +{company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
             </p>
           </div>
 
           <div className="mt-8 hidden gap-8 border-t border-white/15 pt-6 lg:flex">
             <div>
-              <p className="font-display text-3xl font-bold text-white">{company.business.yearsExperience}+</p>
+              <p className="font-display text-3xl font-bold text-white">
+                {company.business.yearsExperience}+
+              </p>
               <p className="mt-0.5 text-sm text-brand-50/80">anos de experiência</p>
             </div>
             <div>
-              <p className="font-display text-3xl font-bold text-white">{company.business.insurersCount}</p>
+              <p className="font-display text-3xl font-bold text-white">
+                {company.business.insurersCount}
+              </p>
               <p className="mt-0.5 text-sm text-brand-50/80">seguradoras comparadas</p>
             </div>
             <div>
-              <p className="font-display text-3xl font-bold text-white">{company.business.satisfactionRate}%</p>
+              <p className="font-display text-3xl font-bold text-white">
+                {company.business.satisfactionRate}%
+              </p>
               <p className="mt-0.5 text-sm text-brand-50/80">clientes satisfeitos</p>
             </div>
           </div>
