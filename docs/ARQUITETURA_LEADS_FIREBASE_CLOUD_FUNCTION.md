@@ -107,6 +107,19 @@ O que **pôde** ser verificado (sem alterar nada do lado legado):
 
 Volume de leads é baixo (captação de seguros, não tráfego de alto volume) — dentro da faixa gratuita do plano Blaze na prática.
 
+## Estágios de evento por momento do funil (2026-07-20)
+
+Projeto "leads EspoCRM/Octadesk por momento" — além de `initial`/`complete`, o site passou a enviar:
+
+| Estágio | Disparado quando | EspoCRM (proxy) | EspoCRM (API direta*) | Octadesk (API direta*) |
+|---|---|---|---|---|
+| `progress` | Prospect conclui os passos 2 (nome/e-mail) e 3 (CPF/CEP/placa) | Atualiza | — | — |
+| `complete` c/ `rpaChoice: "aguardar"` | Escolheu acompanhar o cálculo RPA | Atualiza | Note "escolheu acompanhar o cálculo" | — |
+| `rpa_result` | Cálculo RPA terminou (`data.rpaResultado` com valores) | — | Note + description com valores | `calculo_pronto` ou `calculo_manual` |
+| `consultant_requested` | Escolheu "Prefiro receber o cálculo completo depois" | — | Note "preparar cotação e retornar" | `calculo_completo_depois` |
+
+\* As integrações diretas dependem dos secrets `ESPOCRM_API_CONFIG` e `OCTADESK_API_CONFIG` (hoje `{}` = desligadas; ver `docs/GUIA_OCTADESK_TEMPLATES.md` para o passo a passo de ativação — API keys, templates e aprovação na Meta). Achado da validação (2026-07-20): `rpa_result`/`consultant_requested` **não** passam pelo proxy legado — sem `espocrmLeadId`, o proxy devolve um erro de ambiguidade ("Erro no CRM" com lista de leads), entrando em retry inútil.
+
 ## Limitações conhecidas / trabalho futuro
 
 - A Cloud Function faz um número limitado de rodadas (até 5) em rajada — não é um sistema de fila com espera de horas/dias para destinos permanentemente fora do ar.

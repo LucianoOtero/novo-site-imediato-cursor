@@ -143,6 +143,81 @@ export async function POST(request: NextRequest) {
   const stage = data.stage ?? "complete";
   const now = new Date().toISOString();
 
+  // Estágios de EVENTO (projeto "leads EspoCRM/Octadesk por momento",
+  // 2026-07-20): "progress" (concluiu passo 2/3), "rpa_result" (cálculo
+  // terminou) e "consultant_requested" (prefere o cálculo completo
+  // depois). Sempre best-effort a partir do LeadForm — atualizam o
+  // registro existente (localizado por leadId/dedupeKey) e regravam no
+  // Firebase para a Cloud Function enriquecer o EspoCRM (atualização de
+  // campos, Note no Stream, mensagem Octadesk conforme o momento).
+  // Nunca criam lead duplicado nem disparam a mensagem inicial de novo.
+  if (stage === "progress" || stage === "rpa_result" || stage === "consultant_requested") {
+    const byId = data.leadId ? await leadStore.findById(data.leadId) : null;
+    const existing = byId ?? (await leadStore.findRecentByDedupeKey(dedupeKey, DEDUPE_WINDOW_MS));
+
+    const eventLead: LeadRecord = existing
+      ? {
+          ...existing,
+          stage,
+          cep: data.cep ?? existing.cep,
+          nome: data.nome ?? existing.nome,
+          cpf: data.cpf ?? existing.cpf,
+          placa: data.placa ?? existing.placa,
+          email: data.email ?? existing.email,
+          veiculoAno: data.veiculoAno ?? existing.veiculoAno,
+          veiculoMarcaModelo: data.veiculoMarcaModelo ?? existing.veiculoMarcaModelo,
+          veiculoMarca: data.veiculoMarca ?? existing.veiculoMarca,
+          veiculoModelo: data.veiculoModelo ?? existing.veiculoModelo,
+          veiculoAnoFabricacao: data.veiculoAnoFabricacao ?? existing.veiculoAnoFabricacao,
+          veiculoAnoModelo: data.veiculoAnoModelo ?? existing.veiculoAnoModelo,
+          utm: data.utm ?? existing.utm,
+          rpaChoice: data.rpaChoice ?? existing.rpaChoice,
+          rpaResultado: data.rpaResultado ?? existing.rpaResultado,
+          updatedAt: now,
+        }
+      : {
+          // Sem registro local (instância serverless diferente): usa o
+          // leadId informado (se veio) para a Cloud Function atualizar o
+          // registro certo no Firebase — o `.update()` do backup preserva
+          // `espocrmLeadId` etc. já gravados lá pelo fluxo anterior.
+          id: data.leadId ?? generateLeadId(),
+          stage,
+          ramo: data.ramo,
+          phoneE164,
+          cep: data.cep,
+          nome: data.nome,
+          cpf: data.cpf,
+          placa: data.placa,
+          email: data.email,
+          veiculoAno: data.veiculoAno,
+          veiculoMarcaModelo: data.veiculoMarcaModelo,
+          veiculoMarca: data.veiculoMarca,
+          veiculoModelo: data.veiculoModelo,
+          veiculoAnoFabricacao: data.veiculoAnoFabricacao,
+          veiculoAnoModelo: data.veiculoAnoModelo,
+          utm: data.utm,
+          rpaChoice: data.rpaChoice,
+          rpaResultado: data.rpaResultado,
+          status: "received",
+          dedupeKey,
+          createdAt: now,
+          updatedAt: now,
+          espocrmStatus: "pending",
+          espocrmAttempts: 0,
+          octadeskStatus: "pending",
+          octadeskAttempts: 0,
+        };
+
+    if (existing) {
+      await leadStore.update(eventLead.id, eventLead);
+    } else {
+      await leadStore.save(eventLead);
+    }
+    await saveLeadBackupToFirebase(eventLead);
+
+    return respond(idempotencyKey, 200, { leadId: eventLead.id });
+  }
+
   // Se for a atualização final de um contato inicial anterior, localiza
   // o registro original (por `leadId`, e por `dedupeKey` como reforço —
   // `leadId` pode não ser encontrado se a chamada anterior caiu numa
@@ -153,7 +228,12 @@ export async function POST(request: NextRequest) {
     const byId = data.leadId ? await leadStore.findById(data.leadId) : null;
     const byDedupe = byId ? null : await leadStore.findRecentByDedupeKey(dedupeKey, DEDUPE_WINDOW_MS);
     const candidate = byId ?? byDedupe;
-    if (candidate && candidate.stage === "initial") {
+    // "progress"/"consultant_requested" (2026-07-20) também são estados
+    // pré-complete: sem eles aqui, um lead que passou pelos novos eventos
+    // cairia no caminho de "duplicado" e a atualização final com os dados
+    // completos nunca aconteceria (achado no teste local desta rodada).
+    const updatableStages = ["initial", "progress", "consultant_requested"];
+    if (candidate && updatableStages.includes(candidate.stage)) {
       existingInitial = candidate;
     } else if (candidate) {
       // Já existe um lead "complete" com o mesmo telefone+ramo. Ainda assim,
@@ -192,6 +272,7 @@ export async function POST(request: NextRequest) {
         veiculoAnoFabricacao: data.veiculoAnoFabricacao ?? existingInitial.veiculoAnoFabricacao,
         veiculoAnoModelo: data.veiculoAnoModelo ?? existingInitial.veiculoAnoModelo,
         utm: data.utm ?? existingInitial.utm,
+        rpaChoice: data.rpaChoice ?? existingInitial.rpaChoice,
         updatedAt: now,
       }
     : {
@@ -211,6 +292,7 @@ export async function POST(request: NextRequest) {
         veiculoAnoFabricacao: data.veiculoAnoFabricacao,
         veiculoAnoModelo: data.veiculoAnoModelo,
         utm: data.utm,
+        rpaChoice: data.rpaChoice,
         status: "received",
         dedupeKey,
         createdAt: now,

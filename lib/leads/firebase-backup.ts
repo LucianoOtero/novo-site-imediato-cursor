@@ -61,6 +61,12 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord): Promise<void> 
       // estágio (Octadesk só no "initial"; EspoCRM sempre atualiza no
       // "complete") e para o fallback de NOME/Email "falsos".
       stage: lead.stage,
+      // Projeto "leads EspoCRM/Octadesk por momento" (2026-07-20): a
+      // escolha do passo 4 e o resumo do cálculo RPA viajam ao Firebase
+      // para a Cloud Function enriquecer o EspoCRM (description + Note
+      // no Stream) e disparar as mensagens Octadesk por momento.
+      rpaChoice: lead.rpaChoice ?? null,
+      rpaResultado: lead.rpaResultado ?? null,
     },
     timestamp: lead.createdAt,
     status: "pending",

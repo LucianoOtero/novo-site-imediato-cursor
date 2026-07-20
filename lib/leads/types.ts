@@ -23,8 +23,34 @@ export const apiLeadSchema = leadSchema.extend({
    * `leadId` para a próxima chamada. `"complete"` (padrão, mantém
    * compatibilidade com o comportamento anterior a esta issue) — envio
    * único ou atualização final com os dados completos.
+   *
+   * Estágios de evento (projeto "leads EspoCRM/Octadesk por momento",
+   * 2026-07-20) — atualizam um lead existente com a história do funil,
+   * para o vendedor abrir a ficha sabendo tudo:
+   * - `"progress"` — prospect concluiu o passo 2 (nome/e-mail) ou 3
+   *   (CPF/CEP/placa); protege a conversão se ele abandonar depois.
+   * - `"rpa_result"` — cálculo automático terminou (com `rpaResultado`).
+   * - `"consultant_requested"` — prospect prefere receber o cálculo
+   *   completo depois (especialista).
+   * A escolha "aguardar o cálculo" viaja como `rpaChoice` no próprio
+   * `"complete"` (não é um estágio separado — o complete desse caminho
+   * já existe e precisa continuar atualizando o lead normalmente).
    */
-  stage: z.enum(["initial", "complete"]).optional(),
+  stage: z.enum(["initial", "progress", "complete", "rpa_result", "consultant_requested"]).optional(),
+  /** Escolha do passo 4 (`"aguardar"` = acompanhar o cálculo RPA agora; `"consultor"` = receber o cálculo completo depois). */
+  rpaChoice: z.enum(["aguardar", "consultor"]).optional(),
+  /** Resumo do resultado do cálculo RPA (estágio `"rpa_result"`) — dados que antes morriam no browser. */
+  rpaResultado: z
+    .object({
+      status: z.enum(["sucesso", "falha"]),
+      valorRecomendado: z.string().optional(),
+      valorAlternativo: z.string().optional(),
+      formaPagamentoRecomendado: z.string().optional(),
+      formaPagamentoAlternativo: z.string().optional(),
+      franquiaRecomendado: z.string().optional(),
+      franquiaAlternativo: z.string().optional(),
+    })
+    .optional(),
   /** `id` devolvido por uma chamada `stage: "initial"` anterior — se encontrado, atualiza esse registro em vez de criar um novo. */
   leadId: z.string().optional(),
   /**
@@ -71,8 +97,13 @@ export type LeadRecord = {
    * telefone foi confirmado; `"complete"` depois da atualização final
    * com os dados completos (ou desde o início, para envios de uma vez
    * só — comportamento anterior a esta issue, mantido por padrão).
+   * Estágios de evento (2026-07-20): ver comentário em `apiLeadSchema.stage`.
    */
-  stage: "initial" | "complete";
+  stage: "initial" | "progress" | "complete" | "rpa_result" | "consultant_requested";
+  /** Escolha do passo 4 (projeto 2026-07-20) — `"aguardar"` ou `"consultor"`. */
+  rpaChoice?: "aguardar" | "consultor";
+  /** Resumo do resultado do cálculo RPA (projeto 2026-07-20). */
+  rpaResultado?: ApiLeadPayload["rpaResultado"];
   ramo: string;
   phoneE164: string;
   cep?: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Lock } from "lucide-react";
@@ -233,6 +233,50 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const rpa = useRpaCalculation();
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
+  /** Garante que o evento `rpa_result` (projeto 2026-07-20) é enviado uma única vez por cálculo. */
+  const rpaResultReportedRef = useRef(false);
+
+  /**
+   * Resultado do cálculo RPA → lead (projeto "leads EspoCRM/Octadesk por
+   * momento", 2026-07-20): quando o cálculo termina (sucesso ou falha),
+   * envia o resumo (valores, formas de pagamento, franquias) para
+   * `/api/lead` com `stage: "rpa_result"` — dados que antes morriam no
+   * browser. A Cloud Function grava o resumo na ficha do lead no EspoCRM
+   * (o vendedor liga sabendo os valores) e envia a mensagem Octadesk do
+   * momento ("cálculo pronto" ou "cálculo manual"). Best-effort: falha
+   * aqui nunca afeta a tela de resultado.
+   */
+  useEffect(() => {
+    if (!rpaActive || rpaResultReportedRef.current) return;
+    if (rpa.phase !== "success" && rpa.phase !== "error") return;
+    rpaResultReportedRef.current = true;
+
+    const rpaResultado = {
+      status: rpa.phase === "success" ? ("sucesso" as const) : ("falha" as const),
+      valorRecomendado: rpa.result.recomendado?.valor,
+      valorAlternativo: rpa.result.alternativo?.valor,
+      formaPagamentoRecomendado: rpa.result.recomendado?.formaPagamento,
+      formaPagamentoAlternativo: rpa.result.alternativo?.formaPagamento,
+      franquiaRecomendado: rpa.result.recomendado?.valorFranquia,
+      franquiaAlternativo: rpa.result.alternativo?.valorFranquia,
+    };
+
+    void fetch("/api/lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+      body: JSON.stringify({
+        ...buildPayloadFromRawValues(getValues()),
+        stage: "rpa_result",
+        rpaChoice: "aguardar",
+        rpaResultado,
+        leadId: initialLeadIdRef.current ?? undefined,
+        utm: captureUtmFromLocation(),
+      }),
+    }).catch((error) => console.error("[LeadForm] Falha ao registrar resultado do RPA (não bloqueante):", error));
+    // `buildPayloadFromRawValues`/`getValues` são estáveis no ciclo de vida
+    // que interessa aqui (o envio é guardado por `rpaResultReportedRef`).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rpaActive, rpa.phase, rpa.result]);
   /**
    * Guarda contra reenvio duplicado no passo final (correção 2026-07-15,
    * ver docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md) — achado real:
@@ -398,6 +442,33 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       if (data?.leadId) initialLeadIdRef.current = data.leadId;
     } catch (error) {
       console.error("[LeadForm] Falha no contato inicial (não bloqueante):", error);
+    }
+  }
+
+  /**
+   * Atualização de progresso (projeto "leads EspoCRM/Octadesk por
+   * momento", 2026-07-20) — disparada ao concluir os passos 2 (nome/
+   * e-mail) e 3 (CPF/CEP/placa), best-effort e sem bloquear a navegação
+   * (mesmo padrão de `sendInitialContact`). Protege a conversão: se o
+   * prospect abandonar depois, o vendedor já tem os dados parciais no
+   * EspoCRM. Nunca dispara mensagem ao cliente (a Cloud Function não
+   * chama o Octadesk no estágio "progress").
+   */
+  async function sendProgressUpdate() {
+    try {
+      const values = getValues();
+      await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify({
+          ...buildPayloadFromRawValues(values),
+          stage: "progress",
+          leadId: initialLeadIdRef.current ?? undefined,
+          utm: captureUtmFromLocation(),
+        }),
+      });
+    } catch (error) {
+      console.error("[LeadForm] Falha na atualização de progresso (não bloqueante):", error);
     }
   }
 
@@ -611,6 +682,13 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       void checkCelularApi();
     }
 
+    // Passos 2 e 3 concluídos → atualiza o lead no EspoCRM com os dados
+    // parciais (nome/e-mail; CPF/CEP/placa/veículo), sem mensagem ao
+    // cliente. Ver docstring de `sendProgressUpdate`.
+    if (step === 2 || step === 3) {
+      void sendProgressUpdate();
+    }
+
     const nextStep = (step + 1) as StepNumber;
     setStep(nextStep);
     trackEvent("form_step", { step: nextStep, ramo });
@@ -725,12 +803,30 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   }
 
   /**
-   * Passo 4, opção "Prefiro falar com um consultor depois" — reaproveita
-   * **exatamente** o envio final que já existia antes deste passo
-   * (mesmo `handleSubmit(onSubmit)`, mesma guarda `finalSubmitInFlightRef`).
+   * Passo 4, opção "Prefiro receber o cálculo completo depois" —
+   * reaproveita **exatamente** o envio final que já existia antes deste
+   * passo (mesmo `handleSubmit(onSubmit)`, mesma guarda
+   * `finalSubmitInFlightRef`). Antes do envio, registra o evento
+   * `consultant_requested` (best-effort, projeto 2026-07-20) — a Cloud
+   * Function posta a escolha no Stream do lead no EspoCRM e envia a
+   * mensagem "cálculo completo depois" no Octadesk (quando os templates
+   * estiverem ativos).
    */
   function handleChooseConsultant() {
     if (finalSubmitInFlightRef.current) return;
+
+    void fetch("/api/lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+      body: JSON.stringify({
+        ...buildPayloadFromRawValues(getValues()),
+        stage: "consultant_requested",
+        rpaChoice: "consultor",
+        leadId: initialLeadIdRef.current ?? undefined,
+        utm: captureUtmFromLocation(),
+      }),
+    }).catch((error) => console.error("[LeadForm] Falha ao registrar escolha do consultor (não bloqueante):", error));
+
     finalSubmitInFlightRef.current = true;
     void handleSubmit(onSubmit, (formErrors) => {
       finalSubmitInFlightRef.current = false;
@@ -768,9 +864,13 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       const response = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+        // `rpaChoice: "aguardar"` (projeto 2026-07-20): registra no lead a
+        // escolha de acompanhar o cálculo agora — a Cloud Function posta a
+        // escolha no Stream do lead no EspoCRM.
         body: JSON.stringify({
           ...payload,
           stage: "complete",
+          rpaChoice: "aguardar",
           leadId: initialLeadIdRef.current ?? undefined,
         }),
       });
