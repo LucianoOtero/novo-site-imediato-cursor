@@ -51,13 +51,19 @@ export function RpaCalculationScreen({
 }: RpaCalculationScreenProps) {
   if (phase === "success") {
     return (
-      <div className="flex flex-col gap-5">
+      // `@container` (redesign 2026-07-20): as colunas dos cartões passam a
+      // depender do ESPAÇO REAL disponível (container query), não do viewport
+      // — na coluna estreita do Hero eles empilham; em layouts largos
+      // (/cotacao) ficam lado a lado a partir de ~32rem de largura interna.
+      <div className="@container flex flex-col gap-5">
         <div className="flex flex-col items-center gap-2 text-center">
-          <h2 className="font-display text-xl font-bold text-neutral-900">Encontramos 2 opções para você</h2>
+          <h2 className="font-display text-xl font-bold text-balance text-neutral-900">
+            Encontramos 2 opções para você
+          </h2>
           <p className="text-sm text-neutral-500">{RPA_SUCCESS_NOTICE}</p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 @lg:grid-cols-2">
           <RpaResultCard variant="recomendado" plano={result.recomendado} />
           <RpaResultCard variant="alternativo" plano={result.alternativo} />
         </div>
