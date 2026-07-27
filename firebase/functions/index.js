@@ -481,7 +481,9 @@ exports.deliverLead = onValueWritten(
         const resultado = leadData.rpaResultado || {};
         if (resultado.status === "sucesso" && resultado.valorRecomendado) {
           templateKey = "calculo_pronto";
-          variables = [nome, resultado.valorRecomendado, leadData.veiculoMarcaModelo || "veículo"];
+          // Ordem das variáveis conforme o template aprovado no Octadesk
+          // (2026-07-27): var-1 = nome, var-2 = veículo, var-3 = valor.
+          variables = [nome, leadData.veiculoMarcaModelo || "veículo", resultado.valorRecomendado];
         } else {
           templateKey = "calculo_manual";
           variables = [nome];
