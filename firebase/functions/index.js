@@ -290,11 +290,20 @@ async function sendOctadeskTemplate(config, templateKey, leadData, variables, le
   const templateId = config.templates && config.templates[templateKey];
   if (!templateId) throw new Error(`Template "${templateKey}" sem ID configurado em OCTADESK_API_CONFIG`);
 
+  // Formato do POST /chat/send-template (correção 2026-07-27, validada em
+  // teste real): `origin`/`target` usam `{channel, code}` — o formato
+  // `phoneContact/from.number` é do endpoint antigo (`/chat/conversation/
+  // send-template`, deprecado) e devolve HTTP 500 {"code":"NOT_MAPPED"}
+  // neste. `target.contact.name/email` alimentam as variáveis padrão
+  // {{nome-contato}}/{{email-contato}} dos templates.
   const payload = {
+    origin: { contact: { channel: "whatsapp", code: config.fromNumber } },
     target: {
       contact: {
-        phoneContact: { number: leadData.phoneE164 },
+        channel: "whatsapp",
+        code: leadData.phoneE164,
         ...(firstName(leadData.nome) ? { name: leadData.nome } : {}),
+        ...(leadData.email && !/@imediatoseguros\.com\.br$/i.test(leadData.email) ? { email: leadData.email } : {}),
       },
     },
     content: {
@@ -303,7 +312,6 @@ async function sendOctadeskTemplate(config, templateKey, leadData, variables, le
         variables: variables.map((value, index) => ({ key: `var-${index + 1}`, value: value || "" })),
       },
     },
-    origin: { from: { number: config.fromNumber } },
     options: { automaticAssign: false },
   };
 
