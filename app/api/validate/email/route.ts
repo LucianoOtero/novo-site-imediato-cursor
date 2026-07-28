@@ -18,7 +18,7 @@ const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 
 export async function POST(request: NextRequest) {
   const ipHash = hashIp(getClientIp(request.headers));
-  const rateLimit = checkRateLimit(ipHash);
+  const rateLimit = checkRateLimit(ipHash, { bucket: "validate" });
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { ok: false, error: "rate_limited" },

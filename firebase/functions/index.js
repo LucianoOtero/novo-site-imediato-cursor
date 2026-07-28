@@ -88,6 +88,7 @@ const { initializeApp } = require("firebase-admin/app");
 // description, campos) e Octadesk (todas as mensagens por template).
 const espo = require("./espocrm");
 const octa = require("./octadesk");
+const emailNotif = require("./email-notification");
 
 const DATABASE_URL = "https://imediato-seguros-site-novo-default-rtdb.firebaseio.com";
 
@@ -131,8 +132,21 @@ const ESPOCRM_API_CONFIG = defineSecret("ESPOCRM_API_CONFIG");
  */
 const OCTADESK_API_CONFIG = defineSecret("OCTADESK_API_CONFIG");
 
+/**
+ * Notificação admin por e-mail — mesmo Cloud Run do site legado
+ * (`SEND_EMAIL_NOTIFICATION_URL` em config_env.js). A CF comanda o
+ * disparo no lugar do browser (que no Firebase-Only nunca chegava lá).
+ */
+const SEND_EMAIL_NOTIFICATION_URL_DEV = defineSecret("SEND_EMAIL_NOTIFICATION_URL_DEV");
+const SEND_EMAIL_NOTIFICATION_URL_PROD = defineSecret("SEND_EMAIL_NOTIFICATION_URL_PROD");
+
 const RETRY_DELAYS_MS = [1000, 4000, 9000];
-/** Limite de rodadas (invocações desta função para o mesmo lead) antes de desistir — evita martelar o destino indefinidamente. */
+/**
+ * Limite de rodadas com FALHA de entrega (Espo/Octadesk) antes de
+ * desistir. Estágios bem-sucedidos NÃO consomem este orçamento
+ * (correção 2026-07-28: antes cada invocação de estágio incrementava e
+ * o funil completo queimava o teto em ~5 writes).
+ */
 const MAX_CF_ATTEMPTS_TOTAL = 5;
 
 function sleep(ms) {
@@ -344,12 +358,44 @@ async function sendWithRetry(url, payload, label, leadId) {
   return { delivered: false, attempts: RETRY_DELAYS_MS.length + 1 };
 }
 
+/**
+ * Disparo best-effort do e-mail admin (Cloud Run legado). Dedupe por
+ * flag no RTDB. Nunca incrementa cf_retry_count nem bloqueia sync.
+ */
+async function maybeSendAdminEmail({
+  url,
+  leadData,
+  leadId,
+  record,
+  updates,
+  flag,
+  momento,
+  erro,
+}) {
+  if (!url || record[flag] === true || updates[flag] === true) return;
+  const payload = emailNotif.buildEmailPayload(leadData, { momento, erro: erro || null });
+  if (!payload) return;
+  const result = await emailNotif.sendAdminEmail(url, payload, leadId);
+  if (result.success) {
+    updates[flag] = true;
+    logger.info(`[deliverLead] Lead ${leadId}: e-mail admin enviado (${momento}, flag=${flag}).`);
+  }
+}
+
 exports.deliverLead = onValueWritten(
   {
     ref: "/leads_backup/{leadId}",
     instance: "imediato-seguros-site-novo-default-rtdb",
     region: "us-central1",
-    secrets: [ESPOCRM_DEV_URL, ESPOCRM_PROD_URL, OCTADESK_URL, ESPOCRM_API_CONFIG, OCTADESK_API_CONFIG],
+    secrets: [
+      ESPOCRM_DEV_URL,
+      ESPOCRM_PROD_URL,
+      OCTADESK_URL,
+      ESPOCRM_API_CONFIG,
+      OCTADESK_API_CONFIG,
+      SEND_EMAIL_NOTIFICATION_URL_DEV,
+      SEND_EMAIL_NOTIFICATION_URL_PROD,
+    ],
   },
   async (event) => {
     const leadId = event.params.leadId;
@@ -359,21 +405,43 @@ exports.deliverLead = onValueWritten(
     // Registro apagado, ou já processado (autoSync desligado pela própria função) — não faz nada.
     if (!record || record.autoSync !== true) return;
 
-    const cfAttempts = (record.cf_retry_count || 0) + 1;
-    if (cfAttempts > MAX_CF_ATTEMPTS_TOTAL) {
-      logger.error(`[deliverLead] Lead ${leadId} excedeu ${MAX_CF_ATTEMPTS_TOTAL} rodadas — desistindo (falha permanente, requer investigação manual).`);
-      await snapshot.ref.update({ autoSync: false, status: "failed_permanently", cf_retry_count: cfAttempts });
+    // Ignora writes só de metadados (ex.: flags da própria CF) — evita
+    // reentrada quando o update final/parcial não muda `data`/`autoSync`
+    // de forma relevante para um novo estágio do site.
+    const before = event.data.before && event.data.before.val();
+    if (before) {
+      const dataUnchanged = JSON.stringify(before.data || {}) === JSON.stringify(record.data || {});
+      const autoSyncUnchanged = before.autoSync === record.autoSync;
+      if (dataUnchanged && autoSyncUnchanged) return;
+    }
+
+    if ((record.cf_retry_count || 0) > MAX_CF_ATTEMPTS_TOTAL) {
+      logger.error(
+        `[deliverLead] Lead ${leadId} excedeu ${MAX_CF_ATTEMPTS_TOTAL} falhas de entrega — desistindo (failed_permanently).`
+      );
+      await snapshot.ref.update({
+        autoSync: false,
+        status: "failed_permanently",
+        cf_retry_count: record.cf_retry_count || 0,
+      });
       return;
     }
 
-    const leadData = record.data || {};
+    const workingRecord = record;
+    const leadData = workingRecord.data || {};
     // Estágios de evento (projeto 2026-07-20): "progress" (passos 2/3),
     // "rpa_result" (cálculo terminou) e "consultant_requested" (prefere
     // o cálculo completo depois) — todos atualizam o EspoCRM como o
     // "complete"; nenhum reenvia a mensagem inicial do Octadesk.
     const KNOWN_STAGES = ["initial", "progress", "complete", "rpa_result", "consultant_requested"];
     const stage = KNOWN_STAGES.includes(leadData.stage) ? leadData.stage : "complete";
-    const updates = { cf_retry_count: cfAttempts };
+    const updates = {};
+    const cfAttempts = workingRecord.cf_retry_count || 0;
+
+    const emailUrl =
+      workingRecord.environment === "production"
+        ? SEND_EMAIL_NOTIFICATION_URL_PROD.value()
+        : SEND_EMAIL_NOTIFICATION_URL_DEV.value();
 
     // EspoCRM via proxy: no "initial" só envia se ainda não tiver sido
     // enviado; "progress"/"complete" tentam SEMPRE (atualização com dados
@@ -383,18 +451,18 @@ exports.deliverLead = onValueWritten(
     // proxy devolver erro de ambiguidade) — o valor deles está no
     // enriquecimento via API direta (Note/description) abaixo.
     const needsEspocrm =
-      stage === "initial" ? record.espocrm_sent !== true : stage === "progress" || stage === "complete";
+      stage === "initial" ? workingRecord.espocrm_sent !== true : stage === "progress" || stage === "complete";
     // Octadesk (mensagem inicial via proxy legado): só no "initial" —
     // nunca depois, para não duplicar a notificação (achado 2026-07-13).
     // As mensagens dos momentos pós-inicial saem pela API direta abaixo.
-    const needsOctadesk = stage === "initial" && record.octadesk_sent !== true;
+    const needsOctadesk = stage === "initial" && workingRecord.octadesk_sent !== true;
 
     // Bloco do ambiente do lead (`dev`/`prod` — ver docstring do secret);
     // formato antigo com as chaves no topo vale para os dois ambientes.
     const espoApiConfigAll = parseJsonConfig(ESPOCRM_API_CONFIG.value());
     const espoApiConfig =
       espoApiConfigAll && (espoApiConfigAll.dev || espoApiConfigAll.prod)
-        ? (record.environment === "production" ? espoApiConfigAll.prod : espoApiConfigAll.dev) || null
+        ? (workingRecord.environment === "production" ? espoApiConfigAll.prod : espoApiConfigAll.dev) || null
         : espoApiConfigAll;
     const espoApiReady = Boolean(espoApiConfig && espoApiConfig.baseUrl && espoApiConfig.apiKey);
     // Flag de transição (plano 2026-07-28): `useDirect:true` no topo do
@@ -417,12 +485,15 @@ exports.deliverLead = onValueWritten(
       for (attempt = 0; attempt <= RETRY_DELAYS_MS.length && !delivered; attempt += 1) {
         try {
           const ids = await espo.deliverStage(espoApiConfig, leadData, {
-            espoLeadId: leadData.espocrmLeadId || record.espocrmLeadId,
-            espoOpportunityId: leadData.espocrmOpportunityId || record.espocrmOpportunityId,
-            capturedAt: record.timestamp,
+            espoLeadId: leadData.espocrmLeadId || workingRecord.espocrmLeadId,
+            espoOpportunityId: leadData.espocrmOpportunityId || workingRecord.espocrmOpportunityId,
+            capturedAt: workingRecord.timestamp,
           });
           if (ids.leadId) updates.espocrmLeadId = ids.leadId;
           if (ids.opportunityId) updates.espocrmOpportunityId = ids.opportunityId;
+          if (ids.recoveredStaleLead) {
+            logger.info(`[deliverLead] Lead ${leadId}: espocrmLeadId stale recuperado → ${ids.leadId}`);
+          }
           delivered = true;
         } catch (error) {
           logger.warn(`[deliverLead/espocrm-direto] Lead ${leadId}: tentativa ${attempt + 1} falhou.`, error);
@@ -430,15 +501,40 @@ exports.deliverLead = onValueWritten(
         }
       }
       updates.espocrm_sent = delivered;
-      updates.espocrm_attempts = (record.espocrm_attempts || 0) + attempt;
-      updates.espocrm_last_error = delivered ? null : `Falha (API direta) após ${attempt} tentativa(s) — rodada ${cfAttempts}`;
+      updates.espocrm_attempts = (workingRecord.espocrm_attempts || 0) + attempt;
+      updates.espocrm_last_error = delivered
+        ? null
+        : `Falha (API direta) após ${attempt} tentativa(s) — falhas acumuladas ${cfAttempts}`;
+
+      if (delivered && stage === "initial") {
+        await maybeSendAdminEmail({
+          url: emailUrl,
+          leadData,
+          leadId,
+          record: workingRecord,
+          updates,
+          flag: "email_espocrm_initial_sent",
+          momento: "initial",
+        });
+      } else if (delivered && stage === "complete") {
+        await maybeSendAdminEmail({
+          url: emailUrl,
+          leadData,
+          leadId,
+          record: workingRecord,
+          updates,
+          flag: "email_espocrm_update_sent",
+          momento: "update",
+        });
+      }
     } else if (needsEspocrm) {
       // ——— EspoCRM via proxy legado (caminho de transição/fallback) ———
-      const espocrmUrl = record.environment === "production" ? ESPOCRM_PROD_URL.value() : ESPOCRM_DEV_URL.value();
+      const espocrmUrl =
+        workingRecord.environment === "production" ? ESPOCRM_PROD_URL.value() : ESPOCRM_DEV_URL.value();
       const payloadData = {
         ...leadData,
-        espocrmLeadId: leadData.espocrmLeadId || record.espocrmLeadId,
-        espocrmOpportunityId: leadData.espocrmOpportunityId || record.espocrmOpportunityId,
+        espocrmLeadId: leadData.espocrmLeadId || workingRecord.espocrmLeadId,
+        espocrmOpportunityId: leadData.espocrmOpportunityId || workingRecord.espocrmOpportunityId,
       };
       const result = await sendWithRetry(
         espocrmUrl,
@@ -447,12 +543,36 @@ exports.deliverLead = onValueWritten(
         leadId
       );
       updates.espocrm_sent = result.delivered;
-      updates.espocrm_attempts = (record.espocrm_attempts || 0) + result.attempts;
-      updates.espocrm_last_error = result.delivered ? null : `Falha após ${result.attempts} tentativa(s) — rodada ${cfAttempts}`;
+      updates.espocrm_attempts = (workingRecord.espocrm_attempts || 0) + result.attempts;
+      updates.espocrm_last_error = result.delivered
+        ? null
+        : `Falha após ${result.attempts} tentativa(s) — falhas acumuladas ${cfAttempts}`;
 
       const ids = extractEspoCrmIds(result.responseData);
       if (ids.leadId) updates.espocrmLeadId = ids.leadId;
       if (ids.opportunityId) updates.espocrmOpportunityId = ids.opportunityId;
+
+      if (result.delivered && stage === "initial") {
+        await maybeSendAdminEmail({
+          url: emailUrl,
+          leadData,
+          leadId,
+          record: workingRecord,
+          updates,
+          flag: "email_espocrm_initial_sent",
+          momento: "initial",
+        });
+      } else if (result.delivered && stage === "complete") {
+        await maybeSendAdminEmail({
+          url: emailUrl,
+          leadData,
+          leadId,
+          record: workingRecord,
+          updates,
+          flag: "email_espocrm_update_sent",
+          momento: "update",
+        });
+      }
     }
 
     if (needsOctadesk) {
@@ -462,14 +582,16 @@ exports.deliverLead = onValueWritten(
       // envio direto falhar (ou não estiver configurado), fallback para
       // o proxy legado — o prospect nunca fica sem a mensagem inicial.
       let sentDirect = false;
+      let octaError = null;
       if (octaReady && octaConfig.templates && octaConfig.templates.primeira_etapa) {
         try {
           await octa.sendTemplate(octaConfig, "primeira_etapa", leadData, [], leadId);
           sentDirect = true;
           updates.octadesk_sent = true;
-          updates.octadesk_attempts = (record.octadesk_attempts || 0) + 1;
+          updates.octadesk_attempts = (workingRecord.octadesk_attempts || 0) + 1;
           updates.octadesk_last_error = null;
         } catch (error) {
+          octaError = error;
           logger.warn(`[deliverLead/octa-inicial] Lead ${leadId}: envio direto falhou — caindo para o proxy.`, error);
         }
       }
@@ -481,8 +603,36 @@ exports.deliverLead = onValueWritten(
           leadId
         );
         updates.octadesk_sent = result.delivered;
-        updates.octadesk_attempts = (record.octadesk_attempts || 0) + result.attempts;
-        updates.octadesk_last_error = result.delivered ? null : `Falha após ${result.attempts} tentativa(s) — rodada ${cfAttempts}`;
+        updates.octadesk_attempts = (workingRecord.octadesk_attempts || 0) + result.attempts;
+        updates.octadesk_last_error = result.delivered
+          ? null
+          : `Falha após ${result.attempts} tentativa(s) — falhas acumuladas ${cfAttempts}`;
+        if (!result.delivered && !octaError) {
+          octaError = new Error(updates.octadesk_last_error || "Octadesk initial falhou");
+        }
+      }
+
+      if (updates.octadesk_sent === true) {
+        await maybeSendAdminEmail({
+          url: emailUrl,
+          leadData,
+          leadId,
+          record: workingRecord,
+          updates,
+          flag: "email_octa_initial_sent",
+          momento: "initial",
+        });
+      } else {
+        await maybeSendAdminEmail({
+          url: emailUrl,
+          leadData,
+          leadId,
+          record: workingRecord,
+          updates,
+          flag: "email_octa_initial_error_sent",
+          momento: "initial_error",
+          erro: emailNotif.errorPayload(octaError),
+        });
       }
     }
 
@@ -491,8 +641,9 @@ exports.deliverLead = onValueWritten(
     // o resumo do cálculo. Best-effort com dedupe por estágio
     // (`espo_note_{stage}_sent`): falha aqui nunca segura a entrega
     // principal nem dispara retry — só é logada.
-    const espoLeadIdForApi = updates.espocrmLeadId || record.espocrmLeadId || leadData.espocrmLeadId;
-    const espoOppIdForApi = updates.espocrmOpportunityId || record.espocrmOpportunityId || leadData.espocrmOpportunityId;
+    const espoLeadIdForApi = updates.espocrmLeadId || workingRecord.espocrmLeadId || leadData.espocrmLeadId;
+    const espoOppIdForApi =
+      updates.espocrmOpportunityId || workingRecord.espocrmOpportunityId || leadData.espocrmOpportunityId;
 
     // Campos do painel "Cotação do Site" + `cWebpage` (origem) no Lead E
     // na Opportunity (2026-07-28) — via API direta, pois o proxy legado
@@ -501,7 +652,7 @@ exports.deliverLead = onValueWritten(
     // Notes (`espo_fields_{stage}_sent`); o PUT é idempotente.
     const funnelFields = buildFunnelFields(stage, leadData);
     const fieldsFlag = `espo_fields_${stage}_sent`;
-    if (espoApiReady && espoLeadIdForApi && funnelFields && record[fieldsFlag] !== true) {
+    if (espoApiReady && espoLeadIdForApi && funnelFields && workingRecord[fieldsFlag] !== true) {
       const payload = { ...funnelFields, cWebpage: espo.SITE_WEBPAGE };
       try {
         await espo.putFields(espoApiConfig, "Lead", espoLeadIdForApi, payload, leadId);
@@ -515,7 +666,7 @@ exports.deliverLead = onValueWritten(
     }
     const noteText = buildMomentNote(stage, leadData);
     const noteFlag = `espo_note_${stage}_sent`;
-    if (espoApiReady && espoLeadIdForApi && noteText && record[noteFlag] !== true) {
+    if (espoApiReady && espoLeadIdForApi && noteText && workingRecord[noteFlag] !== true) {
       try {
         await espo.postNote(espoApiConfig, espoLeadIdForApi, noteText, leadId);
         // O resumo do cálculo também vai para a description — o campo
@@ -537,7 +688,7 @@ exports.deliverLead = onValueWritten(
       stage === "consultant_requested" ||
       (stage === "rpa_result" && (leadData.rpaResultado || {}).status !== "sucesso");
     const taskFlag = `espo_task_${stage}_sent`;
-    if (espoApiReady && espoLeadIdForApi && needsManualTask && record[taskFlag] !== true) {
+    if (espoApiReady && espoLeadIdForApi && needsManualTask && workingRecord[taskFlag] !== true) {
       try {
         await espo.createManualCalcTask(espoApiConfig, espoLeadIdForApi, leadData, leadId);
         updates[taskFlag] = true;
@@ -573,22 +724,48 @@ exports.deliverLead = onValueWritten(
       }
 
       const octaFlag = templateKey ? `octa_${templateKey}_sent` : null;
-      if (templateKey && record[octaFlag] !== true) {
+      if (templateKey && workingRecord[octaFlag] !== true) {
         try {
           await octa.sendTemplate(octaConfig, templateKey, leadData, variables, leadId);
           updates[octaFlag] = true;
+          await maybeSendAdminEmail({
+            url: emailUrl,
+            leadData,
+            leadId,
+            record: workingRecord,
+            updates,
+            flag: `email_octa_${templateKey}_sent`,
+            momento: "update",
+          });
         } catch (error) {
           logger.warn(`[deliverLead/octa-api] Lead ${leadId}: template "${templateKey}" falhou (best-effort).`, error);
+          await maybeSendAdminEmail({
+            url: emailUrl,
+            leadData,
+            leadId,
+            record: workingRecord,
+            updates,
+            flag: `email_octa_${templateKey}_error_sent`,
+            momento: "update_error",
+            erro: emailNotif.errorPayload(error),
+          });
         }
       }
     }
 
     const espocrmOk = needsEspocrm ? updates.espocrm_sent : true;
-    const octadeskOk = needsOctadesk ? updates.octadesk_sent : record.octadesk_sent === true || stage !== "initial";
+    const octadeskOk = needsOctadesk
+      ? updates.octadesk_sent
+      : workingRecord.octadesk_sent === true || stage !== "initial";
     const stillFailing = !espocrmOk || !octadeskOk;
 
+    // cf_retry_count só sobe em falha de entrega — estágios ok não queimam o teto.
+    if (stillFailing) {
+      updates.cf_retry_count = cfAttempts + 1;
+    }
+
     // Se ainda falhar, mantém autoSync:true — o próprio update() abaixo
-    // dispara uma nova rodada desta função (até MAX_CF_ATTEMPTS_TOTAL).
+    // dispara uma nova rodada desta função (até MAX_CF_ATTEMPTS_TOTAL falhas).
     updates.autoSync = stillFailing;
     if (!stillFailing) {
       updates.status = "synced";
@@ -598,7 +775,7 @@ exports.deliverLead = onValueWritten(
     await snapshot.ref.update(updates);
 
     logger.info(
-      `[deliverLead] Lead ${leadId} (stage=${stage}), rodada ${cfAttempts}: espocrm_sent=${updates.espocrm_sent ?? record.espocrm_sent}, octadesk_sent=${updates.octadesk_sent ?? record.octadesk_sent}, autoSync=${updates.autoSync}.`
+      `[deliverLead] Lead ${leadId} (stage=${stage}), falhas=${stillFailing ? updates.cf_retry_count : cfAttempts}: espocrm_sent=${updates.espocrm_sent ?? workingRecord.espocrm_sent}, octadesk_sent=${updates.octadesk_sent ?? workingRecord.octadesk_sent}, autoSync=${updates.autoSync}.`
     );
   }
 );

@@ -34,8 +34,11 @@ DEV ou PROD conforme environment")]
     CF -->|"stage=initial: msg inicial (1x só)"| OctaCloudRun[("Cloud Run — add_webflow_octa
 sempre PROD")]
     CF -->|"stage=complete: SÓ atualiza, nunca reenvia Octadesk"| EspoCloudRun
+    CF -->|"e-mail admin (mesmo Cloud Run do legado)"| EmailCloudRun[("Cloud Run — send-email-notification
+DEV ou PROD")]
     EspoCloudRun --> EspoCRM[("EspoCRM")]
     OctaCloudRun --> Octadesk[("Octadesk")]
+    EmailCloudRun --> AdminInbox[("Caixa da equipe")]
     CF -->|"grava espocrmLeadId/opportunityId + status"| RTDB
 ```
 
@@ -66,7 +69,25 @@ A Cloud Function escolhe a URL do EspoCRM pelo campo `environment` do próprio r
 - **`stage === "complete"`** (dados completos): **sempre** tenta atualizar o EspoCRM (usa `espocrmLeadId`/`espocrmOpportunityId` já salvos no registro, se existirem, para atualizar em vez de duplicar) — **nunca** reenvia ao Octadesk, independentemente de qualquer flag. Isso corrige a duplicidade de mensagens (achado nº1 acima).
 - **Fallback de `NOME`/`Email` "falsos"** (`{ddd}-{celular}-NOVO CLIENTE WHATSAPP` / `{ddd}{celular}@imediatoseguros.com.br`): aplicado sempre que o valor real estiver vazio, em **qualquer** estágio (antes só valia no `"initial"`, o que quebrava a atualização final de leads do `ContactLeadModal` — achado nº2 acima).
 - **Detecção de falso sucesso do EspoCRM**: o EspoCRM responde `HTTP 200` mesmo rejeitando o lead no corpo (`{"status":"error",...}`) — `sendWithRetry()` lê o corpo da resposta (tolerante a avisos HTML do PHP antes/depois do JSON) e trata isso como falha de verdade, entrando no retry.
-- Limite de 5 rodadas por lead (`MAX_CF_ATTEMPTS_TOTAL`) — depois disso, marca `status: "failed_permanently"` e para (requer investigação manual no Realtime Database Console).
+- Limite de 5 **falhas de entrega** por lead (`MAX_CF_ATTEMPTS_TOTAL`) — estágios bem-sucedidos não consomem o orçamento (correção 2026-07-28). Depois do teto, marca `status: "failed_permanently"` e para (requer investigação manual no Realtime Database Console).
+- **ID stale**: se o RTDB guarda `espocrmLeadId` de um Lead já apagado no CRM, a API direta recupera (PUT 404 → dedupe → recreate).
+- No `stage: "initial"`, o site zera `cf_retry_count` no backup Firebase para reabrir o funil após `failed_permanently`.
+- Writes só de metadados (sem mudança em `data`/`autoSync`) são ignorados para evitar reentrada da CF.
+
+## E-mail admin (2026-07-28)
+
+No legado, `sendAdminEmailNotification()` no browser fazia `POST` em `SEND_EMAIL_NOTIFICATION_URL` (Cloud Run) após EspoCRM/Octadesk no modo `endpoints`. Com `MODAL_FIREBASE_ONLY=true` esse path **nunca rodava**.
+
+No site novo a Cloud Function `deliverLead` comanda o **mesmo** Cloud Run (`firebase/functions/email-notification.js`), com o mesmo User-Agent e payload (`ddd`, `celular`, `momento`, etc.). Destino: equipe/admin — **não** o prospect.
+
+| Evento | momento | Flag de dedupe no RTDB |
+|---|---|---|
+| EspoCRM ok em `initial` | `initial` | `email_espocrm_initial_sent` |
+| EspoCRM ok em `complete` | `update` | `email_espocrm_update_sent` |
+| Octadesk initial ok/erro | `initial` / `initial_error` | `email_octa_initial_sent` / `_error_sent` |
+| Template pós-cálculo ok/erro | `update` / `update_error` | `email_octa_<template>_sent` / `_error_sent` |
+
+Não dispara em `progress`. Falha de e-mail é best-effort (não sobe `cf_retry_count`). Secrets: `SEND_EMAIL_NOTIFICATION_URL_DEV` / `_PROD`.
 
 ## Infraestrutura provisionada
 
@@ -77,7 +98,14 @@ A Cloud Function escolhe a URL do EspoCRM pelo campo `environment` do próprio r
 | Faturamento | Plano Blaze, conta "Pagamento do Firebase" (mesma do legado) |
 | Service account (Admin SDK, usado pelo site) | `leadbackup-admin@imediato-seguros-site-novo.iam.gserviceaccount.com` — `roles/firebasedatabase.admin` |
 | Cloud Function | `deliverLead` (Node 22, `us-central1`) — renomeada de `retryLeadDelivery` em 2026-07-13 |
-| Secrets da função | `ESPOCRM_DEV_URL`, `ESPOCRM_PROD_URL`, `OCTADESK_URL` (Secret Manager, únicos consumidores dessas URLs — o site não as usa mais) |
+| Secrets da função | `ESPOCRM_DEV_URL`, `ESPOCRM_PROD_URL`, `OCTADESK_URL`, `ESPOCRM_API_CONFIG`, `OCTADESK_API_CONFIG`, `SEND_EMAIL_NOTIFICATION_URL_DEV`, `SEND_EMAIL_NOTIFICATION_URL_PROD` |
+
+## Limitações conhecidas / trabalho futuro
+
+- A Cloud Function faz um número limitado de **falhas** (até 5) em rajada — não é um sistema de fila com espera de horas/dias para destinos permanentemente fora do ar.
+- `lib/leads/store.ts` (persistência local do lead) continua best-effort (`/tmp` na Vercel, efêmero) — aceitável porque a entrega real agora depende inteiramente do Firebase, não deste store local (que só serve dedupe/idempotência dentro da mesma instância serverless).
+- A resposta de `/api/lead` sempre indica sucesso (grava no Firebase) mesmo que o EspoCRM/Octadesk falhem depois — troca implícita da arquitetura "Firebase-only". Monitoramento de falhas de entrega passa a depender de observar o Realtime Database Console/logs da Cloud Function (`firebase functions:log`), não mais da resposta HTTP de `/api/lead`.
+- **Fase aberta (2026-07-28):** estabilização E2E (`rpa_desabilitado` sob carga, funil CRM na janela do teste, 409 de dedupe por telefone, cobertura da bateria) — ver `docs/FASE_ESTABILIZACAO_E2E_LEADS.md`.
 
 ## Verificação de paridade com o ambiente legado (2026-07-13)
 
@@ -118,10 +146,4 @@ Projeto "leads EspoCRM/Octadesk por momento" — além de `initial`/`complete`, 
 | `rpa_result` | Cálculo RPA terminou (`data.rpaResultado` com valores) | — | Note + description com valores | `calculo_pronto` ou `calculo_manual` |
 | `consultant_requested` | Escolheu "Prefiro receber o cálculo completo depois" | — | Note "preparar cotação e retornar" | `calculo_completo_depois` |
 
-\* As integrações diretas dependem dos secrets `ESPOCRM_API_CONFIG` e `OCTADESK_API_CONFIG` (hoje `{}` = desligadas; ver `docs/GUIA_OCTADESK_TEMPLATES.md` para o passo a passo de ativação — API keys, templates e aprovação na Meta). Achado da validação (2026-07-20): `rpa_result`/`consultant_requested` **não** passam pelo proxy legado — sem `espocrmLeadId`, o proxy devolve um erro de ambiguidade ("Erro no CRM" com lista de leads), entrando em retry inútil.
-
-## Limitações conhecidas / trabalho futuro
-
-- A Cloud Function faz um número limitado de rodadas (até 5) em rajada — não é um sistema de fila com espera de horas/dias para destinos permanentemente fora do ar.
-- `lib/leads/store.ts` (persistência local do lead) continua best-effort (`/tmp` na Vercel, efêmero) — aceitável porque a entrega real agora depende inteiramente do Firebase, não deste store local (que só serve dedupe/idempotência dentro da mesma instância serverless).
-- A resposta de `/api/lead` sempre indica sucesso (grava no Firebase) mesmo que o EspoCRM/Octadesk falhem depois — troca implícita da arquitetura "Firebase-only" (mesma troca que o site legado faz na sua configuração ativa). Monitoramento de falhas de entrega passa a depender de observar o Realtime Database Console/logs da Cloud Function (`firebase functions:log`), não mais da resposta HTTP de `/api/lead`.
+\* As integrações diretas dependem dos secrets `ESPOCRM_API_CONFIG` e `OCTADESK_API_CONFIG` (ver `docs/GUIA_OCTADESK_TEMPLATES.md`). Achado da validação (2026-07-20): `rpa_result`/`consultant_requested` **não** passam pelo proxy legado — sem `espocrmLeadId`, o proxy devolve um erro de ambiguidade ("Erro no CRM" com lista de leads), entrando em retry inútil.

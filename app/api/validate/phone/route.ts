@@ -10,7 +10,8 @@ import { validatePhoneViaApiLayer } from "@/lib/validation/phone-apilayer";
  * do navegador, expondo a chave no JS público.
  *
  * Runtime Node (não edge): reaproveita `checkRateLimit`/`hashIp` de
- * `lib/leads/security.ts` (mesma proteção de `/api/lead`) para não deixar
+ * `lib/leads/security.ts` com bucket `validate` (cota separada de `/api/lead`)
+ * para não deixar o proxy aberto a abuso de IP.
  * esse proxy virar uma forma barata de esgotar a cota da APILayer.
  */
 export const runtime = "nodejs";
@@ -21,7 +22,7 @@ function onlyDigits(value: string): string {
 
 export async function POST(request: NextRequest) {
   const ipHash = hashIp(getClientIp(request.headers));
-  const rateLimit = checkRateLimit(ipHash);
+  const rateLimit = checkRateLimit(ipHash, { bucket: "validate" });
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { ok: false, error: "rate_limited" },

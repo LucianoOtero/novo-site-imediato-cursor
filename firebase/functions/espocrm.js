@@ -172,28 +172,59 @@ async function findOpportunityByLeadId(config, espoLeadId) {
 }
 
 /**
+ * Tenta PUT; em 404/403 (ID apagado no CRM / sem permissão) devolve
+ * `stale:true` para o caller recriar. Outros erros propagam.
+ */
+async function putOrDetectStale(config, path, fields) {
+  try {
+    if (Object.keys(fields).length > 0) await espoRequest(config, "PUT", path, fields);
+    return { stale: false };
+  } catch (error) {
+    if (error.status === 404 || error.status === 403) {
+      return { stale: true, status: error.status };
+    }
+    throw error;
+  }
+}
+
+/**
  * Entrega de um estágio ao EspoCRM via API direta — o coração do modo
  * `useDirect`. Cria (com dedupe) no `initial` sem IDs conhecidos;
  * atualiza Lead + Opportunity nos demais casos. Devolve
  * `{leadId, opportunityId}` (os IDs do CRM, para gravar de volta no
  * registro do RTDB).
+ *
+ * Se o RTDB guarda um `espocrmLeadId` stale (ex.: Lead apagado no E2E),
+ * o PUT 404/403 invalida o ID, refaz dedupe e cria de novo se preciso.
  */
 async function deliverStage(config, leadData, { espoLeadId, espoOpportunityId, capturedAt } = {}) {
   let leadId = espoLeadId || null;
   let opportunityId = espoOpportunityId || null;
+  let recoveredStaleLead = false;
 
   if (!leadId) {
     leadId = await findExistingLead(config, leadData);
   }
 
   if (!leadId) {
-    // Criação (estágio initial de um prospect realmente novo).
     const created = await espoRequest(config, "POST", "Lead", buildLeadFields(leadData, { isCreate: true, capturedAt }));
     if (!created || !created.id) throw new Error("POST Lead sem id na resposta");
     leadId = created.id;
   } else {
     const fields = buildLeadFields(leadData, { isCreate: false });
-    if (Object.keys(fields).length > 0) await espoRequest(config, "PUT", `Lead/${leadId}`, fields);
+    const put = await putOrDetectStale(config, `Lead/${leadId}`, fields);
+    if (put.stale) {
+      recoveredStaleLead = true;
+      leadId = await findExistingLead(config, leadData);
+      opportunityId = null;
+      if (!leadId) {
+        const created = await espoRequest(config, "POST", "Lead", buildLeadFields(leadData, { isCreate: true, capturedAt }));
+        if (!created || !created.id) throw new Error("POST Lead (recover) sem id na resposta");
+        leadId = created.id;
+      } else if (Object.keys(fields).length > 0) {
+        await espoRequest(config, "PUT", `Lead/${leadId}`, fields);
+      }
+    }
   }
 
   if (!opportunityId) {
@@ -210,10 +241,24 @@ async function deliverStage(config, leadData, { espoLeadId, espoOpportunityId, c
     opportunityId = (created && created.id) || null;
   } else {
     const fields = buildOpportunityFields(leadData, { isCreate: false });
-    if (Object.keys(fields).length > 0) await espoRequest(config, "PUT", `Opportunity/${opportunityId}`, fields);
+    const put = await putOrDetectStale(config, `Opportunity/${opportunityId}`, fields);
+    if (put.stale) {
+      opportunityId = await findOpportunityByLeadId(config, leadId);
+      if (!opportunityId) {
+        const created = await espoRequest(
+          config,
+          "POST",
+          "Opportunity",
+          buildOpportunityFields(leadData, { isCreate: true, espoLeadId: leadId })
+        );
+        opportunityId = (created && created.id) || null;
+      } else if (Object.keys(fields).length > 0) {
+        await espoRequest(config, "PUT", `Opportunity/${opportunityId}`, fields);
+      }
+    }
   }
 
-  return { leadId, opportunityId };
+  return { leadId, opportunityId, recoveredStaleLead };
 }
 
 /** PUT de campos avulsos em qualquer entidade (painel "Cotação do Site" + cWebpage no Lead e na Opportunity). */

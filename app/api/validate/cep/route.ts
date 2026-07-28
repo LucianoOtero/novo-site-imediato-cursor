@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const ipHash = hashIp(getClientIp(request.headers));
-  const rateLimit = checkRateLimit(ipHash);
+  const rateLimit = checkRateLimit(ipHash, { bucket: "validate" });
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { ok: false, error: "rate_limited" },

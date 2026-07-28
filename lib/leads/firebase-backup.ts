@@ -40,7 +40,7 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord): Promise<void> 
     return;
   }
 
-  const record = {
+  const record: Record<string, unknown> = {
     data: {
       ramo: lead.ramo,
       phoneE164: lead.phoneE164,
@@ -75,6 +75,13 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord): Promise<void> 
     environment: appEnvironment,
     autoSync: true,
   };
+
+  // Novo ciclo de captura (`initial`): zera o orçamento de retry da CF
+  // e tira `failed_permanently`. IDs do CRM NÃO são apagados aqui —
+  // a CF valida existência (PUT 404 → recreate) para não duplicar Lead.
+  if (lead.stage === "initial") {
+    record.cf_retry_count = 0;
+  }
 
   try {
     await database.ref(`leads_backup/${lead.id}`).update(record);

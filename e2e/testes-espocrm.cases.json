@@ -1,0 +1,34 @@
+{
+  "identidade": {
+    "nome": "LUCIANO TESTE",
+    "ddd": "11",
+    "celular": "976687668",
+    "cpf": "085.546.078-48",
+    "cep": "03317-000"
+  },
+  "casos": [
+    { "n": 1, "modo": "wait", "placa": "DBO7B72", "email": "lroteroDBO7B72@gmail.com", "veiculoEsperado": "VW - VolksWagen Golf 1.6 Black & Silver" },
+    { "n": 2, "modo": "wait", "placa": "EZO3977", "email": "lroteroEZO3977@gmail.com", "veiculoEsperado": "Hyundai Tucson 2.0 16V Flex Aut." },
+    { "n": 3, "modo": "wait", "placa": "PWH8863", "email": "lroteroPWH8863@gmail.com", "veiculoEsperado": "Fiat Palio ATTRACTIVE 1.0 EVO Fire Flex 8v 5p" },
+    { "n": 4, "modo": "wait", "placa": "RNW7D14", "email": "lroteroRNW7D14@gmail.com", "veiculoEsperado": "GM - Chevrolet JOY Plus Black Ed.1.0 8V 4p Flex Mec." },
+    { "n": 5, "modo": "wait", "placa": "DUM4D39", "email": "lroteroDUM4D39@gmail.com", "veiculoEsperado": "VW - VolksWagen Gol City (Trend) 1.0 Mi Total Flex 8V 2p" },
+    { "n": 6, "modo": "wait", "placa": "IUB0C66", "email": "lroteroIUB0C66@gmail.com", "veiculoEsperado": "Renault Kangoo Express Hi-Flex 1.6 16V" },
+    { "n": 7, "modo": "wait", "placa": "EJP8H57", "email": "lroteroEJP8H57@gmail.com", "veiculoEsperado": "KASINSKI GV 250 MIRAGE" },
+    { "n": 8, "modo": "wait", "placa": "SWA4F78", "email": "lroteroSWA4F78@gmail.com", "veiculoEsperado": "Mottu Sport 110i" },
+    { "n": 9, "modo": "wait", "placa": "FQA6C44", "email": "lroteroFQA6C44@gmail.com", "veiculoEsperado": "Honda Fit Personal 1.5 Flexone 16V 5p Aut." },
+    { "n": 10, "modo": "wait", "placa": "EJM2020", "email": "lroteroEJM2020@gmail.com", "veiculoEsperado": "Fiat Tipo 1.6 i.e. 2p e 4p" },
+    { "n": 11, "modo": "wait", "placa": "FRS4E62", "email": "lroteroFRS4E62@gmail.com", "veiculoEsperado": "VW - VolksWagen Up! take 1.0 Total Flex 12V 5p" },
+    { "n": 12, "modo": "wait", "placa": "FQF3C11", "email": "lroteroFQF3C11@gmail.com", "veiculoEsperado": "Toyota Corolla XEi 2.0 Flex 16V Aut." },
+    { "n": 13, "modo": "wait", "placa": "EKJ4I85", "email": "lroteroEKJ4I85@gmail.com", "veiculoEsperado": "BMW K 1300 R" },
+    { "n": 14, "modo": "wait", "placa": "BLP7E56", "email": "lroteroBLP7E56@gmail.com", "veiculoEsperado": "GM - Chevrolet Corsa Wind 1.0 EFI 2p" },
+    { "n": 15, "modo": "wait", "placa": "FXG1E20", "email": "lroteroFXG1E20@gmail.com", "veiculoEsperado": "Fiat Palio ATTRACTIVE 1.0 EVO Fire Flex 8v 5p" },
+    { "n": 16, "modo": "wait", "placa": "CLL7A22", "email": "lroteroCLL7A22@gmail.com", "veiculoEsperado": "Fiat Palio ED 1.0 mpi 2p e 4p" },
+    { "n": 17, "modo": "wait", "placa": "ONF1E36", "email": "lroteroONF1E36@gmail.com", "veiculoEsperado": "GM - Chevrolet ONIX HATCH LTZ 1.4 8V FlexPower 5p Mec." },
+    { "n": 18, "modo": "wait", "placa": "DZD9G36", "email": "lroteroDZD9G36@gmail.com", "veiculoEsperado": "VW - VolksWagen Fox City 1.0Mi Total Flex 3p" },
+    { "n": 19, "modo": "wait", "placa": "PEF5A69", "email": "lroteroPEF5A69@gmail.com", "veiculoEsperado": "Hyundai Tucson 2.0 16V Mec." },
+    { "n": 20, "modo": "wait", "placa": "KIQ0882", "email": "lroteroKIQ0882@gmail.com", "veiculoEsperado": "VW - VolksWagen Kombi Furgao 1.4 Mi Total Flex 8V" },
+    { "n": 21, "modo": "consultor", "placa": "GGV0G22", "email": "lroteroGGV0G22@gmail.com", "veiculoEsperado": "Hyundai HB20S Vision 1.0 Flex 12V Mec." },
+    { "n": 22, "modo": "consultor", "placa": "FTL3C17", "email": "lroteroFTL3C17@gmail.com", "veiculoEsperado": "Fiat Palio ESSENCE 1.6 Flex 16V 5p" },
+    { "n": 23, "modo": "consultor", "placa": "CPQ0877", "email": "lroteroCPQ0877@gmail.com", "veiculoEsperado": "VW - VolksWagen Fusca 1500" }
+  ]
+}

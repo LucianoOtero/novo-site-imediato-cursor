@@ -28,28 +28,51 @@ export function getClientIp(headers: Headers): string {
   return headers.get("x-real-ip") ?? "unknown";
 }
 
-/** Janela deslizante em memória (seção 51: "5/min, 30/h"). Reinicia a cada cold start — aceitável para rate limit best-effort. */
+/**
+ * Janela deslizante em memória (seção 51). Buckets separados para
+ * `/api/lead` vs `/api/validate/*` — validação de placa/CEP/telefone/e-mail
+ * no formulário não consome a cota de envio do lead (e vice-versa).
+ * Reinicia a cada cold start — aceitável para rate limit best-effort.
+ *
+ * Limites (aumentados em relação aos 5/min·30/h originais):
+ * - lead: 20/min, 120/h
+ * - validate: 60/min, 500/h (várias chamadas por digitação/blur + E2E)
+ */
 const requestLog = new Map<string, number[]>();
 
+export type RateLimitBucket = "lead" | "validate";
 export type RateLimitResult = { allowed: boolean; retryAfterSeconds?: number };
 
-export function checkRateLimit(ipHash: string, now: number = Date.now()): RateLimitResult {
+const RATE_LIMITS: Record<RateLimitBucket, { perMinute: number; perHour: number }> = {
+  lead: { perMinute: 20, perHour: 120 },
+  validate: { perMinute: 60, perHour: 500 },
+};
+
+export function checkRateLimit(
+  ipHash: string,
+  options: { now?: number; bucket?: RateLimitBucket } = {}
+): RateLimitResult {
+  const now = options.now ?? Date.now();
+  const bucket = options.bucket ?? "lead";
+  const limits = RATE_LIMITS[bucket];
+  const key = `${bucket}:${ipHash}`;
+
   const ONE_MINUTE = 60_000;
   const ONE_HOUR = 60 * ONE_MINUTE;
-  const timestamps = (requestLog.get(ipHash) ?? []).filter((ts) => now - ts < ONE_HOUR);
+  const timestamps = (requestLog.get(key) ?? []).filter((ts) => now - ts < ONE_HOUR);
 
   const lastMinute = timestamps.filter((ts) => now - ts < ONE_MINUTE);
   const lastHour = timestamps;
 
-  if (lastMinute.length >= 5) {
+  if (lastMinute.length >= limits.perMinute) {
     return { allowed: false, retryAfterSeconds: 60 };
   }
-  if (lastHour.length >= 30) {
+  if (lastHour.length >= limits.perHour) {
     return { allowed: false, retryAfterSeconds: 3600 };
   }
 
   timestamps.push(now);
-  requestLog.set(ipHash, timestamps);
+  requestLog.set(key, timestamps);
   return { allowed: true };
 }
 

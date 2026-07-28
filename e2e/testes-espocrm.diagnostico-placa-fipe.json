@@ -1,0 +1,315 @@
+{
+  "geradoEm": "2026-07-28T19:01:55Z",
+  "casos": [
+    {
+      "placa": "RNW7D14",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 5464,
+          "erro": null,
+          "ok": true,
+          "marca": "CHEVROLET",
+          "modelo": "ONIX PLUS JOY BLACK",
+          "anoFabricacao": null,
+          "anoModelo": "2021",
+          "marcaModelo": "CHEVROLET / ONIX PLUS JOY BLACK"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 241,
+          "erro": null,
+          "ok": true,
+          "marca": "CHEVROLET",
+          "modelo": "ONIX PLUS JOY BLACK",
+          "ano": null,
+          "ano_modelo": "2021",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    },
+    {
+      "placa": "FQF3C11",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 577,
+          "erro": null,
+          "ok": true,
+          "marca": "TOYOTA",
+          "modelo": "COROLLA XEI 20FLEX",
+          "anoFabricacao": "2017",
+          "anoModelo": "2018",
+          "marcaModelo": "TOYOTA / COROLLA XEI 20FLEX"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 187,
+          "erro": null,
+          "ok": true,
+          "marca": "TOYOTA",
+          "modelo": "COROLLA XEI 20FLEX",
+          "ano": "2017",
+          "ano_modelo": "2018",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    },
+    {
+      "placa": "EKJ4I85",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 433,
+          "erro": null,
+          "ok": true,
+          "marca": "BMW",
+          "modelo": "K 1300 R",
+          "anoFabricacao": "2012",
+          "anoModelo": "2012",
+          "marcaModelo": "BMW / K 1300 R"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 154,
+          "erro": null,
+          "ok": true,
+          "marca": "BMW",
+          "modelo": "K 1300 R",
+          "ano": "2012",
+          "ano_modelo": "2012",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    },
+    {
+      "placa": "BLP7E56",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 540,
+          "erro": null,
+          "ok": true,
+          "marca": "GM",
+          "modelo": "CORSA WIND",
+          "anoFabricacao": "1996",
+          "anoModelo": "1996",
+          "marcaModelo": "GM / CORSA WIND"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 154,
+          "erro": null,
+          "ok": true,
+          "marca": "GM",
+          "modelo": "CORSA WIND",
+          "ano": "1996",
+          "ano_modelo": "1996",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    },
+    {
+      "placa": "FXG1E20",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 394,
+          "erro": null,
+          "ok": true,
+          "marca": "FIAT",
+          "modelo": "PALIO",
+          "anoFabricacao": "2014",
+          "anoModelo": "2015",
+          "marcaModelo": "FIAT / PALIO"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 162,
+          "erro": null,
+          "ok": true,
+          "marca": "FIAT",
+          "modelo": "PALIO",
+          "ano": "2014",
+          "ano_modelo": "2015",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    },
+    {
+      "placa": "CLL7A22",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 574,
+          "erro": null,
+          "ok": true,
+          "marca": "FIAT",
+          "modelo": "PALIO ED",
+          "anoFabricacao": "1997",
+          "anoModelo": "1998",
+          "marcaModelo": "FIAT / PALIO ED"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 187,
+          "erro": null,
+          "ok": true,
+          "marca": "FIAT",
+          "modelo": "PALIO ED",
+          "ano": "1997",
+          "ano_modelo": "1998",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    },
+    {
+      "placa": "ONF1E36",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 389,
+          "erro": null,
+          "ok": true,
+          "marca": "CHEVROLET",
+          "modelo": "ONIX 1.4 LTZ",
+          "anoFabricacao": "2013",
+          "anoModelo": "2014",
+          "marcaModelo": "CHEVROLET / ONIX 1.4 LTZ"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 197,
+          "erro": null,
+          "ok": true,
+          "marca": "CHEVROLET",
+          "modelo": "ONIX 1.4 LTZ",
+          "ano": "2013",
+          "ano_modelo": "2014",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    },
+    {
+      "placa": "DZD9G36",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 397,
+          "erro": null,
+          "ok": true,
+          "marca": "VOLKSWAGEN",
+          "modelo": "FOX 1.0",
+          "anoFabricacao": "2007",
+          "anoModelo": "2008",
+          "marcaModelo": "VOLKSWAGEN / FOX 1.0"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 209,
+          "erro": null,
+          "ok": true,
+          "marca": "VOLKSWAGEN",
+          "modelo": "FOX 1.0",
+          "ano": "2007",
+          "ano_modelo": "2008",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    },
+    {
+      "placa": "PEF5A69",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 413,
+          "erro": null,
+          "ok": true,
+          "marca": "HYUNDAI",
+          "modelo": "TUCSON GLB",
+          "anoFabricacao": "2011",
+          "anoModelo": "2012",
+          "marcaModelo": "HYUNDAI / TUCSON GLB"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 180,
+          "erro": null,
+          "ok": true,
+          "marca": "HYUNDAI",
+          "modelo": "TUCSON GLB",
+          "ano": "2011",
+          "ano_modelo": "2012",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    },
+    {
+      "placa": "KIQ0882",
+      "caminhos": {
+        "site_api": {
+          "url": "https://comparaseguroonline.com.br/api/validate/placa",
+          "http": 200,
+          "ms": 1038,
+          "erro": null,
+          "ok": true,
+          "marca": "VOLKSWAGEN",
+          "modelo": "KOMBI FURGAO",
+          "anoFabricacao": "2008",
+          "anoModelo": "2008",
+          "marcaModelo": "VOLKSWAGEN / KOMBI FURGAO"
+        },
+        "cloud_run_dev": {
+          "url": "https://placa-validate-dev-6r55ex3u6q-rj.a.run.app/",
+          "http": 200,
+          "ms": 174,
+          "erro": null,
+          "ok": true,
+          "marca": "VOLKSWAGEN",
+          "modelo": "KOMBI FURGAO",
+          "ano": "2008",
+          "ano_modelo": "2008",
+          "codigo": 1,
+          "success": null
+        }
+      },
+      "veredito": "ok_rapido"
+    }
+  ]
+}

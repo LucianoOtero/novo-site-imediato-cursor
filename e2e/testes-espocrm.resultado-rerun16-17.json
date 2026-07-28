@@ -1,0 +1,105 @@
+{
+  "meta": {
+    "geradoEm": "2026-07-28T20:06:39.264Z",
+    "n": 2,
+    "contagem": {
+      "sucesso": 1,
+      "rpa_desabilitado": 1
+    }
+  },
+  "casos": [
+    {
+      "n": 16,
+      "placa": "CLL7A22",
+      "email": "lroteroCLL7A22@gmail.com",
+      "modo": "wait",
+      "veiculoEsperado": "Fiat Palio ED 1.0 mpi 2p e 4p",
+      "desfecho": "sucesso",
+      "valorRecomendado": null,
+      "valorAlternativo": null,
+      "detalhe": null,
+      "duracaoS": 132,
+      "rpaStartHttp": 200,
+      "rpaSessionId": "rpa_v4_20260728_200216_b6bf5a66",
+      "rpaPolls": 47,
+      "rpaLastStatus": "success",
+      "rpaLastMensagem": "RPA success",
+      "crm": {
+        "leadEncontrado": true,
+        "leadId": "6a690abf47deffd88",
+        "opportunityId": "6a690abfca8236be3",
+        "lead": {
+          "id": "6a690abf47deffd88",
+          "name": "LUCIANO TESTE",
+          "firstName": "LUCIANO TESTE",
+          "emailAddress": "lroteroCLL7A22@gmail.com",
+          "cCelular": "11976687668",
+          "cCpftext": "08554607848",
+          "addressPostalCode": "03317000",
+          "cPlaca": "CLL7A22",
+          "cMarca": "FIAT",
+          "cVeiculo": "PALIO ED",
+          "cAnoFab": "1997",
+          "cAnoMod": "1998",
+          "source": "Site",
+          "cWebpage": "comparaseguroonline.com.br",
+          "cDataDoLead": "2026-07-28",
+          "cUtmSource": null,
+          "cEtapaFunil": "Cálculo concluído",
+          "cEscolhaCalculo": null,
+          "cStatusCalculo": "Concluído",
+          "cValorRecomendado": "R$1.747,63",
+          "cValorAlternativo": "R$1.903,01",
+          "description": "✅ CÁLCULO AUTOMÁTICO CONCLUÍDO — valores apresentados ao prospect:\n• Recomendado: R$1.747,63 (N/A) — franquia R$ 2.467,00\n• Alternativo: R$1.903,01 (N/A) — franquia R$ 2.420,00\nLigar para revisar os detalhes e fechar — o prospect JÁ VIU esses valores na tela."
+        },
+        "opportunity": {
+          "id": "6a690abfca8236be3",
+          "name": "11-976687668-NOVO CLIENTE WHATSAPP",
+          "stage": "Novo Sem Contato",
+          "cLeadId": "6a690abf47deffd88",
+          "cWebpage": "comparaseguroonline.com.br",
+          "cPlaca": "CLL7A22",
+          "cMarca": "FIAT",
+          "cEtapaFunil": "Cálculo concluído",
+          "cEscolhaCalculo": null,
+          "cStatusCalculo": "Concluído",
+          "cValorRecomendado": "R$1.747,63",
+          "cValorAlternativo": "R$1.903,01"
+        },
+        "tasks": [],
+        "notesCount": 2
+      },
+      "purga": "nada a purgar",
+      "cleanup": "opp 6a690abfca8236be3: 200; lead 6a690abf47deffd88: 200"
+    },
+    {
+      "n": 17,
+      "placa": "ONF1E36",
+      "email": "lroteroONF1E36@gmail.com",
+      "modo": "wait",
+      "veiculoEsperado": "GM - Chevrolet ONIX HATCH LTZ 1.4 8V FlexPower 5p Mec.",
+      "desfecho": "rpa_desabilitado",
+      "valorRecomendado": null,
+      "valorAlternativo": null,
+      "detalhe": "Botão 'Quero calcular agora' seguiu desabilitado após 45s (veículo não identificado pela placa? infoVisivel=true)",
+      "duracaoS": 159,
+      "rpaStartHttp": null,
+      "rpaSessionId": null,
+      "rpaPolls": 0,
+      "rpaLastStatus": null,
+      "rpaLastMensagem": null,
+      "crm": {
+        "leadEncontrado": false,
+        "leadId": null,
+        "opportunityId": null,
+        "lead": null,
+        "opportunity": null,
+        "tasks": [],
+        "notesCount": null,
+        "erro": "Lead não encontrado no EspoCRM em 90s"
+      },
+      "purga": "nada a purgar",
+      "cleanup": "sem lead para limpar"
+    }
+  ]
+}

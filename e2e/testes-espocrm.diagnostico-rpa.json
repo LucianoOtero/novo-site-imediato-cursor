@@ -1,0 +1,45 @@
+{
+  "geradoEm": "2026-07-28T18:06:50Z",
+  "casos": [
+    {
+      "placa": "DBO7B72",
+      "id": "ren-001-luciano-lourenco-da-silva",
+      "veiculo": "VW - VolksWagen Golf 1.6 Black & Silver",
+      "veredito": "erro_infra",
+      "detalhe": "HTTP 403: b'{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1010/\",\"title\":\"Error 1010: Access denied\",\"status\":403,\"detail\":\"The site owner has blocked access based on your browser\\'s signature.\",\"instance\":\"a225d248f9e21cf3\",\"error_code\":1010,\"e'",
+      "duracao_s": 0
+    },
+    {
+      "placa": "EZO3977",
+      "id": "ren-004-adalberto-francisco-oliveira",
+      "veiculo": "Hyundai Tucson 2.0 16V Flex Aut.",
+      "veredito": "erro_infra",
+      "detalhe": "HTTP 403: b'{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1010/\",\"title\":\"Error 1010: Access denied\",\"status\":403,\"detail\":\"The site owner has blocked access based on your browser\\'s signature.\",\"instance\":\"a225d2492cd28dd8\",\"error_code\":1010,\"e'",
+      "duracao_s": 0
+    },
+    {
+      "placa": "EJP8H57",
+      "id": "ren-032-antonio-martins-ferreira-junior",
+      "veiculo": "KASINSKI GV 250 MIRAGE",
+      "veredito": "erro_infra",
+      "detalhe": "HTTP 403: b'{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1010/\",\"title\":\"Error 1010: Access denied\",\"status\":403,\"detail\":\"The site owner has blocked access based on your browser\\'s signature.\",\"instance\":\"a225d2495a9ba163\",\"error_code\":1010,\"e'",
+      "duracao_s": 0
+    },
+    {
+      "placa": "SWA4F78",
+      "id": "ren-041-jose-augusto-paulo",
+      "veiculo": "Mottu Sport 110i",
+      "veredito": "erro_infra",
+      "detalhe": "HTTP 403: b'{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1010/\",\"title\":\"Error 1010: Access denied\",\"status\":403,\"detail\":\"The site owner has blocked access based on your browser\\'s signature.\",\"instance\":\"a225d2499abd4931\",\"error_code\":1010,\"e'",
+      "duracao_s": 0
+    },
+    {
+      "placa": "EJM2020",
+      "id": "ren-043-cleiton-cristiano-ramos-ataide",
+      "veiculo": "Fiat Tipo 1.6 i.e. 2p e 4p",
+      "veredito": "erro_infra",
+      "detalhe": "HTTP 403: b'{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1010/\",\"title\":\"Error 1010: Access denied\",\"status\":403,\"detail\":\"The site owner has blocked access based on your browser\\'s signature.\",\"instance\":\"a225d249c907df22\",\"error_code\":1010,\"e'",
+      "duracao_s": 0
+    }
+  ]
+}

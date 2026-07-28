@@ -42,6 +42,13 @@ firebase functions:secrets:set ESPOCRM_PROD_URL
 firebase functions:secrets:set OCTADESK_URL
 # cole: https://add-webflow-octa-prod-br2qvvxwhq-rj.a.run.app/
 
+# E-mail admin (mesmo Cloud Run do legado — SEND_EMAIL_NOTIFICATION_URL)
+firebase functions:secrets:set SEND_EMAIL_NOTIFICATION_URL_DEV
+# cole: https://send-email-notification-dev-6r55ex3u6q-rj.a.run.app/
+
+firebase functions:secrets:set SEND_EMAIL_NOTIFICATION_URL_PROD
+# cole: https://send-email-notification-prod-br2qvvxwhq-rj.a.run.app/
+
 # Deploy
 firebase deploy --only functions,database
 ```
@@ -50,10 +57,10 @@ firebase deploy --only functions,database
 
 - A função `deliverLead` observa **toda** gravação em `leads_backup/{leadId}` no Realtime Database — o site grava com `autoSync: true` sempre (não só em caso de falha, já que não há mais entrega direta do site).
 - Lógica por `data.stage`:
-  - `"initial"` (só telefone): envia a EspoCRM (cria) e Octadesk (mensagem inicial) o que ainda não tiver sido enviado, com retry exponencial (1s/4s/9s).
-  - `"complete"` (dados completos): sempre atualiza o EspoCRM (usa `espocrmLeadId` salvo no registro) — nunca reenvia ao Octadesk (evita notificar o cliente 2 vezes).
-- Escolhe a URL de EspoCRM pelo campo `environment` do próprio registro (`production` → `ESPOCRM_PROD_URL`; `development`/`staging` → `ESPOCRM_DEV_URL`). Octadesk é sempre `OCTADESK_URL` (sem ambiente de teste).
-- Limite de 5 rodadas por lead (`MAX_CF_ATTEMPTS_TOTAL` em `index.js`) — depois disso, marca `status: "failed_permanently"` e para de tentar (requer olhar manualmente no Realtime Database Console).
+  - `"initial"` (só telefone): envia a EspoCRM (cria) e Octadesk (mensagem inicial) o que ainda não tiver sido enviado, com retry exponencial (1s/4s/9s); dispara e-mail admin (`momento: initial`).
+  - `"complete"` (dados completos): sempre atualiza o EspoCRM (usa `espocrmLeadId` salvo no registro) — nunca reenvia a mensagem inicial ao Octadesk; dispara e-mail admin (`momento: update`).
+- Escolhe a URL de EspoCRM/e-mail pelo campo `environment` do próprio registro (`production` → secrets `_PROD`; `development`/`staging` → `_DEV`). Octadesk é sempre `OCTADESK_URL` (sem ambiente de teste).
+- `cf_retry_count` sobe **só em falha** de entrega (Espo/Octadesk). Limite de 5 falhas (`MAX_CF_ATTEMPTS_TOTAL`) — depois marca `status: "failed_permanently"`.
 
 ## Como testar
 
