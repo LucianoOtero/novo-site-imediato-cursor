@@ -65,11 +65,29 @@
  *   `OCTADESK_API_CONFIG`, com kill-switch `enabled`): "cálculo pronto",
  *   "cálculo manual" e "cálculo completo depois" — templates aprovados
  *   pela Meta (ver docs/GUIA_OCTADESK_TEMPLATES.md).
+ *
+ * Integração 100% direta (plano "Fluxo formulário CRM WhatsApp",
+ * 2026-07-28 — módulos espocrm.js/octadesk.js):
+ * - `useDirect:true` no secret `ESPOCRM_API_CONFIG` liga a entrega
+ *   EspoCRM SEM o proxy legado: dedupe (e-mail real → telefone),
+ *   criação/atualização de Lead + Opportunity com o mapeamento completo
+ *   (todas as UTMs, cVeiculo/cAnoFab, cDataDoLead, cLeadId na Opp) —
+ *   por ambiente (bloco `prod` vazio = produção continua no proxy).
+ * - Mensagem inicial personalizada `primeira_etapa` via API direta,
+ *   com fallback automático para o proxy legado se o envio falhar.
+ * - Task "Efetuar cálculo manual e enviar ao cliente" (D+1) criada no
+ *   4b (consultant_requested) e na falha do RPA.
  */
 const { onValueWritten } = require("firebase-functions/v2/database");
 const { defineSecret } = require("firebase-functions/params");
 const { logger } = require("firebase-functions");
 const { initializeApp } = require("firebase-admin/app");
+
+// Módulos da integração direta (2026-07-28 — plano "Fluxo formulário
+// CRM WhatsApp"): EspoCRM (dedupe, Lead + Opportunity, Note, Task,
+// description, campos) e Octadesk (todas as mensagens por template).
+const espo = require("./espocrm");
+const octa = require("./octadesk");
 
 const DATABASE_URL = "https://imediato-seguros-site-novo-default-rtdb.firebaseio.com";
 
@@ -116,15 +134,6 @@ const OCTADESK_API_CONFIG = defineSecret("OCTADESK_API_CONFIG");
 const RETRY_DELAYS_MS = [1000, 4000, 9000];
 /** Limite de rodadas (invocações desta função para o mesmo lead) antes de desistir — evita martelar o destino indefinidamente. */
 const MAX_CF_ATTEMPTS_TOTAL = 5;
-
-/**
- * Origem gravada em `cWebpage` no Lead E na Opportunity (decisão do
- * cliente, 2026-07-28: usar o domínio real do site novo). O proxy
- * legado grava "mdmidia.com.br" fixo — este valor o sobrescreve em toda
- * atualização de campos via API direta, virando o discriminador de
- * origem entre os dois sites nas listas/relatórios do CRM.
- */
-const SITE_WEBPAGE = "comparaseguroonline.com.br";
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -214,11 +223,8 @@ function parseJsonConfig(raw) {
   }
 }
 
-/** Primeiro nome "humano" do lead — evita usar o NOME "falso" (`11-999...-NOVO CLIENTE WHATSAPP`) em mensagens/notas. */
-function firstName(nome) {
-  if (!nome || /NOVO CLIENTE WHATSAPP/i.test(nome)) return "";
-  return nome.trim().split(/\s+/)[0];
-}
+/** Primeiro nome "humano" do lead — evita usar o NOME "falso" em mensagens/notas (movido para octadesk.js; alias local). */
+const firstName = octa.firstName;
 
 /**
  * Texto da Note (post no Stream do lead no EspoCRM) por momento do funil
@@ -303,112 +309,6 @@ function buildFunnelFields(stage, leadData) {
 }
 
 /**
- * PUT {baseUrl}/api/v1/{entityType}/{id} — atualização direta de campos
- * no EspoCRM (API REST nativa, X-Api-Key). Usada para o painel "Cotação
- * do Site" e o `cWebpage` no Lead e na Opportunity.
- */
-async function putEspoFields(config, entityType, entityId, fields, leadId) {
-  const response = await fetch(`${config.baseUrl.replace(/\/$/, "")}/api/v1/${entityType}/${entityId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", "X-Api-Key": config.apiKey },
-    body: JSON.stringify(fields),
-  });
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`PUT ${entityType} HTTP ${response.status} (lead ${leadId}): ${body.slice(0, 300)}`);
-  }
-}
-
-/**
- * POST {baseUrl}/api/v1/Note — post no Stream do lead no EspoCRM (API
- * REST nativa, autenticada por X-Api-Key). Best-effort: 1 tentativa,
- * falha só é logada/registrada — nunca segura a entrega principal.
- */
-async function postEspoNote(config, espoLeadId, text, leadId) {
-  const response = await fetch(`${config.baseUrl.replace(/\/$/, "")}/api/v1/Note`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Api-Key": config.apiKey },
-    body: JSON.stringify({ type: "Post", parentType: "Lead", parentId: espoLeadId, post: text }),
-  });
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`Note HTTP ${response.status} (lead ${leadId}): ${body.slice(0, 300)}`);
-  }
-}
-
-/**
- * Acrescenta o resumo do cálculo à `description` do Lead no EspoCRM
- * (GET + PUT — a API não tem append nativo). A description é o campo
- * sempre visível no topo da ficha; o Stream conta a história completa.
- */
-async function appendEspoDescription(config, espoLeadId, text, leadId) {
-  const base = config.baseUrl.replace(/\/$/, "");
-  const headers = { "Content-Type": "application/json", "X-Api-Key": config.apiKey };
-
-  const current = await fetch(`${base}/api/v1/Lead/${espoLeadId}`, { headers });
-  if (!current.ok) throw new Error(`GET Lead HTTP ${current.status} (lead ${leadId})`);
-  const lead = await current.json();
-  const existing = typeof lead.description === "string" && lead.description.trim() ? `${lead.description.trim()}\n\n` : "";
-
-  const update = await fetch(`${base}/api/v1/Lead/${espoLeadId}`, {
-    method: "PUT",
-    headers,
-    body: JSON.stringify({ description: `${existing}${text}` }),
-  });
-  if (!update.ok) {
-    const body = await update.text().catch(() => "");
-    throw new Error(`PUT Lead HTTP ${update.status} (lead ${leadId}): ${body.slice(0, 300)}`);
-  }
-}
-
-/**
- * Envio direto de template WhatsApp pela API do Octadesk
- * (POST {baseUrl}/chat/send-template, autenticado por X-API-KEY) —
- * usado nos momentos pós-inicial (a mensagem inicial continua no proxy
- * legado). `templateKey` indexa `config.templates`; `variables` é uma
- * lista de valores na ordem das variáveis do template ({{1}}, {{2}}…).
- */
-async function sendOctadeskTemplate(config, templateKey, leadData, variables, leadId) {
-  const templateId = config.templates && config.templates[templateKey];
-  if (!templateId) throw new Error(`Template "${templateKey}" sem ID configurado em OCTADESK_API_CONFIG`);
-
-  // Formato do POST /chat/send-template (correção 2026-07-27, validada em
-  // teste real): `origin`/`target` usam `{channel, code}` — o formato
-  // `phoneContact/from.number` é do endpoint antigo (`/chat/conversation/
-  // send-template`, deprecado) e devolve HTTP 500 {"code":"NOT_MAPPED"}
-  // neste. `target.contact.name/email` alimentam as variáveis padrão
-  // {{nome-contato}}/{{email-contato}} dos templates.
-  const payload = {
-    origin: { contact: { channel: "whatsapp", code: config.fromNumber } },
-    target: {
-      contact: {
-        channel: "whatsapp",
-        code: leadData.phoneE164,
-        ...(firstName(leadData.nome) ? { name: leadData.nome } : {}),
-        ...(leadData.email && !/@imediatoseguros\.com\.br$/i.test(leadData.email) ? { email: leadData.email } : {}),
-      },
-    },
-    content: {
-      templateMessage: {
-        id: templateId,
-        variables: variables.map((value, index) => ({ key: `var-${index + 1}`, value: value || "" })),
-      },
-    },
-    options: { automaticAssign: false },
-  };
-
-  const response = await fetch(`${config.baseUrl.replace(/\/$/, "")}/chat/send-template`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", accept: "application/json", "X-API-KEY": config.apiKey },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`send-template "${templateKey}" HTTP ${response.status} (lead ${leadId}): ${body.slice(0, 300)}`);
-  }
-}
-
-/**
  * Retorna `{delivered, attempts, responseData}` — `responseData` (JSON
  * já parseado) é usado para extrair os IDs do EspoCRM e para detectar
  * falhas que vêm com `HTTP 200` (o EspoCRM responde 200 mesmo rejeitando
@@ -489,7 +389,51 @@ exports.deliverLead = onValueWritten(
     // As mensagens dos momentos pós-inicial saem pela API direta abaixo.
     const needsOctadesk = stage === "initial" && record.octadesk_sent !== true;
 
-    if (needsEspocrm) {
+    // Bloco do ambiente do lead (`dev`/`prod` — ver docstring do secret);
+    // formato antigo com as chaves no topo vale para os dois ambientes.
+    const espoApiConfigAll = parseJsonConfig(ESPOCRM_API_CONFIG.value());
+    const espoApiConfig =
+      espoApiConfigAll && (espoApiConfigAll.dev || espoApiConfigAll.prod)
+        ? (record.environment === "production" ? espoApiConfigAll.prod : espoApiConfigAll.dev) || null
+        : espoApiConfigAll;
+    const espoApiReady = Boolean(espoApiConfig && espoApiConfig.baseUrl && espoApiConfig.apiKey);
+    // Flag de transição (plano 2026-07-28): `useDirect:true` no topo do
+    // secret liga a entrega EspoCRM via API direta (espocrm.js — dedupe,
+    // Lead + Opportunity, campos completos incl. todas as UTMs). SÓ vale
+    // para ambientes cujo bloco esteja configurado — `prod` vazio mantém
+    // os leads de produção no caminho proxy, intocado.
+    const useEspoDirect = Boolean(espoApiConfigAll && espoApiConfigAll.useDirect === true && espoApiReady);
+    const octaConfig = parseJsonConfig(OCTADESK_API_CONFIG.value());
+    const octaReady = Boolean(
+      octaConfig && octaConfig.enabled === true && octaConfig.baseUrl && octaConfig.apiKey && octaConfig.fromNumber
+    );
+
+    if (needsEspocrm && useEspoDirect) {
+      // ——— EspoCRM via API direta (espocrm.js) ———
+      // Mesmo contrato de retry/flags do caminho proxy; os IDs do CRM
+      // continuam sendo gravados de volta no registro.
+      let delivered = false;
+      let attempt = 0;
+      for (attempt = 0; attempt <= RETRY_DELAYS_MS.length && !delivered; attempt += 1) {
+        try {
+          const ids = await espo.deliverStage(espoApiConfig, leadData, {
+            espoLeadId: leadData.espocrmLeadId || record.espocrmLeadId,
+            espoOpportunityId: leadData.espocrmOpportunityId || record.espocrmOpportunityId,
+            capturedAt: record.timestamp,
+          });
+          if (ids.leadId) updates.espocrmLeadId = ids.leadId;
+          if (ids.opportunityId) updates.espocrmOpportunityId = ids.opportunityId;
+          delivered = true;
+        } catch (error) {
+          logger.warn(`[deliverLead/espocrm-direto] Lead ${leadId}: tentativa ${attempt + 1} falhou.`, error);
+          if (attempt < RETRY_DELAYS_MS.length) await sleep(RETRY_DELAYS_MS[attempt]);
+        }
+      }
+      updates.espocrm_sent = delivered;
+      updates.espocrm_attempts = (record.espocrm_attempts || 0) + attempt;
+      updates.espocrm_last_error = delivered ? null : `Falha (API direta) após ${attempt} tentativa(s) — rodada ${cfAttempts}`;
+    } else if (needsEspocrm) {
+      // ——— EspoCRM via proxy legado (caminho de transição/fallback) ———
       const espocrmUrl = record.environment === "production" ? ESPOCRM_PROD_URL.value() : ESPOCRM_DEV_URL.value();
       const payloadData = {
         ...leadData,
@@ -512,15 +456,34 @@ exports.deliverLead = onValueWritten(
     }
 
     if (needsOctadesk) {
-      const result = await sendWithRetry(
-        OCTADESK_URL.value(),
-        buildLegacyProxyPayload(leadData, "Cloud Function — Mensagem Inicial Octadesk"),
-        "octadesk",
-        leadId
-      );
-      updates.octadesk_sent = result.delivered;
-      updates.octadesk_attempts = (record.octadesk_attempts || 0) + result.attempts;
-      updates.octadesk_last_error = result.delivered ? null : `Falha após ${result.attempts} tentativa(s) — rodada ${cfAttempts}`;
+      // ——— Mensagem inicial ———
+      // Preferência: template personalizado `primeira_etapa` (aprovado
+      // pela Meta como Utilitário, SEM variáveis) via API direta. Se o
+      // envio direto falhar (ou não estiver configurado), fallback para
+      // o proxy legado — o prospect nunca fica sem a mensagem inicial.
+      let sentDirect = false;
+      if (octaReady && octaConfig.templates && octaConfig.templates.primeira_etapa) {
+        try {
+          await octa.sendTemplate(octaConfig, "primeira_etapa", leadData, [], leadId);
+          sentDirect = true;
+          updates.octadesk_sent = true;
+          updates.octadesk_attempts = (record.octadesk_attempts || 0) + 1;
+          updates.octadesk_last_error = null;
+        } catch (error) {
+          logger.warn(`[deliverLead/octa-inicial] Lead ${leadId}: envio direto falhou — caindo para o proxy.`, error);
+        }
+      }
+      if (!sentDirect) {
+        const result = await sendWithRetry(
+          OCTADESK_URL.value(),
+          buildLegacyProxyPayload(leadData, "Cloud Function — Mensagem Inicial Octadesk"),
+          "octadesk",
+          leadId
+        );
+        updates.octadesk_sent = result.delivered;
+        updates.octadesk_attempts = (record.octadesk_attempts || 0) + result.attempts;
+        updates.octadesk_last_error = result.delivered ? null : `Falha após ${result.attempts} tentativa(s) — rodada ${cfAttempts}`;
+      }
     }
 
     // ——— Enriquecimento da ficha no EspoCRM por momento (2026-07-20) ———
@@ -528,13 +491,6 @@ exports.deliverLead = onValueWritten(
     // o resumo do cálculo. Best-effort com dedupe por estágio
     // (`espo_note_{stage}_sent`): falha aqui nunca segura a entrega
     // principal nem dispara retry — só é logada.
-    // Bloco do ambiente do lead (`dev`/`prod` — ver docstring do secret);
-    // formato antigo com as chaves no topo vale para os dois ambientes.
-    const espoApiConfigAll = parseJsonConfig(ESPOCRM_API_CONFIG.value());
-    const espoApiConfig =
-      espoApiConfigAll && (espoApiConfigAll.dev || espoApiConfigAll.prod)
-        ? (record.environment === "production" ? espoApiConfigAll.prod : espoApiConfigAll.dev) || null
-        : espoApiConfigAll;
     const espoLeadIdForApi = updates.espocrmLeadId || record.espocrmLeadId || leadData.espocrmLeadId;
     const espoOppIdForApi = updates.espocrmOpportunityId || record.espocrmOpportunityId || leadData.espocrmOpportunityId;
 
@@ -545,19 +501,12 @@ exports.deliverLead = onValueWritten(
     // Notes (`espo_fields_{stage}_sent`); o PUT é idempotente.
     const funnelFields = buildFunnelFields(stage, leadData);
     const fieldsFlag = `espo_fields_${stage}_sent`;
-    if (
-      espoApiConfig &&
-      espoApiConfig.baseUrl &&
-      espoApiConfig.apiKey &&
-      espoLeadIdForApi &&
-      funnelFields &&
-      record[fieldsFlag] !== true
-    ) {
-      const payload = { ...funnelFields, cWebpage: SITE_WEBPAGE };
+    if (espoApiReady && espoLeadIdForApi && funnelFields && record[fieldsFlag] !== true) {
+      const payload = { ...funnelFields, cWebpage: espo.SITE_WEBPAGE };
       try {
-        await putEspoFields(espoApiConfig, "Lead", espoLeadIdForApi, payload, leadId);
+        await espo.putFields(espoApiConfig, "Lead", espoLeadIdForApi, payload, leadId);
         if (espoOppIdForApi) {
-          await putEspoFields(espoApiConfig, "Opportunity", espoOppIdForApi, payload, leadId);
+          await espo.putFields(espoApiConfig, "Opportunity", espoOppIdForApi, payload, leadId);
         }
         updates[fieldsFlag] = true;
       } catch (error) {
@@ -566,24 +515,34 @@ exports.deliverLead = onValueWritten(
     }
     const noteText = buildMomentNote(stage, leadData);
     const noteFlag = `espo_note_${stage}_sent`;
-    if (
-      espoApiConfig &&
-      espoApiConfig.baseUrl &&
-      espoApiConfig.apiKey &&
-      espoLeadIdForApi &&
-      noteText &&
-      record[noteFlag] !== true
-    ) {
+    if (espoApiReady && espoLeadIdForApi && noteText && record[noteFlag] !== true) {
       try {
-        await postEspoNote(espoApiConfig, espoLeadIdForApi, noteText, leadId);
+        await espo.postNote(espoApiConfig, espoLeadIdForApi, noteText, leadId);
         // O resumo do cálculo também vai para a description — o campo
         // sempre visível no topo da ficha, sem precisar rolar o Stream.
         if (stage === "rpa_result") {
-          await appendEspoDescription(espoApiConfig, espoLeadIdForApi, noteText, leadId);
+          await espo.appendDescription(espoApiConfig, espoLeadIdForApi, noteText, leadId);
         }
         updates[noteFlag] = true;
       } catch (error) {
         logger.warn(`[deliverLead/espo-api] Lead ${leadId}: enriquecimento (${stage}) falhou (best-effort).`, error);
+      }
+    }
+
+    // ——— Task "Efetuar cálculo manual" (plano 2026-07-28) ———
+    // Criada nos DOIS caminhos que exigem ação humana: o prospect pediu
+    // o cálculo completo depois (4b) ou o RPA falhou. Acionável no CRM
+    // (Atividades/dashboards) — não se perde como um post no Stream.
+    const needsManualTask =
+      stage === "consultant_requested" ||
+      (stage === "rpa_result" && (leadData.rpaResultado || {}).status !== "sucesso");
+    const taskFlag = `espo_task_${stage}_sent`;
+    if (espoApiReady && espoLeadIdForApi && needsManualTask && record[taskFlag] !== true) {
+      try {
+        await espo.createManualCalcTask(espoApiConfig, espoLeadIdForApi, leadData, leadId);
+        updates[taskFlag] = true;
+      } catch (error) {
+        logger.warn(`[deliverLead/espo-api] Lead ${leadId}: Task de cálculo manual (${stage}) falhou (best-effort).`, error);
       }
     }
 
@@ -592,8 +551,7 @@ exports.deliverLead = onValueWritten(
     // "calculo_completo_depois" (escolheu especialista). Atrás do
     // kill-switch `enabled` em OCTADESK_API_CONFIG — só liga depois de os
     // templates serem aprovados pela Meta (docs/GUIA_OCTADESK_TEMPLATES.md).
-    const octaConfig = parseJsonConfig(OCTADESK_API_CONFIG.value());
-    if (octaConfig && octaConfig.enabled === true && octaConfig.baseUrl && octaConfig.apiKey && octaConfig.fromNumber) {
+    if (octaReady) {
       const nome = firstName(leadData.nome) || "cliente";
       let templateKey = null;
       let variables = [];
@@ -617,7 +575,7 @@ exports.deliverLead = onValueWritten(
       const octaFlag = templateKey ? `octa_${templateKey}_sent` : null;
       if (templateKey && record[octaFlag] !== true) {
         try {
-          await sendOctadeskTemplate(octaConfig, templateKey, leadData, variables, leadId);
+          await octa.sendTemplate(octaConfig, templateKey, leadData, variables, leadId);
           updates[octaFlag] = true;
         } catch (error) {
           logger.warn(`[deliverLead/octa-api] Lead ${leadId}: template "${templateKey}" falhou (best-effort).`, error);

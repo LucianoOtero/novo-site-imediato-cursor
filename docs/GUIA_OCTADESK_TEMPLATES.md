@@ -156,7 +156,9 @@ Após as iterações com o classificador da Meta (as primeiras versões foram re
 - [x] Templates criados no Octadesk (Etapa 1) — 2026-07-27
 - [x] Templates aprovados pela Meta (Etapa 2) — todos como Utilitário, 2026-07-27
 - [x] API Key + Base URL do Octadesk anotados (Etapa 3) — 2026-07-27
-- [ ] API User + chave criados no EspoCRM (Etapa 3) — **única pendência** (Notes no Stream aguardando)
-- [x] Secret `OCTADESK_API_CONFIG` configurado e função redeployada (Etapa 4) — 2026-07-27
-- [ ] Secret `ESPOCRM_API_CONFIG` configurado — aguarda o API User acima
-- [x] Teste dos templates no número do cliente (11-97668-7668) — 2026-07-27, `calculo_pronto` e `calculo_completo_depois` entregues
+- [x] API User no EspoCRM (Etapa 3) — 2026-07-28: reutilizado o `api_dev` do dev (chave copiada do banco); Role ampliada com Task/User
+- [x] Secret `OCTADESK_API_CONFIG` configurado e função redeployada (Etapa 4) — 2026-07-27; **2026-07-28**: adicionado `primeira_etapa` → `6a67fa5ce7966478bcf4242a` (mensagem inicial personalizada via API direta, com fallback proxy)
+- [x] Secret `ESPOCRM_API_CONFIG` configurado — 2026-07-28: blocos `dev`/`prod` + `useDirect:true` + `taskAssignedUserId` (integração 100% direta ativa no dev; produção segue no proxy até a virada)
+- [x] Teste dos templates no número do cliente (11-97668-7668) — 2026-07-27, `calculo_pronto` e `calculo_completo_depois` entregues; **2026-07-28**: `primeira_etapa_util` (sem variáveis) e `calculo_falhou_util` entregues no funil de validação da integração direta
+
+**Nota (2026-07-28)**: o template `primeira_etapa_util` aprovado **não tem variáveis** (texto fixo: "Olá. Recebemos seu contato. Prossiga com os demais dados solicitados para a elaboração do cálculo do seguro.") — confirmado via `GET /chat/templates-message`. Ideal para a etapa 1, onde o nome real ainda não foi coletado.

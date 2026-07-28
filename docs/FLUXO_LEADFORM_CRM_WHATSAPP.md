@@ -111,13 +111,21 @@ Depois: Administração → Layout Manager → Lead → Detail → arrastar os 4
 4. `cDataDoLead` (Data) existe e não é preenchido pelo proxy — a integração direta preencherá com a data de captura.
 5. `cValorpret` ("Valor Pretendido") tem semântica de desejo do cliente, não de resultado de cálculo — mantém-se a decisão de criar `cValorRecomendado`/`cValorAlternativo` em vez de reaproveitá-lo.
 6. Na Opportunity, `cLeadId` (Varchar) é o vínculo em texto usado pelo processo atual — a integração direta deve preenchê-lo na criação, além do link nativo `leadId`, para não quebrar relatórios existentes.
-6b. **Origem do lead (decisão do cliente, 2026-07-28, valor final confirmado)**: `cWebpage = "comparaseguroonline.com.br"` (o domínio real do site novo) no Lead **e** na Opportunity para todo lead do site novo. O proxy legado grava `mdmidia.com.br` fixo — a Cloud Function sobrescreve via PUT direto (constante `SITE_WEBPAGE` em `firebase/functions/index.js`), e o campo vira o discriminador natural de origem entre os dois sites (filtro/coluna "Webpage" nas listas e relatórios do CRM).
+6b. **Origem do lead (decisão do cliente, 2026-07-28, valor final confirmado)**: `cWebpage = "comparaseguroonline.com.br"` (o domínio real do site novo) no Lead **e** na Opportunity para todo lead do site novo. O proxy legado grava `mdmidia.com.br` fixo — a Cloud Function sobrescreve via PUT direto (constante `SITE_WEBPAGE` em `firebase/functions/espocrm.js`), e o campo vira o discriminador natural de origem entre os dois sites (filtro/coluna "Webpage" nas listas e relatórios do CRM).
 6c. **Campos do funil replicados na Opportunity (2026-07-28)**: os mesmos 5 campos do painel "Cotação do Site" foram criados na **Opportunity** do dev (mesmos nomes/tipos/opções do Lead, painel idêntico no layout de detalhe — feito via edição dos arquivos custom no servidor + rebuild, com backup em `/root/backup-espo-custom-*-pre-opp-fields.tar.gz`). A Cloud Function grava os valores nas **duas** entidades a cada momento (`putEspoFields` + `buildFunnelFields`); como os nomes são idênticos, a conversão nativa Lead → Opportunity do EspoCRM também os copia automaticamente.
 7. O campo `status` (Lead) e o `stage`/`cStatus` (Opportunity) são do processo de vendas do time — **intocados**, conforme decidido.
 
-### API User (pendência para ativar a escrita direta)
+### API User — ✅ RESOLVIDO NO DEV (2026-07-28)
 
-Administração → API Users → criar `site-novo-cf`, autenticação **API Key**, Role com: Lead (read/edit), Note (create), Task (create). Gerar em **dev** primeiro; produção depois do go-live deste fluxo.
+Em vez de criar um usuário novo, foi reutilizado o **`api_dev`** existente (o mesmo que o proxy legado usa no dev; chave copiada do banco do servidor). A Role "API" dele foi ampliada com **Task** (create/read/edit) e **User** (read — exigido para relacionar o `assignedUser` da Task), via ORM do Espo no servidor + clear-cache. Na réplica em produção: ampliar a Role do usuário API de produção com as mesmas permissões.
+
+**Achado do CRM (2026-07-28)**: a entidade Task valida `assignedUser` como **obrigatório** — o responsável vem do bloco do ambiente no secret (`taskAssignedUserId`; no dev é o Admin `68fa40d854b322dfe`). Em produção, o cliente escolhe o usuário que receberá as Tasks de cálculo manual.
+
+### Integração direta ativada — ✅ IMPLEMENTADA E VALIDADA NO DEV (2026-07-28)
+
+Módulos `firebase/functions/espocrm.js` (dedupe por e-mail real → telefone, criação/atualização de Lead + Opportunity com mapeamento completo — todas as UTMs, `cVeiculo`/`cAnoFab`, `cDataDoLead`, `cLeadId` na Opp —, Note, description, Task, campos do funil) e `octadesk.js` (todas as mensagens, incluindo a inicial `primeira_etapa_util`, que NÃO tem variáveis). Orquestração em `index.js` atrás do flag **`useDirect`** no secret `ESPOCRM_API_CONFIG` — bloco `prod` vazio mantém leads de produção no caminho proxy. Mensagem inicial direta tem **fallback automático para o proxy** em caso de falha.
+
+Validação ponta a ponta no dev (2026-07-28): funil "novo prospect" completo (criação direta com UTMs completas, progress em 2 passos, consultant_requested com Task) e funil com o número real do cliente (dedupe de lead antigo, `primeira_etapa` + `calculo_falhou_util` entregues no WhatsApp, Task na falha do RPA).
 
 ## Estudo do fluxo legado (segurosimediato.com.br) — 2026-07-27
 
