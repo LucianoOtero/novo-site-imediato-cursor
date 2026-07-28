@@ -55,6 +55,12 @@
  *   `ESPOCRM_API_CONFIG`): Note no Stream por momento (escolha do
  *   passo 4, resultado do cálculo com valores) + resumo do cálculo na
  *   `description`. Best-effort, com dedupe por estágio.
+ * - Campos do painel "Cotação do Site" (`cEtapaFunil`,
+ *   `cEscolhaCalculo`, `cStatusCalculo`, `cValorRecomendado`,
+ *   `cValorAlternativo` — mesmos nomes no Lead e na Opportunity) +
+ *   `cWebpage` = "comparaseguroonline.com.br" (origem; sobrescreve o
+ *   "mdmidia.com.br" fixo do proxy) gravados via PUT direto nas DUAS
+ *   entidades a cada momento do funil (2026-07-28).
  * - Mensagens Octadesk pós-iniciais via API direta (secret
  *   `OCTADESK_API_CONFIG`, com kill-switch `enabled`): "cálculo pronto",
  *   "cálculo manual" e "cálculo completo depois" — templates aprovados
@@ -80,10 +86,16 @@ const OCTADESK_URL = defineSecret("OCTADESK_URL");
  * Integração direta com a API REST do EspoCRM (projeto "leads EspoCRM/
  * Octadesk por momento", 2026-07-20) — usada para enriquecer a ficha do
  * lead com o que o proxy legado não carrega: escolha do passo 4, resumo
- * do cálculo RPA (Note no Stream + description). JSON:
- *   {"baseUrl":"https://crm.exemplo.com.br","apiKey":"..."}
- * Enquanto o JSON estiver vazio/incompleto (`{}`), o enriquecimento é
- * silenciosamente pulado — a entrega via proxy continua intacta.
+ * do cálculo RPA (Note no Stream + description), campos do funil e
+ * `cWebpage`. JSON com um bloco por ambiente (mesma separação dev/prod
+ * do site legado — leads com `environment:"production"` usam `prod`,
+ * todo o resto usa `dev`):
+ *   {"dev":{"baseUrl":"https://dev.flyingdonkeys.com.br","apiKey":"..."},
+ *    "prod":{"baseUrl":"https://flyingdonkeys.com.br","apiKey":"..."}}
+ * (O formato antigo, com `baseUrl`/`apiKey` no topo, segue aceito e vale
+ * para os dois ambientes.) Enquanto o bloco do ambiente estiver vazio/
+ * incompleto, o enriquecimento é silenciosamente pulado — a entrega via
+ * proxy continua intacta.
  */
 const ESPOCRM_API_CONFIG = defineSecret("ESPOCRM_API_CONFIG");
 
@@ -104,6 +116,15 @@ const OCTADESK_API_CONFIG = defineSecret("OCTADESK_API_CONFIG");
 const RETRY_DELAYS_MS = [1000, 4000, 9000];
 /** Limite de rodadas (invocações desta função para o mesmo lead) antes de desistir — evita martelar o destino indefinidamente. */
 const MAX_CF_ATTEMPTS_TOTAL = 5;
+
+/**
+ * Origem gravada em `cWebpage` no Lead E na Opportunity (decisão do
+ * cliente, 2026-07-28: usar o domínio real do site novo). O proxy
+ * legado grava "mdmidia.com.br" fixo — este valor o sobrescreve em toda
+ * atualização de campos via API direta, virando o discriminador de
+ * origem entre os dois sites nas listas/relatórios do CRM.
+ */
+const SITE_WEBPAGE = "comparaseguroonline.com.br";
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -235,6 +256,67 @@ function buildMomentNote(stage, leadData) {
     return "⚠️ Cálculo automático NÃO concluído — fazer a cotação manual e retornar ao prospect (ele foi avisado de que um especialista assumiu).";
   }
   return null;
+}
+
+/**
+ * Campos do painel "Cotação do Site" (existem com os MESMOS nomes no
+ * Lead e na Opportunity do CRM — criados em 2026-07-27/28) a gravar em
+ * cada momento do funil, sempre somados a `cWebpage` (origem). Os
+ * valores dos enums são EXATAMENTE as options configuradas no CRM
+ * (entityDefs custom) — qualquer divergência faz o EspoCRM rejeitar o
+ * PUT. Retorna `null` quando o momento não altera nenhum campo.
+ */
+function buildFunnelFields(stage, leadData) {
+  const resultado = leadData.rpaResultado || {};
+
+  if (stage === "initial") {
+    return { cEtapaFunil: "Telefone informado" };
+  }
+  if (stage === "progress") {
+    // O site emite "progress" após o passo 2 (dados pessoais) e o passo
+    // 3 (dados do veículo) — a presença de dados do veículo distingue.
+    const temVeiculo = Boolean(leadData.placa || leadData.veiculoMarcaModelo || leadData.veiculoAno);
+    return { cEtapaFunil: temVeiculo ? "Dados do veículo" : "Dados pessoais" };
+  }
+  if (stage === "complete" && leadData.rpaChoice === "aguardar") {
+    return { cEtapaFunil: "Aguardando cálculo", cEscolhaCalculo: "Aguardar cálculo" };
+  }
+  if (stage === "consultant_requested") {
+    return {
+      cEtapaFunil: "Cálculo manual pendente",
+      cEscolhaCalculo: "Receber depois",
+      cStatusCalculo: "Manual solicitado",
+    };
+  }
+  if (stage === "rpa_result") {
+    if (resultado.status === "sucesso") {
+      return {
+        cEtapaFunil: "Cálculo concluído",
+        cStatusCalculo: "Concluído",
+        ...(resultado.valorRecomendado ? { cValorRecomendado: resultado.valorRecomendado } : {}),
+        ...(resultado.valorAlternativo ? { cValorAlternativo: resultado.valorAlternativo } : {}),
+      };
+    }
+    return { cEtapaFunil: "Cálculo manual pendente", cStatusCalculo: "Falhou" };
+  }
+  return null;
+}
+
+/**
+ * PUT {baseUrl}/api/v1/{entityType}/{id} — atualização direta de campos
+ * no EspoCRM (API REST nativa, X-Api-Key). Usada para o painel "Cotação
+ * do Site" e o `cWebpage` no Lead e na Opportunity.
+ */
+async function putEspoFields(config, entityType, entityId, fields, leadId) {
+  const response = await fetch(`${config.baseUrl.replace(/\/$/, "")}/api/v1/${entityType}/${entityId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "X-Api-Key": config.apiKey },
+    body: JSON.stringify(fields),
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`PUT ${entityType} HTTP ${response.status} (lead ${leadId}): ${body.slice(0, 300)}`);
+  }
 }
 
 /**
@@ -446,8 +528,42 @@ exports.deliverLead = onValueWritten(
     // o resumo do cálculo. Best-effort com dedupe por estágio
     // (`espo_note_{stage}_sent`): falha aqui nunca segura a entrega
     // principal nem dispara retry — só é logada.
-    const espoApiConfig = parseJsonConfig(ESPOCRM_API_CONFIG.value());
+    // Bloco do ambiente do lead (`dev`/`prod` — ver docstring do secret);
+    // formato antigo com as chaves no topo vale para os dois ambientes.
+    const espoApiConfigAll = parseJsonConfig(ESPOCRM_API_CONFIG.value());
+    const espoApiConfig =
+      espoApiConfigAll && (espoApiConfigAll.dev || espoApiConfigAll.prod)
+        ? (record.environment === "production" ? espoApiConfigAll.prod : espoApiConfigAll.dev) || null
+        : espoApiConfigAll;
     const espoLeadIdForApi = updates.espocrmLeadId || record.espocrmLeadId || leadData.espocrmLeadId;
+    const espoOppIdForApi = updates.espocrmOpportunityId || record.espocrmOpportunityId || leadData.espocrmOpportunityId;
+
+    // Campos do painel "Cotação do Site" + `cWebpage` (origem) no Lead E
+    // na Opportunity (2026-07-28) — via API direta, pois o proxy legado
+    // não carrega nenhum deles (e grava cWebpage="mdmidia.com.br" fixo,
+    // que é sobrescrito aqui). Mesmo contrato best-effort/dedupe das
+    // Notes (`espo_fields_{stage}_sent`); o PUT é idempotente.
+    const funnelFields = buildFunnelFields(stage, leadData);
+    const fieldsFlag = `espo_fields_${stage}_sent`;
+    if (
+      espoApiConfig &&
+      espoApiConfig.baseUrl &&
+      espoApiConfig.apiKey &&
+      espoLeadIdForApi &&
+      funnelFields &&
+      record[fieldsFlag] !== true
+    ) {
+      const payload = { ...funnelFields, cWebpage: SITE_WEBPAGE };
+      try {
+        await putEspoFields(espoApiConfig, "Lead", espoLeadIdForApi, payload, leadId);
+        if (espoOppIdForApi) {
+          await putEspoFields(espoApiConfig, "Opportunity", espoOppIdForApi, payload, leadId);
+        }
+        updates[fieldsFlag] = true;
+      } catch (error) {
+        logger.warn(`[deliverLead/espo-api] Lead ${leadId}: campos do funil (${stage}) falharam (best-effort).`, error);
+      }
+    }
     const noteText = buildMomentNote(stage, leadData);
     const noteFlag = `espo_note_${stage}_sent`;
     if (

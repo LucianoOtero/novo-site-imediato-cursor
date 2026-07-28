@@ -104,7 +104,8 @@ Após as iterações com o classificador da Meta (as primeiras versões foram re
 
 | Momento do funil | Nome no Octadesk | ID | Status (2026-07-27) |
 |---|---|---|---|
-| 1. Cotação recebida (inicial) | `cotacao_primeira_util` | `6a6797b4371d871a86ea1bd0` | Aprovado |
+| 1. Cotação recebida — **template oficial da etapa 1** (= `primeira_etapa` no secret) | `primeira_etapa_util` | `6a67fa5ce7966478bcf4242a` | Aprovado como Utilitário (2026-07-27) |
+| 1. Cotação recebida (variante anterior) | `cotacao_primeira_util` | `6a6797b4371d871a86ea1bd0` | Aprovado |
 | 1. Cotação recebida (variante) | `cotacao_solicitada_util` | `6a6796b9c705a5619f2e8cdb` | Aprovado |
 | 4a. Cálculo concluído (= `calculo_pronto` no secret) | `opcao_recomendada_util` | `6a679f8fcd5582b40f0b8de2` | Aprovado |
 | 4b. Cálculo completo depois (= `calculo_completo_depois` no secret) | `ultima_confirmacao_calculo` | `6a67c99eb2f6c165b3a499f4` | **Aprovado (2026-07-27)** — venceu a corrida; o `calculo_completo_ultimo_util` (pendente) foi excluído pelo cliente |
