@@ -173,6 +173,7 @@ export async function POST(request: NextRequest) {
           utm: data.utm ?? existing.utm,
           rpaChoice: data.rpaChoice ?? existing.rpaChoice,
           rpaResultado: data.rpaResultado ?? existing.rpaResultado,
+          captureChannel: data.captureChannel ?? existing.captureChannel,
           updatedAt: now,
         }
       : {
@@ -198,6 +199,7 @@ export async function POST(request: NextRequest) {
           utm: data.utm,
           rpaChoice: data.rpaChoice,
           rpaResultado: data.rpaResultado,
+          captureChannel: data.captureChannel,
           status: "received",
           dedupeKey,
           createdAt: now,
@@ -273,6 +275,7 @@ export async function POST(request: NextRequest) {
         veiculoAnoModelo: data.veiculoAnoModelo ?? existingInitial.veiculoAnoModelo,
         utm: data.utm ?? existingInitial.utm,
         rpaChoice: data.rpaChoice ?? existingInitial.rpaChoice,
+        captureChannel: data.captureChannel ?? existingInitial.captureChannel,
         updatedAt: now,
       }
     : {
@@ -293,6 +296,7 @@ export async function POST(request: NextRequest) {
         veiculoAnoModelo: data.veiculoAnoModelo,
         utm: data.utm,
         rpaChoice: data.rpaChoice,
+        captureChannel: data.captureChannel,
         status: "received",
         dedupeKey,
         createdAt: now,

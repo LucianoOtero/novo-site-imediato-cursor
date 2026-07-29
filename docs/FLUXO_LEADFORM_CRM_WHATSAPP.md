@@ -20,7 +20,11 @@ flowchart TD
 ### Etapa 1 — DDD + telefone
 
 - **EspoCRM**: cria o lead com DDD+telefone no campo de telefone, nome e e-mail simulados a partir do número (`{ddd}-{celular}-NOVO CLIENTE WHATSAPP` / `{ddd}{celular}@imediatoseguros.com.br`) — mesmo comportamento dos modais de WhatsApp/telefone. ✅ Já implementado e conferido (2026-07-27): `LeadForm.sendInitialContact()` e `ContactLeadModal` enviam o mesmo `stage:"initial"`; os valores simulados são aplicados na Cloud Function (`buildLegacyProxyPayload`).
-- **Octadesk**: envia WhatsApp ao número fornecido com o template **`primeira_etapa_util`** (ID `6a67fa5ce7966478bcf4242a`, criado 2026-07-27) e registra o contato — como nos modais. ⚠️ Hoje a mensagem inicial sai pelo proxy legado com template fixo NÃO personalizado; a migração para o template novo via API direta é objeto do plano de implementação.
+- **Octadesk**: envia WhatsApp ao número fornecido com o template **`primeira_etapa_util`** (ID `6a67fa5ce7966478bcf4242a`, criado 2026-07-27) e registra o contato — como nos modais. ✅ Via API direta (`primeira_etapa` no secret), com fallback para o proxy legado.
+
+### Modais WhatsApp / telefone (`ContactLeadModal`) — 2026-07-29
+
+Mesmo `initial` → `primeira_etapa_util`. No `complete`, se o prospect preencheu e-mail, CEP, CPF, placa **ou Nome Completo** (`captureChannel: "contact_modal"`), a CF envia **`cotacao_solicitada_util`** (`cotacao_dados_recebidos` no secret), com `target.contact.name` quando há nome real (`{{nome-contato}}`). Sem dados extras / “ir direto” só com telefone: nenhuma segunda HSM. O `complete` do LeadForm (`captureChannel: "lead_form"`) **não** dispara essa mensagem. A etapa 2 do modal (após o telefone) coleta, opcionalmente e na ordem do legado: CPF → E-mail → Nome Completo → CEP → Placa.
 
 ### Etapa 2 — nome + e-mail
 
@@ -157,5 +161,6 @@ leads-imediato-seguros")]
 
 ## Ambientes
 
-- Desenvolvimento: `dev.flyingdonkeys.com.br` — onde tudo será implantado e testado primeiro.
+- Desenvolvimento: `dev.flyingdonkeys.com.br` — usado enquanto `environment` ≠ `production`.
+- **Produção (virada Fase A 2026-07-29):** com `NEXT_PUBLIC_APP_ENV=production`, a CF entrega no proxy `ESPOCRM_PROD_URL` → **`flyingdonkeys.com.br`**. Smoke: Lead `6a6a00312d24538d3` / Opp `6a6a00317e6f598bc` (apagar na UI prod). Campos funil (`cEtapaFunil` etc.) ainda precisam ser espelhados no prod antes da onda 2 (API direta). Ops: `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
 - Produção: replicar as parametrizações manuais (campos, layout, API User) e atualizar o secret quando o fluxo for aprovado no dev.

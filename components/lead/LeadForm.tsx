@@ -267,6 +267,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       body: JSON.stringify({
         ...buildPayloadFromRawValues(getValues()),
         stage: "rpa_result",
+        captureChannel: "lead_form",
         rpaChoice: "aguardar",
         rpaResultado,
         leadId: initialLeadIdRef.current ?? undefined,
@@ -435,6 +436,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
           ddd: values.ddd,
           celular: values.celular,
           stage: "initial",
+          captureChannel: "lead_form",
           utm: captureUtmFromLocation(),
         }),
       });
@@ -463,6 +465,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         body: JSON.stringify({
           ...buildPayloadFromRawValues(values),
           stage: "progress",
+          captureChannel: "lead_form",
           leadId: initialLeadIdRef.current ?? undefined,
           utm: captureUtmFromLocation(),
         }),
@@ -815,12 +818,15 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   function handleChooseConsultant() {
     if (finalSubmitInFlightRef.current) return;
 
+    trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form" });
+
     void fetch("/api/lead", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
       body: JSON.stringify({
         ...buildPayloadFromRawValues(getValues()),
         stage: "consultant_requested",
+        captureChannel: "lead_form",
         rpaChoice: "consultor",
         leadId: initialLeadIdRef.current ?? undefined,
         utm: captureUtmFromLocation(),
@@ -850,6 +856,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     if (!publicEnv.rpaEnabled) return;
     if (!rpaEnabled) return;
     if (finalSubmitInFlightRef.current) return;
+    trackEvent("form_quote_choice", { ramo, choice: "aguardar", method: "form" });
     finalSubmitInFlightRef.current = true;
     setStatus("submitting");
 
@@ -870,6 +877,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         body: JSON.stringify({
           ...payload,
           stage: "complete",
+          captureChannel: "lead_form",
           rpaChoice: "aguardar",
           leadId: initialLeadIdRef.current ?? undefined,
         }),

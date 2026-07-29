@@ -102,7 +102,7 @@ function buildLeadFields(leadData, { isCreate = false, capturedAt } = {}) {
   });
 }
 
-/** Campos da Opportunity espelhados do Lead (nomes próprios da entidade — `cEmailAdress`/`cCEP`). `leadId`/`stage`/`probability` só na criação. */
+/** Campos da Opportunity espelhados do Lead (nomes próprios da entidade — `cEmailAdress`/`cCEP`). `leadId`/`stage`/`probability` só na criação; `name` no update só com nome real (paridade com proxy legado / Lead.firstName). */
 function buildOpportunityFields(leadData, { isCreate = false, espoLeadId } = {}) {
   const fb = fallbackIdentity(leadData);
   const utm = leadData.utm || {};
@@ -116,7 +116,7 @@ function buildOpportunityFields(leadData, { isCreate = false, espoLeadId } = {})
           probability: 10,
           leadSource: "Site",
         }
-      : {}),
+      : { name: leadData.nome }),
     cCelular: fb.celular,
     cEmailAdress: isCreate ? fb.email : leadData.email,
     cCEP: leadData.cep,

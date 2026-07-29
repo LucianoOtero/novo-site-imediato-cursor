@@ -67,6 +67,8 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord): Promise<void> 
       // no Stream) e disparar as mensagens Octadesk por momento.
       rpaChoice: lead.rpaChoice ?? null,
       rpaResultado: lead.rpaResultado ?? null,
+      // Origem da captura (2026-07-29) — CF dispara HSM extra só no modal.
+      captureChannel: lead.captureChannel ?? null,
     },
     timestamp: lead.createdAt,
     status: "pending",

@@ -57,7 +57,8 @@ A Cloud Function escolhe a URL do EspoCRM pelo campo `environment` do próprio r
 | Ambiente (`appEnvironment`) | URL EspoCRM usada (secret da Cloud Function) | URL Octadesk usada |
 |---|---|---|
 | `development` (local) | `ESPOCRM_DEV_URL` (`dev.flyingdonkeys.com.br`) | `OCTADESK_URL` (produção — único endpoint que existe) |
-| `staging` (UAT — hoje `comparaseguroonline.com.br`) | `ESPOCRM_DEV_URL` (mesma URL do development) | `OCTADESK_URL` |
+| `staging` | `ESPOCRM_DEV_URL` (mesma URL do development) | `OCTADESK_URL` |
+| `production` (desde 2026-07-29 em `comparaseguroonline.com.br` via `NEXT_PUBLIC_APP_ENV=production`) | `ESPOCRM_PROD_URL` → `flyingdonkeys.com.br` (onda 1: proxy; bloco `prod` da API direta ainda vazio) | `OCTADESK_URL` |
 | `production` (go-live real) | `ESPOCRM_PROD_URL` | `OCTADESK_URL` |
 
 ## Camada 2 — Cloud Function `deliverLead` (entrega real, única via)

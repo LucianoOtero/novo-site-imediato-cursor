@@ -79,6 +79,12 @@ Fora de escopo: blog, CMS, área logada, novas integrações de seguradora, muda
   - [ ] Publicar consolidado de resultados com contagem `sucesso` / `manual` / `rpa_desabilitado` / CRM ok.
   - [ ] Gate de aceite desta fase: 0 `rpa_desabilitado` atribuíveis a rate limit do site em corrida controlada.
 
+### E6 — Opportunity sem nome real após passos 2/3 — **RESOLVIDO (2026-07-29)**
+
+- **Sintoma:** Lead atualizado com `firstName` real em `progress`/`complete`; Opportunity permanecia com `name` falso do `initial` (`{ddd}-{celular}-NOVO CLIENTE WHATSAPP`). Evidência: caso 16 E2E.
+- **Causa:** `buildOpportunityFields` em `firebase/functions/espocrm.js` só enviava `name` na criação (`isCreate`), ao contrário do proxy legado (`'name' => $name` no PATCH) e do `firstName` do Lead.
+- **Correção:** no update, enviar `name: leadData.nome` quando preenchido (`compact` remove vazio). Harness E2E passou a ler também `cEmailAdress`/`cCEP`/`cCpftext`/`cCelular` na Opportunity.
+
 ---
 
 ## Critérios de saída desta fase
@@ -98,4 +104,5 @@ Fora de escopo: blog, CMS, área logada, novas integrações de seguradora, muda
 
 | Data | Nota |
 |---|---|
+| 2026-07-29 | E6 resolvido: Opportunity passa a receber `name` real em `progress`/`complete` (`espocrm.js`). |
 | 2026-07-28 | Fase aberta a partir dos achados pós-fix e-mail/EspoCRM e reruns E2E. |

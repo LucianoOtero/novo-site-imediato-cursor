@@ -43,7 +43,14 @@ export type AppEnvironment = "development" | "staging" | "production";
  * `NEXT_PUBLIC_APP_ENV=production` definido manualmente).
  */
 function resolveAppEnvironment(): AppEnvironment {
-  const explicit = process.env.NEXT_PUBLIC_APP_ENV;
+  // Trim / remove `\r\n` literal colado em env (PowerShell) — senão
+  // `production\r\n` ≠ `production` e o gate de produção falha silenciosamente.
+  const explicit = process.env.NEXT_PUBLIC_APP_ENV
+    ?.replace(/\\r\\n/g, "")
+    .replace(/\\n/g, "")
+    .replace(/\\r/g, "")
+    .replace(/[\r\n]+/g, "")
+    .trim();
   if (explicit === "production" || explicit === "staging" || explicit === "development") {
     return explicit;
   }
@@ -173,6 +180,22 @@ function parseEnv() {
   return parsed.data;
 }
 
+/**
+ * Remove whitespace real e sequências literais `\r`/`\n` coladas por engano
+ * ao setar env (ex.: PowerShell). NÃO usar em secrets multilinha (PEM).
+ * Sem isso, IDs como `GTM-PD6J398\r\n` quebram o `gtm.js` (404).
+ */
+function sanitizeSingleLineId(value: string | undefined): string | undefined {
+  if (value == null) return undefined;
+  const cleaned = value
+    .replace(/\\r\\n/g, "")
+    .replace(/\\n/g, "")
+    .replace(/\\r/g, "")
+    .replace(/[\r\n]+/g, "")
+    .trim();
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
 const parsed = parseEnv();
 
 /**
@@ -216,7 +239,11 @@ function assertRequiredInProduction() {
   throw new Error(message);
 }
 
-if (isProduction) {
+// Obrigatoriedade de secrets server-only só no servidor. No client o
+// bundle não recebe DATABASE_URL / TURNSTILE_SECRET_KEY / etc.; se
+// `assertRequiredInProduction()` rodar no browser (ex.: layout importa
+// `isProduction`/`publicEnv`), a home cai no error boundary.
+if (isProduction && typeof window === "undefined") {
   assertRequiredInProduction();
 } else if (typeof window === "undefined") {
   // Aviso não-fatal, só no servidor, só fora de produção — visibilidade
@@ -232,13 +259,13 @@ if (isProduction) {
 
 /** Variáveis client-safe (NEXT_PUBLIC_*) — seguras para importar no client. */
 export const publicEnv = {
-  siteUrl: parsed.NEXT_PUBLIC_SITE_URL || undefined,
-  gtmId: parsed.NEXT_PUBLIC_GTM_ID,
-  ga4Id: parsed.NEXT_PUBLIC_GA4_ID,
-  whatsappNumber: parsed.NEXT_PUBLIC_WHATSAPP_NUMBER,
-  contactPhone: parsed.NEXT_PUBLIC_CONTACT_PHONE,
-  turnstileSiteKey: parsed.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-  sentryDsnPublic: parsed.NEXT_PUBLIC_SENTRY_DSN,
+  siteUrl: sanitizeSingleLineId(parsed.NEXT_PUBLIC_SITE_URL) || undefined,
+  gtmId: sanitizeSingleLineId(parsed.NEXT_PUBLIC_GTM_ID),
+  ga4Id: sanitizeSingleLineId(parsed.NEXT_PUBLIC_GA4_ID),
+  whatsappNumber: sanitizeSingleLineId(parsed.NEXT_PUBLIC_WHATSAPP_NUMBER),
+  contactPhone: sanitizeSingleLineId(parsed.NEXT_PUBLIC_CONTACT_PHONE),
+  turnstileSiteKey: sanitizeSingleLineId(parsed.NEXT_PUBLIC_TURNSTILE_SITE_KEY),
+  sentryDsnPublic: sanitizeSingleLineId(parsed.NEXT_PUBLIC_SENTRY_DSN),
   /**
    * RPA (Issue de integrações 2026-07-03). **Ligado por padrão** (decisão
    * 2026-07-18): o cálculo automático fica disponível no build, e o
@@ -263,8 +290,8 @@ export const publicEnv = {
  */
 export const env = {
   ...publicEnv,
-  googleAdsConversionId: parsed.GOOGLE_ADS_CONVERSION_ID,
-  googleAdsConversionLabel: parsed.GOOGLE_ADS_CONVERSION_LABEL,
+  googleAdsConversionId: sanitizeSingleLineId(parsed.GOOGLE_ADS_CONVERSION_ID),
+  googleAdsConversionLabel: sanitizeSingleLineId(parsed.GOOGLE_ADS_CONVERSION_LABEL),
   leadWebhookUrl: parsed.LEAD_WEBHOOK_URL,
   leadWebhookSecret: parsed.LEAD_WEBHOOK_SECRET,
   crmApiUrl: parsed.CRM_API_URL,

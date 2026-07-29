@@ -63,6 +63,13 @@ export const apiLeadSchema = leadSchema.extend({
    * fazendo o "Prosseguir" falhar silenciosamente (achado 2026-07-14).
    */
   skipStrictValidation: z.boolean().optional(),
+  /**
+   * Origem da captura (2026-07-29) — discrimina o `ContactLeadModal`
+   * (WhatsApp/telefone) do `LeadForm`. A Cloud Function usa isso para
+   * enviar `cotacao_dados_recebidos` só no `complete` do modal com dados
+   * extras, sem afetar o funil de cotação.
+   */
+  captureChannel: z.enum(["contact_modal", "lead_form"]).optional(),
 });
 
 export type ApiLeadPayload = z.infer<typeof apiLeadSchema>;
@@ -104,6 +111,8 @@ export type LeadRecord = {
   rpaChoice?: "aguardar" | "consultor";
   /** Resumo do resultado do cálculo RPA (projeto 2026-07-20). */
   rpaResultado?: ApiLeadPayload["rpaResultado"];
+  /** Origem da captura — ver `apiLeadSchema.captureChannel`. */
+  captureChannel?: "contact_modal" | "lead_form";
   ramo: string;
   phoneE164: string;
   cep?: string;

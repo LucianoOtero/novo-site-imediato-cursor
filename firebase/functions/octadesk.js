@@ -13,6 +13,10 @@
  * Templates aprovados pela Meta (todos Utilitário, 2026-07-27/28):
  * - `primeira_etapa`  → primeira_etapa_util (SEM variáveis — na etapa 1
  *   não há nome real, só o telefone)
+ * - `cotacao_dados_recebidos` → cotacao_solicitada_util (SEM variáveis
+ *   de API; usa {{nome-contato}} do cadastro — só no complete do modal
+ *   WhatsApp/telefone quando há e-mail/CEP/CPF/placa/nome; o `name` do
+ *   target.contact vem de leadData.nome quando presente)
  * - `calculo_pronto`  → opcao_recomendada_util (var-1 nome, var-2
  *   veículo, var-3 valor)
  * - `calculo_manual`  → calculo_falhou_util (var-1 nome)

@@ -44,7 +44,13 @@ export function useSubmitLead(ramo: string) {
     const response = await fetch("/api/lead", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-      body: JSON.stringify({ ...lead, stage: "complete", leadId, skipStrictValidation }),
+      body: JSON.stringify({
+        ...lead,
+        stage: "complete",
+        captureChannel: "lead_form",
+        leadId,
+        skipStrictValidation,
+      }),
     });
 
     if (!response.ok) {

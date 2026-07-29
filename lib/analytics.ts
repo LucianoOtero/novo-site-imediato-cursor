@@ -41,6 +41,17 @@ type AnalyticsEventMap = {
   form_start: { form_id: string; ramo?: RamoSlug };
   form_step: { step: 1 | 2 | 3 | 4; ramo?: RamoSlug };
   generate_lead: { ramo: RamoSlug; value?: number; method: "form" };
+  /**
+   * Conversão Ads do formulário no site novo (passo 4): clique em
+   * cálculo automático (`aguardar`) ou assistido (`consultor`).
+   * Separado de `generate_lead` (funil/GA4) para a tag Ads disparar
+   * só nesses dois botões — ver `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
+   */
+  form_quote_choice: {
+    ramo: RamoSlug;
+    choice: "aguardar" | "consultor";
+    method: "form";
+  };
   whatsapp_click: { location: "hero" | "sticky" | "fab" | string; ramo?: RamoSlug };
   call_click: { location: string; ramo?: RamoSlug };
   scroll_depth: { percent: 25 | 50 | 75 | 90; page_path: string };

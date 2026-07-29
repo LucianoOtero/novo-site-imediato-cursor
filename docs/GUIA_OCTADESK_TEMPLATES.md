@@ -105,8 +105,8 @@ Após as iterações com o classificador da Meta (as primeiras versões foram re
 | Momento do funil | Nome no Octadesk | ID | Status (2026-07-27) |
 |---|---|---|---|
 | 1. Cotação recebida — **template oficial da etapa 1** (= `primeira_etapa` no secret) | `primeira_etapa_util` | `6a67fa5ce7966478bcf4242a` | Aprovado como Utilitário (2026-07-27) |
-| 1. Cotação recebida (variante anterior) | `cotacao_primeira_util` | `6a6797b4371d871a86ea1bd0` | Aprovado |
-| 1. Cotação recebida (variante) | `cotacao_solicitada_util` | `6a6796b9c705a5619f2e8cdb` | Aprovado |
+| 1. Cotação recebida (variante alternativa, não usada no `initial`) | `cotacao_primeira_util` | `6a6797b4371d871a86ea1bd0` | Aprovado |
+| 1b. Modal WA/tel com dados extras (= `cotacao_dados_recebidos` no secret) | `cotacao_solicitada_util` | `6a6796b9c705a5619f2e8cdb` | Aprovado; **ativado na CF 2026-07-29** — `complete` do `ContactLeadModal` com e-mail/CEP/CPF/placa/**nome**; `{{nome-contato}}` via `target.contact.name` quando o modal envia `nome` |
 | 4a. Cálculo concluído (= `calculo_pronto` no secret) | `opcao_recomendada_util` | `6a679f8fcd5582b40f0b8de2` | Aprovado |
 | 4b. Cálculo completo depois (= `calculo_completo_depois` no secret) | `ultima_confirmacao_calculo` | `6a67c99eb2f6c165b3a499f4` | **Aprovado (2026-07-27)** — venceu a corrida; o `calculo_completo_ultimo_util` (pendente) foi excluído pelo cliente |
 | 4a. Cálculo falhou (= `calculo_manual` no secret) | `calculo_falhou_util` | `6a67b114b134d17c41842d89` | Aprovado (2026-07-27) |
@@ -149,7 +149,7 @@ Após as iterações com o classificador da Meta (as primeiras versões foram re
    - `calculo_completo_depois` → `6a67c99eb2f6c165b3a499f4` (`ultima_confirmacao_calculo`)
    - `calculo_manual` → `6a67b114b134d17c41842d89` (`calculo_falhou_util`)
 
-**Nota sobre `{{nome-contato}}`** (templates do momento 1): é o campo padrão do Octadesk, preenchido pelo cadastro do contato — não pela nossa API. No primeiro contato o nome real ainda não foi coletado (só o telefone), então essa variável pode sair vazia ou genérica. Como a mensagem inicial hoje sai pelo proxy legado, o comportamento atual se mantém; se migrarmos o envio inicial para a API direta, o campo `name` do payload só é enviado quando existe nome real.
+**Nota sobre `{{nome-contato}}`** (templates do momento 1 / 1b): é o campo padrão do Octadesk, preenchido pelo cadastro do contato — não por `variables` da API. No `initial` (só telefone) o nome real ainda não foi coletado. No `complete` do modal WhatsApp/telefone, quando o prospect preenche **Nome Completo**, a CF envia `target.contact.name` no `sendTemplate` de `cotacao_dados_recebidos`, alimentando `{{nome-contato}}` em `cotacao_solicitada_util`.
 
 ## Checklist final
 
@@ -157,7 +157,7 @@ Após as iterações com o classificador da Meta (as primeiras versões foram re
 - [x] Templates aprovados pela Meta (Etapa 2) — todos como Utilitário, 2026-07-27
 - [x] API Key + Base URL do Octadesk anotados (Etapa 3) — 2026-07-27
 - [x] API User no EspoCRM (Etapa 3) — 2026-07-28: reutilizado o `api_dev` do dev (chave copiada do banco); Role ampliada com Task/User
-- [x] Secret `OCTADESK_API_CONFIG` configurado e função redeployada (Etapa 4) — 2026-07-27; **2026-07-28**: adicionado `primeira_etapa` → `6a67fa5ce7966478bcf4242a` (mensagem inicial personalizada via API direta, com fallback proxy)
+- [x] Secret `OCTADESK_API_CONFIG` configurado e função redeployada (Etapa 4) — 2026-07-27; **2026-07-28**: adicionado `primeira_etapa` → `6a67fa5ce7966478bcf4242a` (mensagem inicial personalizada via API direta, com fallback proxy); **2026-07-29**: adicionado `cotacao_dados_recebidos` → `6a6796b9c705a5619f2e8cdb` (`cotacao_solicitada_util`, complete do modal com dados extras)
 - [x] Secret `ESPOCRM_API_CONFIG` configurado — 2026-07-28: blocos `dev`/`prod` + `useDirect:true` + `taskAssignedUserId` (integração 100% direta ativa no dev; produção segue no proxy até a virada)
 - [x] Teste dos templates no número do cliente (11-97668-7668) — 2026-07-27, `calculo_pronto` e `calculo_completo_depois` entregues; **2026-07-28**: `primeira_etapa_util` (sem variáveis) e `calculo_falhou_util` entregues no funil de validação da integração direta
 

@@ -68,3 +68,7 @@ novo site imediato cursor.zip
 /e2e/_*.log
 /e2e/_smoke*
 /_srv_v2.log
+
+.env.vercel.prod
+.env.vercel*
+debug-*.log

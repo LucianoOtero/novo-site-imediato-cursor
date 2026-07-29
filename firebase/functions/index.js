@@ -698,10 +698,12 @@ exports.deliverLead = onValueWritten(
     }
 
     // ——— Mensagens Octadesk por momento, via API direta (2026-07-20) ———
-    // "calculo_pronto"/"calculo_manual" (fim do RPA) e
-    // "calculo_completo_depois" (escolheu especialista). Atrás do
-    // kill-switch `enabled` em OCTADESK_API_CONFIG — só liga depois de os
-    // templates serem aprovados pela Meta (docs/GUIA_OCTADESK_TEMPLATES.md).
+    // "calculo_pronto"/"calculo_manual" (fim do RPA),
+    // "calculo_completo_depois" (escolheu especialista) e
+    // "cotacao_dados_recebidos" (complete do ContactLeadModal com dados
+    // extras — 2026-07-29). Atrás do kill-switch `enabled` em
+    // OCTADESK_API_CONFIG — só liga depois de os templates serem
+    // aprovados pela Meta (docs/GUIA_OCTADESK_TEMPLATES.md).
     if (octaReady) {
       const nome = firstName(leadData.nome) || "cliente";
       let templateKey = null;
@@ -720,6 +722,19 @@ exports.deliverLead = onValueWritten(
         } else {
           templateKey = "calculo_manual";
           variables = [nome];
+        }
+      } else if (stage === "complete" && leadData.captureChannel === "contact_modal") {
+        // Segunda HSM só no modal WA/tel, e só se o prospect preencheu
+        // algo além do telefone (e-mail real / CEP / CPF / placa / nome).
+        // LeadForm complete nunca entra aqui (captureChannel=lead_form).
+        const emailReal =
+          leadData.email && !/@imediatoseguros\.com\.br$/i.test(leadData.email) ? leadData.email : null;
+        const hasExtra = Boolean(
+          emailReal || leadData.cep || leadData.cpf || leadData.placa || firstName(leadData.nome)
+        );
+        if (hasExtra) {
+          templateKey = "cotacao_dados_recebidos";
+          variables = [];
         }
       }
 

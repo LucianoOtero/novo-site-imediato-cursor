@@ -35,8 +35,8 @@ import {
  * Réplica, a pedido explícito do cliente, do modal já existente no site
  * legado (`docs/LEGACY_JS_AUDIT.md`, "Achado crítico — WhatsApp e
  * telefone abrem modal de captura de lead antes de navegar"): card
- * flutuante com DDD/Celular obrigatórios e Email/CEP/CPF/Placa
- * opcionais, enviado para o mesmo `/api/lead` que já orquestra
+ * flutuante com DDD/Celular obrigatórios e CPF/E-mail/Nome Completo/
+ * CEP/Placa opcionais, enviado para o mesmo `/api/lead` que já orquestra
  * EspoCRM/Octadesk (Issue 12 + integrações de 2026-07-03) — **não
  * duplicamos** a gravação direta no Firebase/EspoCRM/Octadesk que o
  * modal legado fazia, reaproveitamos a infraestrutura de lead já
@@ -137,6 +137,7 @@ export function ContactLeadModal() {
       ramo: state?.ramo ?? "auto",
       ddd: "",
       celular: "",
+      nome: "",
       email: "",
       cep: "",
       cpf: "",
@@ -171,6 +172,7 @@ export function ContactLeadModal() {
       ramo: state.ramo ?? "auto",
       ddd: "",
       celular: "",
+      nome: "",
       email: "",
       cep: "",
       cpf: "",
@@ -230,6 +232,7 @@ export function ContactLeadModal() {
           ddd: values.ddd,
           celular: values.celular,
           stage: "initial",
+          captureChannel: "contact_modal",
           utm: captureUtmFromLocation(),
         }),
       });
@@ -383,6 +386,7 @@ export function ContactLeadModal() {
           ...data,
           ramo: ramo ?? data.ramo,
           stage: "complete",
+          captureChannel: "contact_modal",
           leadId: initialLeadIdRef.current ?? undefined,
           utm: captureUtmFromLocation(),
           skipStrictValidation,
@@ -420,7 +424,7 @@ export function ContactLeadModal() {
       ramo: ramo ?? raw.ramo,
       ddd: raw.ddd.replace(/\D/g, ""),
       celular: raw.celular.replace(/\D/g, ""),
-      nome: undefined,
+      nome: raw.nome?.trim() || undefined,
       email: raw.email?.trim() || undefined,
       cep: raw.cep ? raw.cep.replace(/\D/g, "") : undefined,
       cpf: raw.cpf ? raw.cpf.replace(/\D/g, "") : undefined,
@@ -518,6 +522,26 @@ export function ContactLeadModal() {
                   Esses campos são opcionais, mas ajudam a agilizar sua cotação.
                 </p>
 
+                {/* Ordem alinhada ao legado: CPF → E-mail → Nome Completo → CEP → Placa */}
+                <Field label="CPF" htmlFor="modal-cpf" error={errors.cpf?.message} hint="Opcional">
+                  <Input
+                    id="modal-cpf"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="000.000.000-00"
+                    aria-invalid={!!errors.cpf}
+                    {...register("cpf")}
+                    onChange={(event) => {
+                      event.target.value = formatCpf(event.target.value);
+                      void register("cpf").onChange(event);
+                    }}
+                    onBlur={(event) => {
+                      void register("cpf").onBlur(event);
+                      void trigger("cpf");
+                    }}
+                  />
+                </Field>
+
                 <Field label="E-mail" htmlFor="modal-email" error={errors.email?.message} hint="Opcional">
                   <Input
                     id="modal-email"
@@ -533,44 +557,34 @@ export function ContactLeadModal() {
                   />
                 </Field>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="CEP" htmlFor="modal-cep" error={errors.cep?.message} hint="Opcional">
-                    <Input
-                      id="modal-cep"
-                      inputMode="numeric"
-                      autoComplete="postal-code"
-                      placeholder="00000-000"
-                      aria-invalid={!!errors.cep}
-                      {...register("cep")}
-                      onChange={(event) => {
-                        event.target.value = formatCep(event.target.value);
-                        void register("cep").onChange(event);
-                      }}
-                      onBlur={(event) => {
-                        void register("cep").onBlur(event);
-                        void handleCepBlur();
-                      }}
-                    />
-                  </Field>
-                  <Field label="CPF" htmlFor="modal-cpf" error={errors.cpf?.message} hint="Opcional">
-                    <Input
-                      id="modal-cpf"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      placeholder="000.000.000-00"
-                      aria-invalid={!!errors.cpf}
-                      {...register("cpf")}
-                      onChange={(event) => {
-                        event.target.value = formatCpf(event.target.value);
-                        void register("cpf").onChange(event);
-                      }}
-                      onBlur={(event) => {
-                        void register("cpf").onBlur(event);
-                        void trigger("cpf");
-                      }}
-                    />
-                  </Field>
-                </div>
+                <Field label="Nome Completo" htmlFor="modal-nome" error={errors.nome?.message} hint="Opcional">
+                  <Input
+                    id="modal-nome"
+                    autoComplete="name"
+                    placeholder="João da Silva"
+                    aria-invalid={!!errors.nome}
+                    {...register("nome")}
+                  />
+                </Field>
+
+                <Field label="CEP" htmlFor="modal-cep" error={errors.cep?.message} hint="Opcional">
+                  <Input
+                    id="modal-cep"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    placeholder="00000-000"
+                    aria-invalid={!!errors.cep}
+                    {...register("cep")}
+                    onChange={(event) => {
+                      event.target.value = formatCep(event.target.value);
+                      void register("cep").onChange(event);
+                    }}
+                    onBlur={(event) => {
+                      void register("cep").onBlur(event);
+                      void handleCepBlur();
+                    }}
+                  />
+                </Field>
 
                 <Field label="Placa" htmlFor="modal-placa" error={errors.placa?.message} hint="Opcional">
                   <Input
