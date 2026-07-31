@@ -14,7 +14,7 @@ import {
 /**
  * RpaChoiceStep — passo 4 do `LeadForm` (projeto 2026-07-16, "etapa de
  * decisão RPA no formulário"), exibido depois de CPF/CEP/Placa. Pergunta
- * se o usuário quer acompanhar o cálculo automático (RPA, 18
+ * se o usuário quer acompanhar o cálculo automático (RPA, 21
  * seguradoras) agora ou preferir que um consultor calcule depois —
  * textos deliberadamente sucintos, sem criar atrito com nenhuma das duas
  * escolhas (nenhuma opção é apresentada como "inferior").
@@ -106,7 +106,7 @@ export function RpaChoiceStep({
   return (
     <div className="flex flex-col gap-5">
       <p className={cn("text-sm", bodyText)}>
-        Comparamos sua cotação em tempo real entre 18 seguradoras parceiras — o cálculo pode levar de 2 a 10 minutos.
+        Comparamos sua cotação em tempo real entre 21 seguradoras parceiras — o cálculo pode levar de 2 a 10 minutos.
       </p>
 
       <div className="flex flex-col gap-3">

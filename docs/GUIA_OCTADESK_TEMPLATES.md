@@ -10,6 +10,8 @@ O WhatsApp só permite que uma empresa **inicie** uma conversa (mensagem ativa) 
 
 O Octadesk é o BSP (parceiro oficial da Meta): você cria o template no painel do Octadesk e ele submete à Meta automaticamente.
 
+> **⚠️ Pendência (2026-07-31) — "18 seguradoras" desatualizado:** o número oficial de seguradoras parceiras mudou de **18 para 21** (ver `docs/DADOS_OFICIAIS.md`); o site já foi atualizado. Os textos dos templates 2–4 abaixo ainda citam "18 seguradoras" e foram mantidos **de propósito**: alterar o corpo de um template aprovado exige **nova submissão e aprovação pela Meta**. Na próxima rodada de criação/edição de templates, atualizar para "21 seguradoras" (ou remover o número, evitando novas reaprovações a cada mudança) e reaprovar.
+
 ## Etapa 1 — Criar os 4 templates no Octadesk
 
 Painel Octadesk → **Configurações → Canais → WhatsApp → Modelos de mensagem** → "Criar modelo".

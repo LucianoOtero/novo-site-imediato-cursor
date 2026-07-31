@@ -33,7 +33,7 @@ A coluna "Confirmado?" reflete exatamente o estado registrado na especificação
 | E-mail fallback de leads | **lrotero@gmail.com** | cliente | ✅ Confirmado | TI/Comercial | LEAD_FALLBACK_EMAIL |
 | Horário de atendimento | Seg-Sex, 9h-18h | cliente | ✅ Confirmado (2026-07-03) | Comercial | business.hoursDisplay/hoursSchema, Schema openingHours |
 | Anos de experiência | ~~25 (hero) / 35+ (rodapé) — divergente~~ → **25** | cliente | ✅ **RESOLVIDO** (2026-07-03) | Marketing | business.yearsExperience |
-| Nº de seguradoras parceiras | ~~16 (texto) / 18 logos~~ → **18** | cliente | ✅ **RESOLVIDO** (2026-07-03) | Comercial | business.insurersCount |
+| Nº de seguradoras parceiras | ~~16 (texto) / 18 logos~~ → ~~18~~ → **21** | cliente | ✅ **ATUALIZADO** (2026-07-31, ver nota) | Comercial | business.insurersCount |
 | Nota Google | 4.8 | cliente | ✅ Confirmado (2026-07-03) | Marketing | business.googleRating, AggregateRating |
 | Qtd. de avaliações | **+2.200** (era "+2.000" no site legado) | cliente | ✅ Confirmado (2026-07-03) | Marketing | business.googleReviewsCount |
 | % de satisfação | ~~96% (texto) / 98% (outro bloco) — divergente~~ → **98%** | cliente | ✅ **RESOLVIDO** (2026-07-03) | Marketing | business.satisfactionRate |
@@ -65,6 +65,10 @@ Não faz parte da tabela original da seção 64 (que é uma fatia fiel da especi
 ### Nota de auditoria (Issue P-10) — item "Nº de seguradoras parceiras" (RESOLVIDO em 2026-07-03)
 
 A auditoria real de assets (Issue P-10, ver `BRAND_ASSETS.md`) havia encontrado **18 arquivos de logo de seguradoras** hospedados no site publicado — uma evidência técnica que apontava para o lado "18" da divergência "16 (texto) / 18 logos". Em 2026-07-03 o cliente confirmou oficialmente o valor **18**, resolvendo a divergência (ver linha correspondente na tabela acima).
+
+### Atualização (2026-07-31) — 18 → 21 seguradoras parceiras
+
+O cliente confirmou a nova lista de **21 seguradoras parceiras**: saem **Darwin, Liberty e Usebens**; entram **Aliro** (grafia oficial da marca — o pedido citava "Alliro"), **BP Seguradora, Ituran, Mitsui Sumitomo, Suhai e Yelum** (nova marca da antiga Liberty Seguros no Brasil). Valor aplicado em `lib/company.ts` (`insurersCount: 21`), catálogo/ordem em `lib/seguradoras.ts` (ordem de exibição por reputação de mercado definida com o cliente) e textos hardcoded em `lib/ramos.ts`/`components/lead/RpaChoiceStep.tsx`. Logos novos documentados em `BRAND_ASSETS.md`. **Pendência registrada:** templates de WhatsApp no Octadesk aprovados na Meta ainda citam "18 seguradoras" (ver `GUIA_OCTADESK_TEMPLATES.md`).
 
 ---
 

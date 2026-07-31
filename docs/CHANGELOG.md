@@ -11,6 +11,22 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.7] — 2026-07-31
+
+### Changed
+- **Seguradoras parceiras: 18 → 21** (confirmação do cliente, ver `docs/DADOS_OFICIAIS.md`): saem Darwin, Liberty e Usebens; entram Aliro (grafia oficial — pedido citava "Alliro"), BP Seguradora, Ituran, Mitsui Sumitomo, Suhai e Yelum (ex-Liberty Brasil).
+- `lib/seguradoras.ts` reescrito com as 21 entradas em **ordem por reputação de mercado** (Porto, Azul, Itaú, Bradesco, Allianz, Tokio, Mapfre, HDI, Sompo, Yelum, Mitsui, Suhai, Youse, Justos, Pier, Aliro, Ezze, BP, Ituran, Loovi, Novo).
+- `lib/company.ts` `insurersCount: 21` (propaga para Hero, CredBar, InsurersGrid, ComoFunciona); 8 ocorrências hardcoded "18" → "21" em `lib/ramos.ts` (subheadlines, título SEO da LP Auto, resposta de objeção) e texto do `RpaChoiceStep`.
+
+### Added
+- 6 novos logos SVG vetor puro em `/public/logos/seguradoras/` — origem/formato de cada um em `docs/BRAND_ASSETS.md` (5 oficiais dos sites das marcas; BP vetorizado via potrace por separação de cor a partir do PNG oficial).
+
+### Removed
+- `darwin.svg`, `liberty.svg`, `usebens.svg` de `/public/logos/seguradoras/`.
+
+### Pendências
+- Templates de WhatsApp no Octadesk aprovados na Meta ainda citam "18 seguradoras" — alterar exige nova aprovação da Meta (registrado em `docs/GUIA_OCTADESK_TEMPLATES.md`).
+
 ## [0.2.6] — 2026-07-29
 
 ### Added

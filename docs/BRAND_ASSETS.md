@@ -7,7 +7,7 @@ Catálogo dos logos de marca (Imediato + seguradoras) com formato atual/ideal e 
 Auditoria real executada na Issue P-10, via inspeção do site publicado (Home). Ver metodologia e limitações em `SVG_ASSETS_AUDIT.md`.
 
 ## Status
-✅ **Logos de seguradoras migrados em 2026-07-03** (ver nota abaixo). Auditoria original concluída em 2026-07-01.
+✅ **Logos de seguradoras migrados em 2026-07-03** (ver nota abaixo). Auditoria original concluída em 2026-07-01. **Lista atualizada de 18 → 21 parceiras em 2026-07-31** (ver nota "Atualização 18 → 21").
 
 ## Observações
 Todos os logos abaixo estavam hospedados em `cdn.prod.website-files.com` (CDN do Webflow), em formato SVG "cinza" (`grey`). **Contagem real confirmada nesta auditoria: 18 logos de seguradoras** — o cliente confirmou oficialmente o valor **18** em 2026-07-03 (ver `DADOS_OFICIAIS.md`), resolvendo a divergência "16 (texto) / 18 logos".
@@ -32,6 +32,21 @@ O cliente contratou um freelancer para vetorizar manualmente os 8 logos acima (m
 - `lib/seguradoras.ts` é a fonte de dados para `InsurersGrid`, com nome de exibição + caminho do arquivo para cada uma das 18 parceiras — sem mudança nesta rodada (só os arquivos de logo foram substituídos).
 
 **Todos os 18 logos de seguradoras são agora vetores puros** — pendência de otimização de performance totalmente resolvida.
+
+### Atualização 18 → 21 (2026-07-31)
+
+O cliente confirmou a nova lista de **21 parceiras**: saem **Darwin, Liberty e Usebens** (arquivos `darwin.svg`, `liberty.svg`, `usebens.svg` removidos de `/public/logos/seguradoras/`; as versões do freelancer permanecem em `assets/Novos/` como referência histórica); entram 6 novas marcas. Origem e formato de cada novo arquivo:
+
+| Arquivo | Marca | Origem | Formato |
+|---|---|---|---|
+| `aliro.svg` | Aliro Seguro (grupo HDI; grafia oficial "Aliro", não "Alliro") | SVG oficial do site `aliroseguro.com.br` (`logo-cia-aliro-primary.svg`, extraído do CSS do header) | Vetor puro, 4,1KB, viewBox `0 0 97.62 62.95` |
+| `bp-seguradora.svg` | BP Seguradora | **Vetorizado via potrace** (separação por cor: navy `#000D37`, azul `#2B50BB`, preto) a partir do PNG oficial `logo-default.png` (1080×363) de `bpseguradora.com.br` — não existe SVG oficial público | Vetor puro (traçado), 9,8KB, viewBox `0 0 1080 363` |
+| `ituran.svg` | Ituran com Seguro | Vetor do logo oficial atual (mesmo desenho do site `ituran.com.br`), obtido em repositório de vetores (companieslogo.com) — o site oficial só serve PNG | Vetor puro, 11,2KB, viewBox `0 0 1524 700` |
+| `mitsui.svg` | Mitsui Sumitomo Seguros (MSIG) | SVG oficial do site `mitsuiseguros.com.br` (`mitsui-logo.svg` do CDN `msig.com.br`) — lockup completo com selo "MS&AD" | Vetor puro, 17KB, viewBox `0 0 187.4 44.6` |
+| `suhai.svg` | Suhai Seguradora | SVG oficial do site `suhaiseguradora.com` (`logo-suhai-dark-1.svg`); atributos `preserveAspectRatio="none"`/`width=100%` removidos para render correto no grid | Vetor puro, 11,2KB, viewBox `0 0 109.998 48` |
+| `yelum.svg` | Yelum Seguros (ex-Liberty Brasil) | SVG oficial do site `yelumseguros.com.br` (`logo-cia-primary.svg`) | Vetor puro, 5,6KB, viewBox `0 0 200 66` |
+
+Todos os 6 mantêm o padrão do catálogo: **vetor puro** (sem `<image>` raster embutida), cores originais da marca no arquivo, uniformização em cinza via CSS no `InsurersGrid` (`grayscale` + `hover:grayscale-0`). Validados visualmente em ~100px de altura (tamanho do grid desktop), coloridos e em grayscale. Ordem de exibição (por reputação de mercado, definida com o cliente) e lista completa em `lib/seguradoras.ts`; contagem oficial em `docs/DADOS_OFICIAIS.md`.
 
 ---
 

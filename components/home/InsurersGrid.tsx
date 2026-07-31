@@ -47,22 +47,16 @@ export function InsurersGrid() {
         />
 
         {/*
-          Tamanho do logo no desktop — a pedido do cliente (2026-07-08):
-          1ª rodada dobrou de 40px para 80px (`md:h-20`); 2ª rodada
-          (mesmo dia) pediu mais ~25% de destaque, chegando a 100px
-          (`md:h-[100px]`, valor exato pedido — não corresponde a um
-          degrau padrão da escala do Tailwind, por isso o valor
-          arbitrário). Mantém 6 por linha (`md:grid-cols-6`) — só o
-          tamanho de cada logo aumenta, nunca a quantidade por linha:
-          `max-w-full` no `<img>` impede que um logo mais largo estoure a
-          coluna do grid e quebre a linha, mesmo que isso limite um pouco
-          a altura efetiva dos logos com proporção mais larga.
+          Colunas só em divisores de 21: 3 no mobile (7×3) e 7 a partir
+          de `md` (3×7). Cada célula usa aspect 2/1 + object-contain; os
+          SVGs foram normalizados para o mesmo aspect com o desenho
+          centralizado — assim a linha óptica fica homogênea.
         */}
-        <div className="mt-10 grid grid-cols-3 items-center gap-x-6 gap-y-8 sm:grid-cols-4 md:grid-cols-6 md:gap-y-12">
+        <div className="mt-10 grid grid-cols-3 items-center gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-7 md:gap-x-5 md:gap-y-10">
           {seguradoras.map((seguradora) => (
             <div
               key={seguradora.slug}
-              className="flex items-center justify-center grayscale transition-[filter] duration-[var(--dur-fast)] hover:grayscale-0"
+              className="flex aspect-[2/1] w-full items-center justify-center grayscale brightness-[0.72] contrast-[1.15] transition-[filter] duration-[var(--dur-fast)] hover:grayscale-0 hover:brightness-100 hover:contrast-100"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- SVGs locais com dados rasterizados embutidos (até 341KB); next/image não otimiza SVG, e a chamada extra ao endpoint de otimização não traria benefício aqui. */}
               <img
@@ -70,9 +64,9 @@ export function InsurersGrid() {
                 alt={seguradora.nome}
                 loading="lazy"
                 decoding="async"
-                width={120}
-                height={48}
-                className="h-10 w-auto max-w-full object-contain md:h-[100px]"
+                width={200}
+                height={100}
+                className="h-full w-full object-contain"
               />
             </div>
           ))}

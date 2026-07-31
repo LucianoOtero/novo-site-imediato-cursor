@@ -107,10 +107,10 @@ export const ramos: InsuranceBranch[] = [
     priceFrom: 79.9, // CONFIRMADO (2026-07-03) — ver docs/DADOS_OFICIAIS.md
     priceLabel: "a partir de R$ 79,90/mês",
     headline: "Seguro auto a partir de R$ 79,90/mês, com cobertura FIPE 100%",
-    subheadline: "Cotação grátis, sem compromisso, comparando 18 seguradoras.",
+    subheadline: "Cotação grátis, sem compromisso, comparando 21 seguradoras.",
     eyebrow: "Seguro Auto",
     seo: {
-      title: "Seguro Auto Online | Cotação Grátis em 18 Seguradoras — Imediato",
+      title: "Seguro Auto Online | Cotação Grátis em 21 Seguradoras — Imediato",
       description:
         "Cote seu seguro auto com cobertura FIPE 100%, assistência 24h e carro reserva. Cotação grátis, sem compromisso.", // rascunho — revisar com Conteúdo
       keywordFocus: "seguro auto cotação online",
@@ -124,7 +124,7 @@ export const ramos: InsuranceBranch[] = [
         objection: "Isso não vai ficar caro?",
         response:
           // RASCUNHO (2026-07-08) — revisar com Comercial/Conteúdo antes de publicar como definitivo.
-          "Comparamos sua cotação entre 18 seguradoras parceiras para encontrar o melhor custo-benefício para o seu perfil — sem compromisso de contratação.",
+          "Comparamos sua cotação entre 21 seguradoras parceiras para encontrar o melhor custo-benefício para o seu perfil — sem compromisso de contratação.",
       },
       {
         objection: "Vai dar muito trabalho contratar?",
@@ -172,7 +172,7 @@ export const ramos: InsuranceBranch[] = [
     priceFrom: 49.9, // CONFIRMADO (2026-07-03)
     priceLabel: "a partir de R$ 49,90/mês",
     headline: "Seguro de moto a partir de R$ 49,90/mês",
-    subheadline: "Cotação grátis, sem compromisso, comparando 18 seguradoras.",
+    subheadline: "Cotação grátis, sem compromisso, comparando 21 seguradoras.",
     eyebrow: "Seguro de Moto",
     seo: {
       title: "Seguro de Moto Barato | Cotação Online",
@@ -233,7 +233,7 @@ export const ramos: InsuranceBranch[] = [
     priceFrom: 99.9, // CONFIRMADO (2026-07-03)
     priceLabel: "a partir de R$ 99,90/mês",
     headline: "Seguro de caminhão sob medida para o seu negócio",
-    subheadline: "Cotação grátis, sem compromisso, comparando 18 seguradoras.",
+    subheadline: "Cotação grátis, sem compromisso, comparando 21 seguradoras.",
     eyebrow: "Seguro de Caminhão",
     seo: {
       title: "Seguro de Caminhão | Casco, RCF e Assistência 24h",
@@ -293,7 +293,7 @@ export const ramos: InsuranceBranch[] = [
     priceFrom: 84.9, // CONFIRMADO (2026-07-03)
     priceLabel: "a partir de R$ 84,90/mês",
     headline: "Seguro para Uber e 99 que cobre o uso por aplicativo",
-    subheadline: "Cotação grátis, sem compromisso, comparando 18 seguradoras.",
+    subheadline: "Cotação grátis, sem compromisso, comparando 21 seguradoras.",
     eyebrow: "Seguro para Aplicativo",
     seo: {
       title: "Seguro para Uber e 99 | Cobertura para App",
@@ -354,7 +354,7 @@ export const ramos: InsuranceBranch[] = [
     priceFrom: 99.9, // CONFIRMADO (2026-07-03)
     priceLabel: "a partir de R$ 99,90/mês",
     headline: "Seguro de táxi para o profissional que vive do carro",
-    subheadline: "Cotação grátis, sem compromisso, comparando 18 seguradoras.",
+    subheadline: "Cotação grátis, sem compromisso, comparando 21 seguradoras.",
     eyebrow: "Seguro de Táxi",
     seo: {
       title: "Seguro de Táxi | Cobertura Profissional 24h",
@@ -407,7 +407,7 @@ export const ramos: InsuranceBranch[] = [
     priceFrom: 94.9, // CONFIRMADO (2026-07-03)
     priceLabel: "a partir de R$ 94,90/mês",
     headline: "Seguro de utilitário para carga e transporte",
-    subheadline: "Cotação grátis, sem compromisso, comparando 18 seguradoras.",
+    subheadline: "Cotação grátis, sem compromisso, comparando 21 seguradoras.",
     eyebrow: "Seguro de Utilitário",
     seo: {
       title: "Seguro de Utilitário e Van | Cotação Online",

@@ -110,7 +110,7 @@ import { cn } from "@/lib/utils";
  * Passo 4 — decisão do RPA (projeto 2026-07-16, "etapa de decisão RPA
  * no formulário", a pedido do cliente): depois de CPF/CEP/Placa,
  * `RpaChoiceStep` pergunta se o usuário quer aguardar o cálculo
- * automático (18 seguradoras) agora ou preferir que um consultor
+ * automático (21 seguradoras) agora ou preferir que um consultor
  * calcule depois. "Prefiro consultor" segue **exatamente** o fluxo de
  * envio final que já existia (`handleChooseConsultant` reaproveita o
  * mesmo `handleSubmit(onSubmit)` de antes). "Aguardar o cálculo"
