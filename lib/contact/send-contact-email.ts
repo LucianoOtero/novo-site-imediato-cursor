@@ -80,7 +80,7 @@ function buildMessage(data: ContactFormInput): BuiltMessage {
   return {
     to: company.contact.formEmail,
     from:
-      process.env.CONTACT_EMAIL_FROM?.trim() ||
+      cleanEnv(process.env.CONTACT_EMAIL_FROM) ||
       `${company.tradeName} <${company.contact.email}>`,
     replyTo: data.email,
     subject: `[Contato site] ${data.assunto}`,
@@ -89,20 +89,21 @@ function buildMessage(data: ContactFormInput): BuiltMessage {
   };
 }
 
+/** Remove CR/LF que às vezes entram ao definir env na Vercel via PowerShell. */
+function cleanEnv(value: string | undefined): string {
+  return (value ?? "").replace(/[\r\n]+/g, "").trim();
+}
+
 function hasSmtpConfig(): boolean {
-  return Boolean(
-    process.env.SMTP_HOST?.trim() &&
-      process.env.SMTP_USER?.trim() &&
-      process.env.SMTP_PASS?.trim()
-  );
+  return Boolean(cleanEnv(process.env.SMTP_HOST) && cleanEnv(process.env.SMTP_USER) && cleanEnv(process.env.SMTP_PASS));
 }
 
 async function sendViaSmtp(content: BuiltMessage): Promise<{ sent: boolean; error?: string }> {
-  const host = process.env.SMTP_HOST!.trim();
-  const port = Number(process.env.SMTP_PORT?.trim() || "587");
-  const user = process.env.SMTP_USER!.trim();
-  const pass = process.env.SMTP_PASS!.trim();
-  const secure = process.env.SMTP_SECURE === "true" || port === 465;
+  const host = cleanEnv(process.env.SMTP_HOST);
+  const port = Number(cleanEnv(process.env.SMTP_PORT) || "587");
+  const user = cleanEnv(process.env.SMTP_USER);
+  const pass = cleanEnv(process.env.SMTP_PASS);
+  const secure = cleanEnv(process.env.SMTP_SECURE) === "true" || port === 465;
 
   try {
     const transporter = nodemailer.createTransport({
