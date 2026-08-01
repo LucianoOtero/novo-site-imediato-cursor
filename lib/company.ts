@@ -43,6 +43,8 @@ export type CompanyConfig = {
     ombudsmanPhone?: string;
     ombudsmanPhoneDisplay?: string;
     email: string;
+    /** Destino do formulário da página `/contato` (pedido do cliente 2026-08-01). */
+    formEmail: string;
     fallbackEmail: string;
   };
   business: {
@@ -98,6 +100,7 @@ export const company: CompanyConfig = {
     ombudsmanPhone: "+5511976687668", // CONFIRMADO (2026-07-03)
     ombudsmanPhoneDisplay: "(11) 97668-7668", // CONFIRMADO (2026-07-03)
     email: "contato@imediatoseguros.com.br", // CONFIRMADO (2026-07-03)
+    formEmail: "adm@imediatoseguros.com.br", // CONFIRMADO (2026-08-01) — formulário /contato
     fallbackEmail: "lrotero@gmail.com", // CONFIRMADO
   },
   business: {

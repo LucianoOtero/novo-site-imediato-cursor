@@ -163,3 +163,30 @@ export async function fetchGoogleReviewsSummary(): Promise<GoogleReviewsSummary>
     return fallbackSummary;
   }
 }
+
+/**
+ * Dados para `/reputacao`: nota/contagem agregadas + conjunto ampliado de
+ * avaliações positivas (API ∪ fallback estático, dedupe, ordenado por
+ * profundidade do texto) — a Places API só devolve até 5 “mais relevantes”.
+ */
+export async function fetchReputationPageData(): Promise<GoogleReviewsSummary> {
+  const summary = await fetchGoogleReviewsSummary();
+  const byKey = new Map<string, GoogleReview>();
+
+  for (const review of [...FALLBACK_REVIEWS, ...summary.reviews]) {
+    if (review.rating < MIN_RATING_TO_SHOW || !review.text.trim()) continue;
+    const key = `${review.author.trim().toLowerCase()}|${review.text.trim().slice(0, 48).toLowerCase()}`;
+    const existing = byKey.get(key);
+    if (!existing || review.text.length > existing.text.length) {
+      byKey.set(key, review);
+    }
+  }
+
+  const reviews = [...byKey.values()].sort((a, b) => b.text.length - a.text.length || b.rating - a.rating);
+
+  return {
+    rating: summary.rating,
+    reviewCount: summary.reviewCount,
+    reviews: reviews.length > 0 ? reviews : FALLBACK_REVIEWS,
+  };
+}

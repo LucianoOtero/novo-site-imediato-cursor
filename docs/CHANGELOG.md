@@ -11,6 +11,20 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## Ops — 2026-08-01 (páginas institucionais)
+
+- Criada rota `/a-imediato` (link “Sobre” no menu) — antes 404; conteúdo só com dados de `lib/company.ts`.
+- Criada rota `/seguradoras-parceiras` (antes 404): lista das 21 parceiras com assistência 24h e área do cliente (`lib/seguradoras.ts`); destaque no topo para acionar a seguradora direto em pane/emergência (evitar gargalo via corretor).
+- Criada rota `/coberturas` (antes 404): hub das 16 coberturas de **Seguro Auto** (`lib/coberturas-auto.ts`) com descrição breve; aviso no topo para ler apólice/Condições Gerais (coberturas variam e podem não estar incluídas).
+- Criada rota `/reputacao` (antes 404): nota/volume Google, análise temática das avaliações reais (`lib/reputation-insights.ts` + `fetchReputationPageData`), grade ampliada de depoimentos positivos.
+- Criada rota `/contato` (antes 404): canais oficiais (telefone, WhatsApp, e-mail, ouvidoria, emergência, endereço, horário, redes) + formulário → `company.contact.formEmail` (`adm@imediatoseguros.com.br`) via `POST /api/contact` (Resend + backup Firebase `contact_messages/`).
+
+## Ops — 2026-08-01 (EspoCRM prod + onda 2)
+
+- Entity Manager prod: 5 campos do funil + painel “Cotação do Site” + colunas list Lead.
+- Role API: Note create; Task/User já ok. Secret `ESPOCRM_API_CONFIG.prod` preenchido (chave Cloud Run / `add_travelangels`; Tasks → Lucas Andrade); `deliverLead` redeployed.
+- Smoke onda 2 PASS: `cWebpage=comparaseguroonline.com.br`, `cEtapaFunil` atualiza no progress. Sem release de código Next.
+
 ## [0.2.7] — 2026-07-31
 
 ### Changed

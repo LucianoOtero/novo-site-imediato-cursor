@@ -58,9 +58,9 @@ Cada mecanismo do EspoCRM tem um papel (prática recomendada de CRM — dado fil
 | **description** | Resumo consolidado do cálculo | Visível no topo da ficha sem rolar |
 | **Task** vinculada ao Lead | "Efetuar cálculo manual e enviar ao cliente" (etapa 4b e falha do RPA) | Acionável: aparece em Atividades/dashboards e não se perde como um post |
 
-### Parametrização no Entity Manager — ✅ EXECUTADA NO DEV em 2026-07-28
+### Parametrização no Entity Manager — ✅ DEV 2026-07-28 · ✅ PROD 2026-08-01
 
-**Status**: os 5 campos abaixo + o painel "Cotação do Site" no layout de detalhe foram criados no **dev.flyingdonkeys.com.br** pelo agente (via a camada administrativa autenticada do próprio EspoCRM — endpoints `Admin/fieldManager` e `Lead/layout/detail`, os mesmos que a UI usa), com rebuild executado e verificação visual na ficha de um lead. Achados do processo, importantes para a réplica em produção:
+**Status**: os 5 campos abaixo + o painel "Cotação do Site" no layout de detalhe foram criados no **dev.flyingdonkeys.com.br** (2026-07-28) e **replicados em `flyingdonkeys.com.br` (produção, 2026-08-01)** via `Admin/fieldManager` + `Lead|Opportunity/layout/detail` + rebuild/cache. Em prod: também colunas `cEtapaFunil`/`cStatusCalculo` na list do Lead. Achados do processo:
 
 - O Field Manager **prefixa automaticamente "c"** ao nome digitado — para obter `cEtapaFunil`, digite/envie `etapaFunil` (digitar "cEtapaFunil" gera `cCEtapaFunil`).
 - Na API, atualização de campo é `PUT Admin/fieldManager/Lead/{name}` com **payload completo** (type/name/label/options) — PATCH retorna 500 e payload parcial pode apagar opções.
@@ -162,5 +162,5 @@ leads-imediato-seguros")]
 ## Ambientes
 
 - Desenvolvimento: `dev.flyingdonkeys.com.br` — usado enquanto `environment` ≠ `production`.
-- **Produção (virada Fase A 2026-07-29):** com `NEXT_PUBLIC_APP_ENV=production`, a CF entrega no proxy `ESPOCRM_PROD_URL` → **`flyingdonkeys.com.br`**. Smoke: Lead `6a6a00312d24538d3` / Opp `6a6a00317e6f598bc` (apagar na UI prod). Campos funil (`cEtapaFunil` etc.) ainda precisam ser espelhados no prod antes da onda 2 (API direta). Ops: `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
+- **Produção (virada Fase A 2026-07-29 + onda 2 2026-08-01):** com `NEXT_PUBLIC_APP_ENV=production`, a CF usa API direta (`ESPOCRM_API_CONFIG.prod`, user `add_travelangels` / mesma key do Cloud Run) → **`flyingdonkeys.com.br`**. Campos funil + `cWebpage=comparaseguroonline.com.br` confirmados no smoke. Ops: `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
 - Produção: replicar as parametrizações manuais (campos, layout, API User) e atualizar o secret quando o fluxo for aprovado no dev.

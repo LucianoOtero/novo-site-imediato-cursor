@@ -41,6 +41,12 @@ const nextConfig = {
         destination: "/seguro-moto",
         permanent: true,
       },
+      // Alias do rótulo de menu "Sobre" → rota canônica do mapa do site
+      {
+        source: "/sobre",
+        destination: "/a-imediato",
+        permanent: true,
+      },
     ];
   },
 };

@@ -40,12 +40,13 @@ export function getClientIp(headers: Headers): string {
  */
 const requestLog = new Map<string, number[]>();
 
-export type RateLimitBucket = "lead" | "validate";
+export type RateLimitBucket = "lead" | "validate" | "contact";
 export type RateLimitResult = { allowed: boolean; retryAfterSeconds?: number };
 
 const RATE_LIMITS: Record<RateLimitBucket, { perMinute: number; perHour: number }> = {
   lead: { perMinute: 20, perHour: 120 },
   validate: { perMinute: 60, perHour: 500 },
+  contact: { perMinute: 8, perHour: 40 },
 };
 
 export function checkRateLimit(

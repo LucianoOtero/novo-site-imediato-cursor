@@ -50,6 +50,7 @@ const FORBIDDEN_PATTERNS = [
   { label: "Link Google Maps hardcoded (use lib/company.ts)", regex: /google\.com\/maps/ },
   { label: "Domínio hardcoded (use lib/env.ts)", regex: /segurosimediato\.com\.br/ },
   { label: "E-mail comercial hardcoded (use lib/company.ts)", regex: /contato@imediatoseguros\.com\.br/ },
+  { label: "E-mail formulário /contato hardcoded (use lib/company.ts)", regex: /adm@imediatoseguros\.com\.br/ },
   { label: "E-mail comercial hardcoded (use lib/company.ts)", regex: /lrotero@gmail\.com/ },
 ];
 

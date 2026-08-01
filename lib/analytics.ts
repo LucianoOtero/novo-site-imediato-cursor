@@ -66,6 +66,8 @@ type AnalyticsEventMap = {
    * (`docs/LEGACY_JS_AUDIT.md`), usado como conversão do Google Ads.
    */
   whatsapp_modal_submit: { form_type: "whatsapp_modal"; modal_channel: "whatsapp" | "phone"; location: string; ramo?: RamoSlug };
+  /** Envio bem-sucedido do formulário da página `/contato`. */
+  contact_form_submit: { location: "contato" };
 };
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;

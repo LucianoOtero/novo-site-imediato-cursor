@@ -8,13 +8,13 @@ Checklist operacional da Fase A (2026-07-29): ligar GTM no site novo e entregar 
 | Item | Status |
 |---|---|
 | Secrets Firebase `ESPOCRM_PROD_URL` / e-mail PROD | Confirmados |
-| `ESPOCRM_API_CONFIG.prod` | Vazio (onda 1 = proxy prod) — Octadesk intocado |
-| Vercel: GTM/GA4/Ads + `NEXT_PUBLIC_APP_ENV=production` | Configurado |
+| `ESPOCRM_API_CONFIG.prod` | **OK 2026-08-01** — `useDirect` + bloco prod (API key Cloud Run `add_travelangels`); `taskAssignedUserId` = Lucas Andrade; deploy `deliverLead` |
+| Vercel: GTM/GA4/Ads + `NEXT_PUBLIC_APP_ENV=production` | **OK** — valor limpo `production` (sem `\r\n`); StagingBanner ausente em 2026-08-01 (só permanece FraudAlert vermelho, intencional) |
 | Container GTM Live `GTM-PD6J398` | Carrega no site após correção do ID (sem `\r\n`) + redeploy |
 | Live legado `segurosimediato.com.br` | **Intacto** — v38 publicada 2026-07-29 15:50 só **adiciona** itens `[NovoSite]*` (7 itens, zero alterações no legado) |
 | Environment GTM `Staging-NovoSite` | Ainda **não** criado (só Live/Latest) |
 | Acionadores/tags aditivos contrato novo (`[NovoSite]*`) | **Publicados na v38** (2026-07-29) após validação — ver secção abaixo |
-| Campos funil no EspoCRM **prod** (`cEtapaFunil` etc.) | **Manual** (API local bloqueada por Cloudflare 1010; onda 1 proxy não exige) |
+| Campos funil no EspoCRM **prod** (`cEtapaFunil` etc.) | **OK 2026-08-01** — 5 campos Lead+Opp, painel, list; Role API com Note create; onda 2 ativa (smoke PASS) |
 
 ---
 
@@ -101,16 +101,12 @@ Só **Live** e **Latest** (ambos v38). **Não existe** Environment Staging-NovoS
 
 ## EspoCRM prod — campos funil (antes da onda 2 API direta)
 
-No Entity Manager de `flyingdonkeys.com.br`, espelhar o que já existe em `dev.flyingdonkeys.com.br` (ver `docs/FLUXO_LEADFORM_CRM_WHATSAPP.md`):
+**Concluído 2026-08-01** em `flyingdonkeys.com.br` + Firebase `imediato-seguros-site-novo`:
 
-- `etapaFunil` → `cEtapaFunil` (enum)
-- `escolhaCalculo` → `cEscolhaCalculo`
-- `statusCalculo` → `cStatusCalculo`
-- `valorRecomendado` → `cValorRecomendado`
-- `valorAlternativo` → `cValorAlternativo`
-- Layout “Cotação do Site” + rebuild
-
-Onda 2: preencher `ESPOCRM_API_CONFIG.prod` com `baseUrl`, `apiKey` e `taskAssignedUserId`; redeploy `deliverLead`.
+- Campos em **Lead** e **Opportunity**: `cEtapaFunil`, `cEscolhaCalculo`, `cStatusCalculo`, `cValorRecomendado`, `cValorAlternativo` + painel **“Cotação do Site”** + colunas list Lead
+- Role **API** (userada por `add_travelangels` / chave Cloud Run prod): já tinha Task+User; **Note** create/read/edit ampliado
+- Secret `ESPOCRM_API_CONFIG`: bloco `prod` com `baseUrl=https://flyingdonkeys.com.br`, API key do Cloud Run `add-flyingdonkeys-prod` (user `add_travelangels`), `taskAssignedUserId=668c4847e4cb545ee` (Lucas Andrade); `useDirect:true`; deploy `deliverLead`
+- **Smoke onda 2:** `initial` → `cWebpage=comparaseguroonline.com.br`, `cEtapaFunil=Telefone informado`; `progress` → nome real + `Dados pessoais` no Lead e na Opportunity. RTDB/Lead de teste removidos.
 
 ---
 

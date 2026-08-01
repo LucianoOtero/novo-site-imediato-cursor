@@ -24,9 +24,19 @@ export interface CallButtonProps extends Omit<ButtonProps, "href" | "onClick"> {
   ramo?: string;
   /** Número em E.164 (com "+") — se omitido, usa o telefone principal (`company.contact.phone`). */
   phoneNumber?: string;
+  /** `true` pula o modal e discada direto (ex.: página `/contato`). */
+  skipModal?: boolean;
 }
 
-export function CallButton({ location, ramo, phoneNumber, children, iconLeft, ...props }: CallButtonProps) {
+export function CallButton({
+  location,
+  ramo,
+  phoneNumber,
+  skipModal = false,
+  children,
+  iconLeft,
+  ...props
+}: CallButtonProps) {
   const { open } = useContactModal();
   const numberToCall = phoneNumber ?? company.contact.phone;
 
@@ -34,8 +44,9 @@ export function CallButton({ location, ramo, phoneNumber, children, iconLeft, ..
     <Button
       href={`tel:${numberToCall}`}
       onClick={(event) => {
-        event.preventDefault();
         trackEvent("call_click", { location, ramo });
+        if (skipModal) return;
+        event.preventDefault();
         open({ channel: "phone", location, ramo, phoneNumber: numberToCall });
       }}
       iconLeft={iconLeft ?? <Phone className="size-4" aria-hidden="true" />}
