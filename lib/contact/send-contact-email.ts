@@ -5,21 +5,29 @@ import { env } from "@/lib/env";
 import type { ContactFormInput } from "@/lib/contact/types";
 
 /**
- * Envia o formulário `/contato` para `company.contact.formEmail`.
+ * Envia o formulário `/contato`.
  *
- * Prioridade:
- * 1) SMTP (cPanel / revenda) — `SMTP_HOST` + `SMTP_USER` + `SMTP_PASS`
- * 2) Resend — `EMAIL_API_KEY` / `RESEND_API_KEY` (opcional)
- *
- * Remetente: `CONTACT_EMAIL_FROM` ou e-mail comercial da company.
+ * Prioridade (produção na Vercel):
+ * 1) Cloud Run `send-email-notification` (HTTPS — já usado nos leads; SMTP
+ *    cPanel costuma falhar a partir do serverless da Vercel)
+ * 2) SMTP cPanel (`SMTP_*`) — útil em dev/local
+ * 3) Resend (`EMAIL_API_KEY`) — opcional
  */
 export async function sendContactFormEmail(
   data: ContactFormInput
 ): Promise<{ sent: boolean; error?: string }> {
   const content = buildMessage(data);
 
+  if (cleanEnv(process.env.SEND_EMAIL_NOTIFICATION_URL)) {
+    const viaCloudRun = await sendViaAdminCloudRun(data, content);
+    if (viaCloudRun.sent) return viaCloudRun;
+    console.warn("[sendContactFormEmail] Cloud Run falhou, tentando SMTP/Resend:", viaCloudRun.error);
+  }
+
   if (hasSmtpConfig()) {
-    return sendViaSmtp(content);
+    const viaSmtp = await sendViaSmtp(content);
+    if (viaSmtp.sent) return viaSmtp;
+    console.warn("[sendContactFormEmail] SMTP falhou:", viaSmtp.error);
   }
 
   const apiKey = process.env.RESEND_API_KEY?.trim() || env.emailApiKey?.trim();
@@ -38,7 +46,7 @@ export async function sendContactFormEmail(
 
   return {
     sent: false,
-    error: "SMTP_* ou EMAIL_API_KEY não configurados para o formulário de contato",
+    error: "Nenhum provedor de e-mail configurado/respondendo (Cloud Run, SMTP ou Resend)",
   };
 }
 
@@ -98,35 +106,124 @@ function hasSmtpConfig(): boolean {
   return Boolean(cleanEnv(process.env.SMTP_HOST) && cleanEnv(process.env.SMTP_USER) && cleanEnv(process.env.SMTP_PASS));
 }
 
-async function sendViaSmtp(content: BuiltMessage): Promise<{ sent: boolean; error?: string }> {
-  const host = cleanEnv(process.env.SMTP_HOST);
-  const port = Number(cleanEnv(process.env.SMTP_PORT) || "587");
-  const user = cleanEnv(process.env.SMTP_USER);
-  const pass = cleanEnv(process.env.SMTP_PASS);
-  const secure = cleanEnv(process.env.SMTP_SECURE) === "true" || port === 465;
+/**
+ * Reaproveita o Cloud Run de notificação admin dos leads (HTTPS).
+ * Destinatários são os configurados no serviço (não necessariamente formEmail).
+ */
+async function sendViaAdminCloudRun(
+  data: ContactFormInput,
+  content: BuiltMessage
+): Promise<{ sent: boolean; error?: string }> {
+  const url = cleanEnv(process.env.SEND_EMAIL_NOTIFICATION_URL);
+  if (!url) return { sent: false, error: "SEND_EMAIL_NOTIFICATION_URL ausente" };
+
+  const phone = parseBrPhone(data.telefone);
+  const ddd = phone?.ddd ?? "11";
+  const celular = phone?.celular ?? "32301422";
+
+  const payload = {
+    ddd,
+    celular,
+    cpf: "",
+    nome: `[Contato site] ${data.nome}`,
+    email: data.email,
+    cep: "",
+    placa: "",
+    gclid: "",
+    momento: "update",
+    momento_descricao: `Formulário /contato — ${data.assunto}`,
+    momento_emoji: "✉️",
+    erro: {
+      message: content.text,
+      status: null,
+      code: "contact_form",
+      response_data: null,
+    },
+  };
 
   try {
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      auth: { user, pass },
+    const response = await fetch(url.replace(/\/?$/, "/"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Modal-WhatsApp-EmailNotification-v1.0",
+      },
+      body: JSON.stringify(payload),
     });
+    const text = await response.text().catch(() => "");
+    let body: { success?: boolean; total_sent?: number } | null = null;
+    try {
+      body = text ? (JSON.parse(text) as { success?: boolean; total_sent?: number }) : null;
+    } catch {
+      body = null;
+    }
 
-    await transporter.sendMail({
-      from: content.from,
-      to: content.to,
-      replyTo: content.replyTo,
-      subject: content.subject,
-      text: content.text,
-      html: content.html,
-    });
+    if (response.ok && body?.success === true) {
+      return { sent: true };
+    }
 
-    return { sent: true };
+    console.error("[sendContactFormEmail] Cloud Run sem sucesso:", response.status, text.slice(0, 400));
+    return { sent: false, error: `Cloud Run HTTP ${response.status}` };
   } catch (error) {
-    console.error("[sendContactFormEmail] SMTP falhou:", error);
-    return { sent: false, error: "Falha SMTP ao enviar e-mail" };
+    console.error("[sendContactFormEmail] Cloud Run rede:", error);
+    return { sent: false, error: "Falha de rede no Cloud Run de e-mail" };
   }
+}
+
+function parseBrPhone(raw: string | undefined): { ddd: string; celular: string } | null {
+  if (!raw?.trim()) return null;
+  const digits = raw.replace(/\D/g, "");
+  // 5511976687668 ou 11976687668
+  if (digits.startsWith("55") && digits.length >= 12) {
+    return { ddd: digits.slice(2, 4), celular: digits.slice(4) };
+  }
+  if (digits.length >= 10) {
+    return { ddd: digits.slice(0, 2), celular: digits.slice(2) };
+  }
+  return null;
+}
+
+async function sendViaSmtp(content: BuiltMessage): Promise<{ sent: boolean; error?: string }> {
+  const host = cleanEnv(process.env.SMTP_HOST);
+  const configuredPort = Number(cleanEnv(process.env.SMTP_PORT) || "465");
+  const user = cleanEnv(process.env.SMTP_USER);
+  const pass = cleanEnv(process.env.SMTP_PASS);
+  const portsToTry =
+    configuredPort === 465 ? [465, 587] : configuredPort === 587 ? [587, 465] : [configuredPort, 465, 587];
+
+  let lastError = "Falha SMTP ao enviar e-mail";
+
+  for (const port of portsToTry) {
+    const secure = port === 465 || (port === configuredPort && cleanEnv(process.env.SMTP_SECURE) === "true");
+    try {
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure,
+        auth: { user, pass },
+        connectionTimeout: 20_000,
+        greetingTimeout: 20_000,
+        socketTimeout: 20_000,
+        tls: { rejectUnauthorized: false },
+      });
+
+      await transporter.sendMail({
+        from: content.from,
+        to: content.to,
+        replyTo: content.replyTo,
+        subject: content.subject,
+        text: content.text,
+        html: content.html,
+      });
+
+      return { sent: true };
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "Falha SMTP ao enviar e-mail";
+      console.error(`[sendContactFormEmail] SMTP porta ${port} falhou:`, lastError);
+    }
+  }
+
+  return { sent: false, error: lastError };
 }
 
 async function sendViaResend(
