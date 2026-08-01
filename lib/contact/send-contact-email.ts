@@ -1,35 +1,58 @@
+import nodemailer from "nodemailer";
+
 import { company } from "@/lib/company";
 import { env } from "@/lib/env";
 import type { ContactFormInput } from "@/lib/contact/types";
 
 /**
- * Envia o formulário de contato para `company.contact.formEmail` via Resend
- * (REST, sem SDK). Usa `EMAIL_API_KEY` (ou `RESEND_API_KEY`) e remetente
- * verificado (`CONTACT_EMAIL_FROM` opcional; padrão: e-mail comercial).
+ * Envia o formulário `/contato` para `company.contact.formEmail`.
+ *
+ * Prioridade:
+ * 1) SMTP (cPanel / revenda) — `SMTP_HOST` + `SMTP_USER` + `SMTP_PASS`
+ * 2) Resend — `EMAIL_API_KEY` / `RESEND_API_KEY` (opcional)
+ *
+ * Remetente: `CONTACT_EMAIL_FROM` ou e-mail comercial da company.
  */
 export async function sendContactFormEmail(
   data: ContactFormInput
 ): Promise<{ sent: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY?.trim() || env.emailApiKey?.trim();
-  if (!apiKey) {
-    // Em desenvolvimento: loga o payload e considera enviado (sem provedor).
-    if (process.env.NODE_ENV !== "production" && process.env.VERCEL_ENV !== "production") {
-      console.info("[sendContactFormEmail] DEV mock — e-mail não enviado de fato:", {
-        to: company.contact.formEmail,
-        assunto: data.assunto,
-        de: data.email,
-      });
-      return { sent: true };
-    }
-    return { sent: false, error: "EMAIL_API_KEY/RESEND_API_KEY não configurada" };
+  const content = buildMessage(data);
+
+  if (hasSmtpConfig()) {
+    return sendViaSmtp(content);
   }
 
-  const to = company.contact.formEmail;
-  const from =
-    process.env.CONTACT_EMAIL_FROM?.trim() ||
-    `${company.tradeName} <${company.contact.email}>`;
-  const telefoneLine = data.telefone?.trim() ? data.telefone.trim() : "(não informado)";
+  const apiKey = process.env.RESEND_API_KEY?.trim() || env.emailApiKey?.trim();
+  if (apiKey) {
+    return sendViaResend(content, apiKey);
+  }
 
+  if (process.env.NODE_ENV !== "production" && process.env.VERCEL_ENV !== "production") {
+    console.info("[sendContactFormEmail] DEV mock — e-mail não enviado de fato:", {
+      to: content.to,
+      assunto: data.assunto,
+      de: data.email,
+    });
+    return { sent: true };
+  }
+
+  return {
+    sent: false,
+    error: "SMTP_* ou EMAIL_API_KEY não configurados para o formulário de contato",
+  };
+}
+
+type BuiltMessage = {
+  to: string;
+  from: string;
+  replyTo: string;
+  subject: string;
+  text: string;
+  html: string;
+};
+
+function buildMessage(data: ContactFormInput): BuiltMessage {
+  const telefoneLine = data.telefone?.trim() ? data.telefone.trim() : "(não informado)";
   const text = [
     `Nova mensagem pelo formulário do site (${company.tradeName})`,
     "",
@@ -54,6 +77,61 @@ export async function sendContactFormEmail(
     <p>${escapeHtml(data.mensagem).replace(/\n/g, "<br />")}</p>
   `.trim();
 
+  return {
+    to: company.contact.formEmail,
+    from:
+      process.env.CONTACT_EMAIL_FROM?.trim() ||
+      `${company.tradeName} <${company.contact.email}>`,
+    replyTo: data.email,
+    subject: `[Contato site] ${data.assunto}`,
+    text,
+    html,
+  };
+}
+
+function hasSmtpConfig(): boolean {
+  return Boolean(
+    process.env.SMTP_HOST?.trim() &&
+      process.env.SMTP_USER?.trim() &&
+      process.env.SMTP_PASS?.trim()
+  );
+}
+
+async function sendViaSmtp(content: BuiltMessage): Promise<{ sent: boolean; error?: string }> {
+  const host = process.env.SMTP_HOST!.trim();
+  const port = Number(process.env.SMTP_PORT?.trim() || "587");
+  const user = process.env.SMTP_USER!.trim();
+  const pass = process.env.SMTP_PASS!.trim();
+  const secure = process.env.SMTP_SECURE === "true" || port === 465;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+    });
+
+    await transporter.sendMail({
+      from: content.from,
+      to: content.to,
+      replyTo: content.replyTo,
+      subject: content.subject,
+      text: content.text,
+      html: content.html,
+    });
+
+    return { sent: true };
+  } catch (error) {
+    console.error("[sendContactFormEmail] SMTP falhou:", error);
+    return { sent: false, error: "Falha SMTP ao enviar e-mail" };
+  }
+}
+
+async function sendViaResend(
+  content: BuiltMessage,
+  apiKey: string
+): Promise<{ sent: boolean; error?: string }> {
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -62,12 +140,12 @@ export async function sendContactFormEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from,
-        to: [to],
-        reply_to: data.email,
-        subject: `[Contato site] ${data.assunto}`,
-        text,
-        html,
+        from: content.from,
+        to: [content.to],
+        reply_to: content.replyTo,
+        subject: content.subject,
+        text: content.text,
+        html: content.html,
       }),
     });
 
@@ -79,7 +157,7 @@ export async function sendContactFormEmail(
 
     return { sent: true };
   } catch (error) {
-    console.error("[sendContactFormEmail] Erro de rede:", error);
+    console.error("[sendContactFormEmail] Erro de rede (Resend):", error);
     return { sent: false, error: "Falha de rede ao enviar e-mail" };
   }
 }

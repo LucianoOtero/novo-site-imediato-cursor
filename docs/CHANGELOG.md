@@ -17,7 +17,7 @@ ATIVO (preenchido a cada release)
 - Criada rota `/seguradoras-parceiras` (antes 404): lista das 21 parceiras com assistência 24h e área do cliente (`lib/seguradoras.ts`); destaque no topo para acionar a seguradora direto em pane/emergência (evitar gargalo via corretor).
 - Criada rota `/coberturas` (antes 404): hub das 16 coberturas de **Seguro Auto** (`lib/coberturas-auto.ts`) com descrição breve; aviso no topo para ler apólice/Condições Gerais (coberturas variam e podem não estar incluídas).
 - Criada rota `/reputacao` (antes 404): nota/volume Google, análise temática das avaliações reais (`lib/reputation-insights.ts` + `fetchReputationPageData`), grade ampliada de depoimentos positivos.
-- Criada rota `/contato` (antes 404): canais oficiais (telefone, WhatsApp, e-mail, ouvidoria, emergência, endereço, horário, redes) + formulário → `company.contact.formEmail` (`adm@imediatoseguros.com.br`) via `POST /api/contact` (Resend + backup Firebase `contact_messages/`).
+- Criada rota `/contato` (antes 404): canais oficiais (telefone, WhatsApp, e-mail, ouvidoria, emergência, endereço, horário, redes) + formulário → `company.contact.formEmail` (`adm@imediatoseguros.com.br`) via `POST /api/contact` (SMTP cPanel preferencial; Resend opcional; backup Firebase `contact_messages/`).
 
 ## Ops — 2026-08-01 (EspoCRM prod + onda 2)
 
