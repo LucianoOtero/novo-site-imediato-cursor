@@ -1,0 +1,13 @@
+{
+  "gtmPublicId": "GTM-PD6J398",
+  "accountPath": "accounts/ACCOUNT_ID",
+  "containerPath": "accounts/ACCOUNT_ID/containers/CONTAINER_ID",
+  "workspacePath": "accounts/ACCOUNT_ID/containers/CONTAINER_ID/workspaces/WORKSPACE_ID",
+  "accountId": "ACCOUNT_ID",
+  "containerId": "CONTAINER_ID",
+  "googleAds": {
+    "customerId": "815139667",
+    "developerToken": "PREENCHER_SE_USAR_ADS_API",
+    "loginCustomerId": "OPCIONAL_MCC"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "imediato-google-ops",
+  "private": true,
+  "type": "module",
+  "description": "OAuth local + ops GTM/Ads (nunca commitar tokens/client_secret)",
+  "scripts": {
+    "auth": "node auth-login.mjs",
+    "gtm:whoami": "node gtm-whoami.mjs",
+    "gtm:inspect": "node gtm-inspect-novosite.mjs",
+    "gtm:prepare-split": "node gtm-apply-form-split.mjs --prepare-only",
+    "gtm:apply-split": "node gtm-apply-form-split.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "googleapis": "^148.0.0",
+    "open": "^10.1.0"
+  }
+}

@@ -11,6 +11,16 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.9] — 2026-08-02
+
+### Added
+- Kit OAuth ops GTM em [`scripts/google-ops/`](scripts/google-ops/) (`auth`, `gtm:whoami`, `gtm:inspect`, `gtm-apply-form-split`) + guia [`docs/GTM_ADS_OAUTH_OPS.md`](docs/GTM_ADS_OAUTH_OPS.md).
+
+### Ops (fora do app Next)
+- GTM **v39 Live**: split form `consultor` (`KL9b…`) vs RPA `aguardar` (`9VjS…`) + hostname `comparaseguroonline.com.br`; legado intocado (rollback v38).
+- Ads: action RPA + experimento **Agendado** `Exp site novo vs legado 50/50` (campanha Diurna, 50/50, 3/ago–27/set/2026, sem auto-apply).
+- Runbook/salvaguardas em [`docs/FASE_A_GTM_ESPOCRM_OPS.md`](docs/FASE_A_GTM_ESPOCRM_OPS.md).
+
 ## [0.2.8] — 2026-08-02
 
 ### Changed

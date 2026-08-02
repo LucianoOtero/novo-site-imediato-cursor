@@ -79,3 +79,11 @@ scripts/tmp-*-secret*
 scripts/tmp-set-contact-secret.js
 scripts/tmp-test-cpanel-upload.js
 scripts/tmp-save-processor.js
+
+# OAuth ops GTM/Ads (scripts/google-ops) — nunca commitar
+scripts/google-ops/client_secret.json
+scripts/google-ops/token.json
+scripts/google-ops/config.local.json
+scripts/google-ops/node_modules/
+scripts/google-ops/_dump-*.json
+scripts/google-ops/_dump-*-out.txt
