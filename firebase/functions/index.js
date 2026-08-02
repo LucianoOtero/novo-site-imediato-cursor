@@ -78,10 +78,12 @@
  * - Task "Efetuar cálculo manual e enviar ao cliente" (D+1) criada no
  *   4b (consultant_requested) e na falha do RPA.
  */
-const { onValueWritten } = require("firebase-functions/v2/database");
+const { onValueWritten, onValueCreated } = require("firebase-functions/v2/database");
+const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const { logger } = require("firebase-functions");
 const { initializeApp } = require("firebase-admin/app");
+const { getDatabase } = require("firebase-admin/database");
 
 // Módulos da integração direta (2026-07-28 — plano "Fluxo formulário
 // CRM WhatsApp"): EspoCRM (dedupe, Lead + Opportunity, Note, Task,
@@ -89,6 +91,7 @@ const { initializeApp } = require("firebase-admin/app");
 const espo = require("./espocrm");
 const octa = require("./octadesk");
 const emailNotif = require("./email-notification");
+const contactEmail = require("./contact-email");
 
 const DATABASE_URL = "https://imediato-seguros-site-novo-default-rtdb.firebaseio.com";
 
@@ -139,6 +142,12 @@ const OCTADESK_API_CONFIG = defineSecret("OCTADESK_API_CONFIG");
  */
 const SEND_EMAIL_NOTIFICATION_URL_DEV = defineSecret("SEND_EMAIL_NOTIFICATION_URL_DEV");
 const SEND_EMAIL_NOTIFICATION_URL_PROD = defineSecret("SEND_EMAIL_NOTIFICATION_URL_PROD");
+
+/**
+ * SMTP do formulário `/contato` (2026-08-01) — JSON com host/port/user/
+ * pass/from/to. Ver firebase/functions/contact-email.js.
+ */
+const CONTACT_SMTP_CONFIG = defineSecret("CONTACT_SMTP_CONFIG");
 
 const RETRY_DELAYS_MS = [1000, 4000, 9000];
 /**
@@ -792,5 +801,123 @@ exports.deliverLead = onValueWritten(
     logger.info(
       `[deliverLead] Lead ${leadId} (stage=${stage}), falhas=${stillFailing ? updates.cf_retry_count : cfAttempts}: espocrm_sent=${updates.espocrm_sent ?? workingRecord.espocrm_sent}, octadesk_sent=${updates.octadesk_sent ?? workingRecord.octadesk_sent}, autoSync=${updates.autoSync}.`
     );
+  }
+);
+
+/**
+ * E-mail do formulário `/contato` (2026-08-01).
+ *
+ * Achado: o servidor cPanel bloqueia SMTP e HTTP/API vindos de IPs GCP
+ * (535 / 403). Por isso esta função NÃO envia mais o e-mail — só marca
+ * o registro como pendente. O cron no cPanel
+ * (`process-contact-queue.php`) puxa as pendentes via
+ * `listPendingContactMessages` (saída cPanel→GCP funciona) e envia
+ * com Exim local. Ver firebase/functions/contact-email.js.
+ */
+exports.sendContactEmail = onValueCreated(
+  {
+    ref: "/contact_messages/{messageId}",
+    instance: "imediato-seguros-site-novo-default-rtdb",
+    region: "us-central1",
+  },
+  async (event) => {
+    const messageId = event.params.messageId;
+    const message = event.data && event.data.val();
+    if (!message || !message.mensagem) {
+      logger.warn(`[sendContactEmail] ${messageId}: registro vazio/incompleto — ignorado.`);
+      return;
+    }
+    // Deixa emailSent=false para o cron do cPanel processar.
+    await event.data.ref.update({
+      emailPending: true,
+      emailPendingAt: new Date().toISOString(),
+    });
+    logger.info(`[sendContactEmail] ${messageId}: pendente para cron cPanel.`);
+  }
+);
+
+/**
+ * Lista mensagens `/contato` ainda não enviadas — chamado pelo cron PHP
+ * no cPanel (outbound do servidor de e-mail para o GCP).
+ * Auth: query `key` = `pullSecret` em CONTACT_SMTP_CONFIG.
+ */
+exports.listPendingContactMessages = onRequest(
+  {
+    region: "us-central1",
+    secrets: [CONTACT_SMTP_CONFIG],
+    cors: false,
+  },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).json({ ok: false, error: "method" });
+      return;
+    }
+    const expected = contactEmail.getPullSecret(CONTACT_SMTP_CONFIG.value());
+    if (!expected || req.query.key !== expected) {
+      res.status(403).json({ ok: false, error: "forbidden" });
+      return;
+    }
+
+    try {
+      const snap = await getDatabase().ref("contact_messages").limitToLast(50).get();
+      const all = snap.val() || {};
+      const pending = Object.entries(all)
+        .filter(([, m]) => m && m.mensagem && m.emailSent !== true)
+        .slice(0, 20)
+        .map(([id, m]) => ({
+          id,
+          nome: m.nome || "",
+          email: m.email || "",
+          telefone: m.telefone || "",
+          assunto: m.assunto || "",
+          mensagem: m.mensagem || "",
+          createdAt: m.createdAt || "",
+        }));
+      res.status(200).json({ ok: true, messages: pending });
+    } catch (error) {
+      logger.error("[listPendingContactMessages]", error);
+      res.status(500).json({ ok: false, error: "db" });
+    }
+  }
+);
+
+/**
+ * Marca mensagem como enviada após o cron PHP despachar o e-mail.
+ */
+exports.markContactMessageSent = onRequest(
+  {
+    region: "us-central1",
+    secrets: [CONTACT_SMTP_CONFIG],
+    cors: false,
+  },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "method" });
+      return;
+    }
+    const expected = contactEmail.getPullSecret(CONTACT_SMTP_CONFIG.value());
+    const body = typeof req.body === "object" && req.body ? req.body : {};
+    const key = req.query.key || body.key;
+    if (!expected || key !== expected) {
+      res.status(403).json({ ok: false, error: "forbidden" });
+      return;
+    }
+    const id = String(body.id || "").replace(/[^a-zA-Z0-9_-]/g, "");
+    if (!id) {
+      res.status(400).json({ ok: false, error: "id" });
+      return;
+    }
+    try {
+      await getDatabase().ref(`contact_messages/${id}`).update({
+        emailSent: true,
+        emailSentAt: new Date().toISOString(),
+        emailError: null,
+        emailPending: false,
+      });
+      res.status(200).json({ ok: true });
+    } catch (error) {
+      logger.error("[markContactMessageSent]", error);
+      res.status(500).json({ ok: false, error: "db" });
+    }
   }
 );

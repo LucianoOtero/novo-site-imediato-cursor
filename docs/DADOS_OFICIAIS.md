@@ -31,6 +31,7 @@ A coluna "Confirmado?" reflete exatamente o estado registrado na especificação
 | Ouvidoria | (11) 97668-7668 | cliente | ✅ Confirmado (2026-07-03) | Jurídico | contact.ombudsmanPhone |
 | E-mail comercial | contato@imediatoseguros.com.br | cliente | ✅ Confirmado (2026-07-03) | Comercial | contact.email |
 | E-mail formulário `/contato` | adm@imediatoseguros.com.br | cliente | ✅ Confirmado (2026-08-01) | Comercial | contact.formEmail |
+| E-mails extras formulário `/contato` | lrotero@gmail.com, alexkaminski70@gmail.com | cliente | ✅ Confirmado (2026-08-02) | Comercial | contact.formEmailExtra |
 | E-mail fallback de leads | **lrotero@gmail.com** | cliente | ✅ Confirmado | TI/Comercial | LEAD_FALLBACK_EMAIL |
 | Horário de atendimento | Seg-Sex, 9h-18h | cliente | ✅ Confirmado (2026-07-03) | Comercial | business.hoursDisplay/hoursSchema, Schema openingHours |
 | Anos de experiência | ~~25 (hero) / 35+ (rodapé) — divergente~~ → **25** | cliente | ✅ **RESOLVIDO** (2026-07-03) | Marketing | business.yearsExperience |

@@ -101,6 +101,21 @@ const envSchema = z.object({
   CRM_API_KEY: z.string().optional(),
   LEAD_FALLBACK_EMAIL: z.string().optional(),
   EMAIL_API_KEY: z.string().optional(),
+
+  // AWS SES — formulário `/contato` (mesma conta/identidade do Cloud Run
+  // legado `send-email-notification-prod`, região sa-east-1, From
+  // noreply@bpsegurosimediato.com.br). Server-only. 2026-08-02.
+  AWS_SES_REGION: z.string().optional(),
+  AWS_SES_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SES_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_SES_FROM: z.string().optional(),
+  // Aliases aceitos (nomes usados no Cloud Run legado):
+  AWS_REGION: z.string().optional(),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_SES_FROM_EMAIL: z.string().optional(),
+  AWS_SES_FROM_NAME: z.string().optional(),
+
   IP_HASH_SALT: z.string().optional(),
   TURNSTILE_SECRET_KEY: z.string().optional(),
   SENTRY_DSN: z.string().optional(),

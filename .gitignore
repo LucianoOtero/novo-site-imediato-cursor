@@ -72,3 +72,10 @@ novo site imediato cursor.zip
 .env.vercel.prod
 .env.vercel*
 debug-*.log
+
+# Segredos / artefatos locais do formulário /contato (cPanel mailer)
+tmp-mailer-secret.txt
+scripts/tmp-*-secret*
+scripts/tmp-set-contact-secret.js
+scripts/tmp-test-cpanel-upload.js
+scripts/tmp-save-processor.js

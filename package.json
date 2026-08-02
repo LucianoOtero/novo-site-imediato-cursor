@@ -1,6 +1,6 @@
 {
   "name": "imediato-seguros",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,6 +12,7 @@
     "test:e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.1101.0",
     "@base-ui/react": "^1.6.0",
     "@hookform/resolvers": "^5.4.0",
     "class-variance-authority": "^0.7.1",

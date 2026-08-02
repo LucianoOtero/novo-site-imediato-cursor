@@ -11,13 +11,30 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.8] — 2026-08-02
+
+### Changed
+- Formulário `/contato`: envio principal via **AWS SES** (identidade do legado `noreply@bpsegurosimediato.com.br`); Firebase/cron cPanel só como fallback.
+- Destinatários: `adm@imediatoseguros.com.br`, `lrotero@gmail.com`, `alexkaminski70@gmail.com`.
+
+### Added
+- Cloud Functions auxiliares do contato (`listPendingContactMessages`, `markContactMessageSent`) + `firebase/functions/contact-email.js`.
+- Variáveis `AWS_SES_*` em `.env.example` / `lib/env.ts`.
+
+## Ops — 2026-08-02 (contato via AWS SES)
+
+- Formulário `/contato`: envio principal via **AWS SES** (mesma conta/identidade do Cloud Run legado: `noreply@bpsegurosimediato.com.br`, região `sa-east-1`), template HTML limpo, `Reply-To` do visitante → `adm@imediatoseguros.com.br`.
+- Destinatários do `/contato`: `adm@imediatoseguros.com.br` + `lrotero@gmail.com` + `alexkaminski70@gmail.com` (`contact.formEmailExtra`).
+- Em produção na Vercel, PHP/SMTP cPanel deixam de ser tentados no request (evitam lentidão); Firebase + cron Exim permanecem como fallback se SES falhar.
+- Cloud Run `send-email-notification` **não** é mais usado para `/contato` (template de lead com “ERRO NO ENVIO”).
+
 ## Ops — 2026-08-01 (páginas institucionais)
 
 - Criada rota `/a-imediato` (link “Sobre” no menu) — antes 404; conteúdo só com dados de `lib/company.ts`.
 - Criada rota `/seguradoras-parceiras` (antes 404): lista das 21 parceiras com assistência 24h e área do cliente (`lib/seguradoras.ts`); destaque no topo para acionar a seguradora direto em pane/emergência (evitar gargalo via corretor).
 - Criada rota `/coberturas` (antes 404): hub das 16 coberturas de **Seguro Auto** (`lib/coberturas-auto.ts`) com descrição breve; aviso no topo para ler apólice/Condições Gerais (coberturas variam e podem não estar incluídas).
 - Criada rota `/reputacao` (antes 404): nota/volume Google, análise temática das avaliações reais (`lib/reputation-insights.ts` + `fetchReputationPageData`), grade ampliada de depoimentos positivos.
-- Criada rota `/contato` (antes 404): canais oficiais + formulário via `POST /api/contact` (Cloud Run `send-email-notification` HTTPS preferencial na Vercel; SMTP cPanel/Resend como fallback; backup Firebase `contact_messages/`).
+- Criada rota `/contato` (antes 404): canais oficiais + formulário via `POST /api/contact` (evoluiu em 2026-08-02 para AWS SES; backup Firebase `contact_messages/`).
 
 ## Ops — 2026-08-01 (EspoCRM prod + onda 2)
 

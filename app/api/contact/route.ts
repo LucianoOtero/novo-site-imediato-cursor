@@ -54,9 +54,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const emailResult = await sendContactFormEmail(data);
+  // 1) SES (principal, timeout curto) — template limpo.
+  // 2) Firebase backup — se SES falhar, cron cPanel puxa pendentes.
   const id = randomUUID();
-  await saveContactMessageToFirebase({
+  const emailResult = await sendContactFormEmail(data);
+
+  const saved = await saveContactMessageToFirebase({
     id,
     nome: data.nome,
     email: data.email,
@@ -65,20 +68,20 @@ export async function POST(request: NextRequest) {
     mensagem: data.mensagem,
     createdAt: new Date().toISOString(),
     ipHash,
-    emailSent: emailResult.sent,
+    emailSent: emailResult.sent === true,
   });
 
-  if (!emailResult.sent) {
-    console.error("[api/contact] Falha no envio de e-mail:", emailResult.error, "id=", id);
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "Não foi possível enviar sua mensagem agora. Use telefone, WhatsApp ou e-mail direto.",
-      },
-      { status: 503 }
-    );
+  if (emailResult.sent || saved) {
+    return NextResponse.json({ ok: true, id });
   }
 
-  return NextResponse.json({ ok: true, id });
+  console.error("[api/contact] Sem e-mail e sem Firebase:", emailResult.error, "id=", id);
+  return NextResponse.json(
+    {
+      ok: false,
+      error:
+        "Não foi possível enviar sua mensagem agora. Use telefone, WhatsApp ou e-mail direto.",
+    },
+    { status: 503 }
+  );
 }
