@@ -144,3 +144,8 @@ export function getTagManager(auth) {
 export function getAnalyticsAdmin(auth) {
   return google.analyticsadmin({ version: "v1beta", auth });
 }
+
+/** GA4 Data API (relatórios/realtime) — requer login com --with-analytics (escopo readonly). */
+export function getAnalyticsData(auth) {
+  return google.analyticsdata({ version: "v1beta", auth });
+}

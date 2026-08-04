@@ -12,11 +12,13 @@ import { Button } from "@/components/ui/button";
  * **não usar CookieYes** no novo site, mantendo o Consent Mode v2 nativo
  * já iniciado na Issue 03 (`components/consent/GtmConsentScripts.tsx`).
  *
- * Lacuna que este componente fecha: até aqui só existia o estado
- * *default* "denied" — nunca havia uma forma real de o usuário conceder
- * consentimento, então GA4/Ads nunca recebiam sinal de "granted". Este
- * banner concede/nega os 4 sinais do Consent Mode v2, conforme o próprio
- * comentário do Head Code do ambiente legado:
+ * Postura opt-out (decisão do cliente, 2026-08-04, paridade com o
+ * legado/CookieYes): o default em `GtmConsentScripts` é **granted** (a
+ * rejeição salva é lida lá, beforeInteractive). O banner é informativo:
+ * a medição roda desde o page load e este componente registra a escolha
+ * de quem quiser rejeitar/ajustar. Ele concede/nega os 4 sinais do
+ * Consent Mode v2, conforme o próprio comentário do Head Code do
+ * ambiente legado:
  * - `analytics_storage` → categoria "Analytics" (GA4)
  * - `ad_storage` + `ad_user_data` + `ad_personalization` → categoria
  *   "Marketing/Anúncios" (Google Ads Conversion/Linker) — sempre tratados
@@ -73,14 +75,15 @@ function saveConsent(analytics: boolean, marketing: boolean) {
 export function ConsentBanner() {
   const [visible, setVisible] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
-  const [analytics, setAnalytics] = useState(false);
-  const [marketing, setMarketing] = useState(false);
+  // Opt-out: sem escolha salva, os toggles refletem o default granted.
+  const [analytics, setAnalytics] = useState(true);
+  const [marketing, setMarketing] = useState(true);
 
   useEffect(() => {
     const stored = readStoredConsent();
     if (stored) {
-      // Reaplica em cada carregamento — Consent Mode v2 não persiste o
-      // "update" entre navegações, só o "default" (script beforeInteractive).
+      // Redundante com o default beforeInteractive (que já lê o storage),
+      // mas mantém o sinal correto caso o script default falhe.
       applyConsentUpdate(stored.analytics, stored.marketing);
       setAnalytics(stored.analytics);
       setMarketing(stored.marketing);
@@ -90,8 +93,8 @@ export function ConsentBanner() {
 
     function handleReopen() {
       const current = readStoredConsent();
-      setAnalytics(current?.analytics ?? false);
-      setMarketing(current?.marketing ?? false);
+      setAnalytics(current?.analytics ?? true);
+      setMarketing(current?.marketing ?? true);
       setShowPreferences(true);
       setVisible(true);
     }

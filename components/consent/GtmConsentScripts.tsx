@@ -9,27 +9,42 @@ import { publicEnv } from "@/lib/env";
  * renderizado diretamente em `app/layout.tsx`, então o componente
  * `<Script>` em si é montado lá, usando este conteúdo.
  *
- * Deve carregar ANTES de qualquer tag do GTM/GA4/Ads. `wait_for_update`
- * dá 500ms para o banner real (issue futura) atualizar o consentimento
- * antes das tags decidirem se disparam com cookies ou não.
+ * Deve carregar ANTES de qualquer tag do GTM/GA4/Ads.
  *
- * O banner visual completo (Aceitar todos / Rejeitar / Preferências) foi
- * implementado em `components/consent/ConsentBanner.tsx` (integrações
- * 2026-07-03) — aqui continua só o estado padrão "denied"; o "update"
- * real acontece no banner.
+ * Postura de consentimento (decisão do cliente, 2026-08-04): **opt-out**,
+ * espelhando o site legado (CookieYes lá grava `_ga` sem interação). O
+ * modelo opt-in anterior (default denied até clicar "Aceitar tudo")
+ * zerava GA4/conversões Ads do braço experimento: a "Tag do Google"
+ * exige `analytics_storage` no momento do page load, que sempre acontece
+ * antes do aceite — medição ficava assimétrica vs legado.
+ *
+ * Default = granted, exceto se o visitante já tiver REJEITADO no banner
+ * (`ConsentBanner`, localStorage `imediato_consent`) — a rejeição é lida
+ * aqui mesmo, beforeInteractive, para valer já no primeiro page_view.
  */
 export const consentDefaultScript = `
   window.dataLayer = window.dataLayer || [];
   function gtag(){ dataLayer.push(arguments); }
-  gtag('consent', 'default', {
-    ad_storage: 'denied',
-    ad_user_data: 'denied',
-    ad_personalization: 'denied',
-    analytics_storage: 'denied',
-    functionality_storage: 'granted',
-    security_storage: 'granted',
-    wait_for_update: 500
-  });
+  (function () {
+    var analytics = 'granted';
+    var marketing = 'granted';
+    try {
+      var raw = window.localStorage.getItem('imediato_consent');
+      if (raw) {
+        var stored = JSON.parse(raw);
+        analytics = stored.analytics ? 'granted' : 'denied';
+        marketing = stored.marketing ? 'granted' : 'denied';
+      }
+    } catch (e) {}
+    gtag('consent', 'default', {
+      ad_storage: marketing,
+      ad_user_data: marketing,
+      ad_personalization: marketing,
+      analytics_storage: analytics,
+      functionality_storage: 'granted',
+      security_storage: 'granted'
+    });
+  })();
 `;
 
 /**

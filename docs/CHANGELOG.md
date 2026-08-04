@@ -11,6 +11,15 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.16] — 2026-08-04 (consent opt-out, paridade com o legado)
+
+### Changed
+- [`components/consent/GtmConsentScripts.tsx`](components/consent/GtmConsentScripts.tsx): Consent Mode v2 default passa de denied para **granted** (opt-out), lendo a rejeição salva (`imediato_consent`) ainda beforeInteractive; [`components/consent/ConsentBanner.tsx`](components/consent/ConsentBanner.tsx) vira informativo (toggles default true; "Rejeitar" continua funcionando e persiste). Decisão do cliente, 2026-08-04, espelhando o legado (CookieYes grava `_ga` sem interação).
+- **Motivo (achado da auditoria via GA4 Data API)**: com opt-in, a "Tag do Google G-694K3F1XQ1" (consent obrigatório `analytics_storage`, acionador de page load) **nunca disparava** no site novo — page load sempre antecede o aceite. Resultado: 1 sessão GA4 no site novo vs 492 no legado em 03/08 e **zero conversões Ads no braço Exp** apesar de 5 leads reais com `gclid` no RTDB. A medição do experimento estava assimétrica; leitura limpa a partir de 5/ago.
+
+### Ops (fora do app Next)
+- OAuth kit: `--with-analytics` agora inclui `analytics.readonly` (GA4 Data API para relatórios); "Google Analytics Data API" habilitada no projeto GCP via gcloud. Zero mudanças no GTM (Live segue v45) e zero mudanças no legado.
+
 ## [0.2.15] — 2026-08-04 (telemetria GA4 dos envios finais)
 
 ### Changed

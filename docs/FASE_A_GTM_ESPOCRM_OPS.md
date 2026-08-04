@@ -197,6 +197,21 @@ Complemento analítico da v44 (zero tags Ads — conversões intactas): os 4 cli
 
 Pré-requisitos que foram necessários: habilitar a **Google Analytics Admin API** no projeto GCP do OAuth kit; conceder papel na property ao e-mail do token (`lrotero@gmail.com`); re-login com `node auth-login.mjs --with-analytics` (escopo `analytics.edit`).
 
+**Leitura de relatórios (2026-08-04, tarde):** `--with-analytics` passou a incluir também o escopo `analytics.readonly` (GA4 **Data API** — `runReport`/`runRealtimeReport` via `getAnalyticsData()` em `lib/auth.mjs`); a "Google Analytics Data API" foi habilitada no projeto `leads-imediato-seguros` via `gcloud services enable analyticsdata.googleapis.com`. Token atual cobre GTM + Ads + Admin + leitura GA4.
+
+---
+
+## Consent opt-out — paridade com o legado (2026-08-04, tarde)
+
+**Achado (auditoria via GA4 Data API + Playwright):** com o modelo opt-in (default denied), a "Tag do Google G-694K3F1XQ1" — que tem consent **obrigatório** `analytics_storage` e dispara no page load/history change — **nunca disparava no site novo**: o page load sempre antecede o clique em "Aceitar tudo", e a tag não re-dispara quando o consentimento chega depois. Evidências: 03/08 com 76 cliques pagos no braço Exp → **1 sessão** GA4 no hostname novo (nosso teste) vs 492 no legado; 5 leads reais com `gclid` no RTDB desde 03/08 e **zero conversões Ads** no Exp; no legado, o CookieYes grava `_ga` **sem interação** (opt-out de fato), enquanto o site novo exigia opt-in — experimento com medição assimétrica.
+
+**Correção (decisão do cliente):** o site novo adota a mesma postura do legado.
+
+- `GtmConsentScripts.tsx`: default granted para `ad_storage`/`ad_user_data`/`ad_personalization`/`analytics_storage`; o script beforeInteractive lê `imediato_consent` do localStorage e mantém **denied** para quem já rejeitou (a rejeição vale desde o primeiro page_view). `wait_for_update` removido.
+- `ConsentBanner.tsx`: informativo (aparece até o visitante decidir; toggles default true); "Rejeitar"/preferências continuam funcionando e persistindo.
+- **Zero mudanças no GTM** (Live segue v45) e **zero mudanças no legado** — a simetria vem do site novo se comportar como o CookieYes.
+- Leitura limpa do experimento **a partir de 05/08** (dados do braço Exp de 03–04/08 subnotificam GA4 e conversões).
+
 ---
 
 ## Baseline Live (2026-08-02, pré-split)

@@ -20,9 +20,16 @@ export const ADS_SCOPE = "https://www.googleapis.com/auth/adwords";
  */
 export const ANALYTICS_ADMIN_SCOPE = "https://www.googleapis.com/auth/analytics.edit";
 
+/**
+ * Leitura de relatórios via GA4 Data API (runReport/realtime) — o
+ * analytics.edit NÃO cobre a Data API. Requer a "Google Analytics Data
+ * API" habilitada no mesmo projeto GCP.
+ */
+export const ANALYTICS_READONLY_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
+
 export function resolveScopes({ withAds = false, withAnalytics = false } = {}) {
   const scopes = [...GTM_SCOPES];
   if (withAds) scopes.push(ADS_SCOPE);
-  if (withAnalytics) scopes.push(ANALYTICS_ADMIN_SCOPE);
+  if (withAnalytics) scopes.push(ANALYTICS_ADMIN_SCOPE, ANALYTICS_READONLY_SCOPE);
   return scopes;
 }
