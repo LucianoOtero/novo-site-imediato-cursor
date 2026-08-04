@@ -209,7 +209,8 @@ Pré-requisitos que foram necessários: habilitar a **Google Analytics Admin API
 
 - `GtmConsentScripts.tsx`: default granted para `ad_storage`/`ad_user_data`/`ad_personalization`/`analytics_storage`; o script beforeInteractive lê `imediato_consent` do localStorage e mantém **denied** para quem já rejeitou (a rejeição vale desde o primeiro page_view). `wait_for_update` removido.
 - `ConsentBanner.tsx`: informativo (aparece até o visitante decidir; toggles default true); "Rejeitar"/preferências continuam funcionando e persistindo.
-- **Zero mudanças no GTM** (Live segue v45) e **zero mudanças no legado** — a simetria vem do site novo se comportar como o CookieYes.
+- **GTM v46 Live** (descoberto na verificação): o default granted do site **não bastava** — a tag compartilhada **CookieYes CMP** (Consent Initialization, todas as páginas) setava default **denied** por cima e, sem o cookie `cookieyes-consent` (só existe no legado), nunca revertia. v46 adiciona o acionador de exceção `[NovoSite] Consent Init - hostname novo` (consentInit + hostname contém `comparaseguroonline.com.br`) como blocking trigger da tag CookieYes. Diff = 2 itens; legado intocado (CookieYes segue carregando lá e gravando `_ga` sem interação — verificado); rollback = republicar v45.
+- **Verificação em prod (Playwright, iPhone 13)**: site novo sem interação → `page_view` GA4 `gcs=G111` em `analytics.google.com/g/collect`, cookies `_ga`/`_ga_694K3F1XQ1`/`_gcl_au`, banner ainda visível; "Rejeitar" + reload → só pings `gcs=G100`.
 - Leitura limpa do experimento **a partir de 05/08** (dados do braço Exp de 03–04/08 subnotificam GA4 e conversões).
 
 ---

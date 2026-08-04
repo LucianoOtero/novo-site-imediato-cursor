@@ -18,7 +18,9 @@ ATIVO (preenchido a cada release)
 - **Motivo (achado da auditoria via GA4 Data API)**: com opt-in, a "Tag do Google G-694K3F1XQ1" (consent obrigatório `analytics_storage`, acionador de page load) **nunca disparava** no site novo — page load sempre antecede o aceite. Resultado: 1 sessão GA4 no site novo vs 492 no legado em 03/08 e **zero conversões Ads no braço Exp** apesar de 5 leads reais com `gclid` no RTDB. A medição do experimento estava assimétrica; leitura limpa a partir de 5/ago.
 
 ### Ops (fora do app Next)
-- OAuth kit: `--with-analytics` agora inclui `analytics.readonly` (GA4 Data API para relatórios); "Google Analytics Data API" habilitada no projeto GCP via gcloud. Zero mudanças no GTM (Live segue v45) e zero mudanças no legado.
+- GTM **v46 Live** (via API, 2 itens no diff): a tag compartilhada **CookieYes CMP** ganhou exceção de hostname (`[NovoSite] Consent Init - hostname novo`) — ela setava default **denied** na inicialização de consentimento em todas as páginas e, sem o cookie `cookieyes-consent` (que só existe no legado), re-negava o consentimento do site novo depois do nosso default granted, bloqueando a Tag do Google mesmo com o opt-out no site. No legado nada muda (verificado: CookieYes carrega e `_ga` é gravado sem interação). Rollback = republicar v45.
+- Verificação em prod (Playwright, iPhone 13): site novo sem interação → `page_view` GA4 com `gcs=G111` + cookies `_ga`/`_gcl_au`, banner ainda visível; após "Rejeitar" + reload → só pings `gcs=G100` (rejeição respeitada desde o primeiro page_view).
+- OAuth kit: `--with-analytics` agora inclui `analytics.readonly` (GA4 Data API para relatórios); "Google Analytics Data API" habilitada no projeto GCP via gcloud.
 
 ## [0.2.15] — 2026-08-04 (telemetria GA4 dos envios finais)
 
