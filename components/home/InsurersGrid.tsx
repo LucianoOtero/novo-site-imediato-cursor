@@ -54,9 +54,11 @@ export function InsurersGrid() {
         */}
         <div className="mt-10 grid grid-cols-3 items-center gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-7 md:gap-x-5 md:gap-y-10">
           {seguradoras.map((seguradora) => (
-            <div
+            <Link
               key={seguradora.slug}
-              className="flex aspect-[2/1] w-full items-center justify-center grayscale brightness-[0.72] contrast-[1.15] transition-[filter] duration-[var(--dur-fast)] hover:grayscale-0 hover:brightness-100 hover:contrast-100"
+              href="/seguradoras-parceiras"
+              aria-label={`${seguradora.nome} — dados detalhados das seguradoras parceiras`}
+              className="flex aspect-[2/1] w-full items-center justify-center rounded-md grayscale brightness-[0.72] contrast-[1.15] transition-[filter] duration-[var(--dur-fast)] outline-none hover:grayscale-0 hover:brightness-100 hover:contrast-100 focus-visible:ring-2 focus-visible:ring-brand-500"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- SVGs locais com dados rasterizados embutidos (até 341KB); next/image não otimiza SVG, e a chamada extra ao endpoint de otimização não traria benefício aqui. */}
               <img
@@ -68,7 +70,7 @@ export function InsurersGrid() {
                 height={100}
                 className="h-full w-full object-contain"
               />
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -77,7 +79,7 @@ export function InsurersGrid() {
             href="/seguradoras-parceiras"
             className="rounded-md text-sm font-medium text-brand-700 underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           >
-            Ver todas as seguradoras parceiras
+            Dados detalhados das Seguradoras
           </Link>
         </div>
       </Container>

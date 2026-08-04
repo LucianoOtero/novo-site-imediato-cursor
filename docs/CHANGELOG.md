@@ -11,6 +11,11 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.18] — 2026-08-04 (logos das seguradoras viram links)
+
+### Changed
+- [`components/home/InsurersGrid.tsx`](components/home/InsurersGrid.tsx) (Home + LPs de ramo): texto do link inferior "Ver todas as seguradoras parceiras" → **"Dados detalhados das Seguradoras"**; cada logo do grid agora é um link para `/seguradoras-parceiras` (com `aria-label` por seguradora e focus ring), mantendo o efeito grayscale → cor no hover.
+
 ## [0.2.17] — 2026-08-04 (marcador de origem nos e-mails de alerta de leads)
 
 ### Changed (Cloud Function — fora do app Next)
