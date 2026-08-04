@@ -12,21 +12,30 @@ const { logger } = require("firebase-functions");
 
 const USER_AGENT = "Modal-WhatsApp-EmailNotification-v1.0";
 
+/**
+ * Marcador "comparaseguroonline" (decisão do cliente, 2026-08-04): os
+ * alertas dos dois sites saem pelo MESMO Cloud Run com o mesmo template
+ * — a única forma de distingui-los é via `momento_descricao`/
+ * `momento_emoji`, que o Cloud Run renderiza como chegam. O legado monta
+ * os dele no browser (`MODAL_WHATSAPP_DEFINITIVO.js`) e fica sem marcador.
+ */
+const SITE_MARKER = "comparaseguroonline";
+
 const MOMENTO_META = {
   initial: {
-    momento_descricao: "Primeiro Contato - Apenas Telefone",
-    momento_emoji: "📞",
+    momento_descricao: `${SITE_MARKER} — Primeiro Contato - Apenas Telefone`,
+    momento_emoji: "🆕",
   },
   update: {
-    momento_descricao: "Submissão Completa - Todos os Dados",
-    momento_emoji: "✅",
+    momento_descricao: `${SITE_MARKER} — Submissão Completa - Todos os Dados`,
+    momento_emoji: "🆕",
   },
   initial_error: {
-    momento_descricao: "Primeiro Contato - Erro",
+    momento_descricao: `${SITE_MARKER} — Primeiro Contato - Erro`,
     momento_emoji: "❌",
   },
   update_error: {
-    momento_descricao: "Submissão Completa - Erro",
+    momento_descricao: `${SITE_MARKER} — Submissão Completa - Erro`,
     momento_emoji: "❌",
   },
 };

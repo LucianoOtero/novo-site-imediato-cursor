@@ -215,6 +215,12 @@ Pré-requisitos que foram necessários: habilitar a **Google Analytics Admin API
 
 ---
 
+## Marcador de origem nos e-mails de alerta (2026-08-04, noite)
+
+Os alertas de lead dos dois sites saem pelo **mesmo Cloud Run legado** (`send-email-notification-prod`), com o mesmo template — eram indistinguíveis. Como `momento_descricao`/`momento_emoji` são renderizados como chegam no payload (o legado monta os dele no browser, `MODAL_WHATSAPP_DEFINITIVO.js`), a CF do site novo ([`firebase/functions/email-notification.js`](../firebase/functions/email-notification.js)) passou a prefixar `momento_descricao` com **`comparaseguroonline — `** e usar emoji `🆕` (momentos normais; `❌` mantido nos de erro). Cobre todos os disparos (`initial`, `update` e erros, incl. pós-Octadesk) num único ponto (`MOMENTO_META`). Cloud Run e legado intocados. Testado em dev (4 e-mails OK, registros purgados).
+
+---
+
 ## Baseline Live (2026-08-02, pré-split)
 
 Lido do `gtm.js` público `GTM-PD6J398` (sem login):
