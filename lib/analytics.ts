@@ -42,16 +42,27 @@ type AnalyticsEventMap = {
   form_step: { step: 1 | 2 | 3 | 4; ramo?: RamoSlug };
   generate_lead: { ramo: RamoSlug; value?: number; method: "form" };
   /**
-   * Conversão Ads do formulário no site novo (passo 4): clique em
-   * cálculo automático (`aguardar`) ou assistido (`consultor`).
-   * Separado de `generate_lead` (funil/GA4) para a tag Ads disparar
-   * só nesses dois botões — ver `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
+   * Escolha do cálculo no passo 4 (`aguardar` = automático,
+   * `consultor` = assistido). Era a conversão Ads do formulário até
+   * 2026-08-04; desde então as tags Ads da etapa 4 estão pausadas
+   * (GTM v44) e a conversão acontece em `form_initial_contact` — este
+   * evento segue disponível para GA4/funil.
    */
   form_quote_choice: {
     ramo: RamoSlug;
     choice: "aguardar" | "consultor";
     method: "form";
   };
+  /**
+   * Conversão Ads do formulário (decisão do cliente, 2026-08-04):
+   * disparado 1× ao confirmar o passo 1 (DDD+Celular validados),
+   * no mesmo instante em que o lead `initial` é criado — o Ads passa
+   * a contar no mesmo momento em que EspoCRM/Octadesk são
+   * sensibilizados, espelhando os modais (`*_initial_contact`).
+   * Tag `[NovoSite] Ads - form initial contact` (label da action de
+   * formulário, sem valor) — ver `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
+   */
+  form_initial_contact: { ramo: RamoSlug; method: "form" };
   whatsapp_click: { location: "hero" | "sticky" | "fab" | string; ramo?: RamoSlug };
   call_click: { location: string; ramo?: RamoSlug };
   scroll_depth: { percent: 25 | 50 | 75 | 90; page_path: string };
@@ -63,9 +74,45 @@ type AnalyticsEventMap = {
    * antes de redirecionar para WhatsApp/telefone — nome do evento
    * ("whatsapp_modal_submit") e campos ("form_type"/"modal_channel")
    * confirmados lendo o código do modal equivalente do site legado
-   * (`docs/LEGACY_JS_AUDIT.md`), usado como conversão do Google Ads.
+   * (`docs/LEGACY_JS_AUDIT.md`). Era conversão Ads até o GTM v43;
+   * desde então é telemetria de funil (GA4, v45). `submit_mode`
+   * (2026-08-04): distingue o envio completo (`full`) do link
+   * "Prosseguir sem preencher o resto" (`skip`).
    */
-  whatsapp_modal_submit: { form_type: "whatsapp_modal"; modal_channel: "whatsapp" | "phone"; location: string; ramo?: RamoSlug };
+  whatsapp_modal_submit: {
+    form_type: "whatsapp_modal";
+    modal_channel: "whatsapp" | "phone";
+    location: string;
+    ramo?: RamoSlug;
+    submit_mode: "full" | "skip";
+  };
+  /**
+   * Contato inicial nos modais (paridade com o legado, 2026-08-04):
+   * disparados no blur do telefone validado do `ContactLeadModal` —
+   * mesmos nomes de evento do site legado (`registrarConversaoGoogleAds`,
+   * ver `docs/LEGACY_JS_AUDIT.md`), para que as **tags Ads legadas**
+   * (`Modal WhatsApp - Initial Contact` / `CE - phone_modal_initial_contact`)
+   * disparem identicamente nos dois braços do experimento — mesmo
+   * momento, mesma action, mesmo (nenhum) valor. Sem `user_data`
+   * (contrato client-side não envia PII; os acionadores não dependem).
+   */
+  whatsapp_modal_initial_contact: { form_type: "whatsapp_modal"; modal_channel: "whatsapp"; location: string; ramo?: RamoSlug };
+  phone_modal_initial_contact: { form_type: "whatsapp_modal"; modal_channel: "phone"; location: string; ramo?: RamoSlug };
+  /**
+   * Dispensa do `ContactLeadModal` sem enviar (×, Esc, clique fora) —
+   * a navegação ao destino ainda acontece, mas sem lead (decisão
+   * 2026-08-03: medir o abandono que antes era invisível).
+   * `modal_step`: 1 = telefone ainda não preenchido; 2 = telefone já
+   * capturado (lead `initial` existe). Nome deliberadamente sem
+   * "phone" para não colidir com a guarda de PII abaixo.
+   */
+  whatsapp_modal_dismiss: {
+    form_type: "whatsapp_modal";
+    modal_channel: "whatsapp" | "phone";
+    location: string;
+    ramo?: RamoSlug;
+    modal_step: 1 | 2;
+  };
   /** Envio bem-sucedido do formulário da página `/contato`. */
   contact_form_submit: { location: "contato" };
 };

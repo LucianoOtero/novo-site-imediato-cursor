@@ -14,7 +14,8 @@ Checklist operacional da Fase A (2026-07-29): ligar GTM no site novo e entregar 
 | Live legado `segurosimediato.com.br` | **Intacto** — tags legadas não editadas; v39 só altera/adiciona `[NovoSite]*` form |
 | Environment GTM `Staging-NovoSite` | Ainda **não** criado (só Live/Latest) |
 | Acionadores/tags aditivos contrato novo (`[NovoSite]*`) | **v38** (2026-07-29) + **v39** split form (2026-08-02) |
-| Split form RPA/consultor + experimento Ads | **OK 2026-08-02** — GTM v39 + experimento Ads `Exp site novo vs legado 50/50` **Agendado** (início 3/ago); OAuth Ads p/ auditoria = depois |
+| Split form RPA/consultor + experimento Ads | **OK 2026-08-02** — ver secção *Conquistas 2026-08-02* abaixo |
+| OAuth ops GTM + Google Ads API | **OK** — `scripts/google-ops` (conta Ads NOVA `994-791-8772`); monitor de aprovação ativo |
 | Campos funil no EspoCRM **prod** (`cEtapaFunil` etc.) | **OK 2026-08-01** — 5 campos Lead+Opp, painel, list; Role API com Note create; onda 2 ativa (smoke PASS) |
 
 ---
@@ -25,10 +26,13 @@ Checklist operacional da Fase A (2026-07-29): ligar GTM no site novo e entregar 
 |---|---|
 | GTM | `GTM-PD6J398` |
 | GA4 | `G-694K3F1XQ1` |
-| Google Ads | `AW-815139667` |
+| Google Ads (conversões / tag) | `AW-815139667` |
+| Google Ads (conta experimento NOVA) | `994-791-8772` — *Imediato Seguros - NOVA* |
 | Conversion labels no container Live | `iwx7CNffw4YBENOW2IQD`, `ND-wCL7t0LgbENOW2IQD`, `KL9bCO__i6QcENOW2IQD`, `9VjSCLSUx9ocENOW2IQD` (RPA) |
 | Label RPA | `9VjSCLSUx9ocENOW2IQD` — action `[Compartilhada] Form - RPA aguardar cálculo` |
-| Label gravado em `GOOGLE_ADS_CONVERSION_LABEL` (Vercel) | `KL9bCO__i6QcENOW2IQD` (consultor; tag com New Customer Reporting) |
+| Label gravado em `GOOGLE_ADS_CONVERSION_LABEL` (Vercel) | `KL9bCO__i6QcENOW2IQD` (⚠️ desatualizado desde v41: consultor agora usa `iwx7…`; env var é só documental) |
+| Campanha base experimento | `ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna` (id `21287198336`) |
+| Campanha Exp | id `24095000558` — sufixo `Exp site novo vs legado 50/50` |
 
 O código Next **não** dispara `gtag('event','conversion')` — a conversão real é via tags do GTM. A env var documenta/valida boot de produção.
 
@@ -83,10 +87,115 @@ Protocolo seguido: só **adicionar**/ajustar itens `[NovoSite]*`; tags/acionador
 **Validação (2026-07-29, antes do Publish):** container do workspace testado em página isolada com consentimento concedido — WA modal → só `ND-wCL…`; telefone modal → só `iwx7…`; `form_quote_choice` → `KL9b…`; `generate_lead` → **nenhuma** conversão Ads. Bundle prod `/cotacao` contém push `form_quote_choice`. Após Publish, gtm.js Live confirmado com os 3 rótulos + `form_quote_choice`/`modal_channel`.
 
 ### Environments
-Só **Live** e **Latest** (ambos v38). **Não existe** Environment Staging-NovoSite ainda.
+Só **Live** e **Latest**. Live atual = **v42** (v41 fix labels + v42 dismiss GA4, ambas 2026-08-03). **Não existe** Environment Staging-NovoSite ainda.
 
-### Próximo passo recomendado
-Ver secção **Split form RPA/consultor + experimento Ads** abaixo (runbook com salvaguardas do legado). Environment Staging-NovoSite continua opcional.
+---
+
+## Conquistas 2026-08-02 (GTM + Ads + OAuth)
+
+Resumo executivo do que foi concluído nesta data (legado preservado):
+
+1. **GTM v39 Live** — split do formulário NovoSite: consultor → `KL9b…`; RPA aguardar → `9VjS…`; filtros `choice` + hostname `comparaseguroonline.com.br`; CE form sem filtro removido. Preview OK; Publish via API. Rollback = v38.
+2. **Ads conversion RPA** — action `[Compartilhada] Form - RPA aguardar cálculo` (`9VjSCLSUx9ocENOW2IQD`, 30 BRL, primária). Actions legadas/modais **não** alteradas.
+3. **Experimento Ads** `Exp site novo vs legado 50/50` — status **ENABLED/Agendado**; 3/ago–27/set/2026; 50/50; sem auto-apply na campanha original; sync on. Base = Diurna (SERVING); braço Exp = PENDING até o início.
+4. **Braço Exp alinhado ao domínio novo** (API, conta `994-791-8772`): URLs → `comparaseguroonline.com.br` (`/cotacao`, `/seguro-moto`, `/seguro-caminhao`, …); sitelinks legado desvinculados da campanha/grupos; anúncios antigos com domínio misto **removidos** (política “um site por grupo”).
+5. **Aprovação (monitor API):** grupo **Auto** (único grupo ENABLED do Exp) — 3 ads ENABLED todos **APPROVED** (`/cotacao`). Moto / Caminhão / 02 outubro — ads ENABLED **APPROVED** (grupos pausados). *Cotação Seguro Online* — grupo pausado; ads ENABLED **DISAPPROVED** (não bloqueia o Exp enquanto pausado).
+6. **OAuth ops** — kit [`scripts/google-ops/`](../scripts/google-ops/) + [`GTM_ADS_OAUTH_OPS.md`](GTM_ADS_OAUTH_OPS.md): Tag Manager + Google Ads API (`ads:whoami`, `ads-audit-experiment`, `ads-monitor-approvals`). Release **v0.2.9** no GitHub.
+7. **Contato (mesmo dia, v0.2.8)** — `/contato` via AWS SES (já documentado no CHANGELOG).
+
+**Próximo acompanhamento:** a partir de 3/ago, Exp deve ir a SERVING (50/50); ler relatório Controle vs Tratamento; opcional Contestar/limpar grupo *Cotação Seguro Online*; Environment Staging-NovoSite continua opcional.
+
+---
+
+## Correções 2026-08-03 — zero conversões no braço Exp (site novo)
+
+Investigação do dia 1 do experimento (tráfego real ok, leads no Firebase com `gclid`, mas **0 conversões** no braço tratamento) encontrou duas causas; ambas corrigidas no mesmo dia. Legado intocado.
+
+### 1. Bug de Consent Mode v2 no site novo (causa raiz)
+
+`components/consent/ConsentBanner.tsx` empurrava o comando `consent update` como **Array** (`dataLayer.push(args)` com rest params) em vez de um objeto **`arguments`** genuíno. O Google tag ignora Arrays em silêncio → consentimento ficava `denied` para sempre mesmo após "Aceitar tudo" (`gcs=G100`, sem cookies `_gcl_*`), zerando conversões Ads e subnotificando GA4.
+
+- **Fix:** `function gtag() { dataLayer.push(arguments) }` (deploy Vercel 2026-08-03).
+- **Prova pós-fix (Playwright em prod):** após aceite, `google_tag_data.ics` com `update:true` em `ad_storage`/`analytics_storage`/`ad_user_data`/`ad_personalization`; pings com **`gcs=G111`**; cookie `_gcl_au` criado.
+
+### 2. Labels cruzados nas tags [NovoSite] — GTM **v41** (publicada via API)
+
+As labels `KL9b…` e `iwx7…` estavam **invertidas** em relação às actions do Ads (`iwx7…` = *Envio de Formulário de Lead na Página*, primária; `KL9b…` = *Preencher o telefone no modal*, secundária):
+
+| Tag | Antes (v39/v40) | Depois (v41) |
+|---|---|---|
+| `[NovoSite] Ads - form_quote_choice - consultor` | `KL9b…` (action modal telefone, **secundária** → não contava) | `iwx7…` (action formulário, primária — maçãs-com-maçãs com o legado) |
+| `[NovoSite] Ads - phone_modal_submit` | `iwx7…` | `KL9b…` (igual ao legado; action secundária — promover a primária no Ads se quiser que conte) |
+
+Diff da v41 = **somente essas 2 tags** `[NovoSite]`; WA (`ND-wCL…`) e RPA (`9VjS…`) inalteradas. Teste pós-publish em prod: `form_quote_choice` consultor → conversão `iwx7…`; `whatsapp_modal_submit` phone → `KL9b…`; ambos `gcs=G111`. Rollback = republicar v40.
+
+**Impacto no experimento:** dias 3/ago (e anteriores ao fix) subnotificam conversões do braço tratamento — considerar iniciar a leitura comparativa a partir de 4/ago.
+
+---
+
+## Skip do modal só após telefone + medição de abandono (2026-08-03, GTM **v42**)
+
+Decisão do cliente: o link "Prefiro ir direto, sem preencher" do `ContactLeadModal` (visível desde a abertura e que navegava ao WhatsApp/telefone **sem registrar nada**) era um ponto cego. Mudanças (site + GTM v42, publicada via API):
+
+- **Etapa 1 (só DDD+Celular):** sem link de skip. Escape continua pelo ×/Esc/clique fora, que segue navegando ao destino (decisão anti-beco-sem-saída de 2026-07-08 preservada).
+- **Etapa 2 (telefone validado):** novo link **"Prosseguir sem preencher o resto"** — é um `type="submit"`: atualiza o lead (`stage: "complete"` só com telefone), dispara `whatsapp_modal_submit` (conversão Ads `ND-wCL…`/`KL9b…`) e navega. Antes esse caminho perdia a conversão.
+- **Novo evento `whatsapp_modal_dismiss`** (×/Esc/clique fora) com `modal_step` (1 = sem telefone; 2 = telefone já capturado via lead `initial`) — só GA4, **sem tag Ads** (abandono não é conversão).
+- **GTM v42 (aditivo, 5 itens `[NovoSite]`):** DLVs `modal_step`/`location`/`ramo`; CE `whatsapp_modal_dismiss` + hostname; tag GA4 `[NovoSite] GA4 - whatsapp_modal_dismiss` (`G-694K3F1XQ1`) com os 4 params. Legado intocado; rollback = republicar v41.
+
+**Verificação em prod (Playwright, `/api/lead` mockado para não criar leads reais):** etapa 1 sem link; × → `whatsapp_modal_dismiss` `modal_step:1` + hit GA4 (`gcs=G111`); blur do celular → `POST /api/lead` `stage:initial`; link da etapa 2 → `stage:complete` + `whatsapp_modal_submit` + conversão Ads `ND-wCL…` `gcs=G111`.
+
+---
+
+## Paridade de momentos de conversão com o legado (2026-08-04, GTM **v43**)
+
+Problema (análise 2026-08-03): os braços do experimento convertiam em **momentos diferentes** — legado no **contato inicial** (blur do telefone) e site novo no **submit final** do modal; além disso, os acionadores modais `[NovoSite]` sem filtro de hostname faziam as tags novas dispararem também no legado (dupla contagem potencial), e as tags `[NovoSite]` enviavam valor 30 BRL onde a tag legada de formulário não enviava valor.
+
+Solução implementada (site + GTM v43, deploy Vercel ~07:10 de 2026-08-04):
+
+- **Site novo emite os eventos legados** `whatsapp_modal_initial_contact` / `phone_modal_initial_contact` no blur do telefone validado (`sendInitialContact` do `ContactLeadModal`, 1× por abertura) — as **tags Ads legadas** (`Modal WhatsApp - Initial Contact` → `ND-wCL…`; `CE - phone_modal_initial_contact` → `KL9b…`) passam a disparar identicamente nos dois braços: mesmo momento, mesma action, mesmo valor (30 BRL, que as tags modais legadas sempre enviaram).
+- **Tags `[NovoSite] Ads - whatsapp_modal_submit` e `- phone_modal_submit` PAUSADAS** — elimina o disparo duplicado no submit e o cross-firing no site legado (o push de `whatsapp_modal_submit` continua no submit final, sem tag Ads ativa; disponível para GA4/funil).
+- **`conversionValue`/`currencyCode` removidos das 4 tags Ads `[NovoSite]`** (consultor, aguardar/RPA e as 2 modais pausadas) — simetria com a tag legada de formulário (`Form Submit Valid`, sem valor). Se quisermos valores no futuro, definir valor padrão na conversion action do Ads (vale igual para os dois braços).
+- Diff da v43 = somente as 4 tags `[NovoSite]`; legado intocado; rollback = republicar v42.
+
+**Verificação em prod (Playwright, `/api/lead` mockado):** blur do telefone no modal WA → 1 conversão `ND-wCL…` (`gcs=G111`, value=30 — tag legada); submit final → **nenhum** ping Ads; `phone_modal_initial_contact` → `KL9b…`; form consultor → `iwx7…` **sem** valor/moeda.
+
+**Leitura do experimento:** a partir do deploy de 2026-08-04 (~07:10 BRT) os braços têm paridade total de momento/action/valor nos modais — comparar Controle vs Tratamento a partir de **5/ago** para dias cheios e simétricos. **Superada em parte pela v44 (mesma manhã, abaixo): o funil do formulário deixou de ser simétrico por decisão do cliente; modais seguem simétricos.**
+
+---
+
+## Conversão do formulário no telefone (2026-08-04, GTM **v44**)
+
+Decisão do cliente (~08:00 BRT, mesma manhã da v43): a conversão Ads do **formulário** antecipa da etapa 4 para o **passo 1** (telefone validado) — o Ads passa a contar no mesmo instante em que o lead `initial` é criado e EspoCRM/Octadesk são sensibilizados, espelhando os modais. Cliente ciente e de acordo com a **assimetria** que isso cria no experimento (formulário legado converte no envio final).
+
+- **Site** (deploy Vercel): novo evento `form_initial_contact` (`lib/analytics.ts`), emitido 1× em `sendInitialContact()` do `LeadForm` (guarda `initialCallInFlightRef`), fire-and-forget antes do `POST /api/lead`. `form_quote_choice` continua na etapa 4 (GA4/funil).
+- **GTM v44 Live** (via API): acionador `[NovoSite] CE - form_initial_contact` (Custom Event + hostname `comparaseguroonline.com.br`) + tag `[NovoSite] Ads - form initial contact` (`awct`, `AW-815139667`, label `iwx7CNffw4YBENOW2IQD` — mesma action primária de formulário —, **sem** valor/moeda, Conversion Linker). Tags `[NovoSite] Ads - form_quote_choice - consultor` e `- aguardar` **pausadas** (1 conversão por jornada; a action RPA `9VjS…` fica sem tag ativa). Diff = 4 itens `[NovoSite]`; legado intocado; rollback = republicar v43. (Workspace de ensaio 48 ficou órfão no container — token OAuth sem escopo de delete; apagar na UI se incomodar.)
+- **Verificação em prod (Playwright, `/api/lead` e `/api/validate/*` mockados)**: passo 1 → 1 ping `iwx7` com `value=0` (sem valor/moeda configurados); etapa 4 (consultor) → **nenhum** ping novo; modal WA → `ND-wCL…` no blur, inalterado; modal não dispara `iwx7`.
+- **Leitura do experimento**: braço tratamento converte mais cedo no funil do formulário desde ~08:00 BRT de 4/ago — esperar volume maior de conversões de formulário no tratamento por construção (conversão mais rasa no funil), não necessariamente por desempenho. Modais permanecem simétricos (v43).
+
+---
+
+## Telemetria GA4 dos envios finais (2026-08-04, GTM **v45**)
+
+Complemento analítico da v44 (zero tags Ads — conversões intactas): os 4 cliques de envio final passam a chegar ao GA4 `G-694K3F1XQ1`, fechando o funil pós-conversão.
+
+- **Site** (deploy Vercel): `whatsapp_modal_submit` ganha `submit_mode: "full" | "skip"` (`skipSubmitRef` marcado no clique de "Prosseguir sem preencher o resto" no `ContactLeadModal`).
+- **GTM v45 Live** (via API): DLV `[NovoSite] DLV - submit_mode` (a `- modal_channel` já existia da v42); acionadores `[NovoSite] CE - whatsapp_modal_submit (GA4)` e `- form_quote_choice (GA4)` (Custom Event + hostname; os CEs antigos das tags Ads pausadas não foram tocados); tags `[NovoSite] GA4 - whatsapp_modal_submit` (`modal_channel`/`submit_mode`/`location`/`ramo`) e `- form_quote_choice` (`choice`/`ramo`). Diff = 5 itens `[NovoSite]`, nenhuma tag `awct`; legado intocado; rollback = republicar v44.
+- **Verificação em prod (Playwright, `/api/lead` e `/api/validate/*` mockados, 9/9 PASS)**: modal WA skip → GA4 `submit_mode=skip` (Ads `ND-wCL…` no blur intacto, nenhum Ads no submit); modal tel envio completo → `submit_mode=full`/`modal_channel=phone` (`KL9b…` intacto); form etapa 4 consultor → `form_quote_choice` `choice=consultor` (`iwx7…` do passo 1 intacto, nenhum Ads na etapa 4).
+
+**Funil GA4 completo por superfície:**
+
+| Superfície | Conversão Ads (momento) | Telemetria GA4 pós-conversão |
+|---|---|---|
+| Form | `form_initial_contact` (telefone, passo 1) | `form_quote_choice` (`choice` consultor/aguardar) |
+| Modal WA | `whatsapp_modal_initial_contact` (blur) | `whatsapp_modal_submit` (`submit_mode` full/skip) ou `whatsapp_modal_dismiss` |
+| Modal tel | `phone_modal_initial_contact` (blur) | `whatsapp_modal_submit` (`modal_channel=phone`) ou `whatsapp_modal_dismiss` |
+
+**Admin GA4 — CONCLUÍDO via Analytics Admin API (2026-08-04)** na property `Seguros Imediato – GA4` (`properties/281067607`, stream `G-694K3F1XQ1`):
+
+1. Dimensões personalizadas (escopo **Evento**) criadas: `modal_channel`, `submit_mode`, `choice`, `location`, `ramo`, `modal_step` (display name = nome do parâmetro; a API não aceita `/`, parênteses ou acentos). Já existiam: `event_category`, `event_label`.
+2. Key events criados: `whatsapp_modal_submit` e `form_quote_choice` (juntam-se a `purchase`, `solicitar_cotação`, `qualify_lead`, `close_convert_lead`). Não vira conversão Ads — não afeta o experimento.
+
+Pré-requisitos que foram necessários: habilitar a **Google Analytics Admin API** no projeto GCP do OAuth kit; conceder papel na property ao e-mail do token (`lrotero@gmail.com`); re-login com `node auth-login.mjs --with-analytics` (escopo `analytics.edit`).
 
 ---
 
@@ -109,7 +218,7 @@ Lido do `gtm.js` público `GTM-PD6J398` (sem login):
 
 ## Split form RPA/consultor + experimento Ads (runbook)
 
-Status: runbook pronto; execução via UI **ou** OAuth local — ver [`docs/GTM_ADS_OAUTH_OPS.md`](GTM_ADS_OAUTH_OPS.md) (`scripts/google-ops`). Só Publish após gates.
+Status: **executado 2026-08-02** (GTM v39 + experimento agendado + braço Exp corrigido). Runbook abaixo permanece como referência / rollback. OAuth: [`GTM_ADS_OAUTH_OPS.md`](GTM_ADS_OAUTH_OPS.md).
 
 ### Salvaguardas do legado (obrigatório)
 
@@ -195,17 +304,16 @@ Publicado via API: versão **39** — “NovoSite split form consultor/RPA + hos
 | Tag Ads | `[NovoSite] Ads - form_quote_choice - aguardar` | `9VjSCLSUx9ocENOW2IQD` · 30 BRL |
 | Action Ads | `[Compartilhada] Form - RPA aguardar cálculo` | `AW-815139667/9VjSCLSUx9ocENOW2IQD` |
 
-**Experimento Ads — programado (2026-08-02, confirmado pelo usuário):**
-- Nome: `Exp site novo vs legado 50/50`
-- Original: `ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna` (URLs legado)
-- Tratamento: mesma campanha + sufixo Exp (URLs `comparaseguroonline.com.br` — `/cotacao` e `/seguro-auto`)
-- Split 50/50; métricas Conversões + CPA; **sem** aplicação automática na original
-- Status Ads: **Agendado**; início 3/ago/2026; término **27/set/2026**; sync ativado
-- Anúncios do braço Exp podem ficar “em análise” após troca de domínio
+**Experimento Ads — Agendado/ENABLED (2026-08-02):**
+- Nome: `Exp site novo vs legado 50/50` · conta NOVA `994-791-8772`
+- Original: `ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna` id `21287198336` (SERVING, URLs legado)
+- Tratamento: id `24095000558` (PENDING até 3/ago; depois SERVING esperado)
+- Split 50/50; métricas Conversões + CPA; **sem** aplicação automática; sync ativado; 3/ago–27/set/2026
+- Braço Exp: só domínio `comparaseguroonline.com.br`; sitelinks legado removidos; Auto ENABLED + 3 ads APPROVED
 
-**Como ler:** website = Controle vs Tratamento no relatório do experimento; botão RPA vs consultor = actions `9VjS…` vs `KL9b…` só no domínio novo.
+**Como ler:** website = Controle vs Tratamento; botão RPA vs consultor = `9VjS…` vs `KL9b…` no domínio novo.
 
-**Depois:** OAuth Google Ads (`npm run auth -- --with-ads` + Developer Token) para auditar resultados via API — [`GTM_ADS_OAUTH_OPS.md`](GTM_ADS_OAUTH_OPS.md).
+**Ops API:** `npm run ads:whoami` · `node ads-audit-experiment.mjs` · `node ads-monitor-approvals.mjs` (snapshot local gitignored).
 
 ---
 
@@ -238,3 +346,30 @@ Interruptor: `NEXT_PUBLIC_APP_ENV=production` → backup Firebase `environment: 
 - Resultado: `espocrmLeadId=6a6a00312d24538d3`, `espocrmOpportunityId=6a6a00317e6f598bc`, `SMOKE_ESPO_PROD PASS`.
 - RTDB limpo; **apagar Lead/Opp de teste na UI de `flyingdonkeys.com.br`**.
 - **Comercial:** novos leads do site novo passam a cair no CRM de **produção**.
+
+### Smoke 6 momentos (2026-08-03) — Firebase → Espo prod + Octadesk
+
+Telefone de teste `11-91653-5000`; nome complete `LUCIANO TESTE 6M`; e-mails `lroteroform6m` / `lroterowa6m` / `lroterotel6m` @gmail.com. CRM: `flyingdonkeys.com.br` via `useDirect` + user `add_travelangels`.
+
+| Momento | Método | EspoCRM | Octadesk (RTDB flags) | Resultado |
+|---|---|---|---|---|
+| A1 Form initial | `POST /api/lead` stage=initial | Lead+Opp criados; nome/e-mail **simulados**; `cWebpage=comparaseguroonline.com.br`; `cEtapaFunil=Telefone informado`; Opp `Novo Sem Contato` (Lead `6a706dc565c83d6e1` / Opp `6a706dc67a8435828`) | HSM initial (confirmar no aparelho); CF prod | **PASS** |
+| A2 Form complete | progress + consultant_requested + complete | Mesmo Lead; nome/e-mail reais; CPF/CEP/placa; `cEtapaFunil=Cálculo manual pendente`; `cEscolhaCalculo=Receber depois` | Sem reenvio HSM initial | **PASS** |
+| B1 Modal WA initial | RTDB write `ld_6m_wa_*` (ver nota dedupe) | Lead+Opp simulados (`6a706f380cf8d82fd` / `6a706f392534fbe05`) | `octadesk_sent=true` | **PASS** |
+| B2 Modal WA complete | RTDB update complete + extras | Lead/Opp atualizados (`lroterowa6m@…`) | `octadesk_sent` + **`octa_cotacao_dados_recebidos_sent=true`** | **PASS** |
+| C1 Modal tel initial | RTDB write `ld_6m_tel_*` | Lead+Opp simulados (`6a706fc979367efcb` / `6a706fca980a28953`) | `octadesk_sent=true` | **PASS** |
+| C2 Modal tel complete | RTDB update complete + extras | Lead/Opp atualizados (`lroterotel6m@…`) | `octadesk_sent` + **`octa_cotacao_dados_recebidos_sent=true`** | **PASS** |
+
+**Notas ops:**
+- Purge DELETE via API = **403** (Role do `add_travelangels` sem delete). Entre fluxos, leads de teste foram **arquivados** (PUT `cCelular`/`email` com prefixo `ARCHIVED` / `0000006M…`) para liberar o número. Apagar manualmente na UI se desejado.
+- Após o Fluxo A, `POST /api/lead` stage=`initial` com o **mesmo** telefone+ramo em &lt;24h **não** recria lead (dedupe idempotente em `route.ts`) — por isso B/C usaram gravação direta no RTDB `environment=production` para exercitar a CF isoladamente (mesmo caminho que o site após o backup Firebase).
+- Confirmar no WhatsApp do `91653-5000` as HSM `primeira_etapa` (3×) e `cotacao_dados_recebidos` (2× nos completes de modal).
+
+### Opportunity nova por jornada (2026-08-04) — política do `useDirect`
+
+Decisão do cliente: prospect recorrente (nova jornada, dias/meses depois) ganha **Opportunity nova** ("Novo Sem Contato", 10%); as antigas ficam intocadas. Implementado em [`firebase/functions/espocrm.js`](../firebase/functions/espocrm.js) (`deliverStage`) + deploy `deliverLead`:
+
+- **Lead**: dedupe inalterado (`espocrmLeadId` salvo → e-mail real → `cCelular`) — continua 1 Lead por prospect, atualizado.
+- **Opportunity**: reaproveitada só via `espocrmOpportunityId` do registro RTDB da jornada corrente. Removida a busca por `cLeadId` no CRM (`findOpportunityByLeadId`); PUT stale (404/403) cria nova direto.
+- **Teste dev** (`dev.flyingdonkeys.com.br`, gravação direta no RTDB `environment=development`): 2 jornadas mesmo telefone → 1 Lead + **2 Opportunities**; `complete` manteve a Opp da jornada; ID stale forjado → Opp nova (não recuperou a antiga). Purge OK (Espo dev com a chave do bloco `dev` aceita DELETE, diferente do prod).
+- **Ressalvas**: janela de dedupe de 24h do `/api/lead` ≈ mesma jornada; pipeline passa a ter múltiplas Opps por prospect — relatórios não devem assumir `cLeadId` único; fechamento das Opps antigas paradas fica a cargo do processo/automação no CRM. Site legado segue no proxy antigo (atualiza a Opp existente) — comportamentos coexistem na mesma base.

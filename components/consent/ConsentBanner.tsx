@@ -35,8 +35,13 @@ type ConsentChoice = { analytics: boolean; marketing: boolean; decidedAt: string
 function applyConsentUpdate(analytics: boolean, marketing: boolean) {
   const w = window as typeof window & { dataLayer?: unknown[] };
   w.dataLayer = w.dataLayer || [];
-  function gtag(...args: unknown[]) {
-    w.dataLayer!.push(args);
+  // O Google tag SÓ processa comandos `consent` quando o valor empurrado é
+  // um objeto `arguments` genuíno — push de Array simples é ignorado em
+  // silêncio (bug corrigido 2026-08-03: consent ficava "denied" para
+  // sempre e nenhuma conversão Ads/GA4 era registrada no site novo).
+  function gtag(..._args: unknown[]) {
+    // eslint-disable-next-line prefer-rest-params
+    w.dataLayer!.push(arguments);
   }
   gtag("consent", "update", {
     analytics_storage: analytics ? "granted" : "denied",

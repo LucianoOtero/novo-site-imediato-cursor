@@ -421,10 +421,18 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * confirmar o passo 1 (DDD+Celular), sem bloquear a navegação entre
    * passos (mesmo comportamento do `ContactLeadModal`). Falha aqui nunca
    * impede o avanço de passo nem o envio final.
+   *
+   * **Conversão Ads do formulário (decisão do cliente, 2026-08-04):**
+   * emite aqui o evento `form_initial_contact` — o Ads converte no
+   * mesmo momento em que o lead é criado no CRM, espelhando os modais.
+   * As tags Ads da etapa 4 (`form_quote_choice`) foram pausadas no GTM
+   * v44; o push de `form_quote_choice` continua (GA4/funil).
    */
   async function sendInitialContact() {
     if (initialCallInFlightRef.current) return;
     initialCallInFlightRef.current = true;
+
+    trackEvent("form_initial_contact", { ramo, method: "form" });
 
     try {
       const values = getValues();

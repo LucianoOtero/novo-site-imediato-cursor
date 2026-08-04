@@ -8,7 +8,8 @@
     "gtm:whoami": "node gtm-whoami.mjs",
     "gtm:inspect": "node gtm-inspect-novosite.mjs",
     "gtm:prepare-split": "node gtm-apply-form-split.mjs --prepare-only",
-    "gtm:apply-split": "node gtm-apply-form-split.mjs"
+    "gtm:apply-split": "node gtm-apply-form-split.mjs",
+    "ads:whoami": "node ads-whoami.mjs"
   },
   "engines": {
     "node": ">=20"

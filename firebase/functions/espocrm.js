@@ -12,6 +12,13 @@
  * - duplicata não é erro: vira atualização do lead existente
  *   (dedupe por e-mail real e por telefone/cCelular).
  *
+ * Divergência deliberada do proxy legado (decisão do cliente,
+ * 2026-08-04): o dedupe vale só para o **Lead**. A Opportunity é
+ * **uma por jornada de conversão** — reaproveitada apenas via
+ * `espocrmOpportunityId` do registro RTDB corrente; sem busca por
+ * `cLeadId` no CRM. Cada retorno do prospect vira um negócio novo no
+ * pipeline (as Opportunities antigas ficam intocadas).
+ *
  * Extensões além do proxy (inventário de campos de 2026-07-28):
  * - conjunto COMPLETO de UTM (o proxy só envia cGclid/cUtmSource/
  *   cUtmCampaign) + cGbraid;
@@ -158,19 +165,6 @@ async function findExistingLead(config, leadData) {
   return null;
 }
 
-/** Procura a Opportunity vinculada a um Lead pelo `cLeadId` (vínculo em texto do processo atual). */
-async function findOpportunityByLeadId(config, espoLeadId) {
-  const params = new URLSearchParams({
-    maxSize: "1",
-    "where[0][type]": "equals",
-    "where[0][attribute]": "cLeadId",
-    "where[0][value]": espoLeadId,
-  });
-  const result = await espoRequest(config, "GET", `Opportunity?${params.toString()}`);
-  const found = result && Array.isArray(result.list) && result.list[0];
-  return (found && found.id) || null;
-}
-
 /**
  * Tenta PUT; em 404/403 (ID apagado no CRM / sem permissão) devolve
  * `stale:true` para o caller recriar. Outros erros propagam.
@@ -189,8 +183,9 @@ async function putOrDetectStale(config, path, fields) {
 
 /**
  * Entrega de um estágio ao EspoCRM via API direta — o coração do modo
- * `useDirect`. Cria (com dedupe) no `initial` sem IDs conhecidos;
- * atualiza Lead + Opportunity nos demais casos. Devolve
+ * `useDirect`. Lead: cria (com dedupe) ou atualiza. Opportunity: uma
+ * por jornada — atualiza somente quando `espoOpportunityId` veio do
+ * registro RTDB desta jornada; senão cria nova (2026-08-04). Devolve
  * `{leadId, opportunityId}` (os IDs do CRM, para gravar de volta no
  * registro do RTDB).
  *
@@ -227,10 +222,13 @@ async function deliverStage(config, leadData, { espoLeadId, espoOpportunityId, c
     }
   }
 
-  if (!opportunityId) {
-    opportunityId = await findOpportunityByLeadId(config, leadId);
-  }
-
+  // Opportunity NOVA por jornada (decisão do cliente, 2026-08-04): o id
+  // só vem do registro RTDB da jornada corrente (`espocrmOpportunityId`,
+  // gravado na primeira entrega) — não existe mais busca por `cLeadId`
+  // no CRM. Prospect recorrente (nova jornada, dias/meses depois) ganha
+  // outra Opportunity ("Novo Sem Contato", 10%); as antigas ficam
+  // intocadas, com estágio/histórico preservados. `cLeadId` deixa de
+  // ser 1:1 com o Lead.
   if (!opportunityId) {
     const created = await espoRequest(
       config,
@@ -243,18 +241,15 @@ async function deliverStage(config, leadData, { espoLeadId, espoOpportunityId, c
     const fields = buildOpportunityFields(leadData, { isCreate: false });
     const put = await putOrDetectStale(config, `Opportunity/${opportunityId}`, fields);
     if (put.stale) {
-      opportunityId = await findOpportunityByLeadId(config, leadId);
-      if (!opportunityId) {
-        const created = await espoRequest(
-          config,
-          "POST",
-          "Opportunity",
-          buildOpportunityFields(leadData, { isCreate: true, espoLeadId: leadId })
-        );
-        opportunityId = (created && created.id) || null;
-      } else if (Object.keys(fields).length > 0) {
-        await espoRequest(config, "PUT", `Opportunity/${opportunityId}`, fields);
-      }
+      // ID da jornada apagado no CRM: cria outra (nunca "ressuscita" a
+      // Opportunity de uma jornada antiga).
+      const created = await espoRequest(
+        config,
+        "POST",
+        "Opportunity",
+        buildOpportunityFields(leadData, { isCreate: true, espoLeadId: leadId })
+      );
+      opportunityId = (created && created.id) || null;
     }
   }
 

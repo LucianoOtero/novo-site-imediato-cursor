@@ -87,3 +87,4 @@ scripts/google-ops/config.local.json
 scripts/google-ops/node_modules/
 scripts/google-ops/_dump-*.json
 scripts/google-ops/_dump-*-out.txt
+scripts/google-ops/ads-approval-status.json

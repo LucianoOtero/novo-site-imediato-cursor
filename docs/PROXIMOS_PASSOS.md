@@ -1,10 +1,26 @@
-# PRÓXIMOS PASSOS — Ponto de Parada (2026-07-03)
+# PRÓXIMOS PASSOS — Ponto de Parada
 
 ## Finalidade
 Documento de referência para retomar o projeto na próxima sessão. Resume o que foi feito, o estado atual e exatamente o que falta, com responsável de cada pendência. Não substitui `docs/BACKLOG.md` (histórico completo, issue a issue) — este arquivo é o resumo executivo para retomada rápida.
 
 ## Origem
-Gerado ao final da sessão de 2026-07-03, a pedido do usuário ("resumo do ponto em que parou").
+Gerado ao final da sessão de 2026-07-03; atualizado com conquistas de 2026-08-02 (GTM/Ads).
+
+---
+
+## 0. Conquistas recentes (2026-08-02) — retomar daqui
+
+Status canônico: [`docs/FASE_A_GTM_ESPOCRM_OPS.md`](FASE_A_GTM_ESPOCRM_OPS.md) (*Conquistas 2026-08-02*) · release **v0.2.9**.
+
+| Feito | Detalhe |
+|---|---|
+| GTM v39 | Split consultor/RPA + hostname; legado intacto |
+| Action RPA Ads | `9VjSCLSUx9ocENOW2IQD` |
+| Experimento | `Exp site novo vs legado 50/50` Agendado (3/ago–27/set); Auto APPROVED |
+| OAuth API | GTM + Ads (`scripts/google-ops`); monitor de aprovação |
+| Contato | SES (v0.2.8) |
+
+**Próximo natural:** acompanhar SERVING do Exp a partir de 3/ago; relatório Controle vs Tratamento; opcional limpar/contestar grupo *Cotação Seguro Online* (pausado, DISAPPROVED).
 
 ---
 
@@ -56,7 +72,7 @@ A Home agora tem **todos** os blocos do wireframe original (seção 6.1 da espec
 | Item | O que é preciso | Onde já está preparado no código |
 |---|---|---|
 | Deploy de produção (Issue 24) | ~~Pré-requisito: criar repositório Git dedicado~~ — ✅ (2026-07-08). ~~Criar projeto na Vercel~~ — ✅ (2026-07-08): projeto `imediato-seguros` criado, conectado ao GitHub (deploy automático a cada push em `main`), domínio de teste `comparaseguroonline.com.br` adicionado. **Falta só a configuração de DNS** (ver seção 3.1.2) — depende só de você, no painel do seu registrador | `next.config.mjs`, `lib/env.ts` já validam e travam o build se faltar algo em produção |
-| Integração real GTM/GA4/Google Ads (Issue 18) | **2026-07-29:** GTM no HTML; IDs nas envs; workspace aditivo `[NovoSite] CE/Ads` para `generate_lead` + `whatsapp_modal_submit` (**sem Publish Live**). **Pendente:** Preview/Tag Assistant no domínio novo; Environment Staging-NovoSite; Publish Live só após validação — ver `docs/FASE_A_GTM_ESPOCRM_OPS.md` | Código + env OK; triggers/tags no workspace; Live legado intacto |
+| Integração real GTM/GA4/Google Ads (Issue 18) | **✅ Avanço forte 2026-08-02:** GTM **v38+v39** Live; split form; labels Ads; experimento Agendado; OAuth API. **Opcional restante:** Environment Staging-NovoSite; limpar grupo Exp *Cotação Seguro Online* (DISAPPROVED/pausado) — ver `docs/FASE_A_GTM_ESPOCRM_OPS.md` | Código + env + Live + Exp OK |
 | Habilitar RPA em produção | ✅ **Ligado por padrão** (2026-07-18): `NEXT_PUBLIC_RPA_ENABLED` default `true` — o build já traz o cálculo automático; para desligar em algum ambiente, setar `=false` na Vercel (kill-switch, exige novo deploy). CORS já liberado. Falta só **validar no domínio** de homologação. | Passo 4 do `LeadForm` com mecânica completa (16 fases, timer, 2 cartões, fallback) — ver `docs/RPA_ESCOLHA_CALCULO.md`. Cálculo já é **por veículo** (marca/modelo/ano + perfil) e só habilita com **todos os dados validados** e **não-caminhão**. Correção 2026-07-18: `lib/env.ts` lê a flag por referência direta (antes não chegava ao client). |
 | Revisão jurídica dos textos genéricos | `/politica-de-privacidade` e `/termos` foram redigidos por mim a seu pedido — recomendável (não bloqueante) uma revisão pelo Jurídico em algum momento | Páginas já publicadas e indexáveis |
 

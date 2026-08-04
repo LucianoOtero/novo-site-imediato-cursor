@@ -77,9 +77,19 @@ import {
  * a navegação final — o submit sempre chega a `sendLeadAndNavigate`
  * (com `skipStrictValidation: true` quando o schema estrito falha, via
  * `onInvalid` — achado 2026-07-14, sem isso o clique no botão não fazia
- * nada quando CPF/CEP/Placa estavam mal formatados) — e o link "Prefiro
- * ir direto, sem preencher" sempre funciona, independente de erros de
- * validação nos campos opcionais.
+ * nada quando CPF/CEP/Placa estavam mal formatados).
+ *
+ * **Skip só após o telefone (decisão do cliente, 2026-08-03)**: o
+ * antigo link "Prefiro ir direto, sem preencher" (visível desde a
+ * etapa 1 e que navegava sem capturar nada) foi substituído por
+ * "Prosseguir sem preencher o resto", exibido **apenas na etapa 2**
+ * (telefone já validado, lead `initial` já disparado). Ele é um
+ * `type="submit"` estilizado como link: passa pelo mesmo
+ * `handleFinalSubmit` do botão principal — atualiza o lead
+ * (`stage: "complete"` só com o telefone), dispara a conversão Ads
+ * (`whatsapp_modal_submit`) e navega. Quem se recusa a dar o telefone
+ * ainda escapa pelo ×/Esc/clique fora (ver `handleDismiss`), agora
+ * medido pelo evento `whatsapp_modal_dismiss` (GA4, sem tag Ads).
  *
  * **Correção deliberada em relação ao legado** (decisão do cliente,
  * 2026-07-08): no site legado, fechar o modal no "×" é um "beco sem
@@ -119,6 +129,8 @@ export function ContactLeadModal() {
   const initialCallInFlightRef = useRef(false);
   /** Guarda contra reenvio duplicado no submit final — mesmo achado/motivo de `finalSubmitInFlightRef` em `LeadForm.tsx` (ver docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md). */
   const finalSubmitInFlightRef = useRef(false);
+  /** Marca que o submit veio do link "Prosseguir sem preencher o resto" — vira `submit_mode: "skip"` no `whatsapp_modal_submit` (telemetria GA4, 2026-08-04). */
+  const skipSubmitRef = useRef(false);
 
   const {
     register,
@@ -188,6 +200,7 @@ export function ContactLeadModal() {
     initialLeadIdRef.current = null;
     initialCallInFlightRef.current = false;
     finalSubmitInFlightRef.current = false;
+    skipSubmitRef.current = false;
   }, [state, reset]);
 
   if (!state) return null;
@@ -205,8 +218,20 @@ export function ContactLeadModal() {
     }
   }
 
-  /** Dispensar sem enviar (×, Esc, clique fora) — corrige o "beco sem saída" do modal legado: ainda leva ao destino. */
+  /**
+   * Dispensar sem enviar (×, Esc, clique fora) — corrige o "beco sem
+   * saída" do modal legado: ainda leva ao destino. Desde 2026-08-03 o
+   * abandono é medido (`whatsapp_modal_dismiss`; `modal_step: 2` indica
+   * que o telefone já tinha sido capturado via lead `initial`).
+   */
   function handleDismiss() {
+    trackEvent("whatsapp_modal_dismiss", {
+      form_type: "whatsapp_modal",
+      modal_channel: channel,
+      location,
+      ramo,
+      modal_step: step2Visible ? 2 : 1,
+    });
     close();
     reset();
     goToDestination();
@@ -217,10 +242,24 @@ export function ContactLeadModal() {
    * (`initialCallInFlightRef`) quando DDD+Celular passam a validação
    * local, sem esperar o resto do formulário. Sempre não-bloqueante:
    * falha aqui nunca impede a expansão da etapa 2 nem o envio final.
+   *
+   * **Conversão Ads no contato inicial (paridade com o legado,
+   * 2026-08-04):** emite aqui os mesmos eventos do site legado
+   * (`whatsapp_modal_initial_contact`/`phone_modal_initial_contact`),
+   * que disparam as tags Ads **legadas** (`ND-wCL…`/`KL9b…`) — mesmo
+   * momento e mesma action nos dois braços do experimento. As tags
+   * `[NovoSite] Ads - *modal_submit` foram pausadas (GTM v43); o push
+   * de `whatsapp_modal_submit` no envio final continua, mas sem tag
+   * Ads ativa (funil/GA4).
    */
   async function sendInitialContact() {
     if (initialCallInFlightRef.current) return;
     initialCallInFlightRef.current = true;
+
+    trackEvent(
+      channel === "whatsapp" ? "whatsapp_modal_initial_contact" : "phone_modal_initial_contact",
+      { form_type: "whatsapp_modal", modal_channel: channel, location, ramo },
+    );
 
     try {
       const values = getValues();
@@ -396,7 +435,13 @@ export function ContactLeadModal() {
       // Não-bloqueante: nunca impedir a navegação por causa de uma falha de rede/servidor.
       console.error("[ContactLeadModal] Falha ao enviar lead (não impede a navegação):", error);
     } finally {
-      trackEvent("whatsapp_modal_submit", { form_type: "whatsapp_modal", modal_channel: channel, location, ramo });
+      trackEvent("whatsapp_modal_submit", {
+        form_type: "whatsapp_modal",
+        modal_channel: channel,
+        location,
+        ramo,
+        submit_mode: skipSubmitRef.current ? "skip" : "full",
+      });
       setSubmitting(false);
       close();
       reset();
@@ -614,16 +659,20 @@ export function ContactLeadModal() {
                 <Button type="submit" variant={channel === "whatsapp" ? "whatsapp" : "primary"} fullWidth loading={submitting} className="mt-1">
                   {copy.submitLabel}
                 </Button>
+
+                {/* Skip pós-telefone (2026-08-03): submit disfarçado de link — envia só o telefone e conta a conversão, em vez de navegar sem registrar nada. */}
+                <button
+                  type="submit"
+                  onClick={() => {
+                    skipSubmitRef.current = true;
+                  }}
+                  disabled={submitting}
+                  className="rounded-md text-center text-xs text-neutral-500 underline underline-offset-2 outline-none hover:text-neutral-700 focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50"
+                >
+                  Prosseguir sem preencher o resto
+                </button>
               </div>
             )}
-
-            <button
-              type="button"
-              onClick={handleDismiss}
-              className="rounded-md text-center text-xs text-neutral-500 underline underline-offset-2 outline-none hover:text-neutral-700 focus-visible:ring-2 focus-visible:ring-brand-500"
-            >
-              Prefiro ir direto, sem preencher
-            </button>
           </form>
         </DialogPrimitive.Popup>
       </DialogPrimitive.Portal>
