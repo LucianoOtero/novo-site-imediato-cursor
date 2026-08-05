@@ -50,6 +50,26 @@ export function Header() {
         scrolled ? "py-2" : "py-3"
       )}
     >
+      {/* Barra de identidade jurídica (razão social + CNPJ + SUSEP) no topo,
+          visível já no carregamento. Reforça o vínculo do domínio com a marca
+          registrada (Imediato Corretora de Seguros Ltda.) — mesma empresa em
+          qualquer domínio. Colapsa ao rolar para preservar o cabeçalho
+          compacto sticky. Dados sempre de lib/company.ts (nunca hardcoded). */}
+      <div
+        className={cn(
+          "overflow-hidden border-b border-neutral-100 transition-all duration-200",
+          scrolled ? "max-h-0 opacity-0" : "max-h-10 opacity-100"
+        )}
+        aria-hidden={scrolled}
+      >
+        <Container>
+          <p className="py-1.5 text-center text-xs leading-tight text-neutral-600">
+            <span className="hidden md:inline">{company.legalName} &middot; </span>
+            CNPJ {company.cnpj} &middot; SUSEP {company.susep}
+          </p>
+        </Container>
+      </div>
+
       <Container className="flex items-center justify-between gap-4">
         <Link
           href="/"
