@@ -1,0 +1,31 @@
+{
+  "savedAt": "2026-08-06T12:03:55.254Z",
+  "campaignId": "24095000558",
+  "adGroups": [
+    {
+      "id": "199334726776",
+      "name": "Moto",
+      "status": "PAUSED"
+    },
+    {
+      "id": "199334726816",
+      "name": "Auto",
+      "status": "ENABLED"
+    },
+    {
+      "id": "199334726856",
+      "name": "Caminhão",
+      "status": "PAUSED"
+    },
+    {
+      "id": "199334727016",
+      "name": "Cotação Seguro Online",
+      "status": "PAUSED"
+    },
+    {
+      "id": "199334727056",
+      "name": "02 outubro",
+      "status": "PAUSED"
+    }
+  ]
+}

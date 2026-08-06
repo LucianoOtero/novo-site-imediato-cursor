@@ -13,13 +13,15 @@ const { logger } = require("firebase-functions");
 const USER_AGENT = "Modal-WhatsApp-EmailNotification-v1.0";
 
 /**
- * Marcador "comparaseguroonline" (decisão do cliente, 2026-08-04): os
- * alertas dos dois sites saem pelo MESMO Cloud Run com o mesmo template
- * — a única forma de distingui-los é via `momento_descricao`/
- * `momento_emoji`, que o Cloud Run renderiza como chegam. O legado monta
- * os dele no browser (`MODAL_WHATSAPP_DEFINITIVO.js`) e fica sem marcador.
+ * Marcador do site novo (decisão do cliente, 2026-08-04): os alertas dos
+ * dois sites saem pelo MESMO Cloud Run com o mesmo template — a única
+ * forma de distingui-los é via `momento_descricao`/`momento_emoji`, que o
+ * Cloud Run renderiza como chegam. O legado monta os dele no browser
+ * (`MODAL_WHATSAPP_DEFINITIVO.js`) e fica sem marcador.
+ * 2026-08-06: "comparaseguroonline" → "novo.segurosimediato" (migração
+ * para o subdomínio da marca).
  */
-const SITE_MARKER = "comparaseguroonline";
+const SITE_MARKER = "novo.segurosimediato";
 
 const MOMENTO_META = {
   initial: {
@@ -27,8 +29,9 @@ const MOMENTO_META = {
     momento_emoji: "🆕",
   },
   update: {
+    // 🆕✅ = site novo + submissão completa (pedido do cliente, 2026-08-04).
     momento_descricao: `${SITE_MARKER} — Submissão Completa - Todos os Dados`,
-    momento_emoji: "🆕",
+    momento_emoji: "🆕✅",
   },
   initial_error: {
     momento_descricao: `${SITE_MARKER} — Primeiro Contato - Erro`,

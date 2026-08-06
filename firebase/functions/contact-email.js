@@ -289,7 +289,7 @@ function buildEmail(message) {
     : new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
   const text = [
-    "Nova mensagem pelo formulário de contato do site (comparaseguroonline.com.br)",
+    "Nova mensagem pelo formulário de contato do site (novo.segurosimediato.com.br)",
     "",
     `Nome: ${message.nome}`,
     `E-mail: ${message.email}`,
@@ -309,7 +309,7 @@ function buildEmail(message) {
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:640px;margin:0 auto;">
     <div style="background:#0b3b8c;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0;">
       <h2 style="margin:0;font-size:18px;">Nova mensagem — formulário de contato do site</h2>
-      <p style="margin:4px 0 0;font-size:13px;opacity:.85;">comparaseguroonline.com.br → página /contato</p>
+      <p style="margin:4px 0 0;font-size:13px;opacity:.85;">novo.segurosimediato.com.br → página /contato</p>
     </div>
     <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #eee;border-top:none;">
       ${row("Nome", escapeHtml(message.nome))}

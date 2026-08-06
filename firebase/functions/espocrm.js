@@ -32,8 +32,10 @@
  * Origem gravada em `cWebpage` no Lead E na Opportunity (decisão do
  * cliente, 2026-07-28: o domínio real do site novo) — discriminador de
  * origem entre os dois sites nas listas/relatórios do CRM.
+ * 2026-08-06: migração comparaseguroonline.com.br → novo.segurosimediato.com.br
+ * (subdomínio da marca, para resolver "Limited ad serving" do Google Ads).
  */
-const SITE_WEBPAGE = "comparaseguroonline.com.br";
+const SITE_WEBPAGE = "novo.segurosimediato.com.br";
 
 /** Fallbacks de nome/e-mail "falsos" derivados do telefone — o EspoCRM exige os dois não-vazios (mesma regra do proxy/CF). */
 function fallbackIdentity(leadData) {

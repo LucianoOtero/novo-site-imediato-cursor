@@ -1,0 +1,141 @@
+{
+  "generatedAt": "2026-08-06T14:23:14.083Z",
+  "purpose": "Baseline pré-migração para novo.segurosimediato.com.br (Fase 0)",
+  "customerId": "9947918772",
+  "period": {
+    "start": "2026-07-23",
+    "end": "2026-08-05"
+  },
+  "campaigns": {
+    "21287198336": {
+      "name": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+      "daily": [
+        {
+          "date": "2026-07-23",
+          "impressions": 4044,
+          "clicks": 267,
+          "ctr": 0.06602373887240356,
+          "costMicros": 1343155773,
+          "conversions": 56
+        },
+        {
+          "date": "2026-07-24",
+          "impressions": 4176,
+          "clicks": 283,
+          "ctr": 0.06776819923371648,
+          "costMicros": 1321395891,
+          "conversions": 53.5
+        },
+        {
+          "date": "2026-07-27",
+          "impressions": 6515,
+          "clicks": 454,
+          "ctr": 0.06968534151957022,
+          "costMicros": 1968775474,
+          "conversions": 81.74573
+        },
+        {
+          "date": "2026-07-28",
+          "impressions": 8121,
+          "clicks": 523,
+          "ctr": 0.06440093584533925,
+          "costMicros": 2532752200,
+          "conversions": 107.997153
+        },
+        {
+          "date": "2026-07-29",
+          "impressions": 5305,
+          "clicks": 346,
+          "ctr": 0.06522148916116871,
+          "costMicros": 1449463258,
+          "conversions": 75.497153
+        },
+        {
+          "date": "2026-07-30",
+          "impressions": 4480,
+          "clicks": 287,
+          "ctr": 0.0640625,
+          "costMicros": 1248911648,
+          "conversions": 54.5
+        },
+        {
+          "date": "2026-07-31",
+          "impressions": 5199,
+          "clicks": 362,
+          "ctr": 0.06962877476437776,
+          "costMicros": 1709102207,
+          "conversions": 44.497153
+        },
+        {
+          "date": "2026-08-03",
+          "impressions": 2139,
+          "clicks": 136,
+          "ctr": 0.06358111266947171,
+          "costMicros": 558657831,
+          "conversions": 28
+        },
+        {
+          "date": "2026-08-04",
+          "impressions": 2402,
+          "clicks": 155,
+          "ctr": 0.06452955870108243,
+          "costMicros": 625966376,
+          "conversions": 31
+        },
+        {
+          "date": "2026-08-05",
+          "impressions": 2182,
+          "clicks": 123,
+          "ctr": 0.056370302474793764,
+          "costMicros": 533938123,
+          "conversions": 14
+        }
+      ],
+      "totals": {
+        "impressions": 44563,
+        "clicks": 2936,
+        "costMicros": 13292118781,
+        "conversions": 546.7371890000001,
+        "ctr": 0.06588425375311358,
+        "costBRL": 13292.118781
+      }
+    },
+    "24095000558": {
+      "name": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+      "daily": [
+        {
+          "date": "2026-08-03",
+          "impressions": 1108,
+          "clicks": 76,
+          "ctr": 0.06859205776173286,
+          "costMicros": 187082599,
+          "conversions": 0
+        },
+        {
+          "date": "2026-08-04",
+          "impressions": 1377,
+          "clicks": 105,
+          "ctr": 0.07625272331154684,
+          "costMicros": 281674249,
+          "conversions": 0
+        },
+        {
+          "date": "2026-08-05",
+          "impressions": 279,
+          "clicks": 20,
+          "ctr": 0.07168458781362007,
+          "costMicros": 36888675,
+          "conversions": 1
+        }
+      ],
+      "totals": {
+        "impressions": 2764,
+        "clicks": 201,
+        "costMicros": 505645523,
+        "conversions": 1,
+        "ctr": 0.07272069464544138,
+        "costBRL": 505.645523
+      }
+    }
+  }
+}
