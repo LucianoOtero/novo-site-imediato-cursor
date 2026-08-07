@@ -58,7 +58,7 @@
  * - Campos do painel "Cotação do Site" (`cEtapaFunil`,
  *   `cEscolhaCalculo`, `cStatusCalculo`, `cValorRecomendado`,
  *   `cValorAlternativo` — mesmos nomes no Lead e na Opportunity) +
- *   `cWebpage` = "comparaseguroonline.com.br" (origem; sobrescreve o
+ *   `cWebpage` = "novo.segurosimediato.com.br" (origem; sobrescreve o
  *   "mdmidia.com.br" fixo do proxy) gravados via PUT direto nas DUAS
  *   entidades a cada momento do funil (2026-07-28).
  * - Mensagens Octadesk pós-iniciais via API direta (secret
