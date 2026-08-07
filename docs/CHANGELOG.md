@@ -11,6 +11,12 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.21] — 2026-08-07 (formulário acima da dobra no mobile)
+
+### Changed
+- **Conversão mobile** (pedido do cliente; mockup aprovado): no mobile, o passo 1 do LeadForm (DDD + celular + botão) agora cabe na primeira dobra. [`components/home/Hero.tsx`](components/home/Hero.tsx): padding vertical do hero reduzido só no mobile (o `py-16` da Section + `py-12` do Container somavam 112 px de espaço morto), `gap`/`margins` do texto mais enxutos e selos (cotação grátis + estrelas Google) movidos para baixo do card do formulário (`lg` intocado — desktop idêntico). [`app/(marketing)/page.tsx`](app/(marketing)/page.tsx): CredBar desce para depois do Hero no mobile (duplicava selos do hero). [`components/shared/FraudAlert.tsx`](components/shared/FraudAlert.tsx): mais compacto no mobile (texto oficial preservado). LPs de ramo herdam as melhorias do Hero automaticamente.
+- Rollback: reverter este commit (a versão anterior é o commit `803ba08`) ou Instant Rollback na Vercel.
+
 ## [0.2.20] — 2026-08-07 (melhorias da auditoria de performance/SEO/conversão)
 
 ### Added

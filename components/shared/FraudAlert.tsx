@@ -60,10 +60,13 @@ export function FraudAlert() {
   if (!visible) return null;
 
   return (
+    // Mais compacto no mobile (conversão mobile, 2026-08-07): texto oficial
+    // preservado, só fonte/paddings menores — cada pixel acima do hero
+    // empurra o formulário para baixo da dobra.
     <div role="region" aria-label="Alerta de fraude" className="border-b border-alert/20 bg-alert/10 text-alert">
-      <div className="mx-auto flex max-w-[1200px] items-start gap-3 px-5 py-3 md:px-8">
-        <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-        <p className="flex-1 text-sm">
+      <div className="mx-auto flex max-w-[1200px] items-start gap-2 px-5 py-2 md:gap-3 md:px-8 md:py-3">
+        <ShieldAlert className="mt-0.5 size-4 shrink-0 md:size-5" aria-hidden="true" />
+        <p className="flex-1 text-xs md:text-sm">
           <strong className="font-semibold">Atenção a golpes:</strong> a {company.tradeName} nunca solicita pagamento via
           PIX para &ldquo;liberar&rdquo; rastreador ou qualquer equipamento.{" "}
           <Link href="/alerta-de-fraude" className="font-medium underline underline-offset-2">

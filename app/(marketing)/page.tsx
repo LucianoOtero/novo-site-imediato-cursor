@@ -108,8 +108,16 @@ export default async function HomePage() {
 
   return (
     <>
-      <CredBar />
+      {/* CredBar antes do Hero só no desktop (conversão mobile, 2026-08-07):
+          no mobile ela duplica selos que já estão no hero (estrelas/anos) e
+          empurra o formulário para baixo da dobra — desce para depois dele. */}
+      <div className="hidden md:block">
+        <CredBar />
+      </div>
       <Hero ramoSlug="auto" />
+      <div className="md:hidden">
+        <CredBar />
+      </div>
 
       <Section tone="soft">
         <Container>

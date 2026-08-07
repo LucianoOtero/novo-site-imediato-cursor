@@ -131,8 +131,38 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
 
   if (!ramo) return null;
 
+  /**
+   * Selos (cotação grátis + estrelas Google) — renderizados DUAS vezes
+   * (conversão mobile, 2026-08-07): no mobile descem para baixo do card
+   * do formulário (para o passo 1 caber na primeira dobra); no desktop
+   * continuam no lugar de sempre, na coluna de texto. Elementos com
+   * `hidden` não geram célula no grid, então a cópia extra não afeta o
+   * layout de 2 colunas do lg.
+   */
+  const badges = (
+    <>
+      <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+        <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
+        Cotação grátis, sem compromisso
+      </p>
+      <p className="inline-flex items-center gap-1.5 text-sm font-medium text-white">
+        <span className="flex" aria-hidden="true">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Star key={index} className="size-4 fill-amber-400 text-amber-400" />
+          ))}
+        </span>
+        {company.business.googleRating.toLocaleString("pt-BR", { minimumFractionDigits: 1 })}{" "}
+        no Google · +{company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
+      </p>
+    </>
+  );
+
   return (
-    <Section className="relative overflow-hidden">
+    // py reduzido no mobile (conversão mobile, 2026-08-07): o py-16 da
+    // Section somado ao py-12 do Container dava 112px de espaço morto antes
+    // do conteúdo — principal culpado do formulário nascer abaixo da dobra.
+    // md/lg preservam o ritmo original.
+    <Section className="relative overflow-hidden py-4 md:py-28">
       <HeroBackground ramoSlug={ramoSlug} />
       {/* Overlay do gradiente da marca (navy → azul) para legibilidade do texto claro. */}
       <div
@@ -140,7 +170,7 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
         className="absolute inset-0 bg-linear-to-r from-[#0a2540]/90 via-[#0a2540]/70 to-[#0f55b8]/40"
       />
 
-      <Container className="relative grid gap-10 py-12 lg:grid-cols-2 lg:items-center lg:py-20">
+      <Container className="relative grid gap-6 py-8 md:py-12 lg:grid-cols-2 lg:items-center lg:gap-10 lg:py-20">
         <div>
           {ramo.eyebrow && (
             <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-100 backdrop-blur-sm">
@@ -150,25 +180,11 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
           <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight text-white md:text-6xl">
             {ramo.headline}
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-brand-50/90">
+          <p className="mt-3 max-w-xl text-lg leading-relaxed text-brand-50/90 md:mt-5">
             {ramo.subheadline}
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
-            <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
-              <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
-              Cotação grátis, sem compromisso
-            </p>
-            <p className="inline-flex items-center gap-1.5 text-sm font-medium text-white">
-              <span className="flex" aria-hidden="true">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Star key={index} className="size-4 fill-amber-400 text-amber-400" />
-                ))}
-              </span>
-              {company.business.googleRating.toLocaleString("pt-BR", { minimumFractionDigits: 1 })}{" "}
-              no Google · +{company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
-            </p>
-          </div>
+          <div className="mt-7 hidden flex-wrap items-center gap-x-5 gap-y-3 lg:flex">{badges}</div>
 
           <div className="mt-8 hidden gap-8 border-t border-white/15 pt-6 lg:flex">
             <div>
@@ -192,6 +208,9 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
           </div>
         </div>
         <LeadForm ramo={ramoSlug} variant="inline" onSuccess={submitLead} />
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 lg:hidden">
+          {badges}
+        </div>
       </Container>
     </Section>
   );
