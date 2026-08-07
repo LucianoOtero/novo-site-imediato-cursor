@@ -11,6 +11,19 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.19] — 2026-08-07 (migração para novo.segurosimediato.com.br)
+
+### Changed
+- Domínio do site experimental migrado de `comparaseguroonline.com.br` para **`novo.segurosimediato.com.br`** (motivo: "Veiculação limitada" na conta Ads NOVA por identidade do anunciante — domínio genérico sem marca). `NEXT_PUBLIC_SITE_URL` (Vercel), constantes das Cloud Functions (`SITE_WEBPAGE`, `SITE_MARKER`), templates de e-mail e comentários atualizados; CF `deliverLead` redeployada. Legado intocado.
+- [`components/layout/Header.tsx`](components/layout/Header.tsx): barra de identidade jurídica (razão social + CNPJ + SUSEP) no topo; [`components/social/CredBar.tsx`](components/social/CredBar.tsx): SUSEP duplicada removida.
+
+### Ops (fora do app Next)
+- Cloudflare: CNAME `novo` → Vercel; Vercel: domínio adicionado + **redirect 301** de `comparaseguroonline.com.br` (+www) para o domínio novo (preserva path), via API.
+- GTM **v47 Live**: 7 acionadores `[NovoSite]` com RegEx cobrindo os dois domínios; legado intacto.
+- Google Ads (braço Exp `24095000558` apenas): 21 RSAs com URLs finais no domínio novo + marca nos títulos; sitelinks removidos; **21/21 APPROVED**; headline de marca **fixada na posição 1** (recomendação da política "Limited ad serving", jun/2026); experimento reativado do snapshot.
+- Smoke fim-a-fim no domínio novo (2026-08-07): **PASS** — Lead/Opp no Espo prod com `cWebpage=novo.segurosimediato.com.br`, Octadesk e e-mails ok; registros de teste arquivados/purgados. Achado fora de escopo: workflow do Espo movendo Opp para "Perdido" no fluxo "Receber depois" (verificar com a equipe).
+- Novos scripts `scripts/google-ops`: `ads-baseline-experiment`, `ads-pause-exp-adgroups` (pause/resume com snapshot), `gtm-migrate-hostname`, `ads-migrate-exp-domain`, `ads-check-serving-status`, `ads-pin-brand-headline`, entre outros.
+
 ## [0.2.18] — 2026-08-04 (logos das seguradoras viram links)
 
 ### Changed
