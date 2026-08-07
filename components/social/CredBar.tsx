@@ -1,4 +1,4 @@
-import { Award, Building2, ShieldCheck, Star, Users } from "lucide-react";
+import { Award, Building2, Star, Users } from "lucide-react";
 
 import { Container } from "@/components/ui/container";
 import { company } from "@/lib/company";
@@ -34,10 +34,8 @@ export function CredBar() {
       icon: Award,
       label: `${company.business.yearsExperience}+ anos de experiência`,
     },
-    {
-      icon: ShieldCheck,
-      label: `SUSEP ${company.susep}`,
-    },
+    // SUSEP removida daqui (pedido do cliente, 2026-08-07): o registro já
+    // aparece na barra de identidade jurídica do Header — evitar duplicação.
     {
       icon: Building2,
       label: `${company.business.insurersCount} seguradoras parceiras`,
@@ -46,7 +44,7 @@ export function CredBar() {
 
   return (
     <div className="border-b border-neutral-200 bg-neutral-50" aria-label="Selos de confiança">
-      <Container className="grid grid-cols-2 gap-x-4 gap-y-2 py-3 text-sm text-neutral-900 [&>*:last-child]:col-span-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-6 sm:[&>*:last-child]:col-span-1">
+      <Container className="grid grid-cols-2 gap-x-4 gap-y-2 py-3 text-sm text-neutral-900 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-6">
         {items.map((item) => (
           <p key={item.label} className="flex items-center justify-center gap-1.5 whitespace-nowrap sm:justify-start">
             <item.icon className="size-4 shrink-0 text-brand-500" aria-hidden="true" />
