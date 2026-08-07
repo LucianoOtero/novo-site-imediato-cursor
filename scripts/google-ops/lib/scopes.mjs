@@ -27,9 +27,17 @@ export const ANALYTICS_ADMIN_SCOPE = "https://www.googleapis.com/auth/analytics.
  */
 export const ANALYTICS_READONLY_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 
-export function resolveScopes({ withAds = false, withAnalytics = false } = {}) {
+/**
+ * Search Console API (auditoria 2026-08-07): adicionar/verificar
+ * propriedades e submeter sitemaps. Requer a "Google Search Console API"
+ * habilitada no projeto GCP (feita via gcloud em 2026-08-07).
+ */
+export const WEBMASTERS_SCOPE = "https://www.googleapis.com/auth/webmasters";
+
+export function resolveScopes({ withAds = false, withAnalytics = false, withGsc = false } = {}) {
   const scopes = [...GTM_SCOPES];
   if (withAds) scopes.push(ADS_SCOPE);
   if (withAnalytics) scopes.push(ANALYTICS_ADMIN_SCOPE, ANALYTICS_READONLY_SCOPE);
+  if (withGsc) scopes.push(WEBMASTERS_SCOPE);
   return scopes;
 }

@@ -36,10 +36,10 @@ function createOAuth2Client(redirectUri) {
 /**
  * Login interativo: abre o browser, recebe code em localhost, grava token.json.
  */
-export async function interactiveLogin({ withAds = false, withAnalytics = false, port = 53682 } = {}) {
+export async function interactiveLogin({ withAds = false, withAnalytics = false, withGsc = false, port = 53682 } = {}) {
   const redirectUri = `http://127.0.0.1:${port}/oauth2callback`;
   const oauth2 = createOAuth2Client(redirectUri);
-  const scopes = resolveScopes({ withAds, withAnalytics });
+  const scopes = resolveScopes({ withAds, withAnalytics, withGsc });
 
   const authUrl = oauth2.generateAuthUrl({
     access_type: "offline",

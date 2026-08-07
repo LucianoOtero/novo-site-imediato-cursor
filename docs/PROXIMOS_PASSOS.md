@@ -20,8 +20,14 @@ Status canônico: [`docs/FASE_A_GTM_ESPOCRM_OPS.md`](FASE_A_GTM_ESPOCRM_OPS.md) 
 | Ads | 21/21 RSAs do braço Exp APPROVED no domínio novo + marca nos títulos; experimento reativado (grupo *Auto*) |
 | Smoke lead | PASS — `cWebpage=novo.segurosimediato.com.br` no EspoCRM; Octadesk/e-mails ok; teste arquivado |
 | Header | Barra de identidade (razão social + CNPJ + SUSEP); SUSEP duplicada removida da CredBar |
+| **Auditoria implementada (v0.2.20)** | Região Vercel `gru1`; Speed Insights no layout; metadata default + `title.template`; headers de segurança; Turnstile integrado (fail-open); GSC coberto pela propriedade de Domínio + sitemap submetido; baseline Lighthouse em `BASELINE_METRICS.md` |
 
 **Próximo natural:** acompanhar serving/aprovação da conta Ads após a migração (a "Veiculação limitada" deve normalizar com o domínio de marca); nova baseline do experimento após alguns dias (`ads-baseline-experiment.mjs`); confirmar com a equipe o workflow do Espo "Receber depois → Perdido" (achado do smoke).
+
+**Pendências do cliente (auditoria 2026-08-07):**
+1. **Upgrade Vercel Pro** (billing) — sem isso o site segue no Hobby (uso comercial proibido nos termos) e o Speed Insights não coleta dados.
+2. **Criar widget Turnstile** no dashboard do Cloudflare (Turnstile → Add site, tipo **Invisible**, domínio `novo.segurosimediato.com.br`) e passar site key + secret key para configurar `NEXT_PUBLIC_TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY` na Vercel (o token de API fornecido não tem escopo Turnstile). Até lá o código fica em mock mode — comportamento idêntico ao atual.
+3. Rodada de **otimização de performance** (separada): LCP mobile da home 8,8 s simulado por JS de terceiros (GTM) — ver leituras em `BASELINE_METRICS.md`.
 
 ---
 

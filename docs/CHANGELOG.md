@@ -11,6 +11,23 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.20] — 2026-08-07 (melhorias da auditoria de performance/SEO/conversão)
+
+### Added
+- [`lib/leads/post-lead.ts`](lib/leads/post-lead.ts): POST centralizado a `/api/lead` com token do **Cloudflare Turnstile** (widget invisível, renderizado sob demanda a cada envio; script lazy, fora do critical path). **Fail-open nos dois lados**: sem site key/script bloqueado/timeout envia sem token; o servidor ([`lib/leads/security.ts`](lib/leads/security.ts)) aceita token ausente com aviso e só rejeita token presente e inválido — nunca perder lead real por causa do anti-bot. Os 8 pontos de envio (LeadForm ×5, ContactLeadModal ×2, useSubmitLead) passaram a usar o helper. **Pendente**: criar o widget no dashboard do Cloudflare (tipo Invisible) e configurar `NEXT_PUBLIC_TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY` na Vercel — até lá segue em mock mode, comportamento idêntico ao anterior.
+- `@vercel/speed-insights` + `<SpeedInsights />` no layout raiz (RUM de LCP/INP/CLS de campo) — no-op até habilitar no projeto Vercel (requer plano **Pro**; upgrade é ação do cliente).
+- Headers de segurança em [`next.config.mjs`](next.config.mjs): `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, CSP `frame-ancestors 'self'` (CSP completa adiada — GTM).
+- `scripts/google-ops/gsc-setup-novo.mjs` + escopo `webmasters` no kit OAuth (`--with-gsc`).
+
+### Changed
+- Metadata default do layout raiz: title/description "Scaffold" substituídos por default real com `title.template` (`%s | Imediato Seguros`); [`lib/metadata.ts`](lib/metadata.ts) passou a emitir `title.absolute` (os titles do helper já incluem a marca — evita duplicação do sufixo).
+
+### Ops (fora do app Next)
+- Vercel: `serverlessFunctionRegion` **iad1 → gru1** via API (menor latência p/ `/api/lead`, SafetyMails e PH3A).
+- Search Console: a propriedade de Domínio `sc-domain:segurosimediato.com.br` (owner) já cobre o subdomínio novo; `sitemap.xml` do domínio novo submetido via API.
+- GCP `leads-imediato-seguros`: APIs Search Console e PageSpeed Insights habilitadas; API key `psi-ops` criada (restrita ao PSI).
+- **Baseline Lighthouse coletada** (PSI, home + `/seguro-auto`, mobile+desktop) e registrada em [`docs/BASELINE_METRICS.md`](docs/BASELINE_METRICS.md): SEO 100 e CLS 0 em tudo; LCP mobile da home 8,8 s simulado (causa: JS de terceiros/GTM na banda throttled, não a imagem do hero); HTML da home = ~25 KB com Brotli na rede (242 KB brutos) — diagnóstico do payload encerrado sem ação.
+
 ## [0.2.19] — 2026-08-07 (migração para novo.segurosimediato.com.br)
 
 ### Changed
