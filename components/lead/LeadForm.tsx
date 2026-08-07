@@ -20,6 +20,7 @@ import { ProgressBar } from "@/components/lead/ProgressBar";
 import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { RpaChoiceStep } from "@/components/lead/RpaChoiceStep";
 import { RpaCalculationScreen } from "@/components/lead/RpaCalculationScreen";
+import { postLead } from "@/lib/leads/post-lead";
 import { useRpaCalculation } from "@/lib/leads/use-rpa-calculation";
 import type { RpaDisabledReason } from "@/lib/rpa-calculation";
 import { buildRpaPayload } from "@/lib/rpa";
@@ -261,18 +262,14 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       franquiaAlternativo: rpa.result.alternativo?.valorFranquia,
     };
 
-    void fetch("/api/lead", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-      body: JSON.stringify({
-        ...buildPayloadFromRawValues(getValues()),
-        stage: "rpa_result",
-        captureChannel: "lead_form",
-        rpaChoice: "aguardar",
-        rpaResultado,
-        leadId: initialLeadIdRef.current ?? undefined,
-        utm: captureUtmFromLocation(),
-      }),
+    void postLead({
+      ...buildPayloadFromRawValues(getValues()),
+      stage: "rpa_result",
+      captureChannel: "lead_form",
+      rpaChoice: "aguardar",
+      rpaResultado,
+      leadId: initialLeadIdRef.current ?? undefined,
+      utm: captureUtmFromLocation(),
     }).catch((error) => console.error("[LeadForm] Falha ao registrar resultado do RPA (não bloqueante):", error));
     // `buildPayloadFromRawValues`/`getValues` são estáveis no ciclo de vida
     // que interessa aqui (o envio é guardado por `rpaResultReportedRef`).
@@ -436,17 +433,13 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
     try {
       const values = getValues();
-      const response = await fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({
-          ramo,
-          ddd: values.ddd,
-          celular: values.celular,
-          stage: "initial",
-          captureChannel: "lead_form",
-          utm: captureUtmFromLocation(),
-        }),
+      const response = await postLead({
+        ramo,
+        ddd: values.ddd,
+        celular: values.celular,
+        stage: "initial",
+        captureChannel: "lead_form",
+        utm: captureUtmFromLocation(),
       });
       const data = (await response.json().catch(() => null)) as { leadId?: string } | null;
       if (data?.leadId) initialLeadIdRef.current = data.leadId;
@@ -467,16 +460,12 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   async function sendProgressUpdate() {
     try {
       const values = getValues();
-      await fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({
-          ...buildPayloadFromRawValues(values),
-          stage: "progress",
-          captureChannel: "lead_form",
-          leadId: initialLeadIdRef.current ?? undefined,
-          utm: captureUtmFromLocation(),
-        }),
+      await postLead({
+        ...buildPayloadFromRawValues(values),
+        stage: "progress",
+        captureChannel: "lead_form",
+        leadId: initialLeadIdRef.current ?? undefined,
+        utm: captureUtmFromLocation(),
       });
     } catch (error) {
       console.error("[LeadForm] Falha na atualização de progresso (não bloqueante):", error);
@@ -828,17 +817,13 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
     trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form" });
 
-    void fetch("/api/lead", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-      body: JSON.stringify({
-        ...buildPayloadFromRawValues(getValues()),
-        stage: "consultant_requested",
-        captureChannel: "lead_form",
-        rpaChoice: "consultor",
-        leadId: initialLeadIdRef.current ?? undefined,
-        utm: captureUtmFromLocation(),
-      }),
+    void postLead({
+      ...buildPayloadFromRawValues(getValues()),
+      stage: "consultant_requested",
+      captureChannel: "lead_form",
+      rpaChoice: "consultor",
+      leadId: initialLeadIdRef.current ?? undefined,
+      utm: captureUtmFromLocation(),
     }).catch((error) => console.error("[LeadForm] Falha ao registrar escolha do consultor (não bloqueante):", error));
 
     finalSubmitInFlightRef.current = true;
@@ -876,19 +861,15 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     // seguimos sem ele (o backend estima, como antes).
     let perfilRpa: { sexo?: string; dataNascimento?: string; estadoCivil?: string } | undefined;
     try {
-      const response = await fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-        // `rpaChoice: "aguardar"` (projeto 2026-07-20): registra no lead a
-        // escolha de acompanhar o cálculo agora — a Cloud Function posta a
-        // escolha no Stream do lead no EspoCRM.
-        body: JSON.stringify({
-          ...payload,
-          stage: "complete",
-          captureChannel: "lead_form",
-          rpaChoice: "aguardar",
-          leadId: initialLeadIdRef.current ?? undefined,
-        }),
+      // `rpaChoice: "aguardar"` (projeto 2026-07-20): registra no lead a
+      // escolha de acompanhar o cálculo agora — a Cloud Function posta a
+      // escolha no Stream do lead no EspoCRM.
+      const response = await postLead({
+        ...payload,
+        stage: "complete",
+        captureChannel: "lead_form",
+        rpaChoice: "aguardar",
+        leadId: initialLeadIdRef.current ?? undefined,
       });
       const result = (await response.json().catch(() => ({}))) as {
         perfilRpa?: { sexo?: string; dataNascimento?: string; estadoCivil?: string };

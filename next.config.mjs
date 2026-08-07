@@ -34,6 +34,30 @@ const nextConfig = {
    * único item 100% confirmado está aqui. Revisar esta lista assim que
    * a auditoria real (seção 65) for concluída.
    */
+  /**
+   * Headers de segurança (auditoria 2026-08-07). A Vercel já envia HSTS;
+   * estes complementam o básico recomendado sem risco de quebrar nada:
+   * - nosniff: impede MIME-sniffing de respostas.
+   * - Referrer-Policy: origem completa só em navegação same-origin
+   *   (não afeta GA4/Ads — o gtag envia a URL da página por parâmetro).
+   * - frame-ancestors 'self': anti-clickjacking (equivalente moderno do
+   *   X-Frame-Options; site não é embedado por terceiros).
+   * CSP completa (script-src etc.) fica fora por ora: GTM injeta scripts
+   * dinamicamente e uma CSP mal calibrada derrubaria a medição.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+        ],
+      },
+    ];
+  },
+
   async redirects() {
     return [
       {

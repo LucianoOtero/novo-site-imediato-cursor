@@ -16,6 +16,7 @@ import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { company } from "@/lib/company";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { trackEvent } from "@/lib/analytics";
+import { postLead } from "@/lib/leads/post-lead";
 import {
   captureUtmFromLocation,
   formatCelular,
@@ -263,17 +264,13 @@ export function ContactLeadModal() {
 
     try {
       const values = getValues();
-      const response = await fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({
-          ramo: ramo ?? values.ramo,
-          ddd: values.ddd,
-          celular: values.celular,
-          stage: "initial",
-          captureChannel: "contact_modal",
-          utm: captureUtmFromLocation(),
-        }),
+      const response = await postLead({
+        ramo: ramo ?? values.ramo,
+        ddd: values.ddd,
+        celular: values.celular,
+        stage: "initial",
+        captureChannel: "contact_modal",
+        utm: captureUtmFromLocation(),
       });
       const data = (await response.json().catch(() => null)) as { leadId?: string } | null;
       if (data?.leadId) initialLeadIdRef.current = data.leadId;
@@ -418,18 +415,14 @@ export function ContactLeadModal() {
   async function sendLeadAndNavigate(data: LeadInput, skipStrictValidation?: boolean) {
     setSubmitting(true);
     try {
-      await fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({
-          ...data,
-          ramo: ramo ?? data.ramo,
-          stage: "complete",
-          captureChannel: "contact_modal",
-          leadId: initialLeadIdRef.current ?? undefined,
-          utm: captureUtmFromLocation(),
-          skipStrictValidation,
-        }),
+      await postLead({
+        ...data,
+        ramo: ramo ?? data.ramo,
+        stage: "complete",
+        captureChannel: "contact_modal",
+        leadId: initialLeadIdRef.current ?? undefined,
+        utm: captureUtmFromLocation(),
+        skipStrictValidation,
       });
     } catch (error) {
       // Não-bloqueante: nunca impedir a navegação por causa de uma falha de rede/servidor.

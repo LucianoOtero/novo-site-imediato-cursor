@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import { postLead } from "@/lib/leads/post-lead";
 import type { LeadInput } from "@/lib/validators";
 
 /**
@@ -41,16 +42,12 @@ export function useSubmitLead(ramo: string) {
   const router = useRouter();
 
   async function submitLead(lead: LeadInput, leadId?: string, skipStrictValidation?: boolean) {
-    const response = await fetch("/api/lead", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-      body: JSON.stringify({
-        ...lead,
-        stage: "complete",
-        captureChannel: "lead_form",
-        leadId,
-        skipStrictValidation,
-      }),
+    const response = await postLead({
+      ...lead,
+      stage: "complete",
+      captureChannel: "lead_form",
+      leadId,
+      skipStrictValidation,
     });
 
     if (!response.ok) {

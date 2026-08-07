@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
 import { GtmNoScript, GtmScripts, consentDefaultScript } from "@/components/consent/GtmConsentScripts";
@@ -44,8 +45,16 @@ const inter = Inter({
  */
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.siteUrl || "http://localhost:3000"),
-  title: "Imediato Seguros",
-  description: "Scaffold inicial do projeto. Conteúdo final ainda não implementado.",
+  // Default real com template (auditoria 2026-08-07): páginas que definem
+  // metadata própria via buildPageMetadata continuam soberanas (title
+  // completo substitui o template); este default só vale para rotas que
+  // esquecerem generateMetadata — antes herdavam texto de scaffold.
+  title: {
+    default: "Imediato Seguros — Cotação de Seguro Grátis",
+    template: "%s | Imediato Seguros",
+  },
+  description:
+    "Corretora de seguros com 25 anos de experiência. Compare seguro auto, moto, caminhão e mais entre seguradoras parceiras. Cotação grátis com especialista humano.",
   // Tags de verificação do Google Search Console (integrações 2026-07-03).
   // Confirmadas lendo o Head Code do ambiente DEV do Webflow — ver
   // docs/WEBFLOW_CUSTOM_CODE_DEV.md e docs/DADOS_OFICIAIS.md. Preservam a
@@ -96,6 +105,10 @@ export default function RootLayout({
         </ContactModalProvider>
         <ConsentBanner />
         <GtmScripts />
+        {/* RUM da Vercel (auditoria 2026-08-07): coleta LCP/INP/CLS de campo
+            (BASELINE_METRICS.md). No-op até o Speed Insights ser habilitado
+            no projeto (requer plano Pro). */}
+        <SpeedInsights />
       </body>
     </html>
   );

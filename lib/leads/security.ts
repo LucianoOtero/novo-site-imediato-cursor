@@ -97,7 +97,15 @@ export async function verifyTurnstile(token: string | undefined): Promise<boolea
     return true;
   }
 
-  if (!token) return false;
+  // Fail-open deliberado (auditoria 2026-08-07, plano aprovado): token
+  // AUSENTE passa com aviso — cobre widget bloqueado por adblock, timeout
+  // de rede e os fluxos legados sem token. Só rejeitamos token PRESENTE e
+  // inválido (bot que tentou forjar/reusar — tokens são de uso único).
+  // Filosofia do funil: nunca perder um lead real por causa do anti-bot.
+  if (!token) {
+    console.warn("[lib/leads/security] Lead sem turnstileToken (widget indisponível?) — aceito por fail-open.");
+    return true;
+  }
 
   try {
     const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {

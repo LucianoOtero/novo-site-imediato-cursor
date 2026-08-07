@@ -48,7 +48,11 @@ export function buildPageMetadata({
   const url = publicEnv.siteUrl ? `${publicEnv.siteUrl}${path}` : path;
 
   return {
-    title,
+    // `absolute` (auditoria 2026-08-07): os titles deste helper já incluem a
+    // marca ("… | Imediato Seguros") — sem isso, o `title.template` do layout
+    // raiz duplicaria o sufixo. O template fica valendo só para páginas que
+    // definirem title simples fora deste helper.
+    title: { absolute: title },
     description,
     alternates: { canonical: url },
     openGraph: {
