@@ -217,7 +217,7 @@ Pré-requisitos que foram necessários: habilitar a **Google Analytics Admin API
 
 ## Marcador de origem nos e-mails de alerta (2026-08-04, noite)
 
-Os alertas de lead dos dois sites saem pelo **mesmo Cloud Run legado** (`send-email-notification-prod`), com o mesmo template — eram indistinguíveis. Como `momento_descricao`/`momento_emoji` são renderizados como chegam no payload (o legado monta os dele no browser, `MODAL_WHATSAPP_DEFINITIVO.js`), a CF do site novo ([`firebase/functions/email-notification.js`](../firebase/functions/email-notification.js)) passou a prefixar `momento_descricao` com **`comparaseguroonline — `** e usar emoji `🆕` (momentos normais; `❌` mantido nos de erro). Cobre todos os disparos (`initial`, `update` e erros, incl. pós-Octadesk) num único ponto (`MOMENTO_META`). Cloud Run e legado intocados. Testado em dev (4 e-mails OK, registros purgados).
+Os alertas de lead dos dois sites saem pelo **mesmo Cloud Run legado** (`send-email-notification-prod`), com o mesmo template — eram indistinguíveis. Como `momento_descricao`/`momento_emoji` são renderizados como chegam no payload (o legado monta os dele no browser, `MODAL_WHATSAPP_DEFINITIVO.js`), a CF do site novo ([`firebase/functions/email-notification.js`](../firebase/functions/email-notification.js)) passou a prefixar `momento_descricao` com **`comparaseguroonline — `** e usar emoji `🆕` no primeiro contato e `🆕✅` na submissão completa (`❌` mantido nos de erro). Cobre todos os disparos (`initial`, `update` e erros, incl. pós-Octadesk) num único ponto (`MOMENTO_META`). Cloud Run e legado intocados. Testado em dev (4 e-mails OK, registros purgados).
 
 ---
 
@@ -395,3 +395,32 @@ Decisão do cliente: prospect recorrente (nova jornada, dias/meses depois) ganha
 - **Opportunity**: reaproveitada só via `espocrmOpportunityId` do registro RTDB da jornada corrente. Removida a busca por `cLeadId` no CRM (`findOpportunityByLeadId`); PUT stale (404/403) cria nova direto.
 - **Teste dev** (`dev.flyingdonkeys.com.br`, gravação direta no RTDB `environment=development`): 2 jornadas mesmo telefone → 1 Lead + **2 Opportunities**; `complete` manteve a Opp da jornada; ID stale forjado → Opp nova (não recuperou a antiga). Purge OK (Espo dev com a chave do bloco `dev` aceita DELETE, diferente do prod).
 - **Ressalvas**: janela de dedupe de 24h do `/api/lead` ≈ mesma jornada; pipeline passa a ter múltiplas Opps por prospect — relatórios não devem assumir `cLeadId` único; fechamento das Opps antigas paradas fica a cargo do processo/automação no CRM. Site legado segue no proxy antigo (atualiza a Opp existente) — comportamentos coexistem na mesma base.
+
+---
+
+## Migração para `novo.segurosimediato.com.br` (2026-08-06/07) — CONCLUÍDA
+
+Motivo: "Veiculação limitada" na conta Ads NOVA (`994-791-8772`) por identidade do anunciante — o domínio genérico `comparaseguroonline.com.br` não evidenciava a marca. Solução estrutural: subdomínio de marca. **Legado (`segurosimediato.com.br`) intocado.**
+
+| Fase | Resultado |
+|---|---|
+| 0 Baseline | `scripts/google-ops/ads-baseline-2026-08-06.json` (23/07–05/08); experimento pausado via ad groups (snapshot `ads-exp-adgroups-before-pause.json` — só *Auto* estava ENABLED) |
+| 1 DNS/Vercel | CNAME `novo` → Vercel no Cloudflare; domínio no projeto `imediato-seguros`; HTTPS ok |
+| 2 Código/env | `NEXT_PUBLIC_SITE_URL` + constantes CF (`SITE_WEBPAGE`, `SITE_MARKER`) + e-mails migrados; CF `deliverLead` redeployada; commit `32de536` |
+| 3 GTM | **v47** publicada — 7 acionadores `[NovoSite]` com RegEx `comparaseguroonline\.com\.br\|novo\.segurosimediato\.com\.br`; legado intacto |
+| 4 Ads | 21 RSAs do braço Exp com URLs finais no domínio novo + "Imediato Seguros" nos títulos; sitelinks removidos; **21/21 APPROVED** (grupo Moto precisou de re-save p/ reavaliação) |
+| 5 Redirect 301 | Via API Vercel: `comparaseguroonline.com.br` e `www.` → `novo.segurosimediato.com.br` (301, preserva o path — testado `/cotacao`) |
+| 6 Smoke lead | **PASS 2026-08-07** — ver abaixo |
+| Reativação Exp | Snapshot restaurado após 21/21 aprovados (*Auto* ENABLED; demais seguem pausados como antes) |
+
+### Smoke migração (2026-08-07)
+
+Telefone de teste `11-91653-5000`, lead `ld_fd826a309b76`, fluxo A (form) em `initial` → `progress` → `consultant_requested` → `complete` (`rpaChoice=consultor`), tudo via `POST /api/lead` no domínio novo:
+
+- EspoCRM prod: Lead `6a76012281e7095f9` + Opp nova `6a760122c8f315c8e`; **`cWebpage=novo.segurosimediato.com.br` no Lead e na Opp**; `cEtapaFunil=Cálculo manual pendente`; `cEscolhaCalculo=Receber depois`; Note+Task do consultor criados.
+- Octadesk: `octadesk_sent=true` (HSM initial) + `octa_calculo_completo_depois_sent=true`; sem reenvio da HSM (1 attempt).
+- E-mails de alerta enviados (initial, update, "cálculo completo depois") — já com marcador `novo.segurosimediato`.
+- Limpeza: Lead/Opp arquivados no CRM (prefixo `ARCHIVED`, DELETE segue 403 p/ Role API); registro RTDB removido.
+- **Achado (CRM, fora do escopo da migração)**: a Opp terminou com stage **"Perdido"** e assignedUser "Thalita torres" — mudanças feitas por workflow do próprio Espo (creditadas a `add_travelangels` no PUT do `complete`). Nosso código só cria com "Novo Sem Contato". Verificar com a equipe se existe regra "Receber depois → Perdido".
+
+**Pós-migração**: conversões Ads/GA4 só são verificáveis com tráfego real (o smoke é API-level, não dispara GTM); acompanhar o experimento e capturar nova baseline após alguns dias de veiculação no domínio novo (`scripts/google-ops/ads-baseline-experiment.mjs`).

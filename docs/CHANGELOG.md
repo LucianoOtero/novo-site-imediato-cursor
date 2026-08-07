@@ -19,7 +19,7 @@ ATIVO (preenchido a cada release)
 ## [0.2.17] — 2026-08-04 (marcador de origem nos e-mails de alerta de leads)
 
 ### Changed (Cloud Function — fora do app Next)
-- [`firebase/functions/email-notification.js`](firebase/functions/email-notification.js): alertas de lead do site novo (mesmo Cloud Run/template do legado) agora saem com `momento_descricao` prefixada com **`comparaseguroonline — `** e emoji `🆕` nos momentos normais (`❌` mantido nos de erro). Legado sem marcador (monta o payload no browser); Cloud Run intocado.
+- [`firebase/functions/email-notification.js`](firebase/functions/email-notification.js): alertas de lead do site novo (mesmo Cloud Run/template do legado) agora saem com `momento_descricao` prefixada com **`comparaseguroonline — `** e emoji `🆕` no primeiro contato / `🆕✅` na submissão completa (`❌` mantido nos de erro). Legado sem marcador (monta o payload no browser); Cloud Run intocado.
 - Deploy `deliverLead` OK. Teste dev (RTDB, `initial` + `complete`): 4 e-mails enviados com sucesso (`email_espocrm_initial/update_sent`, `email_octa_initial/cotacao_dados_recebidos_sent`); registros de teste purgados (RTDB + Espo dev via API, HTTP 200).
 
 ## [0.2.16] — 2026-08-04 (consent opt-out, paridade com o legado)

@@ -8,19 +8,20 @@ Gerado ao final da sessão de 2026-07-03; atualizado com conquistas de 2026-08-0
 
 ---
 
-## 0. Conquistas recentes (2026-08-02) — retomar daqui
+## 0. Conquistas recentes (2026-08-07) — retomar daqui
 
-Status canônico: [`docs/FASE_A_GTM_ESPOCRM_OPS.md`](FASE_A_GTM_ESPOCRM_OPS.md) (*Conquistas 2026-08-02*) · release **v0.2.9**.
+Status canônico: [`docs/FASE_A_GTM_ESPOCRM_OPS.md`](FASE_A_GTM_ESPOCRM_OPS.md) (secção *Migração para novo.segurosimediato.com.br*).
 
 | Feito | Detalhe |
 |---|---|
-| GTM v39 | Split consultor/RPA + hostname; legado intacto |
-| Action RPA Ads | `9VjSCLSUx9ocENOW2IQD` |
-| Experimento | `Exp site novo vs legado 50/50` Agendado (3/ago–27/set); Auto APPROVED |
-| OAuth API | GTM + Ads (`scripts/google-ops`); monitor de aprovação |
-| Contato | SES (v0.2.8) |
+| **Migração de domínio CONCLUÍDA** | Site experimental agora em `novo.segurosimediato.com.br` (resolve "Veiculação limitada" do Ads); legado intacto |
+| Redirect 301 | `comparaseguroonline.com.br` (+www) → domínio novo, via API Vercel, preservando path |
+| GTM v47 | Acionadores `[NovoSite]` com RegEx dos dois domínios |
+| Ads | 21/21 RSAs do braço Exp APPROVED no domínio novo + marca nos títulos; experimento reativado (grupo *Auto*) |
+| Smoke lead | PASS — `cWebpage=novo.segurosimediato.com.br` no EspoCRM; Octadesk/e-mails ok; teste arquivado |
+| Header | Barra de identidade (razão social + CNPJ + SUSEP); SUSEP duplicada removida da CredBar |
 
-**Próximo natural:** acompanhar SERVING do Exp a partir de 3/ago; relatório Controle vs Tratamento; opcional limpar/contestar grupo *Cotação Seguro Online* (pausado, DISAPPROVED).
+**Próximo natural:** acompanhar serving/aprovação da conta Ads após a migração (a "Veiculação limitada" deve normalizar com o domínio de marca); nova baseline do experimento após alguns dias (`ads-baseline-experiment.mjs`); confirmar com a equipe o workflow do Espo "Receber depois → Perdido" (achado do smoke).
 
 ---
 
