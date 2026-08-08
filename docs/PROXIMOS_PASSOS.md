@@ -24,6 +24,12 @@ Status canônico: [`docs/FASE_A_GTM_ESPOCRM_OPS.md`](FASE_A_GTM_ESPOCRM_OPS.md) 
 
 **Próximo natural:** acompanhar serving/aprovação da conta Ads após a migração (a "Veiculação limitada" deve normalizar com o domínio de marca); nova baseline do experimento após alguns dias (`ads-baseline-experiment.mjs`); confirmar com a equipe o workflow do Espo "Receber depois → Perdido" (achado do smoke).
 
+**⏳ TO-DO registrado (2026-08-08) — Acompanhamento Google Ads + GA4 + GTM:**
+Após a migração de domínio e as mudanças de conversão no hero (formulário acima da dobra, H1 em 3 linhas, card branco translúcido — commit `476f59e`), acompanhar nos próximos dias:
+1. **Google Ads**: comportamento da campanha/experimento (grupo *Auto*) — serving normalizando após o fim da "Veiculação limitada", impressões/CTR/CPC do braço Exp vs. controle, e status de aprovação dos 21 RSAs (rodar `ads-baseline-experiment.mjs` para a nova baseline).
+2. **GA4**: eventos chegando do domínio novo (`novo.segurosimediato.com.br`) — em especial os eventos de funil do formulário (`form_start`, etapas, `generate_lead`, `rpa_result`) e se as mudanças visuais do hero se refletem em mais inícios de formulário no mobile.
+3. **GTM**: funcionamento dos acionadores `[NovoSite]` (GTM v47, RegEx dos dois domínios) — conferir no modo Preview/relatórios que tags de conversão Ads e GA4 continuam disparando normalmente após as mudanças no `LeadForm` (a mudança foi 100% visual, mas vale a confirmação nos dados reais).
+
 **Pendências do cliente (auditoria 2026-08-07):**
 1. **Upgrade Vercel Pro** (billing) — sem isso o site segue no Hobby (uso comercial proibido nos termos) e o Speed Insights não coleta dados.
 2. **Criar widget Turnstile** no dashboard do Cloudflare (Turnstile → Add site, tipo **Invisible**, domínio `novo.segurosimediato.com.br`) e passar site key + secret key para configurar `NEXT_PUBLIC_TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY` na Vercel (o token de API fornecido não tem escopo Turnstile). Até lá o código fica em mock mode — comportamento idêntico ao atual.
