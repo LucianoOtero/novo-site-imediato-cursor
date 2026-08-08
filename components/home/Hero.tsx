@@ -177,13 +177,33 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
               {ramo.eyebrow}
             </p>
           )}
-          {/* Mobile (ajuste 2026-08-08, pedido do cliente): fonte menor e
-              quebras controladas (`\n` no headline + whitespace-pre-line) para
-              o H1 ocupar 3 linhas e devolver o foco ao formulário. Desktop
-              intocado: md:text-6xl + whitespace-normal (colapsa os \n). */}
-          <h1 className="whitespace-pre-line font-display text-[1.75rem] font-bold leading-[1.15] tracking-tight text-white md:whitespace-normal md:text-6xl md:leading-[1.08]">
-            {ramo.headline}
-          </h1>
+          {/* H1 em "lockup" de 3 linhas (ajuste 2026-08-08, pedido do cliente):
+              headlines com `\n` (hoje só o Auto) viram linhas com tamanhos
+              próprios — 1ª grande (como antes), 2ª/3ª menores: no desktop com
+              largura ~igual à da 1ª ("Seguro auto" em text-6xl ≈ 330px); no
+              mobile dimensionadas para caber inteiras até em telas de 360px
+              (antes a 2ª linha quebrava em 4ª linha e empurrava o formulário).
+              Headlines sem `\n` (demais ramos) seguem no layout original. */}
+          {ramo.headline.includes("\n") ? (
+            <h1 className="font-display font-bold tracking-tight text-white">
+              {ramo.headline.split("\n").map((line, index) => (
+                <span
+                  key={line}
+                  className={
+                    index === 0
+                      ? "block text-[1.75rem] leading-[1.15] md:text-6xl md:leading-[1.08]"
+                      : "mt-1 block text-[1.35rem] leading-[1.3] md:text-[1.65rem] md:leading-[1.3]"
+                  }
+                >
+                  {line}
+                </span>
+              ))}
+            </h1>
+          ) : (
+            <h1 className="font-display text-[1.75rem] font-bold leading-[1.15] tracking-tight text-white md:text-6xl md:leading-[1.08]">
+              {ramo.headline}
+            </h1>
+          )}
           <p className="mt-3 max-w-xl text-lg leading-relaxed text-brand-50/90 md:mt-5">
             {ramo.subheadline}
           </p>
