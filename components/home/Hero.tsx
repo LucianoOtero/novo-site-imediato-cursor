@@ -177,7 +177,11 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
               {ramo.eyebrow}
             </p>
           )}
-          <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight text-white md:text-6xl">
+          {/* Mobile (ajuste 2026-08-08, pedido do cliente): fonte menor e
+              quebras controladas (`\n` no headline + whitespace-pre-line) para
+              o H1 ocupar 3 linhas e devolver o foco ao formulário. Desktop
+              intocado: md:text-6xl + whitespace-normal (colapsa os \n). */}
+          <h1 className="whitespace-pre-line font-display text-[1.75rem] font-bold leading-[1.15] tracking-tight text-white md:whitespace-normal md:text-6xl md:leading-[1.08]">
             {ramo.headline}
           </h1>
           <p className="mt-3 max-w-xl text-lg leading-relaxed text-brand-50/90 md:mt-5">
