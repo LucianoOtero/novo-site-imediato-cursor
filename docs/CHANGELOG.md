@@ -17,6 +17,9 @@ ATIVO (preenchido a cada release)
 - **Conversão mobile** (pedido do cliente; mockup aprovado): no mobile, o passo 1 do LeadForm (DDD + celular + botão) agora cabe na primeira dobra. [`components/home/Hero.tsx`](components/home/Hero.tsx): padding vertical do hero reduzido só no mobile (o `py-16` da Section + `py-12` do Container somavam 112 px de espaço morto), `gap`/`margins` do texto mais enxutos e selos (cotação grátis + estrelas Google) movidos para baixo do card do formulário (`lg` intocado — desktop idêntico). [`app/(marketing)/page.tsx`](app/(marketing)/page.tsx): CredBar desce para depois do Hero no mobile (duplicava selos do hero). [`components/shared/FraudAlert.tsx`](components/shared/FraudAlert.tsx): mais compacto no mobile (texto oficial preservado). LPs de ramo herdam as melhorias do Hero automaticamente.
 - Rollback: reverter este commit (a versão anterior é o commit `803ba08`) ou Instant Rollback na Vercel.
 
+### Ops (2026-08-08, pós-tag)
+- **Turnstile ativado em produção**: widget criado no dashboard do Cloudflare (modo Invisible, hostnames `segurosimediato.com.br` + `localhost`); `NEXT_PUBLIC_TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY` reais configuradas na Vercel (Production) via API, substituindo os placeholders — sai do mock mode. Smoke do fluxo de lead executado após o deploy.
+
 ## [0.2.20] — 2026-08-07 (melhorias da auditoria de performance/SEO/conversão)
 
 ### Added
