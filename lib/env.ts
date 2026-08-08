@@ -279,7 +279,11 @@ export const publicEnv = {
   ga4Id: sanitizeSingleLineId(parsed.NEXT_PUBLIC_GA4_ID),
   whatsappNumber: sanitizeSingleLineId(parsed.NEXT_PUBLIC_WHATSAPP_NUMBER),
   contactPhone: sanitizeSingleLineId(parsed.NEXT_PUBLIC_CONTACT_PHONE),
-  turnstileSiteKey: sanitizeSingleLineId(parsed.NEXT_PUBLIC_TURNSTILE_SITE_KEY),
+  // Referência DIRETA a process.env (correção 2026-08-08, mesmo motivo do
+  // `rpaEnabled` abaixo): a site key é consumida NO BROWSER pelo widget
+  // (`lib/leads/post-lead.ts`); via `parsed` ela nunca chegava ao client e
+  // o Turnstile ficava permanentemente em fail-open.
+  turnstileSiteKey: sanitizeSingleLineId(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY),
   sentryDsnPublic: sanitizeSingleLineId(parsed.NEXT_PUBLIC_SENTRY_DSN),
   /**
    * RPA (Issue de integrações 2026-07-03). **Ligado por padrão** (decisão
