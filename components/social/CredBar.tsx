@@ -14,22 +14,32 @@ import { company } from "@/lib/company";
  * Cada número vem acompanhado de um rótulo textual visível (não apenas
  * `aria-label`), satisfazendo o critério "números com contexto textual
  * (SR)" tanto para leitura visual quanto por leitor de tela.
+ *
+ * `variant="complementar"` (2026-08-09, pedido do cliente): só os 2 itens
+ * que o selo com estrelas do Hero NÃO mostra (anos de experiência e
+ * seguradoras parceiras) — usada no mobile da home, onde a CredBar vem
+ * logo após o hero e a versão completa duplicava "96%"/"+2.200" que o
+ * selo acabou de exibir.
  */
-export function CredBar() {
+export function CredBar({ variant = "full" }: { variant?: "full" | "complementar" }) {
   const reviewsCount = new Intl.NumberFormat("pt-BR").format(company.business.googleReviewsCount);
   // Satisfação sempre derivada da nota real do Google (nota ÷ 5 × 100 —
   // mesma fórmula do selo do Testimonials), nunca hardcoded (2026-08-08).
   const satisfaction = Math.round((company.business.googleRating / 5) * 100);
 
   const items = [
-    {
-      icon: Star,
-      label: `${satisfaction}% de satisfação no Google`,
-    },
-    {
-      icon: Users,
-      label: `+${reviewsCount} avaliações`,
-    },
+    ...(variant === "full"
+      ? [
+          {
+            icon: Star,
+            label: `${satisfaction}% de satisfação no Google`,
+          },
+          {
+            icon: Users,
+            label: `+${reviewsCount} avaliações`,
+          },
+        ]
+      : []),
     {
       icon: Award,
       label: `${company.business.yearsExperience}+ anos de experiência`,

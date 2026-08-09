@@ -115,8 +115,10 @@ export default async function HomePage() {
         <CredBar />
       </div>
       <Hero ramoSlug="auto" />
+      {/* Variante complementar (2026-08-09): só anos de experiência +
+          seguradoras — o selo do hero, logo acima, já mostra 96%/+2.200. */}
       <div className="md:hidden">
-        <CredBar />
+        <CredBar variant="complementar" />
       </div>
 
       <Section tone="soft">

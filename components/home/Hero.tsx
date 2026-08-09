@@ -151,15 +151,20 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
         <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
         Cotação grátis, sem compromisso
       </p>
-      <p className="inline-flex items-center gap-1.5 text-sm font-medium text-white">
+      {/* Pilha de linhas (2026-08-09, pedido do cliente): a versão em linha
+          única quebrava no meio da frase em telas estreitas — agora estrelas,
+          satisfação e avaliações têm cada uma a sua linha, centradas. */}
+      <div className="flex flex-col items-center gap-1 text-sm font-medium text-white">
         <span className="flex" aria-hidden="true">
           {Array.from({ length: 5 }).map((_, index) => (
             <Star key={index} className="size-4 fill-amber-400 text-amber-400" />
           ))}
         </span>
-        {satisfaction}% de satisfação no Google · +
-        {company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
-      </p>
+        <span>{satisfaction}% de satisfação no Google</span>
+        <span className="text-brand-50/90">
+          +{company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
+        </span>
+      </div>
     </>
   );
 
