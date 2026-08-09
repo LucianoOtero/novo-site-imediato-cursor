@@ -136,12 +136,14 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
   const satisfaction = Math.round((company.business.googleRating / 5) * 100);
 
   /**
-   * Selos (cotação grátis + estrelas Google) — renderizados DUAS vezes
-   * (conversão mobile, 2026-08-07): no mobile descem para baixo do card
-   * do formulário (para o passo 1 caber na primeira dobra); no desktop
-   * continuam no lugar de sempre, na coluna de texto. Elementos com
-   * `hidden` não geram célula no grid, então a cópia extra não afeta o
-   * layout de 2 colunas do lg.
+   * Selos (cotação grátis + estrelas Google) — SÓ no mobile (<md), abaixo
+   * do card do formulário (conversão mobile, 2026-08-07). De md em diante
+   * o selo sai do hero (ajuste 2026-08-09, pedido do cliente): a CredBar,
+   * visível logo abaixo do menu nessas larguras, já exibe exatamente
+   * "96% de satisfação no Google" e "+2.200 avaliações" — o selo
+   * duplicava a mesma frase na mesma dobra. No lg+ a prova social do
+   * hero fica por conta da régua de estatísticas (números grandes),
+   * apresentação distinta da CredBar.
    */
   const badges = (
     <>
@@ -212,8 +214,6 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
             {ramo.subheadline}
           </p>
 
-          <div className="mt-7 hidden flex-wrap items-center gap-x-5 gap-y-3 lg:flex">{badges}</div>
-
           <div className="mt-8 hidden gap-8 border-t border-white/15 pt-6 lg:flex">
             <div>
               <p className="font-display text-3xl font-bold text-white">
@@ -236,7 +236,7 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
           </div>
         </div>
         <LeadForm ramo={ramoSlug} variant="inline" onSuccess={submitLead} />
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 lg:hidden">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 md:hidden">
           {badges}
         </div>
       </Container>
