@@ -15,12 +15,26 @@ import { aImediatoNavLinks, mainNavLinks, segurosNavLinks, type NavLink } from "
  * Usa `@base-ui/react/navigation-menu`: `aria-expanded`, navegação por
  * teclado e fechamento por Esc já são nativos do primitivo.
  */
+/**
+ * Tipografia/padding fluidos nos itens de topo (2026-08-09, pedido do
+ * cliente): entre md (768px) e ~lg o header não tinha largura para todos
+ * os itens no text-sm/px-3 fixos — "A Imediato" e o botão "Cotar agora"
+ * quebravam em 2 linhas. `clamp()` com vw escala o texto/padding em
+ * proporção ao viewport (12px→14px e 6px→12px entre 768px e ~1280px), e
+ * `whitespace-nowrap` garante que item nenhum quebre linha. Os links
+ * DENTRO dos dropdowns (popup) continuam text-sm fixo (linkClass é
+ * compartilhada, mas o popup tem largura própria w-56 — o clamp também
+ * funciona lá sem prejuízo).
+ */
+const fluidTopItem =
+  "whitespace-nowrap px-[clamp(0.375rem,0.9vw,0.75rem)] text-[clamp(0.75rem,1.1vw,0.875rem)]";
+
 const triggerClass =
-  "flex min-h-11 items-center gap-1 rounded-md px-3 text-sm font-medium text-neutral-900 outline-none " +
+  `flex min-h-11 items-center gap-1 rounded-md ${fluidTopItem} font-medium text-neutral-900 outline-none ` +
   "hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-brand-500 data-[popup-open]:bg-neutral-50";
 
 const linkClass =
-  "flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-neutral-900 outline-none " +
+  `flex min-h-11 items-center rounded-md ${fluidTopItem} font-medium text-neutral-900 outline-none ` +
   "hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-brand-500";
 
 export function DesktopNav() {

@@ -70,7 +70,7 @@ export function Header() {
         </Container>
       </div>
 
-      <Container className="flex items-center justify-between gap-4">
+      <Container className="flex items-center justify-between gap-2 lg:gap-4">
         <Link
           href="/"
           className="shrink-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
@@ -86,9 +86,22 @@ export function Header() {
 
         <DesktopNav />
 
-        <div className="hidden items-center gap-2 md:flex">
-          <CallButton location="header" variant="ghost" size="sm" />
-          <Button href="/cotacao" variant="primary" size="sm">
+        {/* Texto/padding fluidos + nowrap (2026-08-09): entre md e ~lg o
+            header ficava sem largura e "Cotar agora" quebrava em 2 linhas —
+            mesmo tratamento dos itens do DesktopNav (ver MegaMenu.tsx). */}
+        <div className="hidden shrink-0 items-center gap-1 md:flex lg:gap-2">
+          <CallButton
+            location="header"
+            variant="ghost"
+            size="sm"
+            className="whitespace-nowrap px-[clamp(0.5rem,1.2vw,1rem)] text-[clamp(0.75rem,1.1vw,0.875rem)]"
+          />
+          <Button
+            href="/cotacao"
+            variant="primary"
+            size="sm"
+            className="whitespace-nowrap px-[clamp(0.625rem,1.3vw,1rem)] text-[clamp(0.75rem,1.1vw,0.875rem)]"
+          >
             Cotar agora
           </Button>
         </div>
