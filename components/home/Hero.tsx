@@ -131,6 +131,10 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
 
   if (!ramo) return null;
 
+  // Satisfação sempre derivada da nota real do Google (nota ÷ 5 × 100) —
+  // mesma fórmula da CredBar/CotacaoTrustPanel (2026-08-09), nunca hardcoded.
+  const satisfaction = Math.round((company.business.googleRating / 5) * 100);
+
   /**
    * Selos (cotação grátis + estrelas Google) — renderizados DUAS vezes
    * (conversão mobile, 2026-08-07): no mobile descem para baixo do card
@@ -151,8 +155,8 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
             <Star key={index} className="size-4 fill-amber-400 text-amber-400" />
           ))}
         </span>
-        {company.business.googleRating.toLocaleString("pt-BR", { minimumFractionDigits: 1 })}{" "}
-        no Google · +{company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
+        {satisfaction}% de satisfação no Google · +
+        {company.business.googleReviewsCount.toLocaleString("pt-BR")} avaliações
       </p>
     </>
   );
@@ -224,9 +228,9 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
               <p className="mt-0.5 text-sm text-brand-50/80">seguradoras comparadas</p>
             </div>
             <div>
-              <p className="font-display text-3xl font-bold text-white">
-                {company.business.satisfactionRate}%
-              </p>
+              {/* nota ÷ 5, não `satisfactionRate` — padronização 2026-08-09
+                  (mesmo número em CredBar, Hero e /cotacao). */}
+              <p className="font-display text-3xl font-bold text-white">{satisfaction}%</p>
               <p className="mt-0.5 text-sm text-brand-50/80">clientes satisfeitos</p>
             </div>
           </div>
