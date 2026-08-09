@@ -11,6 +11,19 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.22] — 2026-08-09 (hero focado em conversão: frost card, H1 em 3 linhas, prova social sem duplicação)
+
+### Changed
+- **Card do formulário do hero em branco translúcido (frost)** ([`components/lead/LeadForm.tsx`](components/lead/LeadForm.tsx)): variante `inline` trocou o glass navy por `bg-white/85` + blur (fallback `bg-white/95` sem `backdrop-filter`), tone `light` (labels escuros, inputs brancos sólidos), título "Inicie aqui sua cotação" em navy (`brand-700`) e botão azul — destaque máximo do formulário sobre o hero. `/cotacao` e modal intocados.
+- **H1 do hero como lockup de 3 linhas** ([`components/home/Hero.tsx`](components/home/Hero.tsx) + [`lib/ramos.ts`](lib/ramos.ts)): "Seguro auto" grande, "a partir de R$ 79,90/mês," e "com cobertura FIPE 100%" menores — desktop com larguras casadas, mobile cabendo em 360px sem quebras.
+- **"96% de satisfação no Google" em todo o site** (nota real ÷ 5 × 100, nunca hardcoded): substitui "4,8 de avaliação no Google" na CredBar, no selo do hero e no `CotacaoTrustPanel`; régua de estatísticas do desktop também passou a usar a fórmula (era `satisfactionRate` fixo).
+- **Prova social sem duplicação por dobra**: selo com estrelas do hero agora é exclusivo do mobile (<768px) e em pilha de 3 linhas (estrelas / satisfação / avaliações — antes quebrava no meio da frase); de 768px em diante a CredBar é a fonte única; no mobile da home a CredBar pós-hero virou variante `complementar` ([`components/social/CredBar.tsx`](components/social/CredBar.tsx)) só com anos de experiência + seguradoras parceiras. LPs de ramo (sem CredBar) mantêm o selo como única prova junto ao form.
+- **CredBar mobile em grid 2x2 sem sobreposição**: itens não usam mais `whitespace-nowrap` no mobile (rótulos transbordavam por cima do vizinho em 360px).
+- **Header sem quebra de linha entre 768px e lg** ([`components/layout/Header.tsx`](components/layout/Header.tsx) + [`components/layout/MegaMenu.tsx`](components/layout/MegaMenu.tsx)): itens do menu e botões Ligar/"Cotar agora" com texto/padding fluidos (`clamp()` por vw) + `nowrap`.
+
+### Docs
+- To-do registrado em [`docs/PROXIMOS_PASSOS.md`](docs/PROXIMOS_PASSOS.md): acompanhamento da campanha Google Ads, eventos GA4 e acionadores GTM após a migração de domínio e as mudanças de conversão do hero.
+
 ## [0.2.21] — 2026-08-07 (formulário acima da dobra no mobile)
 
 ### Changed
