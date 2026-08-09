@@ -17,15 +17,14 @@ import { company } from "@/lib/company";
 const TRUST_ITEMS = ["Cotação grátis", "Sem compromisso", "Retorno rápido"];
 
 export function CotacaoTrustPanel() {
-  const rating = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(
-    company.business.googleRating
-  );
+  // Mesma fórmula da CredBar (nota real ÷ 5 × 100) — consistência no site todo (2026-08-08).
+  const satisfaction = Math.round((company.business.googleRating / 5) * 100);
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-6 lg:sticky lg:top-24">
       <p className="flex items-center gap-2 text-sm font-bold text-neutral-900">
         <Star className="size-4 fill-brand-500 text-brand-500" aria-hidden="true" />
-        {rating} de avaliação no Google
+        {satisfaction}% de satisfação no Google
       </p>
       <ul className="flex flex-col gap-2">
         {TRUST_ITEMS.map((item) => (

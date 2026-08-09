@@ -17,14 +17,14 @@ import { company } from "@/lib/company";
  */
 export function CredBar() {
   const reviewsCount = new Intl.NumberFormat("pt-BR").format(company.business.googleReviewsCount);
-  const rating = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(
-    company.business.googleRating
-  );
+  // Satisfação sempre derivada da nota real do Google (nota ÷ 5 × 100 —
+  // mesma fórmula do selo do Testimonials), nunca hardcoded (2026-08-08).
+  const satisfaction = Math.round((company.business.googleRating / 5) * 100);
 
   const items = [
     {
       icon: Star,
-      label: `${rating} de avaliação no Google`,
+      label: `${satisfaction}% de satisfação no Google`,
     },
     {
       icon: Users,
@@ -44,10 +44,14 @@ export function CredBar() {
 
   return (
     <div className="border-b border-neutral-200 bg-neutral-50" aria-label="Selos de confiança">
-      <Container className="grid grid-cols-2 gap-x-4 gap-y-2 py-3 text-sm text-neutral-900 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-6">
+      {/* Mobile: grid 2x2 com quebra de linha dentro da célula (sem
+          whitespace-nowrap — com ele, rótulos mais largos que a coluna
+          transbordavam por cima do vizinho em 360px, bug 2026-08-08).
+          Desktop (sm+): flex centralizado em linha única, como antes. */}
+      <Container className="grid grid-cols-2 gap-x-4 gap-y-2 py-3 text-xs text-neutral-900 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-6 sm:text-sm">
         {items.map((item) => (
-          <p key={item.label} className="flex items-center justify-center gap-1.5 whitespace-nowrap sm:justify-start">
-            <item.icon className="size-4 shrink-0 text-brand-500" aria-hidden="true" />
+          <p key={item.label} className="flex items-start justify-start gap-1.5 sm:items-center sm:whitespace-nowrap">
+            <item.icon className="mt-0.5 size-4 shrink-0 text-brand-500 sm:mt-0" aria-hidden="true" />
             <span className="font-medium">{item.label}</span>
           </p>
         ))}
