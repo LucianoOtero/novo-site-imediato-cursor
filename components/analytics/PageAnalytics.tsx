@@ -39,56 +39,6 @@ function getScrollPercent(): number {
 export function PageAnalytics() {
   const pathname = usePathname();
 
-  /**
-   * Monitoramento de erros client-side não capturados por erro de
-   * *render* (2026-07-14, revisado 2026-07-15 — ver
-   * `docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md`).
-   *
-   * **Escopo real (corrigido nesta revisão)**: `window.onerror`/
-   * `unhandledrejection` só disparam para exceções verdadeiramente não
-   * capturadas — código fora do ciclo de render do React (ex.: dentro
-   * de um `setTimeout`, de um listener de evento do DOM, de um
-   * callback de `IntersectionObserver`). Erros de *render* do React
-   * (os que produzem a tela "Application error" do Next.js) são
-   * tratados internamente pelo próprio React/Next.js e **nunca**
-   * chegam aqui — por isso este listener nunca capturou o "Application
-   * error" relatado em `/obrigado`, mesmo recorrente. Esse tipo de erro
-   * agora é capturado por `app/(marketing)/error.tsx` e
-   * `app/global-error.tsx` (error boundaries reais, com o objeto
-   * `Error`/`digest` de verdade) — este listener continua útil como
-   * complemento (não substituído, cobre uma categoria diferente de
-   * erro), não como "instrumentação temporária" a remover.
-   */
-  useEffect(() => {
-    function report(kind: string, err: unknown) {
-      const e = err as { message?: string; stack?: string; reason?: unknown; digest?: string } | undefined;
-      const reasonObj = e?.reason as { digest?: string; message?: string; stack?: string } | undefined;
-      fetch("/api/debug-client-error", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind,
-          pathname,
-          message: e?.message,
-          stack: e?.stack,
-          digest: e?.digest ?? reasonObj?.digest,
-          reason: String(e?.reason ?? ""),
-          href: typeof window !== "undefined" ? window.location.href : undefined,
-          timestamp: new Date().toISOString(),
-        }),
-      }).catch(() => {});
-    }
-    const onError = (event: ErrorEvent) => report("error", event.error ?? event.message);
-    const onRejection = (event: PromiseRejectionEvent) =>
-      report("unhandledrejection", { reason: event.reason, stack: event.reason?.stack, message: event.reason?.message });
-    window.addEventListener("error", onError);
-    window.addEventListener("unhandledrejection", onRejection);
-    return () => {
-      window.removeEventListener("error", onError);
-      window.removeEventListener("unhandledrejection", onRejection);
-    };
-  }, [pathname]);
-
   useEffect(() => {
     const firedScrollThresholds = new Set<number>();
     const firedTimeThresholds = new Set<number>();

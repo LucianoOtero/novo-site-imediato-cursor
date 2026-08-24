@@ -30,9 +30,7 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
  * do layout do mesmo segmento (regra do Next.js). Erros nesses
  * componentes só são capturados por `app/global-error.tsx` (raiz).
  *
- * Reporta o erro para `/api/debug-client-error` (mesmo endpoint da
- * instrumentação antiga, agora recebendo o tipo de erro certo) e
- * mostra uma UI de recuperação simples e deliberadamente conservadora
+ * Mostra uma UI de recuperação simples e deliberadamente conservadora
  * (sem hooks/contexto além do essencial) — um error boundary que
  * quebra sozinho não tem mais nenhuma rede de segurança abaixo dele.
  *
@@ -56,19 +54,6 @@ function isLikelyStaleDeployError(error: Error): boolean {
 
 export default function MarketingError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    fetch("/api/debug-client-error", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        kind: "error-boundary",
-        pathname: typeof window !== "undefined" ? window.location.pathname : undefined,
-        message: error.message,
-        stack: error.stack,
-        digest: error.digest,
-        href: typeof window !== "undefined" ? window.location.href : undefined,
-        timestamp: new Date().toISOString(),
-      }),
-    }).catch(() => {});
     console.error("[app/(marketing)/error.tsx] Erro capturado:", error);
   }, [error]);
 

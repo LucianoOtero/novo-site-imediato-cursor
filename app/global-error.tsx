@@ -49,19 +49,6 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   }
 
   useEffect(() => {
-    fetch("/api/debug-client-error", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        kind: "global-error-boundary",
-        pathname: typeof window !== "undefined" ? window.location.pathname : undefined,
-        message: error.message,
-        stack: error.stack,
-        digest: error.digest,
-        href: typeof window !== "undefined" ? window.location.href : undefined,
-        timestamp: new Date().toISOString(),
-      }),
-    }).catch(() => {});
     console.error("[app/global-error.tsx] Erro capturado:", error);
   }, [error]);
 

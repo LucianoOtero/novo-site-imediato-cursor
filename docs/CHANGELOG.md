@@ -11,6 +11,53 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.26] — 2026-08-24 (remove debug-client-error — edge request abuse)
+
+### Removed
+- `POST /api/debug-client-error` e rota [`app/api/debug-client-error/route.ts`](app/api/debug-client-error/route.ts) — endpoint temporário de diagnóstico (2026-07-14) abusado (~277k edge requests no Firewall Traffic); investigação `/obrigado` já resolvida com error boundaries.
+
+### Changed
+- [`components/analytics/PageAnalytics.tsx`](components/analytics/PageAnalytics.tsx): removido listener global que POSTava erros ao servidor (não capturava erros de render; ver [`docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md`](docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md)).
+- [`app/(marketing)/error.tsx`](app/(marketing)/error.tsx) e [`app/global-error.tsx`](app/global-error.tsx): só `console.error` local — UI de recuperação inalterada.
+
+### Ops
+- Regra WAF **Deny debug-client-error** já publicada no projeto Vercel `imediato-seguros` (redundante após deploy; pode manter).
+
+## [0.2.25] — 2026-08-22 (docs: comparativo experimento W1 vs W2)
+
+### Docs
+- [`docs/ANALISE_EXPERIMENTO_COMPARATIVO_2026-08-10-14_vs_2026-08-17-21.md`](docs/ANALISE_EXPERIMENTO_COMPARATIVO_2026-08-10-14_vs_2026-08-17-21.md): relatório analítico W1 (10–14/08) vs W2 (17–21/08) — split, Ads, GA4, Firebase (gclids únicos), triangulação e recomendação operacional.
+- [`docs/GTM_ADS_OAUTH_OPS.md`](docs/GTM_ADS_OAUTH_OPS.md): seção “Análise de experimento por janela” (comandos dos scripts generalizados).
+
+### Ops (read-only)
+- Scripts [`scripts/google-ops/experiment-analyze-*.mjs`](../scripts/google-ops/) + [`experiment-compare-weeks.mjs`](../scripts/google-ops/experiment-compare-weeks.mjs); JSONs agregados W1/W2 em `scripts/google-ops/` (sem PII).
+
+### Notes
+- Sem mudança de runtime em produção. W2: gap de captura Exp vs Ctrl **quase zerou** (16,7% vs 16,4% gclid/clique); engajamento GA4 Exp mantido (~44% vs ~10% legado). Relatório estruturado em **dois passos:** confronto Exp vs Legado por semana (§3–§4), depois comparativo inter-semana (§5).
+- **Plano ampliado (2026-08-22):** [`docs/EXPERIMENTO_PLACAR_COMERCIAL_ESPO.md`](docs/EXPERIMENTO_PLACAR_COMERCIAL_ESPO.md) — placar decisório = vendas Opp `Vendido` + `amount` (Valor Comissão), reexecução as-of por coorte W1…Wn.
+- **Execução comercial as-of 2026-08-22:** scripts `experiment-analyze-espo-commercial.mjs`, `experiment-compare-commercial-weeks.mjs`; relatório [`docs/ANALISE_COMERCIAL_EXPERIMENTO_asof-2026-08-22.md`](docs/ANALISE_COMERCIAL_EXPERIMENTO_asof-2026-08-22.md).
+
+## [0.2.24] — 2026-08-21 (docs: atribuição Ads + ambiente de testes)
+
+### Docs
+- [`docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md): contrato click IDs/UTMs/ValueTrack site novo → Lead **e** Opportunity; persistência 1st-party; Final URL suffix só na campanha Exp `24095000558`; legado/Octadesk fora de escopo.
+- **Nome literal da campanha:** URL `campaign_name={campaignname}` → Espo `cUtmCampaignName` (Lead+Opp); `cUtmCampaign` permanece ID (`{campaignid}`). Sufixo Ads e smoke D atualizados.
+- [`docs/AMBIENTE_TESTES_SITE_NOVO.md`](docs/AMBIENTE_TESTES_SITE_NOVO.md): runbook staging (`APP_ENV=staging` → Espo DEV) + matriz E2E/smokes canal e atribuição.
+- Atualizados [`docs/CANAL_CAPTURA_ESPO.md`](docs/CANAL_CAPTURA_ESPO.md) (Enum **DEV primeiro**), [`docs/MEDICAO_VENDA_POR_TIPO_LEAD.md`](docs/MEDICAO_VENDA_POR_TIPO_LEAD.md), [`docs/FLUXO_LEADFORM_CRM_WHATSAPP.md`](docs/FLUXO_LEADFORM_CRM_WHATSAPP.md).
+
+### Notes
+- Sem mudança de runtime nesta release documental. Implementação (Espo DEV, persistência site, CF Opp completa, Ads suffix, staging, gate prod) segue o plano *Fase4 atribuição Ads Espo*.
+
+## [0.2.23] — 2026-08-17 (medição de venda por tipo de lead + modalChannel)
+
+### Added
+- Relatório comercial [`docs/MEDICAO_VENDA_POR_TIPO_LEAD.md`](docs/MEDICAO_VENDA_POR_TIPO_LEAD.md): venda = `cDataVenda`, coortes form/modal site novo×legado via Espo+Firebase (legado read-only).
+- Scripts [`scripts/espo-ops/`](scripts/espo-ops/): discovery + join/análise agregada sem PII.
+- `modalChannel` (`whatsapp`|`phone`) no payload `/api/lead`, RTDB e CF; `cCanalCaptura` em PUT best-effort separado (requer Enum no Entity Manager).
+
+### Notes
+- Deploy `deliverLead` (canal) feito; Enum Espo e Vercel prod do `modalChannel` seguem pendentes (Metadata API 405 com a chave atual).
+
 ## [0.2.22] — 2026-08-09 (hero focado em conversão: frost card, H1 em 3 linhas, prova social sem duplicação)
 
 ### Changed
