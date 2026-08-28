@@ -11,6 +11,16 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.27] — 2026-08-27 (docs: Fase4 atribuição — plano por fases 0–5)
+
+### Docs
+- [`docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md): §2 “Plano de execução por fases (0–5)” com gates go/no-go DEV/staging antes de prod; numeração §§3–10 corrigida (contrato técnico, persistência, Ads, Espo, critérios).
+- [`docs/AMBIENTE_TESTES_SITE_NOVO.md`](docs/AMBIENTE_TESTES_SITE_NOVO.md): matriz de testes realinhada às fases; mapa fases ↔ seções; gates por fase.
+- [`docs/PROXIMOS_PASSOS.md`](docs/PROXIMOS_PASSOS.md): bloco “Próximo projeto — Fase4 atribuição Ads” com link ao plano e próximo passo (Fase 0 Espo DEV).
+
+### Notes
+- Reorganização **documental apenas** — sem mudança de runtime. Implementação pendente; ordem: Fase 0 (Espo DEV) → Fase 1 (código) → Fases 2–3 (staging/E2E) → Fase 4 (Ads suffix) → Fase 5 (prod).
+
 ## [0.2.26] — 2026-08-24 (remove debug-client-error — edge request abuse)
 
 ### Removed

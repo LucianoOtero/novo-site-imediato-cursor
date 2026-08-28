@@ -24,6 +24,19 @@ Status canônico: [`docs/FASE_A_GTM_ESPOCRM_OPS.md`](FASE_A_GTM_ESPOCRM_OPS.md) 
 
 **Próximo natural:** acompanhar serving/aprovação da conta Ads após a migração (a "Veiculação limitada" deve normalizar com o domínio de marca); nova baseline do experimento após alguns dias (`ads-baseline-experiment.mjs`); confirmar com a equipe o workflow do Espo "Receber depois → Perdido" (achado do smoke).
 
+**📊 Série de acompanhamento do experimento (2026-08-22):**
+- Baseline W1: [`docs/ANALISE_EXPERIMENTO_5DU_2026-08-10-14.md`](ANALISE_EXPERIMENTO_5DU_2026-08-10-14.md)
+- Comparativo W1 vs W2: [`docs/ANALISE_EXPERIMENTO_COMPARATIVO_2026-08-10-14_vs_2026-08-17-21.md`](ANALISE_EXPERIMENTO_COMPARATIVO_2026-08-10-14_vs_2026-08-17-21.md) — **manter experimento**; não promover com base só em leads W2.
+- **Placar comercial (próximo):** [`docs/EXPERIMENTO_PLACAR_COMERCIAL_ESPO.md`](EXPERIMENTO_PLACAR_COMERCIAL_ESPO.md) — vendas `Vendido` + Valor Comissão; reexecutar W1/W2/W3… as-of cada relatório.
+- **Primeira execução comercial:** [`docs/ANALISE_COMERCIAL_EXPERIMENTO_asof-2026-08-22.md`](ANALISE_COMERCIAL_EXPERIMENTO_asof-2026-08-22.md) — W1 Exp ROAS 3,05×; W2 imatura (1d); re-run ~12/09.
+
+**🔧 Próximo projeto — Fase4 atribuição Ads → EspoCRM (2026-08-27):**
+- Plano por fases 0–5 (gates DEV/staging antes de prod): [`docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) §2
+- Runbook staging: [`docs/AMBIENTE_TESTES_SITE_NOVO.md`](AMBIENTE_TESTES_SITE_NOVO.md)
+- **Próximo passo operacional:** **Fase 0** — criar Enum `cCanalCaptura` + pacote Ads/UTM em Lead/Opp no Espo DEV (`dev.flyingdonkeys.com.br`)
+- **Objetivo:** join Ads ↔ venda por campanha/anúncio (pacote completo na Opportunity); habilita placar comercial confiável no braço Exp
+- Implementação de código/Espo prod/Ads suffix: **pendente** — seguir ordem das fases
+
 **⏳ TO-DO registrado (2026-08-08) — Acompanhamento Google Ads + GA4 + GTM:**
 Após a migração de domínio e as mudanças de conversão no hero (formulário acima da dobra, H1 em 3 linhas, card branco translúcido — commit `476f59e`), acompanhar nos próximos dias:
 1. **Google Ads**: comportamento da campanha/experimento (grupo *Auto*) — serving normalizando após o fim da "Veiculação limitada", impressões/CTR/CPC do braço Exp vs. controle, e status de aprovação dos 21 RSAs (rodar `ads-baseline-experiment.mjs` para a nova baseline).
