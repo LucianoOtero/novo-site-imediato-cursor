@@ -1,0 +1,969 @@
+{
+  "generatedAt": "2026-08-22T06:56:50.332Z",
+  "windows": {
+    "w1": {
+      "start": "2026-08-10",
+      "end": "2026-08-14"
+    },
+    "w2": {
+      "start": "2026-08-17",
+      "end": "2026-08-21"
+    }
+  },
+  "campaigns": {
+    "controlId": "21287198336",
+    "expId": "24095000558"
+  },
+  "arms": {
+    "control": {
+      "w1": {
+        "impressions": 10437,
+        "clicks": 649,
+        "cost": 2707.152139,
+        "conversions": 130.499999,
+        "ctr": 0.06218261952668391,
+        "cpc": 4.171266778120184,
+        "cvr": 0.20107858089368258,
+        "cpa": 20.744460994210428,
+        "leadsWithGclid": 109,
+        "uniqueGclids": 46,
+        "leadRateByClick": 0.07087827426810478,
+        "cpaPerUniqueGclid": 58.85113345652174
+      },
+      "w2": {
+        "impressions": 15991,
+        "clicks": 1098,
+        "cost": 4982.245973,
+        "conversions": 189.5,
+        "ctr": 0.06866362328809955,
+        "cpc": 4.5375646384335155,
+        "cvr": 0.1725865209471767,
+        "cpa": 26.29153547757256,
+        "leadsWithGclid": 396,
+        "uniqueGclids": 180,
+        "leadRateByClick": 0.16393442622950818,
+        "cpaPerUniqueGclid": 27.679144294444445
+      },
+      "weekOverWeek": {
+        "impressions": {
+          "w1": 10437,
+          "w2": 15991,
+          "deltaPct": 0.532145252467184
+        },
+        "clicks": {
+          "w1": 649,
+          "w2": 1098,
+          "deltaPct": 0.6918335901386748
+        },
+        "cost": {
+          "w1": 2707.152139,
+          "w2": 4982.245973,
+          "deltaPct": 0.8404011733305841
+        },
+        "conversions": {
+          "w1": 130.499999,
+          "w2": 189.5,
+          "deltaPct": 0.4521072908207455
+        },
+        "ctr": {
+          "w1": 0.06218261952668391,
+          "w2": 0.06866362328809955,
+          "deltaPct": 0.1042253255129353
+        },
+        "cpc": {
+          "w1": 4.171266778120184,
+          "w2": 4.5375646384335155,
+          "deltaPct": 0.08781453687754928
+        },
+        "cvr": {
+          "w1": 0.20107858089368258,
+          "w2": 0.1725865209471767,
+          "deltaPct": -0.141696145953858
+        },
+        "cpa": {
+          "w1": 20.744460994210428,
+          "w2": 26.29153547757256,
+          "deltaPct": 0.2674002706028498
+        },
+        "leadsWithGclid": {
+          "w1": 109,
+          "w2": 396,
+          "deltaPct": 2.63302752293578
+        },
+        "uniqueGclids": {
+          "w1": 46,
+          "w2": 180,
+          "deltaPct": 2.9130434782608696
+        },
+        "leadRateByClick": {
+          "w1": 0.07087827426810478,
+          "w2": 0.16393442622950818,
+          "deltaPct": 1.312900926585887
+        },
+        "cpaPerUniqueGclid": {
+          "w1": 58.85113345652174,
+          "w2": 27.679144294444445,
+          "deltaPct": -0.5296752557044063
+        }
+      }
+    },
+    "exp": {
+      "w1": {
+        "impressions": 3809,
+        "clicks": 215,
+        "cost": 864.065051,
+        "conversions": 54,
+        "ctr": 0.05644526122341822,
+        "cpc": 4.018907213953488,
+        "cvr": 0.25116279069767444,
+        "cpa": 16.00120464814815,
+        "leadsWithGclid": 40,
+        "uniqueGclids": 37,
+        "leadRateByClick": 0.17209302325581396,
+        "cpaPerUniqueGclid": 23.35310948648649
+      },
+      "w2": {
+        "impressions": 10785,
+        "clicks": 684,
+        "cost": 3314.301164,
+        "conversions": 151.166666,
+        "ctr": 0.06342141863699582,
+        "cpc": 4.845469538011696,
+        "cvr": 0.2210038976608187,
+        "cpa": 21.924814853031158,
+        "leadsWithGclid": 117,
+        "uniqueGclids": 114,
+        "leadRateByClick": 0.16666666666666666,
+        "cpaPerUniqueGclid": 29.072817228070175
+      },
+      "weekOverWeek": {
+        "impressions": {
+          "w1": 3809,
+          "w2": 10785,
+          "deltaPct": 1.831451824625886
+        },
+        "clicks": {
+          "w1": 215,
+          "w2": 684,
+          "deltaPct": 2.181395348837209
+        },
+        "cost": {
+          "w1": 864.065051,
+          "w2": 3314.301164,
+          "deltaPct": 2.835707925189535
+        },
+        "conversions": {
+          "w1": 54,
+          "w2": 151.166666,
+          "deltaPct": 1.7993827037037036
+        },
+        "ctr": {
+          "w1": 0.05644526122341822,
+          "w2": 0.06342141863699582,
+          "deltaPct": 0.12359155157356792
+        },
+        "cpc": {
+          "w1": 4.018907213953488,
+          "w2": 4.845469538011696,
+          "deltaPct": 0.20566842677741248
+        },
+        "cvr": {
+          "w1": 0.25116279069767444,
+          "w2": 0.2210038976608187,
+          "deltaPct": -0.12007707412822188
+        },
+        "cpa": {
+          "w1": 16.00120464814815,
+          "w2": 21.924814853031158,
+          "deltaPct": 0.37019776542690236
+        },
+        "leadsWithGclid": {
+          "w1": 40,
+          "w2": 117,
+          "deltaPct": 1.925
+        },
+        "uniqueGclids": {
+          "w1": 37,
+          "w2": 114,
+          "deltaPct": 2.081081081081081
+        },
+        "leadRateByClick": {
+          "w1": 0.17209302325581396,
+          "w2": 0.16666666666666666,
+          "deltaPct": -0.03153153153153165
+        },
+        "cpaPerUniqueGclid": {
+          "w1": 23.35310948648649,
+          "w2": 29.072817228070175,
+          "deltaPct": 0.24492274764923502
+        }
+      }
+    }
+  },
+  "gapExpMinusCtrl": {
+    "w1": {
+      "leadRateByClick": 1.4280080889787665,
+      "cpaPerUniqueGclid": -0.6031833523862478,
+      "cvr": 0.24907779625952886
+    },
+    "w2": {
+      "leadRateByClick": 0.016666666666666687,
+      "cpaPerUniqueGclid": 0.05035101225674299,
+      "cvr": 0.28053973420358275
+    }
+  },
+  "ga4": {
+    "w1": {
+      "control": {
+        "legacy": {
+          "sessions": 501,
+          "engagedSessions": 58,
+          "engagementRate": 0.1157684630738523,
+          "avgSessionDuration": 26.135354646706592
+        }
+      },
+      "exp": {
+        "novo": {
+          "sessions": 123,
+          "engagedSessions": 55,
+          "engagementRate": 0.44715447154471544,
+          "avgSessionDuration": 62.471363528455285
+        }
+      },
+      "contamination": {
+        "expOnLegacy": {
+          "sessions": 34,
+          "engagedSessions": 6,
+          "engagementRate": 0.17647058823529413,
+          "avgSessionDuration": 35.33013288235294
+        },
+        "controlOnNovo": {
+          "sessions": 4,
+          "engagedSessions": 2,
+          "engagementRate": 0.5,
+          "avgSessionDuration": 504.37166475000004
+        }
+      }
+    },
+    "w2": {
+      "control": {
+        "legacy": {
+          "sessions": 892,
+          "engagedSessions": 91,
+          "engagementRate": 0.10201793721973094,
+          "avgSessionDuration": 22.96635405044843
+        }
+      },
+      "exp": {
+        "novo": {
+          "sessions": 401,
+          "engagedSessions": 174,
+          "engagementRate": 0.4339152119700748,
+          "avgSessionDuration": 74.22297152369077
+        }
+      },
+      "contamination": {
+        "expOnLegacy": {
+          "sessions": 97,
+          "engagedSessions": 19,
+          "engagementRate": 0.1958762886597938,
+          "avgSessionDuration": 63.438375948453604
+        },
+        "controlOnNovo": {
+          "sessions": 5,
+          "engagedSessions": 2,
+          "engagementRate": 0.4,
+          "avgSessionDuration": 58.935636
+        }
+      }
+    },
+    "weekOverWeek": {
+      "controlLegacyEngagement": {
+        "sessions": {
+          "w1": 501,
+          "w2": 892,
+          "deltaPct": 0.780439121756487
+        },
+        "engagedSessions": {
+          "w1": 58,
+          "w2": 91,
+          "deltaPct": 0.5689655172413793
+        },
+        "engagementRate": {
+          "w1": 0.1157684630738523,
+          "w2": 0.10201793721973094,
+          "deltaPct": -0.1187760940157724
+        },
+        "avgSessionDuration": {
+          "w1": 26.135354646706592,
+          "w2": 22.96635405044843,
+          "deltaPct": -0.12125339943139048
+        }
+      },
+      "expNovoEngagement": {
+        "sessions": {
+          "w1": 123,
+          "w2": 401,
+          "deltaPct": 2.2601626016260163
+        },
+        "engagedSessions": {
+          "w1": 55,
+          "w2": 174,
+          "deltaPct": 2.1636363636363636
+        },
+        "engagementRate": {
+          "w1": 0.44715447154471544,
+          "w2": 0.4339152119700748,
+          "deltaPct": -0.02960779868510538
+        },
+        "avgSessionDuration": {
+          "w1": 62.471363528455285,
+          "w2": 74.22297152369077,
+          "deltaPct": 0.18811191770902697
+        }
+      }
+    }
+  },
+  "offlineAllConversions": {
+    "w1": {
+      "control": 8,
+      "exp": 7
+    },
+    "w2": {
+      "control": 6,
+      "exp": 2
+    }
+  },
+  "adsActions": {
+    "w1": [
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 60.166666,
+        "allConversions": 60.166666,
+        "conversionsValue": 1804.99998,
+        "days": {
+          "2026-08-10": 9,
+          "2026-08-11": 15.666666,
+          "2026-08-12": 6,
+          "2026-08-13": 14,
+          "2026-08-14": 15.5
+        }
+      },
+      {
+        "campaignId": "24095000558",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 42.5,
+        "allConversions": 42.5,
+        "conversionsValue": 1275,
+        "days": {
+          "2026-08-10": 6,
+          "2026-08-11": 7,
+          "2026-08-12": 7,
+          "2026-08-13": 12.5,
+          "2026-08-14": 10
+        }
+      },
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 8,
+        "conversionsValue": 0,
+        "days": {
+          "2026-08-10": 0,
+          "2026-08-12": 0,
+          "2026-08-13": 0,
+          "2026-08-14": 0
+        }
+      },
+      {
+        "campaignId": "24095000558",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 7,
+        "conversionsValue": 0,
+        "days": {
+          "2026-08-10": 0,
+          "2026-08-11": 0,
+          "2026-08-13": 0,
+          "2026-08-14": 0
+        }
+      },
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 70.333333,
+        "allConversions": 70.333333,
+        "conversionsValue": 2109.9999900000003,
+        "days": {
+          "2026-08-10": 14,
+          "2026-08-11": 14.333333,
+          "2026-08-12": 14,
+          "2026-08-13": 15,
+          "2026-08-14": 13
+        }
+      },
+      {
+        "campaignId": "24095000558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 11.5,
+        "allConversions": 11.5,
+        "conversionsValue": 345,
+        "days": {
+          "2026-08-10": 2,
+          "2026-08-11": 2,
+          "2026-08-12": 2,
+          "2026-08-13": 2.5,
+          "2026-08-14": 3
+        }
+      },
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "Preencher o telefone no modal de telefone",
+        "conversions": 0,
+        "allConversions": 1,
+        "conversionsValue": 0,
+        "days": {
+          "2026-08-13": 0
+        }
+      }
+    ],
+    "w2": [
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 91.5,
+        "allConversions": 91.5,
+        "conversionsValue": 2745,
+        "days": {
+          "2026-08-17": 26.5,
+          "2026-08-18": 21,
+          "2026-08-19": 24,
+          "2026-08-20": 10,
+          "2026-08-21": 10
+        }
+      },
+      {
+        "campaignId": "24095000558",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 121.16666599999999,
+        "allConversions": 121.16666599999999,
+        "conversionsValue": 3634.99998,
+        "days": {
+          "2026-08-17": 29,
+          "2026-08-18": 28.5,
+          "2026-08-19": 22,
+          "2026-08-20": 21,
+          "2026-08-21": 20.666666
+        }
+      },
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 6,
+        "conversionsValue": 0,
+        "days": {
+          "2026-08-17": 0,
+          "2026-08-18": 0,
+          "2026-08-19": 0,
+          "2026-08-20": 0
+        }
+      },
+      {
+        "campaignId": "24095000558",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 2,
+        "conversionsValue": 0,
+        "days": {
+          "2026-08-17": 0,
+          "2026-08-18": 0
+        }
+      },
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 98,
+        "allConversions": 98,
+        "conversionsValue": 2940,
+        "days": {
+          "2026-08-17": 25,
+          "2026-08-18": 26,
+          "2026-08-19": 25,
+          "2026-08-20": 11,
+          "2026-08-21": 11
+        }
+      },
+      {
+        "campaignId": "24095000558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 30,
+        "allConversions": 30,
+        "conversionsValue": 900,
+        "days": {
+          "2026-08-17": 9,
+          "2026-08-18": 9,
+          "2026-08-19": 6,
+          "2026-08-20": 3,
+          "2026-08-21": 3
+        }
+      },
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "Preencher o telefone no modal de telefone",
+        "conversions": 0,
+        "allConversions": 2,
+        "conversionsValue": 0,
+        "days": {
+          "2026-08-20": 0
+        }
+      }
+    ]
+  },
+  "firebase": {
+    "novo": {
+      "w1": {
+        "exp": {
+          "total": 40,
+          "records": 0,
+          "withGclid": 40,
+          "uniqueGclids": 37,
+          "uniqueContacts": 0,
+          "stages": {
+            "complete": 12,
+            "progress": 14,
+            "rpa_result": 8,
+            "initial": 5,
+            "consultant_requested": 1
+          },
+          "days": {
+            "2026-08-14": 11,
+            "2026-08-13": 12,
+            "2026-08-11": 6,
+            "2026-08-10": 5,
+            "2026-08-12": 6
+          },
+          "channels": {
+            "contact_modal": 8,
+            "lead_form": 32
+          },
+          "sources": {},
+          "ramos": {
+            "auto": 25,
+            "moto": 12,
+            "uber": 2,
+            "utilitario": 1
+          },
+          "statuses": {},
+          "synced": 40,
+          "espocrm": 40,
+          "octadesk": 39,
+          "octadeskCloudRun": 0
+        },
+        "control": {
+          "total": 0,
+          "records": 0,
+          "withGclid": 0,
+          "uniqueGclids": 0,
+          "uniqueContacts": 0,
+          "stages": {},
+          "days": {},
+          "channels": {},
+          "sources": {},
+          "ramos": {},
+          "statuses": {},
+          "synced": 0,
+          "espocrm": 0,
+          "octadesk": 0,
+          "octadeskCloudRun": 0
+        },
+        "otherAds": {
+          "total": 1,
+          "records": 0,
+          "withGclid": 1,
+          "uniqueGclids": 1,
+          "uniqueContacts": 0,
+          "stages": {
+            "progress": 1
+          },
+          "days": {
+            "2026-08-13": 1
+          },
+          "channels": {
+            "lead_form": 1
+          },
+          "sources": {},
+          "ramos": {
+            "auto": 1
+          },
+          "statuses": {},
+          "synced": 1,
+          "espocrm": 1,
+          "octadesk": 1,
+          "octadeskCloudRun": 0
+        },
+        "organicOrUnknown": {
+          "total": 7,
+          "records": 0,
+          "withGclid": 0,
+          "uniqueGclids": 0,
+          "uniqueContacts": 0,
+          "stages": {
+            "progress": 3,
+            "rpa_result": 4
+          },
+          "days": {
+            "2026-08-13": 2,
+            "2026-08-14": 1,
+            "2026-08-11": 1,
+            "2026-08-10": 2,
+            "2026-08-12": 1
+          },
+          "channels": {
+            "lead_form": 7
+          },
+          "sources": {},
+          "ramos": {
+            "uber": 1,
+            "fianca": 1,
+            "auto": 3,
+            "utilitario": 2
+          },
+          "statuses": {},
+          "synced": 7,
+          "espocrm": 7,
+          "octadesk": 7,
+          "octadeskCloudRun": 0
+        }
+      },
+      "w2": {
+        "exp": {
+          "total": 118,
+          "records": 0,
+          "withGclid": 117,
+          "uniqueGclids": 114,
+          "uniqueContacts": 0,
+          "stages": {
+            "progress": 50,
+            "rpa_result": 30,
+            "complete": 18,
+            "initial": 15,
+            "consultant_requested": 5
+          },
+          "days": {
+            "2026-08-21": 20,
+            "2026-08-17": 29,
+            "2026-08-18": 31,
+            "2026-08-20": 17,
+            "2026-08-19": 21
+          },
+          "channels": {
+            "lead_form": 103,
+            "contact_modal": 15
+          },
+          "sources": {},
+          "ramos": {
+            "auto": 86,
+            "moto": 22,
+            "utilitario": 2,
+            "fianca": 6,
+            "uber": 2
+          },
+          "statuses": {},
+          "synced": 118,
+          "espocrm": 118,
+          "octadesk": 116,
+          "octadeskCloudRun": 0
+        },
+        "control": {
+          "total": 3,
+          "records": 0,
+          "withGclid": 3,
+          "uniqueGclids": 2,
+          "uniqueContacts": 0,
+          "stages": {
+            "complete": 1,
+            "consultant_requested": 1,
+            "progress": 1
+          },
+          "days": {
+            "2026-08-18": 2,
+            "2026-08-19": 1
+          },
+          "channels": {
+            "lead_form": 3
+          },
+          "sources": {},
+          "ramos": {
+            "frota": 2,
+            "auto": 1
+          },
+          "statuses": {},
+          "synced": 3,
+          "espocrm": 3,
+          "octadesk": 2,
+          "octadeskCloudRun": 0
+        },
+        "otherAds": {
+          "total": 3,
+          "records": 0,
+          "withGclid": 3,
+          "uniqueGclids": 3,
+          "uniqueContacts": 0,
+          "stages": {
+            "rpa_result": 1,
+            "complete": 1,
+            "progress": 1
+          },
+          "days": {
+            "2026-08-19": 1,
+            "2026-08-21": 1,
+            "2026-08-18": 1
+          },
+          "channels": {
+            "lead_form": 3
+          },
+          "sources": {},
+          "ramos": {
+            "assistencia-24-horas": 2,
+            "auto": 1
+          },
+          "statuses": {},
+          "synced": 3,
+          "espocrm": 3,
+          "octadesk": 3,
+          "octadeskCloudRun": 0
+        },
+        "organicOrUnknown": {
+          "total": 14,
+          "records": 0,
+          "withGclid": 0,
+          "uniqueGclids": 0,
+          "uniqueContacts": 0,
+          "stages": {
+            "rpa_result": 3,
+            "progress": 4,
+            "consultant_requested": 3,
+            "complete": 4
+          },
+          "days": {
+            "2026-08-20": 4,
+            "2026-08-21": 2,
+            "2026-08-17": 3,
+            "2026-08-18": 4,
+            "2026-08-19": 1
+          },
+          "channels": {
+            "lead_form": 12,
+            "contact_modal": 2
+          },
+          "sources": {},
+          "ramos": {
+            "auto": 10,
+            "moto": 2,
+            "fianca": 1,
+            "uber": 1
+          },
+          "statuses": {},
+          "synced": 14,
+          "espocrm": 14,
+          "octadesk": 13,
+          "octadeskCloudRun": 0
+        }
+      }
+    },
+    "legacy": {
+      "w1": {
+        "control": {
+          "records": 109,
+          "uniqueGclids": 46,
+          "uniqueContacts": 22,
+          "withGclid": 109,
+          "days": {
+            "2026-08-10": 25,
+            "2026-08-11": 15,
+            "2026-08-12": 31,
+            "2026-08-13": 28,
+            "2026-08-14": 10
+          },
+          "sources": {
+            "webflow_modal_initial": 45,
+            "webflow_modal_complete": 35,
+            "webflow_modal": 29
+          },
+          "statuses": {
+            "synced": 79,
+            "failed": 30
+          },
+          "synced": 79,
+          "espocrm": 0,
+          "octadesk": 35,
+          "octadeskCloudRun": 44
+        },
+        "exp": {
+          "records": 0,
+          "uniqueGclids": 0,
+          "uniqueContacts": 0,
+          "withGclid": 0,
+          "days": {},
+          "sources": {},
+          "statuses": {},
+          "synced": 0,
+          "espocrm": 0,
+          "octadesk": 0,
+          "octadeskCloudRun": 0
+        },
+        "otherAds": {
+          "records": 211,
+          "uniqueGclids": 87,
+          "uniqueContacts": 48,
+          "withGclid": 211,
+          "days": {
+            "2026-08-10": 18,
+            "2026-08-11": 49,
+            "2026-08-12": 30,
+            "2026-08-13": 78,
+            "2026-08-14": 33,
+            "2026-08-15": 3
+          },
+          "sources": {
+            "webflow_modal_initial": 91,
+            "webflow_modal_complete": 63,
+            "webflow_modal": 57
+          },
+          "statuses": {
+            "synced": 154,
+            "failed": 57
+          },
+          "synced": 154,
+          "espocrm": 0,
+          "octadesk": 63,
+          "octadeskCloudRun": 91
+        },
+        "organicOrUnknown": {
+          "records": 23,
+          "uniqueGclids": 0,
+          "uniqueContacts": 2,
+          "withGclid": 0,
+          "days": {
+            "2026-08-10": 3,
+            "2026-08-11": 2,
+            "2026-08-12": 2,
+            "2026-08-13": 15,
+            "2026-08-14": 1
+          },
+          "sources": {
+            "webflow_modal_initial": 7,
+            "webflow_modal_complete": 8,
+            "webflow_modal": 8
+          },
+          "statuses": {
+            "synced": 15,
+            "failed": 8
+          },
+          "synced": 15,
+          "espocrm": 0,
+          "octadesk": 8,
+          "octadeskCloudRun": 7
+        }
+      },
+      "w2": {
+        "exp": {
+          "total": 0,
+          "records": 0,
+          "withGclid": 0,
+          "uniqueGclids": 0,
+          "uniqueContacts": 0,
+          "stages": {},
+          "days": {},
+          "channels": {},
+          "sources": {},
+          "ramos": {},
+          "statuses": {},
+          "synced": 0,
+          "espocrm": 0,
+          "octadesk": 0,
+          "octadeskCloudRun": 0
+        },
+        "control": {
+          "total": 396,
+          "records": 396,
+          "withGclid": 396,
+          "uniqueGclids": 180,
+          "uniqueContacts": 177,
+          "stages": {},
+          "days": {
+            "2026-08-17": 88,
+            "2026-08-18": 71,
+            "2026-08-19": 112,
+            "2026-08-20": 59,
+            "2026-08-21": 66
+          },
+          "channels": {},
+          "sources": {
+            "webflow_modal_initial": 185,
+            "webflow_modal_complete": 114,
+            "webflow_modal": 97
+          },
+          "ramos": {},
+          "statuses": {
+            "synced": 298,
+            "failed": 98
+          },
+          "synced": 298,
+          "espocrm": 0,
+          "octadesk": 114,
+          "octadeskCloudRun": 0
+        },
+        "otherAds": {
+          "total": 0,
+          "records": 0,
+          "withGclid": 0,
+          "uniqueGclids": 0,
+          "uniqueContacts": 0,
+          "stages": {},
+          "days": {},
+          "channels": {},
+          "sources": {},
+          "ramos": {},
+          "statuses": {},
+          "synced": 0,
+          "espocrm": 0,
+          "octadesk": 0,
+          "octadeskCloudRun": 0
+        },
+        "organicOrUnknown": {
+          "total": 12,
+          "records": 12,
+          "withGclid": 0,
+          "uniqueGclids": 0,
+          "uniqueContacts": 7,
+          "stages": {},
+          "days": {
+            "2026-08-17": 3,
+            "2026-08-18": 2,
+            "2026-08-20": 3,
+            "2026-08-21": 4
+          },
+          "channels": {},
+          "sources": {
+            "webflow_modal_initial": 5,
+            "webflow_modal_complete": 5,
+            "webflow_modal": 2
+          },
+          "ramos": {},
+          "statuses": {
+            "synced": 10,
+            "failed": 2
+          },
+          "synced": 10,
+          "espocrm": 0,
+          "octadesk": 5,
+          "octadeskCloudRun": 0
+        }
+      }
+    }
+  }
+}

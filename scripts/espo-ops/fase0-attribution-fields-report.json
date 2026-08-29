@@ -1,0 +1,171 @@
+{
+  "baseUrl": "https://flyingdonkeys.com.br",
+  "prefer": "prod",
+  "entities": {
+    "Lead": [
+      {
+        "field": "cCanalCaptura",
+        "type": "enum",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cWbraid",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cUtmCampaignName",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cUtmId",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cAdgroupId",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      }
+    ],
+    "Opportunity": [
+      {
+        "field": "cCanalCaptura",
+        "type": "enum",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cWbraid",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cUtmCampaignName",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cUtmId",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cAdgroupId",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cGbraid",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cUtmSource",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cUtmMedium",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cUtmCampaign",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cUtmContent",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cUtmTerm",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cGadSource",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cGadCampaignId",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cMatchType",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cDevice",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cNetwork",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cPlacement",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      },
+      {
+        "field": "cCreative",
+        "type": "varchar",
+        "existed": false,
+        "created": false,
+        "error": null
+      }
+    ]
+  }
+}

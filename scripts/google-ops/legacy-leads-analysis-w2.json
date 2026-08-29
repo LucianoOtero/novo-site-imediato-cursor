@@ -1,0 +1,106 @@
+{
+  "generatedAt": "2026-08-22T06:55:57.248Z",
+  "sourceProject": "leads-imediato-seguros",
+  "window": {
+    "start": "2026-08-17",
+    "end": "2026-08-21"
+  },
+  "scanned": 11178,
+  "inWindow": 408,
+  "summary": {
+    "exp": {
+      "total": 0,
+      "records": 0,
+      "withGclid": 0,
+      "uniqueGclids": 0,
+      "uniqueContacts": 0,
+      "stages": {},
+      "days": {},
+      "channels": {},
+      "sources": {},
+      "ramos": {},
+      "statuses": {},
+      "synced": 0,
+      "espocrm": 0,
+      "octadesk": 0,
+      "octadeskCloudRun": 0
+    },
+    "control": {
+      "total": 396,
+      "records": 396,
+      "withGclid": 396,
+      "uniqueGclids": 180,
+      "uniqueContacts": 177,
+      "stages": {},
+      "days": {
+        "2026-08-17": 88,
+        "2026-08-18": 71,
+        "2026-08-19": 112,
+        "2026-08-20": 59,
+        "2026-08-21": 66
+      },
+      "channels": {},
+      "sources": {
+        "webflow_modal_initial": 185,
+        "webflow_modal_complete": 114,
+        "webflow_modal": 97
+      },
+      "ramos": {},
+      "statuses": {
+        "synced": 298,
+        "failed": 98
+      },
+      "synced": 298,
+      "espocrm": 0,
+      "octadesk": 114,
+      "octadeskCloudRun": 0
+    },
+    "otherAds": {
+      "total": 0,
+      "records": 0,
+      "withGclid": 0,
+      "uniqueGclids": 0,
+      "uniqueContacts": 0,
+      "stages": {},
+      "days": {},
+      "channels": {},
+      "sources": {},
+      "ramos": {},
+      "statuses": {},
+      "synced": 0,
+      "espocrm": 0,
+      "octadesk": 0,
+      "octadeskCloudRun": 0
+    },
+    "organicOrUnknown": {
+      "total": 12,
+      "records": 12,
+      "withGclid": 0,
+      "uniqueGclids": 0,
+      "uniqueContacts": 7,
+      "stages": {},
+      "days": {
+        "2026-08-17": 3,
+        "2026-08-18": 2,
+        "2026-08-20": 3,
+        "2026-08-21": 4
+      },
+      "channels": {},
+      "sources": {
+        "webflow_modal_initial": 5,
+        "webflow_modal_complete": 5,
+        "webflow_modal": 2
+      },
+      "ramos": {},
+      "statuses": {
+        "synced": 10,
+        "failed": 2
+      },
+      "synced": 10,
+      "espocrm": 0,
+      "octadesk": 5,
+      "octadeskCloudRun": 0
+    }
+  },
+  "note": "Agregado sem PII. uniqueGclids é a melhor aproximação read-only de usuários Ads únicos."
+}

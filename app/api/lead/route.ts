@@ -174,6 +174,7 @@ export async function POST(request: NextRequest) {
           rpaChoice: data.rpaChoice ?? existing.rpaChoice,
           rpaResultado: data.rpaResultado ?? existing.rpaResultado,
           captureChannel: data.captureChannel ?? existing.captureChannel,
+          modalChannel: data.modalChannel ?? existing.modalChannel,
           updatedAt: now,
         }
       : {
@@ -200,6 +201,7 @@ export async function POST(request: NextRequest) {
           rpaChoice: data.rpaChoice,
           rpaResultado: data.rpaResultado,
           captureChannel: data.captureChannel,
+          modalChannel: data.modalChannel,
           status: "received",
           dedupeKey,
           createdAt: now,
@@ -276,6 +278,7 @@ export async function POST(request: NextRequest) {
         utm: data.utm ?? existingInitial.utm,
         rpaChoice: data.rpaChoice ?? existingInitial.rpaChoice,
         captureChannel: data.captureChannel ?? existingInitial.captureChannel,
+        modalChannel: data.modalChannel ?? existingInitial.modalChannel,
         updatedAt: now,
       }
     : {
@@ -297,6 +300,7 @@ export async function POST(request: NextRequest) {
         utm: data.utm,
         rpaChoice: data.rpaChoice,
         captureChannel: data.captureChannel,
+        modalChannel: data.modalChannel,
         status: "received",
         dedupeKey,
         createdAt: now,

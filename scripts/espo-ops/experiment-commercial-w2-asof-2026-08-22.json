@@ -1,0 +1,131 @@
+{
+  "generatedAt": "2026-08-22T07:42:46.358Z",
+  "reportDate": "2026-08-22",
+  "cohortWindow": {
+    "start": "2026-08-17",
+    "end": "2026-08-21"
+  },
+  "cohortAgeDays": 1,
+  "maturityNote": "imatura",
+  "campaigns": {
+    "controlId": "21287198336",
+    "expId": "24095000558"
+  },
+  "saleDefinition": {
+    "primary": "stage === \"Vendido\"",
+    "audit": "cDataVenda preenchida",
+    "valueField": "amount (Valor Comissão)"
+  },
+  "clicksAds": {
+    "control": 1098,
+    "exp": 684
+  },
+  "costAds": {
+    "control": 4982.245973,
+    "exp": 3314.301164
+  },
+  "stats": {
+    "poolSize": 8000,
+    "processed": 8000,
+    "inCohort": 501,
+    "excludedTests": 1381,
+    "excludedUnattributed": 383,
+    "excludedOutOfWindow": 6118,
+    "deduped": 0
+  },
+  "arms": {
+    "control": {
+      "opportunities": 2,
+      "soldVendido": 0,
+      "soldCDataVenda": 0,
+      "reconciliation": {
+        "vendidoAndCDataVenda": 0,
+        "vendidoOnly": 0,
+        "cDataVendaOnly": 0,
+        "vendidoWithAmount": 0,
+        "vendidoWithoutAmount": 0
+      },
+      "amountSum": 0,
+      "premioSum": 0,
+      "amountAvg": null,
+      "saleRatePerOpp": 0,
+      "saleRatePerClick": 0,
+      "amountPerClick": 0,
+      "roasCommercial": 0,
+      "medianDaysToSold": null,
+      "stageDistribution": {
+        "Cliente Contactado": 2
+      },
+      "attribution": {
+        "byFirebaseOppId": 0,
+        "byFirebaseLeadId": 2,
+        "byFirebaseGclid": 0,
+        "byFirebasePhone": 0,
+        "byWebpageHeuristic": 0,
+        "unattributed": 0
+      }
+    },
+    "exp": {
+      "opportunities": 116,
+      "soldVendido": 2,
+      "soldCDataVenda": 2,
+      "reconciliation": {
+        "vendidoAndCDataVenda": 2,
+        "vendidoOnly": 0,
+        "cDataVendaOnly": 0,
+        "vendidoWithAmount": 2,
+        "vendidoWithoutAmount": 0
+      },
+      "amountSum": 1849.72,
+      "premioSum": 7994.18,
+      "amountAvg": 924.86,
+      "saleRatePerOpp": 0.017241379310344827,
+      "saleRatePerClick": 0.0029239766081871343,
+      "amountPerClick": 2.7042690058479533,
+      "roasCommercial": 0.558102570789792,
+      "medianDaysToSold": 3.5,
+      "stageDistribution": {
+        "Cotação Enviada": 53,
+        "Cliente não aceitou Mensagem Octa": 17,
+        "Cliente Contactado": 39,
+        "Vendas a Verificar": 1,
+        "Perdido": 2,
+        "Proximo de Fechar": 2,
+        "Vendido": 2
+      },
+      "attribution": {
+        "byFirebaseOppId": 66,
+        "byFirebaseLeadId": 38,
+        "byFirebaseGclid": 0,
+        "byFirebasePhone": 2,
+        "byWebpageHeuristic": 10,
+        "unattributed": 0
+      }
+    }
+  },
+  "comparison": {
+    "saleRatePerClick": {
+      "control": 0,
+      "exp": 0.0029239766081871343,
+      "deltaPct": null
+    },
+    "amountPerClick": {
+      "control": 0,
+      "exp": 2.7042690058479533,
+      "deltaPct": null
+    },
+    "roasCommercial": {
+      "control": 0,
+      "exp": 0.558102570789792,
+      "deltaPct": null
+    },
+    "amountSum": {
+      "control": 0,
+      "exp": 1849.72
+    },
+    "soldVendido": {
+      "control": 0,
+      "exp": 2
+    }
+  }
+}

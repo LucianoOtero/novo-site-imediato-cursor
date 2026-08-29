@@ -101,6 +101,37 @@ Enquanto o Developer Token não estiver ok, GTM segue por OAuth atual; Ads perma
 4. Preview / smoke legado → Publish (API `publish` ou UI).
 5. Experimento Ads 50/50 (UI).
 
+## 6. Análise de experimento por janela (read-only)
+
+Scripts generalizados em `scripts/google-ops/` (requer `config.local.json` + `token.json` com Ads e Analytics):
+
+```bash
+# Google Ads
+node scripts/google-ops/experiment-analyze-ads.mjs --start 2026-08-17 --end 2026-08-21 --out scripts/google-ops/ads-analysis-w2.json
+
+# GA4
+node scripts/google-ops/experiment-analyze-ga4.mjs --start 2026-08-17 --end 2026-08-21 --out scripts/google-ops/ga4-analysis-w2.json
+
+# Firebase (site novo e legado)
+node scripts/google-ops/experiment-analyze-firebase-leads.mjs --start 2026-08-17 --end 2026-08-21 --project imediato-seguros-site-novo --out scripts/google-ops/leads-analysis-w2-novo.json
+node scripts/google-ops/experiment-analyze-firebase-leads.mjs --start 2026-08-17 --end 2026-08-21 --project leads-imediato-seguros --out scripts/google-ops/legacy-leads-analysis-w2.json
+
+# Comparar duas semanas
+node scripts/google-ops/experiment-compare-weeks.mjs \
+  --w1-start 2026-08-10 --w1-end 2026-08-14 \
+  --w2-start 2026-08-17 --w2-end 2026-08-21 \
+  --ads-w1 scripts/google-ops/ads-analysis-5bd-2026-08-10-14.json \
+  --ads-w2 scripts/google-ops/ads-analysis-w2.json \
+  --ga4-w1 scripts/google-ops/ga4-analysis-5bd-2026-08-10-14.json \
+  --ga4-w2 scripts/google-ops/ga4-analysis-w2.json \
+  --leads-novo-w1 scripts/google-ops/leads-analysis-5bd-2026-08-10-14.json \
+  --leads-novo-w2 scripts/google-ops/leads-analysis-w2-novo.json \
+  --leads-legacy-w1 scripts/google-ops/legacy-leads-analysis-5bd-2026-08-10-14.json \
+  --leads-legacy-w2 scripts/google-ops/legacy-leads-analysis-w2.json
+```
+
+Relatório analítico: [`docs/ANALISE_EXPERIMENTO_COMPARATIVO_2026-08-10-14_vs_2026-08-17-21.md`](../docs/ANALISE_EXPERIMENTO_COMPARATIVO_2026-08-10-14_vs_2026-08-17-21.md). Metodologia de referência: [`docs/ANALISE_EXPERIMENTO_5DU_2026-08-10-14.md`](../docs/ANALISE_EXPERIMENTO_5DU_2026-08-10-14.md).
+
 ## Arquivos (gitignored)
 
 | Arquivo | Conteúdo |

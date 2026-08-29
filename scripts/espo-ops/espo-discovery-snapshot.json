@@ -1,0 +1,421 @@
+{
+  "generatedAt": "2026-08-17T03:39:51.622Z",
+  "baseUrl": "https://flyingdonkeys.com.br",
+  "readOnly": true,
+  "opportunityStats": {
+    "totalListed": 5000,
+    "excludedTests": 862,
+    "analyzed": 4138,
+    "withSale": 736,
+    "withAmount": 756,
+    "withGclid": 3488,
+    "byWebpage": {
+      "mdmidia.com.br": 2464,
+      "(vazio)": 1614,
+      "novo.segurosimediato.com.br": 40,
+      "comparaseguroonline.com.br": 5,
+      "collect.chat": 1,
+      "seguro para orgao publico": 1,
+      "'": 1,
+      "seguro residencial": 1,
+      "Liguei para o cliente ela vai me atender mais tarde": 1,
+      "gabriel": 1,
+      "Home Seguro Auto": 1,
+      "ja fez a vistoria, falta pagar": 1,
+      "Será feita uma vistoria por video, solicitação da porto": 1,
+      "Nao quer mandar a Apolice": 1,
+      "25/06/2026": 1,
+      "NUMERO ERRADO": 1,
+      "informação errada": 1,
+      "fechou com outras": 1,
+      "enviada do outro contat10": 1
+    },
+    "bySite": {
+      "legado": 2464,
+      "legado_or_unknown": 1614,
+      "novo": 45,
+      "other": 15
+    },
+    "byEtapa": {
+      "(vazio)": 4094,
+      "Dados pessoais": 21,
+      "Cálculo concluído": 4,
+      "Telefone informado": 9,
+      "Cálculo manual pendente": 8,
+      "Aguardando cálculo": 2
+    },
+    "byStage": {
+      "Novo Sem Contato": 609,
+      "Vendas a Verificar": 19,
+      "Cliente Contactado": 892,
+      "Cotação Enviada": 1408,
+      "Cliente não aceitou Mensagem Octa": 246,
+      "Perdido": 182,
+      "Proximo de Fechar": 49,
+      "Vendido": 733
+    }
+  },
+  "sold": {
+    "count": 736,
+    "bySite": {
+      "legado_or_unknown": 510,
+      "legado": 215,
+      "novo": 4,
+      "other": 7
+    },
+    "byEtapa": {
+      "(vazio)": 732,
+      "Telefone informado": 3,
+      "Dados pessoais": 1
+    }
+  },
+  "descriptionHints": {
+    "novo": [
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Dados pessoais",
+        "stage": "Novo Sem Contato",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Telefone informado",
+        "stage": "Cliente não aceitou Mensagem Octa",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Cálculo concluído",
+        "stage": "Cotação Enviada",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Dados pessoais",
+        "stage": "Cliente não aceitou Mensagem Octa",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Telefone informado",
+        "stage": "Cliente não aceitou Mensagem Octa",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Dados pessoais",
+        "stage": "Cliente não aceitou Mensagem Octa",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Dados pessoais",
+        "stage": "Perdido",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Telefone informado",
+        "stage": "Perdido",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Dados pessoais",
+        "stage": "Cliente Contactado",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Telefone informado",
+        "stage": "Cliente Contactado",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Telefone informado",
+        "stage": "Cotação Enviada",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "novo",
+        "webpage": "novo.segurosimediato.com.br",
+        "etapa": "Dados pessoais",
+        "stage": "Cotação Enviada",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      }
+    ],
+    "legado": [
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Novo Sem Contato",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Novo Sem Contato",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Novo Sem Contato",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Novo Sem Contato",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Cliente Contactado",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Cliente Contactado",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Vendas a Verificar",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Novo Sem Contato",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Cliente Contactado",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Novo Sem Contato",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Cliente Contactado",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      },
+      {
+        "site": "legado",
+        "webpage": "mdmidia.com.br",
+        "etapa": null,
+        "stage": "Cliente Contactado",
+        "hasSale": false,
+        "descriptionLength": 0,
+        "hints": {
+          "mentionsModal": false,
+          "mentionsForm": false,
+          "mentionsWhatsapp": false,
+          "mentionsPhone": false
+        }
+      }
+    ],
+    "note": "Sem PII — só flags de texto. Canal form/modal não aparece de forma confiável só no Espo."
+  },
+  "conclusions": {
+    "canSplitFormVsModalFromEspoAlone": false,
+    "canSplitWhatsappVsPhoneFromEspoAlone": false,
+    "saleFieldPresent": true,
+    "recommendedNext": "Join Firebase captureChannel/source × Opportunity (cGclid/cLeadId/cCelular hash)."
+  }
+}

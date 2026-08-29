@@ -10,7 +10,7 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
  * produção).
  *
  * `buildWhatsappUrl` anexa o contexto de UTM/ramo lendo
- * `window.location` (via `captureUtmFromLocation`) — usá-lo direto como
+ * atribuição persistida (`getAttributionUtm`) — usá-lo direto como
  * `href={buildWhatsappUrl(ramo)}` durante o render causa um mismatch de
  * hidratação real sempre que a página é acessada com UTM/gclid na URL:
  * o servidor nunca vê `window` (monta a URL sem o sufixo de contexto);

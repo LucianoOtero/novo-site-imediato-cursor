@@ -32,9 +32,20 @@ export const utmSchema = z.object({
   utm_campaign: z.string().optional(),
   utm_content: z.string().optional(),
   utm_term: z.string().optional(),
+  /** Nome literal da campanha Ads (`{campaignname}`) — distinto de `utm_campaign` (ID). */
+  campaign_name: z.string().optional(),
+  utm_id: z.string().optional(),
   gclid: z.string().optional(),
   wbraid: z.string().optional(),
   gbraid: z.string().optional(),
+  gad_source: z.string().optional(),
+  gad_campaignid: z.string().optional(),
+  matchtype: z.string().optional(),
+  device: z.string().optional(),
+  network: z.string().optional(),
+  placement: z.string().optional(),
+  adgroupid: z.string().optional(),
+  creative: z.string().optional(),
   landing_page: z.string().optional(),
   referrer: z.string().optional(),
 });
@@ -289,24 +300,34 @@ export function formatDdd(value: string): string {
 }
 
 /**
- * Captura UTM/gclid da URL atual (seção 21.1: "utm: utmSchema.optional(),
- * // capturado da URL"). Sem persistência em cookie/localStorage nesta
- * issue — isso pertence à infraestrutura de tracking mais ampla (Issues
- * 12/18), fora do escopo do LeadForm em si.
+ * Captura UTM/gclid/ValueTrack da URL atual (somente query — sem
+ * persistência). Para submits e WhatsApp use `getAttributionUtm` em
+ * `lib/leads/attribution.ts` (merge com storage 1st-party, Fase 1).
  */
 export function captureUtmFromLocation(): UtmData | undefined {
   if (typeof window === "undefined") return undefined;
 
   const params = new URLSearchParams(window.location.search);
+  const pick = (key: string) => params.get(key) || undefined;
   const utm: UtmData = {
-    utm_source: params.get("utm_source") ?? undefined,
-    utm_medium: params.get("utm_medium") ?? undefined,
-    utm_campaign: params.get("utm_campaign") ?? undefined,
-    utm_content: params.get("utm_content") ?? undefined,
-    utm_term: params.get("utm_term") ?? undefined,
-    gclid: params.get("gclid") ?? undefined,
-    wbraid: params.get("wbraid") ?? undefined,
-    gbraid: params.get("gbraid") ?? undefined,
+    utm_source: pick("utm_source"),
+    utm_medium: pick("utm_medium"),
+    utm_campaign: pick("utm_campaign"),
+    utm_content: pick("utm_content"),
+    utm_term: pick("utm_term"),
+    campaign_name: pick("campaign_name"),
+    utm_id: pick("utm_id"),
+    gclid: pick("gclid"),
+    wbraid: pick("wbraid"),
+    gbraid: pick("gbraid"),
+    gad_source: pick("gad_source"),
+    gad_campaignid: pick("gad_campaignid"),
+    matchtype: pick("matchtype"),
+    device: pick("device"),
+    network: pick("network"),
+    placement: pick("placement"),
+    adgroupid: pick("adgroupid"),
+    creative: pick("creative"),
     landing_page: window.location.pathname,
     referrer: document.referrer || undefined,
   };

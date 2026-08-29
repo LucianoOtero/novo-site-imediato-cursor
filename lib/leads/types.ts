@@ -70,6 +70,12 @@ export const apiLeadSchema = leadSchema.extend({
    * extras, sem afetar o funil de cotação.
    */
   captureChannel: z.enum(["contact_modal", "lead_form"]).optional(),
+  /**
+   * Canal do ContactLeadModal (2026-08-17) — discrimina WhatsApp vs
+   * telefone no Firebase/Espo. Só faz sentido com `captureChannel:
+   * "contact_modal"`. Ausente no LeadForm.
+   */
+  modalChannel: z.enum(["whatsapp", "phone"]).optional(),
 });
 
 export type ApiLeadPayload = z.infer<typeof apiLeadSchema>;
@@ -113,6 +119,8 @@ export type LeadRecord = {
   rpaResultado?: ApiLeadPayload["rpaResultado"];
   /** Origem da captura — ver `apiLeadSchema.captureChannel`. */
   captureChannel?: "contact_modal" | "lead_form";
+  /** Canal do modal — ver `apiLeadSchema.modalChannel`. */
+  modalChannel?: "whatsapp" | "phone";
   ramo: string;
   phoneE164: string;
   cep?: string;

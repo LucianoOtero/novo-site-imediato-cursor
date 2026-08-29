@@ -69,6 +69,8 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord): Promise<void> 
       rpaResultado: lead.rpaResultado ?? null,
       // Origem da captura (2026-07-29) — CF dispara HSM extra só no modal.
       captureChannel: lead.captureChannel ?? null,
+      // Canal WA vs telefone (2026-08-17) — espelhado no Espo como cCanalCaptura.
+      modalChannel: lead.modalChannel ?? null,
     },
     timestamp: lead.createdAt,
     status: "pending",

@@ -26,6 +26,12 @@
  * - cDataDoLead (data de captura);
  * - cWebpage = SITE_WEBPAGE (o proxy grava "mdmidia.com.br" fixo);
  * - na Opportunity, cLeadId (vínculo em texto usado pelos relatórios).
+ *
+ * Atribuição Ads (Fase 2, 2026-08-29): ValueTrack/gad_* no Lead (POST);
+ * campos novos (wbraid, campaign_name, utm_id, adgroupid) e o pacote
+ * completo na Opportunity vão em PUT best-effort — o Entity Manager
+ * prod da Opp ainda não espelhou o DEV (Fase 5). Ver
+ * docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md.
  */
 
 /**
@@ -80,10 +86,78 @@ async function espoRequest(config, method, path, body) {
 }
 
 /**
+ * Pacote Ads/UTM completo (Lead + Opportunity) — nomes Espo da tabela §3
+ * em docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md. `compact` remove vazios.
+ */
+function attributionPackageFields(utm = {}) {
+  return compact({
+    cGclid: utm.gclid,
+    cGbraid: utm.gbraid,
+    cWbraid: utm.wbraid,
+    cUtmSource: utm.utm_source,
+    cUtmMedium: utm.utm_medium,
+    cUtmCampaign: utm.utm_campaign,
+    cUtmCampaignName: utm.campaign_name,
+    cUtmContent: utm.utm_content,
+    cUtmTerm: utm.utm_term,
+    cUtmId: utm.utm_id,
+    cGadSource: utm.gad_source,
+    cGadCampaignId: utm.gad_campaignid,
+    cMatchType: utm.matchtype,
+    cDevice: utm.device,
+    cNetwork: utm.network,
+    cPlacement: utm.placement,
+    cAdgroupId: utm.adgroupid,
+    cCreative: utm.creative,
+  });
+}
+
+/**
+ * Campos de atribuição já estabelecidos no Entity Manager do Lead
+ * (inventário DEV 2026-08-28) — seguros no POST/PUT principal.
+ * Exclui wbraid / campaign_name / utm_id / adgroupid (Fase 0 novos).
+ */
+function attributionLeadCoreFields(utm = {}) {
+  const full = attributionPackageFields(utm);
+  const {
+    cWbraid: _w,
+    cUtmCampaignName: _n,
+    cUtmId: _i,
+    cAdgroupId: _a,
+    ...core
+  } = full;
+  return core;
+}
+
+/**
+ * Campos novos no Lead (Fase 0) — só PUT best-effort separado.
+ */
+function attributionLeadExtendedFields(leadData) {
+  const utm = leadData.utm || {};
+  return compact({
+    cWbraid: utm.wbraid,
+    cUtmCampaignName: utm.campaign_name,
+    cUtmId: utm.utm_id,
+    cAdgroupId: utm.adgroupid,
+  });
+}
+
+/**
+ * Pacote completo para Opportunity — PUT best-effort até Espo prod
+ * espelhar o schema DEV (Fase 5). Incluir no POST de Opp quebraria
+ * produção (hoje só `cGclid` / `cWebpage` no Entity Manager prod).
+ */
+function attributionOpportunityFields(leadData) {
+  return attributionPackageFields(leadData.utm || {});
+}
+
+/**
  * Mapeamento site → campos do Lead (nomes confirmados no CRM dev e no
  * fonte do proxy). Só o que existe no payload entra (compact) — o
  * fallback de nome/e-mail é aplicado apenas na criação (`isCreate`),
  * para nunca sobrescrever um nome real com um "falso" numa atualização.
+ * Atribuição core via `attributionLeadCoreFields`; extended em PUT
+ * best-effort (`attributionLeadExtendedFields`).
  */
 function buildLeadFields(leadData, { isCreate = false, capturedAt } = {}) {
   const fb = fallbackIdentity(leadData);
@@ -100,18 +174,38 @@ function buildLeadFields(leadData, { isCreate = false, capturedAt } = {}) {
     cAnoFab: leadData.veiculoAnoFabricacao,
     cAnoMod: leadData.veiculoAnoModelo || leadData.veiculoAno,
     cPlaca: leadData.placa,
-    cGclid: utm.gclid,
-    cGbraid: utm.gbraid,
-    cUtmSource: utm.utm_source,
-    cUtmMedium: utm.utm_medium,
-    cUtmCampaign: utm.utm_campaign,
-    cUtmContent: utm.utm_content,
-    cUtmTerm: utm.utm_term,
+    ...attributionLeadCoreFields(utm),
     cWebpage: SITE_WEBPAGE,
   });
 }
 
-/** Campos da Opportunity espelhados do Lead (nomes próprios da entidade — `cEmailAdress`/`cCEP`). `leadId`/`stage`/`probability` só na criação; `name` no update só com nome real (paridade com proxy legado / Lead.firstName). */
+/**
+ * Deriva `cCanalCaptura` (Enum no Espo: formulario|whatsapp|telefone).
+ * Só deve ir em PUTs best-effort até o campo existir no Entity Manager —
+ * incluir na criação do Lead/Opp quebraria o POST se o atributo ainda
+ * não estiver cadastrado.
+ */
+function canalCapturaFields(leadData) {
+  const channel = leadData.captureChannel;
+  const modal = leadData.modalChannel;
+  let value = null;
+  if (channel === "lead_form") value = "formulario";
+  else if (channel === "contact_modal") {
+    if (modal === "phone") value = "telefone";
+    else value = "whatsapp";
+  }
+  return value ? { cCanalCaptura: value } : {};
+}
+
+/**
+ * Campos da Opportunity espelhados do Lead (nomes próprios da entidade —
+ * `cEmailAdress`/`cCEP`). `leadId`/`stage`/`probability` só na criação;
+ * `name` no update só com nome real (paridade com proxy legado /
+ * Lead.firstName).
+ *
+ * Atribuição Ads além de `cGclid`: ver `attributionOpportunityFields`
+ * (PUT best-effort em index.js) — não misturar no POST até Fase 5.
+ */
 function buildOpportunityFields(leadData, { isCreate = false, espoLeadId } = {}) {
   const fb = fallbackIdentity(leadData);
   const utm = leadData.utm || {};
@@ -324,4 +418,8 @@ module.exports = {
   postNote,
   appendDescription,
   createManualCalcTask,
+  canalCapturaFields,
+  attributionPackageFields,
+  attributionLeadExtendedFields,
+  attributionOpportunityFields,
 };

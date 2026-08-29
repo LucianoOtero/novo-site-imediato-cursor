@@ -11,6 +11,75 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.32] — 2026-08-29 (Fase 5: prep runbook + scripts)
+
+### Docs / Ops
+- Runbook prod: [`docs/FASE5_ROLLOUT_PRODUCAO.md`](docs/FASE5_ROLLOUT_PRODUCAO.md) (D0/D1, aceite, rollback).
+- Aceite §9 e AMBIENTE §5 apontam para produção (`flyingdonkeys.com.br`).
+
+### Added (scripts — sem executar prod)
+- [`fase5-prod-smoke.mjs`](scripts/espo-ops/fase5-prod-smoke.mjs): RTDB `environment=production` → Espo prod; exige `--i-know-this-is-prod`.
+- `resolveEspoConfig`: `ESPOCRM_API_CONFIG[prefer]` tem prioridade sobre `ESPO_BASE_URL` (corrige inventário `--prefer=prod` mascarado pelo env DEV).
+- `fase0-attribution-fields.mjs`: inventário prod permitido; CREATE em prod só com `--i-know-this-is-prod`.
+
+### Notes
+- Sem commit/deploy/Espo prod nesta entrada. Execução D0/D1 sob autorização explícita (alvo 2026-08-30).
+
+## [0.2.31] — 2026-08-29 (Fase 4: Final URL suffix Exp)
+
+### Ops (Google Ads)
+- **Substituído** `finalUrlSuffix` só na Exp `24095000558` pelo canônico (UTMs + ValueTrack; sem `gclid` no suffix).
+- Controle `21287198336`, `trackingUrlTemplate` e suffix da conta **intocados**.
+- Scripts: [`ads-set-exp-final-url-suffix.mjs`](scripts/google-ops/ads-set-exp-final-url-suffix.mjs); backup/result em `scripts/google-ops/ads-fase4-suffix-*.json`.
+
+### Docs / Ops
+- Smoke Ads-like → RTDB staging → Espo DEV: [`fase4-ads-url-smoke.mjs`](scripts/espo-ops/fase4-ads-url-smoke.mjs) — **GATE OK**.
+- Docs: [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md), [`AMBIENTE_TESTES_SITE_NOVO.md`](docs/AMBIENTE_TESTES_SITE_NOVO.md).
+
+### Notes
+- Tráfego Exp já leva params canônicos; aceite formal de leads prod na **Fase 5** (Espo prod + deploy).
+
+## [0.2.30] — 2026-08-29 (Fase 3: E2E Espo DEV 23/23)
+
+### Docs / Ops
+- Gate Fase 3 verde: piloto + suite [`e2e/testes-espocrm.spec.ts`](e2e/testes-espocrm.spec.ts) contra localhost staging → Espo DEV — **23 passed** (~41 min).
+- Resultado: [`e2e/testes-espocrm.resultado-fase3.json`](e2e/testes-espocrm.resultado-fase3.json).
+
+### Changed (harness E2E)
+- Reset do store local entre casos; assert Lead+Opp no DEV; `ESPO_BASE_URL` só aceita `dev.flyingdonkeys.com.br`.
+
+### Notes
+- Sem deploy prod / Ads. Próximo: Fase 4 (Final URL suffix na campanha Exp).
+
+## [0.2.29] — 2026-08-29 (Fase 2: CF atribuição Opp + smokes Espo DEV)
+
+### Changed (Firebase)
+- [`firebase/functions/espocrm.js`](firebase/functions/espocrm.js): `attributionPackageFields` / Lead extended / **Opportunity pacote completo** (PUT best-effort).
+- [`firebase/functions/index.js`](firebase/functions/index.js): PUT `espo_attribution_{stage}_sent` após funil/canal.
+- Deploy `deliverLead` em `imediato-seguros-site-novo` (rev. deliverlead-00026).
+
+### Docs / Ops
+- Smokes: [`scripts/espo-ops/fase2-attribution-smoke.mjs`](scripts/espo-ops/fase2-attribution-smoke.mjs), [`fase2-rtdb-attribution-smoke.mjs`](scripts/espo-ops/fase2-rtdb-attribution-smoke.mjs).
+- Gate Fase 2 verde: RTDB `environment=staging` → Lead+Opp DEV com UTMs/`cUtmCampaignName`/`cCanalCaptura`; canais formulario/whatsapp/telefone.
+- Opp POST continua só com `cGclid` até Espo prod espelhar schema (Fase 5).
+
+### Notes
+- Sem deploy Vercel prod / Ads suffix. Próximo: Fase 3 (E2E) ou Preview staging com `FIREBASE_*` espelhados.
+
+## [0.2.28] — 2026-08-29 (Fase 0 Espo DEV + Fase 1 atribuição local)
+
+### Docs / Ops
+- Fase 0 Espo DEV: campos Ads/UTM/`cCanalCaptura` em Lead + Opportunity; layout “Cotação do Site” atualizado; inventário via Metadata API.
+- [`docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](docs/ATRIBUICAO_ADS_SITE_NOVO_ESPO.md): status Fases 0–1.
+
+### Added (app — sem deploy prod)
+- [`lib/leads/attribution.ts`](lib/leads/attribution.ts): persistência 1st-party (`localStorage`, TTL 90d) + merge query ∪ storage.
+- `utmSchema` / `captureUtmFromLocation` ampliados (`campaign_name`, ValueTrack).
+- `LeadForm`, `ContactLeadModal`, `whatsapp`, `PageAnalytics` passam a usar `getAttributionUtm()`.
+
+### Notes
+- Sem deploy Vercel/CF/Ads nesta release de código. Próximo: Fase 2 (staging + CF Opportunity completa).
+
 ## [0.2.27] — 2026-08-27 (docs: Fase4 atribuição — plano por fases 0–5)
 
 ### Docs

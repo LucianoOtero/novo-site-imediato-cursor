@@ -1,0 +1,129 @@
+[
+  {
+    "rows": [
+      [
+        {
+          "name": "firstName"
+        }
+      ],
+      [
+        {
+          "name": "emailAddress"
+        },
+        {
+          "name": "cCelular"
+        }
+      ],
+      [
+        {
+          "name": "addressPostalCode"
+        },
+        {
+          "name": "cGclid"
+        }
+      ],
+      [
+        {
+          "name": "cCpftext"
+        },
+        {
+          "name": "cPlaca"
+        }
+      ],
+      [
+        {
+          "name": "cMarca"
+        },
+        {
+          "name": "cAnoMod"
+        }
+      ],
+      [
+        {
+          "name": "cSegpref"
+        },
+        {
+          "name": "cSegant"
+        },
+        {
+          "name": "cCiapol"
+        }
+      ],
+      [
+        {
+          "name": "cModalidade"
+        },
+        {
+          "name": "cValorpret"
+        }
+      ]
+    ],
+    "style": "default",
+    "label": "Overview"
+  },
+  {
+    "rows": [
+      [
+        {
+          "name": "status"
+        },
+        {
+          "name": "source"
+        },
+        {
+          "name": "cDataDoLead"
+        }
+      ],
+      [
+        {
+          "name": "opportunityAmount"
+        },
+        {
+          "name": "campaign"
+        }
+      ],
+      [
+        {
+          "name": "industry"
+        },
+        {
+          "name": "cWebpage"
+        }
+      ],
+      [
+        {
+          "name": "description"
+        }
+      ]
+    ],
+    "style": "default",
+    "label": "Details"
+  },
+  {
+    "label": "Cotação do Site",
+    "rows": [
+      [
+        {
+          "name": "cEtapaFunil"
+        },
+        {
+          "name": "cEscolhaCalculo"
+        }
+      ],
+      [
+        {
+          "name": "cStatusCalculo"
+        },
+        false
+      ],
+      [
+        {
+          "name": "cValorRecomendado"
+        },
+        {
+          "name": "cValorAlternativo"
+        }
+      ]
+    ]
+  }
+]

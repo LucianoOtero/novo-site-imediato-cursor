@@ -17,8 +17,8 @@ import { company } from "@/lib/company";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { trackEvent } from "@/lib/analytics";
 import { postLead } from "@/lib/leads/post-lead";
+import { getAttributionUtm } from "@/lib/leads/attribution";
 import {
-  captureUtmFromLocation,
   formatCelular,
   formatCep,
   formatCpf,
@@ -270,7 +270,8 @@ export function ContactLeadModal() {
         celular: values.celular,
         stage: "initial",
         captureChannel: "contact_modal",
-        utm: captureUtmFromLocation(),
+        modalChannel: channel,
+        utm: getAttributionUtm(),
       });
       const data = (await response.json().catch(() => null)) as { leadId?: string } | null;
       if (data?.leadId) initialLeadIdRef.current = data.leadId;
@@ -420,8 +421,9 @@ export function ContactLeadModal() {
         ramo: ramo ?? data.ramo,
         stage: "complete",
         captureChannel: "contact_modal",
+        modalChannel: channel,
         leadId: initialLeadIdRef.current ?? undefined,
-        utm: captureUtmFromLocation(),
+        utm: getAttributionUtm(),
         skipStrictValidation,
       });
     } catch (error) {

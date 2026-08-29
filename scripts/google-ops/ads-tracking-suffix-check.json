@@ -1,0 +1,42 @@
+{
+  "customerId": "9947918772",
+  "checkedAt": "2026-08-29T20:40:57.446Z",
+  "plannedSuffix": "utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_id={campaignid}&utm_content={creative}&utm_term={keyword}&gad_source=1&gad_campaignid={campaignid}&matchtype={matchtype}&device={device}&network={network}&placement={placement}&adgroupid={adgroupid}&creative={creative}&campaign_name={campaignname}",
+  "customer": {
+    "trackingUrlTemplate": "{lpurl}?gclid={gclid}",
+    "finalUrlSuffix": "utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_content={adgroupid}&utm_term={keyword}&matchtype={matchtype}&network={network}&device={device}&creative={creative}&gclid={gclid}",
+    "autoTaggingEnabled": true
+  },
+  "campaigns": [
+    {
+      "id": "21287198336",
+      "name": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+      "status": "ENABLED",
+      "trackingUrlTemplate": "{lpurl}?gclid={gclid}",
+      "finalUrlSuffix": "utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_content={adgroupid}&utm_term={keyword}&matchtype={matchtype}&network={network}&device={device}&creative={creative}&gclid={gclid}",
+      "urlCustomParameters": []
+    },
+    {
+      "id": "24095000558",
+      "name": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+      "status": "ENABLED",
+      "trackingUrlTemplate": "{lpurl}?gclid={gclid}",
+      "finalUrlSuffix": "utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_id={campaignid}&utm_content={creative}&utm_term={keyword}&gad_source=1&gad_campaignid={campaignid}&matchtype={matchtype}&device={device}&network={network}&placement={placement}&adgroupid={adgroupid}&creative={creative}&campaign_name={campaignname}",
+      "urlCustomParameters": []
+    }
+  ],
+  "expAdGroupsWithOverride": [],
+  "expAdsWithOverride": [],
+  "expAdsScanned": 21,
+  "expEnabledAdsCount": 14,
+  "verdict": [
+    "CONTA tem finalUrlSuffix — conferir herança vs override da campanha Exp.",
+    "CONTA tem trackingUrlTemplate.",
+    "Auto-tagging ligado (gclid via auto-tagging ok).",
+    "Exp: finalUrlSuffix JÁ É o canônico do plano.",
+    "Exp: trackingUrlTemplate EXISTE — verificar se já injeta UTMs (pode interagir com o suffix).",
+    "Controle tem tracking e/ou suffix — NÃO alterar na Fase 4 (só referência).",
+    "Exp: nenhum ad group com override de tracking/suffix.",
+    "Exp: nenhum anúncio ENABLED/não-REMOVED com override de tracking/suffix (amostra filtrada)."
+  ]
+}

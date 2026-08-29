@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-08-22T06:55:00.943Z",
+  "sourceProject": "imediato-seguros-site-novo",
+  "window": {
+    "start": "2026-08-10",
+    "end": "2026-08-14"
+  },
+  "scanned": 291,
+  "inWindow": 48,
+  "summary": {
+    "exp": {
+      "total": 40,
+      "records": 0,
+      "withGclid": 40,
+      "uniqueGclids": 37,
+      "uniqueContacts": 0,
+      "stages": {
+        "complete": 12,
+        "progress": 14,
+        "rpa_result": 8,
+        "initial": 5,
+        "consultant_requested": 1
+      },
+      "days": {
+        "2026-08-14": 11,
+        "2026-08-13": 12,
+        "2026-08-11": 6,
+        "2026-08-10": 5,
+        "2026-08-12": 6
+      },
+      "channels": {
+        "contact_modal": 8,
+        "lead_form": 32
+      },
+      "sources": {},
+      "ramos": {
+        "auto": 25,
+        "moto": 12,
+        "uber": 2,
+        "utilitario": 1
+      },
+      "statuses": {},
+      "synced": 40,
+      "espocrm": 40,
+      "octadesk": 39,
+      "octadeskCloudRun": 0
+    },
+    "control": {
+      "total": 0,
+      "records": 0,
+      "withGclid": 0,
+      "uniqueGclids": 0,
+      "uniqueContacts": 0,
+      "stages": {},
+      "days": {},
+      "channels": {},
+      "sources": {},
+      "ramos": {},
+      "statuses": {},
+      "synced": 0,
+      "espocrm": 0,
+      "octadesk": 0,
+      "octadeskCloudRun": 0
+    },
+    "otherAds": {
+      "total": 1,
+      "records": 0,
+      "withGclid": 1,
+      "uniqueGclids": 1,
+      "uniqueContacts": 0,
+      "stages": {
+        "progress": 1
+      },
+      "days": {
+        "2026-08-13": 1
+      },
+      "channels": {
+        "lead_form": 1
+      },
+      "sources": {},
+      "ramos": {
+        "auto": 1
+      },
+      "statuses": {},
+      "synced": 1,
+      "espocrm": 1,
+      "octadesk": 1,
+      "octadeskCloudRun": 0
+    },
+    "organicOrUnknown": {
+      "total": 7,
+      "records": 0,
+      "withGclid": 0,
+      "uniqueGclids": 0,
+      "uniqueContacts": 0,
+      "stages": {
+        "progress": 3,
+        "rpa_result": 4
+      },
+      "days": {
+        "2026-08-13": 2,
+        "2026-08-14": 1,
+        "2026-08-11": 1,
+        "2026-08-10": 2,
+        "2026-08-12": 1
+      },
+      "channels": {
+        "lead_form": 7
+      },
+      "sources": {},
+      "ramos": {
+        "uber": 1,
+        "fianca": 1,
+        "auto": 3,
+        "utilitario": 2
+      },
+      "statuses": {},
+      "synced": 7,
+      "espocrm": 7,
+      "octadesk": 7,
+      "octadeskCloudRun": 0
+    }
+  },
+  "note": "Agregado sem PII. site_novo RTDB — legado usa outro projeto Firebase."
+}

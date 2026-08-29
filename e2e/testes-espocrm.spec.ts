@@ -24,10 +24,30 @@ import { test, expect, request as pwRequest, type Page } from "@playwright/test"
 
 const CASES_PATH = path.join(__dirname, "testes-espocrm.cases.json");
 const OUT_JSON = path.join(__dirname, process.env.RESULT_FILE || "testes-espocrm.resultado.json");
+/** Store local do `/api/lead` em localhost — sem limpar, o dedupe por telefone
+ *  reaproveita o mesmo leadId em todos os casos e a CF herda espocrmLeadId stale. */
+const LOCAL_LEADS_STORE = path.join(process.env.TEMP || process.env.TMP || "/tmp", "imediato-leads", "leads.json");
 
 const ESPO_BASE_URL = (process.env.ESPO_BASE_URL || "").replace(/\/$/, "");
 const ESPO_API_KEY = process.env.ESPO_API_KEY || "";
 const CASE_FILTER = process.env.CASE_FILTER ? process.env.CASE_FILTER.split(",").map((s) => s.trim()) : null;
+
+if (!ESPO_BASE_URL || !ESPO_API_KEY) {
+  throw new Error("Defina ESPO_BASE_URL e ESPO_API_KEY (Espo DEV) antes de rodar o E2E.");
+}
+if (!/dev\.flyingdonkeys\.com\.br$/i.test(ESPO_BASE_URL.replace(/^https?:\/\//, "").split("/")[0])) {
+  throw new Error(
+    `Recusado: ESPO_BASE_URL deve ser https://dev.flyingdonkeys.com.br (recebido: ${ESPO_BASE_URL}). Purga E2E nunca aponta para prod.`,
+  );
+}
+
+function resetLocalLeadStore() {
+  try {
+    if (fs.existsSync(LOCAL_LEADS_STORE)) fs.unlinkSync(LOCAL_LEADS_STORE);
+  } catch {
+    /* best-effort */
+  }
+}
 
 interface Identidade {
   nome: string;
@@ -176,7 +196,7 @@ async function consultarCrm(email: string, modo: string): Promise<CrmSnapshot> {
   try {
     // Poll: espera a Cloud Function terminar (dedupe/criação + campos do
     // funil) — até ~90s. Terminal = cEtapaFunil num estado final.
-    const deadline = Date.now() + 90_000;
+    const deadline = Date.now() + 120_000;
     let lead: Record<string, unknown> | null = null;
     while (Date.now() < deadline) {
       const params = new URLSearchParams({
@@ -362,10 +382,19 @@ for (const caso of casos) {
     let valorAlternativo: string | null = null;
     let detalhe: string | null = null;
 
-    // Slate limpa: remove qualquer lead/opp do telefone de teste antes deste caso.
+    // Slate limpa: store local (dedupe telefone em localhost) + Espo DEV.
+    resetLocalLeadStore();
     const purga = await purgarPorTelefone(`${identidade.ddd}${identidade.celular}`);
 
-    await page.goto("/cotacao");
+    await page.goto("/cotacao", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+      try {
+        sessionStorage.clear();
+      } catch {
+        /* ignore */
+      }
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
     const chip = page.getByRole("button", { name: "Auto", exact: true });
     if ((await chip.count()) > 0) await chip.first().click();
 
@@ -374,8 +403,8 @@ for (const caso of casos) {
     await fill(page, "celular", identidade.celular);
     await page.getByRole("button", { name: "Continuar" }).click();
 
-    // Passo 2
-    await expect(page.locator("#nome")).toBeVisible();
+    // Passo 2 — timeout maior: validação de telefone pode demorar após vários casos.
+    await expect(page.locator("#nome")).toBeVisible({ timeout: 45_000 });
     await fill(page, "nome", identidade.nome);
     await fill(page, "email", caso.email);
     await page.getByRole("button", { name: "Continuar" }).click();
@@ -494,5 +523,8 @@ for (const caso of casos) {
       cleanup,
     });
     writeResults();
+
+    expect(crm.leadEncontrado, `CRM DEV sem Lead para ${caso.email}: ${crm.erro || "?"}`).toBe(true);
+    expect(crm.opportunityId, `CRM DEV sem Opportunity para ${caso.email}`).toBeTruthy();
   });
 }

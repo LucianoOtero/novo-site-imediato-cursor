@@ -662,7 +662,10 @@ exports.deliverLead = onValueWritten(
     const funnelFields = buildFunnelFields(stage, leadData);
     const fieldsFlag = `espo_fields_${stage}_sent`;
     if (espoApiReady && espoLeadIdForApi && funnelFields && workingRecord[fieldsFlag] !== true) {
-      const payload = { ...funnelFields, cWebpage: espo.SITE_WEBPAGE };
+      const payload = {
+        ...funnelFields,
+        cWebpage: espo.SITE_WEBPAGE,
+      };
       try {
         await espo.putFields(espoApiConfig, "Lead", espoLeadIdForApi, payload, leadId);
         if (espoOppIdForApi) {
@@ -671,6 +674,59 @@ exports.deliverLead = onValueWritten(
         updates[fieldsFlag] = true;
       } catch (error) {
         logger.warn(`[deliverLead/espo-api] Lead ${leadId}: campos do funil (${stage}) falharam (best-effort).`, error);
+      }
+      // Canal de captura (2026-08-17): PUT separado — se o Enum
+      // `cCanalCaptura` ainda não existir no Entity Manager, não pode
+      // derrubar o PUT do funil (cEtapaFunil / cWebpage).
+      const canal = espo.canalCapturaFields(leadData);
+      if (Object.keys(canal).length > 0) {
+        try {
+          await espo.putFields(espoApiConfig, "Lead", espoLeadIdForApi, canal, leadId);
+          if (espoOppIdForApi) {
+            await espo.putFields(espoApiConfig, "Opportunity", espoOppIdForApi, canal, leadId);
+          }
+        } catch (error) {
+          logger.warn(
+            `[deliverLead/espo-api] Lead ${leadId}: cCanalCaptura falhou (campo pode não existir ainda).`,
+            error,
+          );
+        }
+      }
+    }
+
+    // Atribuição Ads (Fase 2): Lead extended + Opportunity pacote completo.
+    // PUT best-effort separado do funil/canal — campos novos ou Opp sem
+    // schema espelhado (prod até Fase 5) só falham em log.
+    const attrFlag = `espo_attribution_${stage}_sent`;
+    if (espoApiReady && espoLeadIdForApi && workingRecord[attrFlag] !== true) {
+      const leadExt = espo.attributionLeadExtendedFields(leadData);
+      const oppAttr = espo.attributionOpportunityFields(leadData);
+      const hasAttr = Object.keys(leadExt).length > 0 || Object.keys(oppAttr).length > 0;
+      if (hasAttr) {
+        let attrOk = true;
+        if (Object.keys(leadExt).length > 0) {
+          try {
+            await espo.putFields(espoApiConfig, "Lead", espoLeadIdForApi, leadExt, leadId);
+          } catch (error) {
+            attrOk = false;
+            logger.warn(
+              `[deliverLead/espo-api] Lead ${leadId}: atribuição extended falhou (campo pode não existir ainda).`,
+              error,
+            );
+          }
+        }
+        if (espoOppIdForApi && Object.keys(oppAttr).length > 0) {
+          try {
+            await espo.putFields(espoApiConfig, "Opportunity", espoOppIdForApi, oppAttr, leadId);
+          } catch (error) {
+            attrOk = false;
+            logger.warn(
+              `[deliverLead/espo-api] Lead ${leadId}: atribuição Opportunity falhou (schema Opp incompleto?).`,
+              error,
+            );
+          }
+        }
+        if (attrOk) updates[attrFlag] = true;
       }
     }
     const noteText = buildMomentNote(stage, leadData);

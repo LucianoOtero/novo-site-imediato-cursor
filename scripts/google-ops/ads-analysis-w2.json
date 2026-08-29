@@ -1,0 +1,849 @@
+{
+  "generatedAt": "2026-08-22T06:52:36.271Z",
+  "window": {
+    "start": "2026-08-17",
+    "end": "2026-08-21",
+    "note": "janela informada via CLI"
+  },
+  "campaigns": {
+    "controlId": "21287198336",
+    "expId": "24095000558"
+  },
+  "serving": [
+    {
+      "id": "21287198336",
+      "name": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+      "status": "ENABLED",
+      "primaryStatus": "LIMITED",
+      "reasons": [
+        "MISSING_LEAD_FORM_EXTENSION"
+      ]
+    },
+    {
+      "id": "24095000558",
+      "name": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+      "status": "ENABLED",
+      "primaryStatus": "LIMITED",
+      "reasons": [
+        "MISSING_LEAD_FORM_EXTENSION"
+      ]
+    }
+  ],
+  "experimentArms": [
+    {
+      "resourceName": "customers/9947918772/experimentArms/10059719784~25740664",
+      "name": "Campanhas de teste",
+      "control": false,
+      "trafficSplit": 0,
+      "campaigns": [],
+      "inDesignCampaigns": [
+        "customers/9947918772/campaigns/281496263908992"
+      ],
+      "experiment": "customers/9947918772/experiments/10059719784"
+    },
+    {
+      "resourceName": "customers/9947918772/experimentArms/10059719784~25740838",
+      "name": "Campanhas de base",
+      "control": true,
+      "trafficSplit": 0,
+      "campaigns": [
+        "customers/9947918772/campaigns/21287198336"
+      ],
+      "inDesignCampaigns": [],
+      "experiment": "customers/9947918772/experiments/10059719784"
+    },
+    {
+      "resourceName": "customers/9947918772/experimentArms/10061298880~29107424",
+      "name": "Campanhas de base",
+      "control": true,
+      "trafficSplit": 50,
+      "campaigns": [
+        "customers/9947918772/campaigns/21287198336"
+      ],
+      "inDesignCampaigns": [],
+      "experiment": "customers/9947918772/experiments/10061298880"
+    },
+    {
+      "resourceName": "customers/9947918772/experimentArms/10061298880~29107427",
+      "name": "Campanhas do grupo de tratamento",
+      "control": false,
+      "trafficSplit": 50,
+      "campaigns": [
+        "customers/9947918772/campaigns/24095000558"
+      ],
+      "inDesignCampaigns": [
+        "customers/9947918772/campaigns/562971240619648"
+      ],
+      "experiment": "customers/9947918772/experiments/10061298880"
+    }
+  ],
+  "approvals": {
+    "counts": {
+      "APPROVED": 21,
+      "DISAPPROVED": 0,
+      "ENABLED": 14,
+      "OTHER": 0
+    },
+    "ads": [
+      {
+        "adId": "819506823789",
+        "group": "Auto",
+        "groupStatus": "ENABLED",
+        "adStatus": "PAUSED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819510792189",
+        "group": "02 outubro",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819511484100",
+        "group": "Caminhão",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/seguro-caminhao"
+      },
+      {
+        "adId": "819511489197",
+        "group": "Cotação Seguro Online",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819511489863",
+        "group": "Moto",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/seguro-moto"
+      },
+      {
+        "adId": "819511489899",
+        "group": "Moto",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/seguro-moto"
+      },
+      {
+        "adId": "819511490085",
+        "group": "02 outubro",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819511490121",
+        "group": "Auto",
+        "groupStatus": "ENABLED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819553038613",
+        "group": "Moto",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/seguro-moto"
+      },
+      {
+        "adId": "819553049662",
+        "group": "Cotação Seguro Online",
+        "groupStatus": "PAUSED",
+        "adStatus": "PAUSED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819553049671",
+        "group": "02 outubro",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819553066513",
+        "group": "Cotação Seguro Online",
+        "groupStatus": "PAUSED",
+        "adStatus": "PAUSED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819553080382",
+        "group": "Cotação Seguro Online",
+        "groupStatus": "PAUSED",
+        "adStatus": "PAUSED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819625632170",
+        "group": "Auto",
+        "groupStatus": "ENABLED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819625640105",
+        "group": "Caminhão",
+        "groupStatus": "PAUSED",
+        "adStatus": "PAUSED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819625640111",
+        "group": "Cotação Seguro Online",
+        "groupStatus": "PAUSED",
+        "adStatus": "PAUSED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819625667753",
+        "group": "Caminhão",
+        "groupStatus": "PAUSED",
+        "adStatus": "PAUSED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819625675178",
+        "group": "Cotação Seguro Online",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      },
+      {
+        "adId": "819625675919",
+        "group": "Caminhão",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/seguro-caminhao"
+      },
+      {
+        "adId": "819625676042",
+        "group": "Caminhão",
+        "groupStatus": "PAUSED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/seguro-caminhao"
+      },
+      {
+        "adId": "819625676108",
+        "group": "Auto",
+        "groupStatus": "ENABLED",
+        "adStatus": "ENABLED",
+        "approval": "APPROVED",
+        "review": "REVIEWED",
+        "url": "https://novo.segurosimediato.com.br/cotacao"
+      }
+    ]
+  },
+  "byCampaign": {
+    "21287198336": {
+      "name": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+      "daily": [
+        {
+          "date": "2026-08-17",
+          "impressions": 4236,
+          "clicks": 276,
+          "ctr": 0.06515580736543909,
+          "averageCpc": 4.383028648550725,
+          "costMicros": 1209715907,
+          "cost": 1209.715907,
+          "conversions": 51.5,
+          "cvr": 0.18659420289855072,
+          "cpa": 23.489629262135924
+        },
+        {
+          "date": "2026-08-18",
+          "impressions": 3275,
+          "clicks": 241,
+          "ctr": 0.07358778625954199,
+          "averageCpc": 4.887049796680498,
+          "costMicros": 1177779001,
+          "cost": 1177.779001,
+          "conversions": 47,
+          "cvr": 0.1950207468879668,
+          "cpa": 25.059127680851066
+        },
+        {
+          "date": "2026-08-19",
+          "impressions": 3338,
+          "clicks": 244,
+          "ctr": 0.07309766327142002,
+          "averageCpc": 4.419288516393443,
+          "costMicros": 1078306398,
+          "cost": 1078.306398,
+          "conversions": 49,
+          "cvr": 0.20081967213114754,
+          "cpa": 22.006253020408163
+        },
+        {
+          "date": "2026-08-20",
+          "impressions": 2679,
+          "clicks": 168,
+          "ctr": 0.06270996640537514,
+          "averageCpc": 4.853216571428572,
+          "costMicros": 815340384,
+          "cost": 815.340384,
+          "conversions": 21,
+          "cvr": 0.125,
+          "cpa": 38.825732571428574
+        },
+        {
+          "date": "2026-08-21",
+          "impressions": 2463,
+          "clicks": 169,
+          "ctr": 0.0686155095412099,
+          "averageCpc": 4.148546053254438,
+          "costMicros": 701104283,
+          "cost": 701.104283,
+          "conversions": 21,
+          "cvr": 0.1242603550295858,
+          "cpa": 33.385918238095236
+        }
+      ],
+      "totals": {
+        "impressions": 15991,
+        "clicks": 1098,
+        "costMicros": 4982245973,
+        "conversions": 189.5,
+        "cost": 4982.245973,
+        "ctr": 0.06866362328809955,
+        "cpc": 4.5375646384335155,
+        "cvr": 0.1725865209471767,
+        "cpa": 26.29153547757256
+      }
+    },
+    "24095000558": {
+      "name": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+      "daily": [
+        {
+          "date": "2026-08-17",
+          "impressions": 2579,
+          "clicks": 148,
+          "ctr": 0.05738658394726638,
+          "averageCpc": 4.459771337837838,
+          "costMicros": 660046158,
+          "cost": 660.046158,
+          "conversions": 38,
+          "cvr": 0.25675675675675674,
+          "cpa": 17.369635736842106
+        },
+        {
+          "date": "2026-08-18",
+          "impressions": 2230,
+          "clicks": 138,
+          "ctr": 0.06188340807174888,
+          "averageCpc": 5.000127739130434,
+          "costMicros": 690017628,
+          "cost": 690.017628,
+          "conversions": 37.5,
+          "cvr": 0.2717391304347826,
+          "cpa": 18.400470079999998
+        },
+        {
+          "date": "2026-08-19",
+          "impressions": 2029,
+          "clicks": 136,
+          "ctr": 0.06702809265648102,
+          "averageCpc": 4.860502610294118,
+          "costMicros": 661028355,
+          "cost": 661.028355,
+          "conversions": 28,
+          "cvr": 0.20588235294117646,
+          "cpa": 23.60815553571429
+        },
+        {
+          "date": "2026-08-20",
+          "impressions": 1937,
+          "clicks": 132,
+          "ctr": 0.06814661848218895,
+          "averageCpc": 5.477998901515152,
+          "costMicros": 723095855,
+          "cost": 723.095855,
+          "conversions": 24,
+          "cvr": 0.18181818181818182,
+          "cpa": 30.128993958333332
+        },
+        {
+          "date": "2026-08-21",
+          "impressions": 2010,
+          "clicks": 130,
+          "ctr": 0.06467661691542288,
+          "averageCpc": 4.462408984615385,
+          "costMicros": 580113168,
+          "cost": 580.113168,
+          "conversions": 23.666666,
+          "cvr": 0.1820512769230769,
+          "cpa": 24.511824690473937
+        }
+      ],
+      "totals": {
+        "impressions": 10785,
+        "clicks": 684,
+        "costMicros": 3314301164,
+        "conversions": 151.166666,
+        "cost": 3314.301164,
+        "ctr": 0.06342141863699582,
+        "cpc": 4.845469538011696,
+        "cvr": 0.2210038976608187,
+        "cpa": 21.924814853031158
+      }
+    }
+  },
+  "comparison": {
+    "impressions": {
+      "control": 15991,
+      "exp": 10785,
+      "deltaPct": -0.325558126446126,
+      "shareExp": 0.4027860770839558
+    },
+    "clicks": {
+      "control": 1098,
+      "exp": 684,
+      "deltaPct": -0.3770491803278688,
+      "shareExp": 0.3838383838383838
+    },
+    "cost": {
+      "control": 4982.245973,
+      "exp": 3314.301164,
+      "deltaPct": -0.3347776922373961,
+      "shareExp": 0.3994795797903993
+    },
+    "conversions": {
+      "control": 189.5,
+      "exp": 151.166666,
+      "deltaPct": -0.20228672295514516,
+      "shareExp": 0.44373776799165904
+    },
+    "ctr": {
+      "control": 0.06866362328809955,
+      "exp": 0.06342141863699582,
+      "deltaPct": -0.07634616992331485
+    },
+    "cpc": {
+      "control": 4.5375646384335155,
+      "exp": 4.845469538011696,
+      "deltaPct": 0.06785686246102211
+    },
+    "cvr": {
+      "control": 0.1725865209471767,
+      "exp": 0.2210038976608187,
+      "deltaPct": 0.28053973420358275
+    },
+    "cpa": {
+      "control": 26.29153547757256,
+      "exp": 21.924814853031158,
+      "deltaPct": -0.16608845946887887
+    }
+  },
+  "conversionsByAction": {
+    "daily": [
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-17",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 26.5,
+        "allConversions": 26.5,
+        "conversionsValue": 795
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-17",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 29,
+        "allConversions": 29,
+        "conversionsValue": 870
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-17",
+        "conversionAction": "customers/9947918772/conversionActions/303889427",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 3,
+        "conversionsValue": 0
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-17",
+        "conversionAction": "customers/9947918772/conversionActions/303889427",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 1,
+        "conversionsValue": 0
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-17",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 25,
+        "allConversions": 25,
+        "conversionsValue": 750
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-17",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 9,
+        "allConversions": 9,
+        "conversionsValue": 270
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-18",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 21,
+        "allConversions": 21,
+        "conversionsValue": 630
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-18",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 28.5,
+        "allConversions": 28.5,
+        "conversionsValue": 855
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-18",
+        "conversionAction": "customers/9947918772/conversionActions/303889427",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 1,
+        "conversionsValue": 0
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-18",
+        "conversionAction": "customers/9947918772/conversionActions/303889427",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 1,
+        "conversionsValue": 0
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-18",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 26,
+        "allConversions": 26,
+        "conversionsValue": 780
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-18",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 9,
+        "allConversions": 9,
+        "conversionsValue": 270
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-19",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 24,
+        "allConversions": 24,
+        "conversionsValue": 720
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-19",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 22,
+        "allConversions": 22,
+        "conversionsValue": 660
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-19",
+        "conversionAction": "customers/9947918772/conversionActions/303889427",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 1,
+        "conversionsValue": 0
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-19",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 25,
+        "allConversions": 25,
+        "conversionsValue": 750
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-19",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 6,
+        "allConversions": 6,
+        "conversionsValue": 180
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-20",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 10,
+        "allConversions": 10,
+        "conversionsValue": 300
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-20",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 21,
+        "allConversions": 21,
+        "conversionsValue": 630
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-20",
+        "conversionAction": "customers/9947918772/conversionActions/303889427",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 1,
+        "conversionsValue": 0
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-20",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 11,
+        "allConversions": 11,
+        "conversionsValue": 330
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-20",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 3,
+        "allConversions": 3,
+        "conversionsValue": 90
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-20",
+        "conversionAction": "customers/9947918772/conversionActions/7591886831",
+        "conversionActionName": "Preencher o telefone no modal de telefone",
+        "conversions": 0,
+        "allConversions": 2,
+        "conversionsValue": 0
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-21",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 10,
+        "allConversions": 10,
+        "conversionsValue": 300
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-21",
+        "conversionAction": "customers/9947918772/conversionActions/282128343",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 20.666666,
+        "allConversions": 20.666666,
+        "conversionsValue": 619.99998
+      },
+      {
+        "campaignId": "21287198336",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna",
+        "date": "2026-08-21",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 11,
+        "allConversions": 11,
+        "conversionsValue": 330
+      },
+      {
+        "campaignId": "24095000558",
+        "campaignName": "ATIVA - Dias de Semana - 2026 - 04 - 22 - Diurna Exp site novo vs legado 50/50",
+        "date": "2026-08-21",
+        "conversionAction": "customers/9947918772/conversionActions/7366522558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 3,
+        "allConversions": 3,
+        "conversionsValue": 90
+      }
+    ],
+    "totals": [
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 91.5,
+        "allConversions": 91.5,
+        "conversionsValue": 2745,
+        "days": {
+          "2026-08-17": 26.5,
+          "2026-08-18": 21,
+          "2026-08-19": 24,
+          "2026-08-20": 10,
+          "2026-08-21": 10
+        }
+      },
+      {
+        "campaignId": "24095000558",
+        "conversionActionName": "Envio de Formulário de Lead na Página",
+        "conversions": 121.16666599999999,
+        "allConversions": 121.16666599999999,
+        "conversionsValue": 3634.99998,
+        "days": {
+          "2026-08-17": 29,
+          "2026-08-18": 28.5,
+          "2026-08-19": 22,
+          "2026-08-20": 21,
+          "2026-08-21": 20.666666
+        }
+      },
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 6,
+        "conversionsValue": 0,
+        "days": {
+          "2026-08-17": 0,
+          "2026-08-18": 0,
+          "2026-08-19": 0,
+          "2026-08-20": 0
+        }
+      },
+      {
+        "campaignId": "24095000558",
+        "conversionActionName": "SegurosImediatoOffline",
+        "conversions": 0,
+        "allConversions": 2,
+        "conversionsValue": 0,
+        "days": {
+          "2026-08-17": 0,
+          "2026-08-18": 0
+        }
+      },
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 98,
+        "allConversions": 98,
+        "conversionsValue": 2940,
+        "days": {
+          "2026-08-17": 25,
+          "2026-08-18": 26,
+          "2026-08-19": 25,
+          "2026-08-20": 11,
+          "2026-08-21": 11
+        }
+      },
+      {
+        "campaignId": "24095000558",
+        "conversionActionName": "Preencher o telefone no modal de whatsapp",
+        "conversions": 30,
+        "allConversions": 30,
+        "conversionsValue": 900,
+        "days": {
+          "2026-08-17": 9,
+          "2026-08-18": 9,
+          "2026-08-19": 6,
+          "2026-08-20": 3,
+          "2026-08-21": 3
+        }
+      },
+      {
+        "campaignId": "21287198336",
+        "conversionActionName": "Preencher o telefone no modal de telefone",
+        "conversions": 0,
+        "allConversions": 2,
+        "conversionsValue": 0,
+        "days": {
+          "2026-08-20": 0
+        }
+      }
+    ]
+  },
+  "notes": {
+    "formBias": "Exp converte no passo 1 (form_initial_contact); legado no submit final.",
+    "readOnly": true
+  }
+}

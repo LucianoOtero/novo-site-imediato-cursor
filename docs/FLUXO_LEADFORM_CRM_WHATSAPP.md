@@ -93,7 +93,7 @@ Depois: Administração → Layout Manager → Lead → Detail → arrastar os 4
 | Endereço | `address*` (`Street`, `City`, `State`, `Country`, `PostalCode`), `addressMap` |
 | Veículo | `cMarca`, `cVeiculo`, `cPlaca` (Texto), `cAnoFab`, `cAnoMod` |
 | Seguro | `cModalidade`, `cSegpref` (seguradora preferencial), `cSegant` (seguradora anterior), `cCiapol` (CI apólice anterior), `cValorpret` (Valor Pretendido, Número) |
-| Google Ads / UTM | `cGclid`, `cGbraid`, `cGadSource`, `cGadCampaignId`, `cUtmSource`, `cUtmMedium`, `cUtmCampaign`, `cUtmContent`, `cUtmTerm`, `cMatchType`, `cDevice`, `cCreative`, `cAdPosition`, `cPlacement`, `cNetwork` |
+| Google Ads / UTM | `cGclid`, `cGbraid`, `cGadSource`, `cGadCampaignId`, `cUtmSource`, `cUtmMedium`, `cUtmCampaign` (ID), **`cUtmCampaignName`** (nome literal — ver [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md)), `cUtmContent`, `cUtmTerm`, `cMatchType`, `cDevice`, `cCreative`, `cAdPosition`, `cPlacement`, `cNetwork` |
 | Operação | `cDataDoLead` (Data), `cDistribuir` (Booleano — distribuição p/ equipe), `cWebpage`, `source`, `status` (pipeline de vendas — NÃO usar p/ funil do site), `assignedUser`, `teams`, `campaign`, `description`, `doNotCall`, `opportunityAmount` |
 | Conversão | `convertedAt`, `createdAccount`, `createdContact`, `createdOpportunity` |
 
@@ -110,7 +110,8 @@ Depois: Administração → Layout Manager → Lead → Detail → arrastar os 4
 #### Análise do inventário (impactos no plano)
 
 1. **Confirmado**: os 5 campos novos do plano (`cEtapaFunil`, `cEscolhaCalculo`, `cStatusCalculo`, `cValorRecomendado`, `cValorAlternativo`) **não existem** — precisam ser criados no Entity Manager (dev primeiro).
-2. **Oportunidade de enriquecimento imediato**: o Lead já tem o **conjunto completo de UTM/Google Ads** (`cUtmMedium/Content/Term`, `cGbraid`, `cGadSource`, `cDevice` etc.), mas o proxy legado só envia `cGclid` — a integração direta deve mapear **todas** as UTMs que o site já captura (`captureUtmFromLocation`), melhorando a atribuição de campanhas no CRM sem custo extra.
+2. **Oportunidade de enriquecimento imediato**: o Lead já tem o **conjunto completo de UTM/Google Ads** (`cUtmMedium/Content/Term`, `cGbraid`, `cGadSource`, `cDevice` etc.), mas o proxy legado só envia `cGclid` — a integração direta deve mapear **todas** as UTMs que o site captura (`captureUtmFromLocation`), melhorando a atribuição de campanhas no CRM sem custo extra.
+2b. **Atribuição até a venda (doc 2026-08-21):** a Opportunity ainda recebe sobretudo `cGclid` na CF; o pacote completo (click IDs + UTMs + ValueTrack) deve ir também na **Opp** (`cDataVenda` é o placar de venda). Contrato, Final URL suffix da campanha Exp e exclusões legado/Octadesk: [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md). Ambiente de testes: [`AMBIENTE_TESTES_SITE_NOVO.md`](AMBIENTE_TESTES_SITE_NOVO.md). Canal form/WA/telefone: [`CANAL_CAPTURA_ESPO.md`](CANAL_CAPTURA_ESPO.md).
 3. `cVeiculo` (modelo) e `cAnoFab` existem no Lead — o proxy só preenche `cMarca`/`cAnoMod`; a integração direta preencherá os quatro (temos marca/modelo/anos granulares da Placa Fipe).
 4. `cDataDoLead` (Data) existe e não é preenchido pelo proxy — a integração direta preencherá com a data de captura.
 5. `cValorpret` ("Valor Pretendido") tem semântica de desejo do cliente, não de resultado de cálculo — mantém-se a decisão de criar `cValorRecomendado`/`cValorAlternativo` em vez de reaproveitá-lo.

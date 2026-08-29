@@ -1,0 +1,191 @@
+[
+  {
+    "rows": [
+      [
+        {
+          "name": "name"
+        },
+        {
+          "name": "cCelular"
+        },
+        {
+          "name": "cEmailAdress"
+        },
+        {
+          "name": "leadSource"
+        }
+      ],
+      [
+        {
+          "name": "cCEP"
+        },
+        {
+          "name": "cCpftext"
+        },
+        {
+          "name": "cPlaca"
+        },
+        {
+          "name": "stage"
+        }
+      ],
+      [
+        {
+          "name": "cMarca"
+        },
+        {
+          "name": "cAnoMod"
+        },
+        {
+          "name": "cWebpage"
+        }
+      ],
+      [
+        {
+          "name": "cInicioVigncia"
+        },
+        {
+          "name": "cSeguradora"
+        },
+        {
+          "name": "description"
+        }
+      ],
+      [
+        {
+          "name": "cPremioLiquido"
+        },
+        {
+          "name": "cComisso"
+        },
+        {
+          "name": "amount"
+        },
+        {
+          "name": "cStatus"
+        }
+      ],
+      [
+        {
+          "name": "cObsGerencia"
+        }
+      ],
+      [
+        {
+          "name": "cPropostaTransmitida"
+        },
+        {
+          "name": "cApolice"
+        },
+        {
+          "name": "cDataDeEmisso"
+        },
+        {
+          "name": "cRetransmisso"
+        }
+      ],
+      [
+        {
+          "name": "closeDate"
+        },
+        {
+          "name": "cDataCancelamento"
+        },
+        {
+          "name": "cApoliceCancelada"
+        },
+        {
+          "name": "cGclid"
+        }
+      ],
+      [
+        {
+          "name": "cDataVenda"
+        }
+      ],
+      [
+        {
+          "name": "cSegpref"
+        },
+        {
+          "name": "cSegant"
+        },
+        {
+          "name": "cCiapol"
+        }
+      ],
+      [
+        {
+          "name": "cModalidade"
+        },
+        {
+          "name": "cValorpret"
+        }
+      ]
+    ],
+    "style": "default",
+    "label": ""
+  },
+  {
+    "rows": [
+      [
+        {
+          "name": "cCPF"
+        }
+      ],
+      [
+        {
+          "name": "cSeguradoraErro"
+        },
+        {
+          "name": "cStatusErro"
+        },
+        {
+          "name": "cCPFErro"
+        },
+        {
+          "name": "cOrigemDoLeadErro"
+        }
+      ],
+      [
+        {
+          "name": "cValorComissoErro"
+        },
+        {
+          "name": "cRetransmissoErro"
+        },
+        false
+      ]
+    ],
+    "style": "default",
+    "noteStyle": "info",
+    "label": ""
+  },
+  {
+    "label": "Cotação do Site",
+    "rows": [
+      [
+        {
+          "name": "cEtapaFunil"
+        },
+        {
+          "name": "cEscolhaCalculo"
+        }
+      ],
+      [
+        {
+          "name": "cStatusCalculo"
+        },
+        false
+      ],
+      [
+        {
+          "name": "cValorRecomendado"
+        },
+        {
+          "name": "cValorAlternativo"
+        }
+      ]
+    ]
+  }
+]

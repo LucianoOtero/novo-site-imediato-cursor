@@ -1,6 +1,6 @@
 import { company } from "@/lib/company";
 import { getRamo } from "@/lib/ramos";
-import { captureUtmFromLocation } from "@/lib/validators";
+import { getAttributionUtm } from "@/lib/leads/attribution";
 
 /**
  * lib/whatsapp.ts — construção de URLs `wa.me` (Issue 19).
@@ -21,18 +21,19 @@ export function getWhatsappMessage(ramo?: string): string {
 
 /** Contexto anexado à mensagem para o vendedor (seção 34.4) — omitido quando não há nada a anexar. */
 function buildContextSuffix(ramo?: string): string {
-  const utm = captureUtmFromLocation();
+  const utm = getAttributionUtm();
   const parts: string[] = [];
   if (ramo) parts.push(`Ramo: ${ramo}`);
   if (utm?.utm_source) parts.push(`Origem: ${utm.utm_source}`);
-  if (utm?.utm_campaign) parts.push(`Campanha: ${utm.utm_campaign}`);
+  const campaignLabel = utm?.campaign_name || utm?.utm_campaign;
+  if (campaignLabel) parts.push(`Campanha: ${campaignLabel}`);
   return parts.length > 0 ? `\n\n(${parts.join(" · ")})` : "";
 }
 
 /**
  * `withContext` (achado 2026-07-13, investigação de "Application error"
- * em produção): o sufixo de contexto depende de `captureUtmFromLocation`
- * (lê `window.location`) — computá-lo direto durante o render causa um
+ * em produção): o sufixo de contexto depende de `getAttributionUtm`
+ * (lê `window` / localStorage) — computá-lo direto durante o render causa um
  * mismatch de hidratação real sempre que a página é acessada com UTM/
  * gclid na URL (o servidor nunca vê `window`, então monta a URL sem esse
  * sufixo; o cliente, ao hidratar, já vê `window` e monta uma URL

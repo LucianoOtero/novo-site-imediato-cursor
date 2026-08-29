@@ -1,7 +1,7 @@
 # Ambiente de testes — site novo × EspoCRM DEV
 
-**Status:** runbook documentado (2026-08-21); reorganizado por fases 0–5 (2026-08-27); provisionamento e smokes **ainda não executados**.  
-**Objetivo:** validar Fase 4 de atribuição Ads (`modalChannel` → `cCanalCaptura` + pacote UTMs/ValueTrack até Opportunity) **sem** tocar Espo produção nem o site legado.  
+**Status:** runbook ativo; Fases 0–4 verdes (2026-08-29). Fase 5 — ver [`FASE5_ROLLOUT_PRODUCAO.md`](FASE5_ROLLOUT_PRODUCAO.md).  
+**Objetivo:** validar atribuição Ads (`modalChannel` → `cCanalCaptura` + pacote UTMs/ValueTrack até Opportunity) **sem** tocar Espo produção nem o site legado.  
 **CRM de teste:** `https://dev.flyingdonkeys.com.br`  
 **Plano por fases:** [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) §2
 
@@ -85,7 +85,9 @@ Credenciais E2E/smoke: `ESPO_BASE_URL=https://dev.flyingdonkeys.com.br` + API ke
 - `SITE_BASE_URL=<URL staging>`
 - `ESPO_BASE_URL=https://dev.flyingdonkeys.com.br`
 - Piloto: `CASE_FILTER=1`, depois ampliar se verde
-- **Gate:** Lead + Opp + funil; cleanup só no DEV
+- **Gate:** Lead + Opp + funil; cleanup só no DEV — **OK 2026-08-29** (23/23 passed; ver `e2e/testes-espocrm.resultado-fase3.json`)
+
+Em localhost: o harness limpa `%TEMP%/imediato-leads/leads.json` entre casos (sem isso o dedupe por telefone reaproveita `leadId` e a CF herda `espocrmLeadId` stale).
 
 ### 4.2 Canal de captura — Fase 2 (smoke B)
 
@@ -107,41 +109,56 @@ Telefones/e-mails de teste dedicados; purgar Lead/Opp no DEV após.
 
 Resiliência: com Enum/campo ausente, criação Lead/Opp e funil continuam OK; só o PUT best-effort do campo faltante falha em log.
 
-**Gate Fase 2:** RTDB + Lead + Opp DEV com pacote; smokes 4.2 e 4.3 verdes.
+**Gate Fase 2:** RTDB + Lead + Opp DEV com pacote; smokes 4.2 e 4.3 verdes — **OK 2026-08-29** (scripts `fase2-*-smoke.mjs`; CF `deliverLead` deployada).
 
-### 4.4 Google Ads — Fase 4
+Scripts rápidos (Espo DEV only):
+
+```bash
+node scripts/espo-ops/fase2-attribution-smoke.mjs
+node --env-file=.env.local scripts/espo-ops/fase2-rtdb-attribution-smoke.mjs
+```
+
+### 4.4 Google Ads — Fase 4 — ✅ 2026-08-29
 
 **Pré-requisito:** Fases 0–3 verdes.
 
-Após configurar Final URL suffix na campanha `24095000558` ([`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) §6):
+Procedimento anti-conflito (detalhe em [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) §2 Fase 4 + §6):
 
-- Preview de URL do anúncio com sufixo resolvido.
-- URL copiada do preview → colar no **staging** → repetir smoke 4.3.
-- Tráfego real Ads vai para prod; leads prod pós-suffix validados na Fase 5.
+1. Inventário: `node scripts/google-ops/ads-check-tracking-suffix.mjs`
+2. **Substituir** (não concatenar) o `finalUrlSuffix` só na Exp `24095000558` — `ads-set-exp-final-url-suffix.mjs --apply`
+3. **Não** alterar `trackingUrlTemplate`, Controle, nem suffix da conta
+4. Smoke Ads-like → staging → Espo DEV: `node --env-file=.env.local scripts/espo-ops/fase4-ads-url-smoke.mjs`
+5. Re-audit: Exp = canônico; Controle inalterado
 
-**Gate Fase 4:** suffix ativo no preview; atribuição fecha no Espo DEV via URL do Ads.
+Tráfego real Ads já usa o suffix novo na Exp; aceite formal de leads prod na Fase 5.
+
+**Gate Fase 4:** suffix Exp = canônico; sem `gclid`/dupes no suffix; atribuição no Espo DEV; Controle intacto — **OK 2026-08-29**.
 
 ---
 
 ## 5. Gate para produção — Fase 5
 
-**Pré-requisito:** Fases 0–4 verdes.
+**Pré-requisito:** Fases 0–4 verdes.  
+**Runbook completo:** [`FASE5_ROLLOUT_PRODUCAO.md`](FASE5_ROLLOUT_PRODUCAO.md).
 
-1. Espelhar campos/Enum no Espo prod (`flyingdonkeys.com.br`).
-2. Deploy Vercel production + CF já validada na Fase 2.
-3. Smoke mínimo em prod com marcadores de teste + exclusão na medição.
-4. Monitorar 48h: RTDB prod, Opp prod, conversões Ads braço Exp.
-5. Reavaliar venda/campanha via `scripts/espo-ops` e placar comercial ([`EXPERIMENTO_PLACAR_COMERCIAL_ESPO.md`](EXPERIMENTO_PLACAR_COMERCIAL_ESPO.md)).
+1. Inventário Espo prod: `node scripts/espo-ops/fase0-attribution-fields.mjs --prefer=prod`
+2. Espelhar campos/Enum no Espo prod (`flyingdonkeys.com.br`) via UI Admin; Rebuild + clear cache.
+3. Deploy Vercel production (código atribuição) + CF já validada na Fase 2.
+4. Smoke: `node --env-file=.env.local scripts/espo-ops/fase5-prod-smoke.mjs --i-know-this-is-prod`
+5. Monitorar 48h: RTDB prod, Opp prod, conversões Ads braço Exp.
+6. Reavaliar venda/campanha via `scripts/espo-ops` e placar ([`EXPERIMENTO_PLACAR_COMERCIAL_ESPO.md`](EXPERIMENTO_PLACAR_COMERCIAL_ESPO.md)).
 
-Critérios detalhados: [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) §9.
+Critérios: [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) §9.
+
+**Nota:** smokes de CRM em produção só via runbook Fase 5 (flag `--i-know-this-is-prod`). O §6 abaixo continua válido para testes rotineiros (usar Espo DEV).
 
 ---
 
 ## 6. O que não fazer
 
-- Smoke em `novo.segurosimediato.com.br` com `APP_ENV=production` para testes de CRM.
-- `ESPO_BASE_URL` / purga apontando para `flyingdonkeys.com.br`.
-- Criar campos Enum primeiro em produção (pular Fase 0).
+- Smoke CRM em `APP_ENV=production` **fora** do runbook Fase 5 (`FASE5_ROLLOUT_PRODUCAO.md` + `--i-know-this-is-prod`).
+- Purga E2E / testes rotineiros apontando para `flyingdonkeys.com.br` (usar DEV).
+- Criar campos Enum primeiro em produção (pular Fase 0 no DEV).
 - Alterar campanha Controle `21287198336` ou o site legado.
 - Assumir que Octadesk tem sandbox.
 - Aplicar Final URL suffix (Fase 4) antes de Fases 0–3 verdes.
@@ -150,6 +167,7 @@ Critérios detalhados: [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_
 
 ## 7. Referências
 
+- [`FASE5_ROLLOUT_PRODUCAO.md`](FASE5_ROLLOUT_PRODUCAO.md) — checklist + aceite prod
 - [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) — plano por fases §2
 - [`CANAL_CAPTURA_ESPO.md`](CANAL_CAPTURA_ESPO.md)
 - [`ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md`](ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md)

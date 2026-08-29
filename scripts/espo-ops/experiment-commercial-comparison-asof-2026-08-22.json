@@ -1,0 +1,148 @@
+{
+  "generatedAt": "2026-08-22T07:42:46.443Z",
+  "reportDate": "2026-08-22",
+  "weeks": {
+    "W1": {
+      "window": {
+        "start": "2026-08-10",
+        "end": "2026-08-14"
+      },
+      "cohortAgeDays": 8,
+      "maturityNote": "imatura",
+      "control": {
+        "opportunities": 0,
+        "soldVendido": 0,
+        "amountSum": 0,
+        "saleRatePerClick": null,
+        "amountPerClick": null,
+        "roasCommercial": null,
+        "clicks": 649,
+        "cost": 2707.152139
+      },
+      "exp": {
+        "opportunities": 37,
+        "soldVendido": 6,
+        "amountSum": 2631.1400000000003,
+        "saleRatePerClick": 0.027906976744186046,
+        "amountPerClick": 12.237860465116281,
+        "roasCommercial": 3.045071660929844,
+        "clicks": 215,
+        "cost": 864.065051
+      },
+      "gapExpVsCtrl": {
+        "saleRatePerClick": {
+          "control": null,
+          "exp": 0.027906976744186046,
+          "deltaPct": null
+        },
+        "amountPerClick": {
+          "control": null,
+          "exp": 12.237860465116281,
+          "deltaPct": null
+        },
+        "roasCommercial": {
+          "control": null,
+          "exp": 3.045071660929844,
+          "deltaPct": null
+        },
+        "amountSum": {
+          "control": 0,
+          "exp": 2631.1400000000003
+        },
+        "soldVendido": {
+          "control": 0,
+          "exp": 6
+        }
+      }
+    },
+    "W2": {
+      "window": {
+        "start": "2026-08-17",
+        "end": "2026-08-21"
+      },
+      "cohortAgeDays": 1,
+      "maturityNote": "imatura",
+      "control": {
+        "opportunities": 2,
+        "soldVendido": 0,
+        "amountSum": 0,
+        "saleRatePerClick": 0,
+        "amountPerClick": 0,
+        "roasCommercial": 0,
+        "clicks": 1098,
+        "cost": 4982.245973
+      },
+      "exp": {
+        "opportunities": 116,
+        "soldVendido": 2,
+        "amountSum": 1849.72,
+        "saleRatePerClick": 0.0029239766081871343,
+        "amountPerClick": 2.7042690058479533,
+        "roasCommercial": 0.558102570789792,
+        "clicks": 684,
+        "cost": 3314.301164
+      },
+      "gapExpVsCtrl": {
+        "saleRatePerClick": {
+          "control": 0,
+          "exp": 0.0029239766081871343,
+          "deltaPct": null
+        },
+        "amountPerClick": {
+          "control": 0,
+          "exp": 2.7042690058479533,
+          "deltaPct": null
+        },
+        "roasCommercial": {
+          "control": 0,
+          "exp": 0.558102570789792,
+          "deltaPct": null
+        },
+        "amountSum": {
+          "control": 0,
+          "exp": 1849.72
+        },
+        "soldVendido": {
+          "control": 0,
+          "exp": 2
+        }
+      }
+    }
+  },
+  "weekOverWeek": {
+    "control": {
+      "soldVendido": {
+        "w1": 0,
+        "w2": 0,
+        "deltaPct": null
+      },
+      "amountSum": {
+        "w1": 0,
+        "w2": 0,
+        "deltaPct": null
+      },
+      "amountPerClick": {
+        "w1": null,
+        "w2": 0,
+        "deltaPct": null
+      }
+    },
+    "exp": {
+      "soldVendido": {
+        "w1": 6,
+        "w2": 2,
+        "deltaPct": -0.6666666666666666
+      },
+      "amountSum": {
+        "w1": 2631.1400000000003,
+        "w2": 1849.72,
+        "deltaPct": -0.29698913778818314
+      },
+      "amountPerClick": {
+        "w1": 12.237860465116281,
+        "w2": 2.7042690058479533,
+        "deltaPct": -0.7790243634860518
+      }
+    }
+  }
+}

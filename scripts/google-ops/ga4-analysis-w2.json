@@ -1,0 +1,1669 @@
+{
+  "generatedAt": "2026-08-22T06:53:33.007Z",
+  "propertyId": "281067607",
+  "window": {
+    "start": "2026-08-17",
+    "end": "2026-08-21"
+  },
+  "sessionsByHost": {
+    "dimensionHeaders": [
+      {
+        "name": "hostName"
+      },
+      {
+        "name": "date"
+      }
+    ],
+    "metricHeaders": [
+      {
+        "name": "sessions",
+        "type": "TYPE_INTEGER"
+      },
+      {
+        "name": "totalUsers",
+        "type": "TYPE_INTEGER"
+      },
+      {
+        "name": "engagedSessions",
+        "type": "TYPE_INTEGER"
+      },
+      {
+        "name": "engagementRate",
+        "type": "TYPE_FLOAT"
+      },
+      {
+        "name": "bounceRate",
+        "type": "TYPE_FLOAT"
+      },
+      {
+        "name": "averageSessionDuration",
+        "type": "TYPE_SECONDS"
+      }
+    ],
+    "rows": [
+      {
+        "dimensionValues": [
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260817"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "905"
+          },
+          {
+            "value": "890"
+          },
+          {
+            "value": "192"
+          },
+          {
+            "value": "0.21215469613259669"
+          },
+          {
+            "value": "0.78784530386740337"
+          },
+          {
+            "value": "33.548709558011055"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260817"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "93"
+          },
+          {
+            "value": "88"
+          },
+          {
+            "value": "45"
+          },
+          {
+            "value": "0.4838709677419355"
+          },
+          {
+            "value": "0.5161290322580645"
+          },
+          {
+            "value": "75.9836860752688"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260818"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "872"
+          },
+          {
+            "value": "857"
+          },
+          {
+            "value": "182"
+          },
+          {
+            "value": "0.20871559633027523"
+          },
+          {
+            "value": "0.79128440366972475"
+          },
+          {
+            "value": "24.733475970183488"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260818"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "98"
+          },
+          {
+            "value": "93"
+          },
+          {
+            "value": "40"
+          },
+          {
+            "value": "0.40816326530612246"
+          },
+          {
+            "value": "0.59183673469387754"
+          },
+          {
+            "value": "58.49869672448979"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260819"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "696"
+          },
+          {
+            "value": "689"
+          },
+          {
+            "value": "145"
+          },
+          {
+            "value": "0.20833333333333334"
+          },
+          {
+            "value": "0.79166666666666663"
+          },
+          {
+            "value": "31.47619919683908"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260819"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "88"
+          },
+          {
+            "value": "85"
+          },
+          {
+            "value": "40"
+          },
+          {
+            "value": "0.45454545454545453"
+          },
+          {
+            "value": "0.54545454545454541"
+          },
+          {
+            "value": "82.294171636363643"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260820"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "637"
+          },
+          {
+            "value": "617"
+          },
+          {
+            "value": "143"
+          },
+          {
+            "value": "0.22448979591836735"
+          },
+          {
+            "value": "0.77551020408163263"
+          },
+          {
+            "value": "43.408232519623226"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260820"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "84"
+          },
+          {
+            "value": "78"
+          },
+          {
+            "value": "34"
+          },
+          {
+            "value": "0.40476190476190477"
+          },
+          {
+            "value": "0.59523809523809523"
+          },
+          {
+            "value": "98.488750773809528"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260821"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "542"
+          },
+          {
+            "value": "531"
+          },
+          {
+            "value": "119"
+          },
+          {
+            "value": "0.21955719557195572"
+          },
+          {
+            "value": "0.78044280442804426"
+          },
+          {
+            "value": "32.761704372693728"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260821"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "83"
+          },
+          {
+            "value": "80"
+          },
+          {
+            "value": "34"
+          },
+          {
+            "value": "0.40963855421686746"
+          },
+          {
+            "value": "0.59036144578313254"
+          },
+          {
+            "value": "52.805997385542163"
+          }
+        ]
+      }
+    ],
+    "rowCount": 10,
+    "metadata": {
+      "currencyCode": "USD",
+      "timeZone": "America/Sao_Paulo"
+    },
+    "kind": "analyticsData#runReport"
+  },
+  "eventsByHost": {
+    "dimensionHeaders": [
+      {
+        "name": "hostName"
+      },
+      {
+        "name": "eventName"
+      }
+    ],
+    "metricHeaders": [
+      {
+        "name": "eventCount",
+        "type": "TYPE_INTEGER"
+      },
+      {
+        "name": "conversions",
+        "type": "TYPE_FLOAT"
+      }
+    ],
+    "rows": [
+      {
+        "dimensionValues": [
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "page_view"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "4035"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "session_start"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "3632"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "page_view"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "633"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "session_start"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "440"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "form_quote_choice"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "47"
+          },
+          {
+            "value": "47"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "whatsapp_modal_submit"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "13"
+          },
+          {
+            "value": "13"
+          }
+        ]
+      }
+    ],
+    "rowCount": 6,
+    "metadata": {
+      "currencyCode": "USD",
+      "timeZone": "America/Sao_Paulo"
+    },
+    "kind": "analyticsData#runReport"
+  },
+  "adsSessionsByCampaign": {
+    "dimensionHeaders": [
+      {
+        "name": "sessionCampaignId"
+      },
+      {
+        "name": "hostName"
+      },
+      {
+        "name": "date"
+      }
+    ],
+    "metricHeaders": [
+      {
+        "name": "sessions",
+        "type": "TYPE_INTEGER"
+      },
+      {
+        "name": "totalUsers",
+        "type": "TYPE_INTEGER"
+      },
+      {
+        "name": "engagedSessions",
+        "type": "TYPE_INTEGER"
+      },
+      {
+        "name": "engagementRate",
+        "type": "TYPE_FLOAT"
+      },
+      {
+        "name": "averageSessionDuration",
+        "type": "TYPE_SECONDS"
+      }
+    ],
+    "rows": [
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260817"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "226"
+          },
+          {
+            "value": "221"
+          },
+          {
+            "value": "23"
+          },
+          {
+            "value": "0.10176991150442478"
+          },
+          {
+            "value": "32.385140637168142"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260817"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "80"
+          },
+          {
+            "value": "77"
+          },
+          {
+            "value": "37"
+          },
+          {
+            "value": "0.4625"
+          },
+          {
+            "value": "77.5992966875"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260817"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "22"
+          },
+          {
+            "value": "21"
+          },
+          {
+            "value": "8"
+          },
+          {
+            "value": "0.36363636363636365"
+          },
+          {
+            "value": "123.38404695454545"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260818"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "194"
+          },
+          {
+            "value": "191"
+          },
+          {
+            "value": "25"
+          },
+          {
+            "value": "0.12886597938144329"
+          },
+          {
+            "value": "23.24981193814433"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260818"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "90"
+          },
+          {
+            "value": "85"
+          },
+          {
+            "value": "36"
+          },
+          {
+            "value": "0.4"
+          },
+          {
+            "value": "51.929395211111114"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260818"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "17"
+          },
+          {
+            "value": "17"
+          },
+          {
+            "value": "1"
+          },
+          {
+            "value": "0.058823529411764705"
+          },
+          {
+            "value": "59.581202470588238"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260818"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "2"
+          },
+          {
+            "value": "2"
+          },
+          {
+            "value": "2"
+          },
+          {
+            "value": "1"
+          },
+          {
+            "value": "145.749829"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260819"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "177"
+          },
+          {
+            "value": "176"
+          },
+          {
+            "value": "15"
+          },
+          {
+            "value": "0.0847457627118644"
+          },
+          {
+            "value": "17.745824909604522"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260819"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "82"
+          },
+          {
+            "value": "79"
+          },
+          {
+            "value": "39"
+          },
+          {
+            "value": "0.47560975609756095"
+          },
+          {
+            "value": "88.010288646341465"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260819"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "22"
+          },
+          {
+            "value": "22"
+          },
+          {
+            "value": "5"
+          },
+          {
+            "value": "0.22727272727272727"
+          },
+          {
+            "value": "8.5349982727272717"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260819"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "1"
+          },
+          {
+            "value": "1"
+          },
+          {
+            "value": "0"
+          },
+          {
+            "value": "0"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260820"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "146"
+          },
+          {
+            "value": "139"
+          },
+          {
+            "value": "16"
+          },
+          {
+            "value": "0.1095890410958904"
+          },
+          {
+            "value": "26.689990958904112"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260820"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "77"
+          },
+          {
+            "value": "73"
+          },
+          {
+            "value": "31"
+          },
+          {
+            "value": "0.40259740259740262"
+          },
+          {
+            "value": "100.22033954545454"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260820"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "18"
+          },
+          {
+            "value": "18"
+          },
+          {
+            "value": "0"
+          },
+          {
+            "value": "0"
+          },
+          {
+            "value": "0.096113888888888888"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260821"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "149"
+          },
+          {
+            "value": "147"
+          },
+          {
+            "value": "12"
+          },
+          {
+            "value": "0.080536912751677847"
+          },
+          {
+            "value": "10.863978684563758"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260821"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "72"
+          },
+          {
+            "value": "70"
+          },
+          {
+            "value": "31"
+          },
+          {
+            "value": "0.43055555555555558"
+          },
+          {
+            "value": "54.833506430555559"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "20260821"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "18"
+          },
+          {
+            "value": "18"
+          },
+          {
+            "value": "5"
+          },
+          {
+            "value": "0.27777777777777779"
+          },
+          {
+            "value": "124.2607211111111"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "20260821"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "2"
+          },
+          {
+            "value": "2"
+          },
+          {
+            "value": "0"
+          },
+          {
+            "value": "0"
+          },
+          {
+            "value": "1.589261"
+          }
+        ]
+      }
+    ],
+    "rowCount": 18,
+    "metadata": {
+      "currencyCode": "USD",
+      "timeZone": "America/Sao_Paulo"
+    },
+    "kind": "analyticsData#runReport"
+  },
+  "adsEventsByCampaign": {
+    "dimensionHeaders": [
+      {
+        "name": "sessionCampaignId"
+      },
+      {
+        "name": "hostName"
+      },
+      {
+        "name": "eventName"
+      }
+    ],
+    "metricHeaders": [
+      {
+        "name": "eventCount",
+        "type": "TYPE_INTEGER"
+      },
+      {
+        "name": "conversions",
+        "type": "TYPE_FLOAT"
+      }
+    ],
+    "rows": [
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "page_view"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "1037"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "session_start"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "893"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "first_visit"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "854"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "page_view"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "567"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "session_start"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "400"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "first_visit"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "374"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "user_engagement"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "146"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "page_view"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "132"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "user_engagement"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "131"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "session_start"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "86"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "first_visit"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "82"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "scroll"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "55"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "form_quote_choice"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "44"
+          },
+          {
+            "value": "44"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "solicitar_cotação"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "36"
+          },
+          {
+            "value": "18"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "user_engagement"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "26"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "scroll"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "24"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "click"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "17"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "whatsapp_modal_submit"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "13"
+          },
+          {
+            "value": "13"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "page_view"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "12"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "whatsapp_modal_dismiss"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "12"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "scroll"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "7"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "24095000558"
+          },
+          {
+            "value": "www.segurosimediato.com.br"
+          },
+          {
+            "value": "solicitar_cotação"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "6"
+          },
+          {
+            "value": "3"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "first_visit"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "4"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "session_start"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "4"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "user_engagement"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "2"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "form_quote_choice"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "1"
+          },
+          {
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "dimensionValues": [
+          {
+            "value": "21287198336"
+          },
+          {
+            "value": "novo.segurosimediato.com.br"
+          },
+          {
+            "value": "scroll"
+          }
+        ],
+        "metricValues": [
+          {
+            "value": "1"
+          },
+          {
+            "value": "0"
+          }
+        ]
+      }
+    ],
+    "rowCount": 27,
+    "metadata": {
+      "currencyCode": "USD",
+      "timeZone": "America/Sao_Paulo"
+    },
+    "kind": "analyticsData#runReport"
+  }
+}

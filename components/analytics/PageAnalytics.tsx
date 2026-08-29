@@ -4,11 +4,15 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 import { trackEvent } from "@/lib/analytics";
+import { persistAttributionFromLocation } from "@/lib/leads/attribution";
 
 /**
  * PageAnalytics — dispara `scroll_depth` e `engaged_time` (Issue 18).
  * Fonte: ESPECIFICACAO v3.md, seção 20 ("scroll_depth | 25/50/75/90% |
  * percent, page_path" e "engaged_time | 30s / 60s | seconds, page_path").
+ *
+ * Também persiste o pacote Ads/UTM no primeiro hit / troca de rota
+ * (Fase 1 atribuição — `lib/leads/attribution.ts`).
  *
  * Contexto: esses dois eventos já existiam no contrato tipado desde a
  * Issue 03B (`lib/analytics.ts`), mas nenhum componente os disparava
@@ -38,6 +42,10 @@ function getScrollPercent(): number {
 
 export function PageAnalytics() {
   const pathname = usePathname();
+
+  useEffect(() => {
+    persistAttributionFromLocation();
+  }, [pathname]);
 
   useEffect(() => {
     const firedScrollThresholds = new Set<number>();

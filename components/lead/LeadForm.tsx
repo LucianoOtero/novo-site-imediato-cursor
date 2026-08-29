@@ -21,6 +21,7 @@ import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { RpaChoiceStep } from "@/components/lead/RpaChoiceStep";
 import { RpaCalculationScreen } from "@/components/lead/RpaCalculationScreen";
 import { postLead } from "@/lib/leads/post-lead";
+import { getAttributionUtm } from "@/lib/leads/attribution";
 import { useRpaCalculation } from "@/lib/leads/use-rpa-calculation";
 import type { RpaDisabledReason } from "@/lib/rpa-calculation";
 import { buildRpaPayload } from "@/lib/rpa";
@@ -28,7 +29,6 @@ import { publicEnv } from "@/lib/env";
 import { company } from "@/lib/company";
 import {
   LEAD_FORM_STEPS,
-  captureUtmFromLocation,
   formatCelular,
   formatCep,
   formatCpf,
@@ -262,7 +262,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       rpaChoice: "aguardar",
       rpaResultado,
       leadId: initialLeadIdRef.current ?? undefined,
-      utm: captureUtmFromLocation(),
+      utm: getAttributionUtm(),
     }).catch((error) => console.error("[LeadForm] Falha ao registrar resultado do RPA (não bloqueante):", error));
     // `buildPayloadFromRawValues`/`getValues` são estáveis no ciclo de vida
     // que interessa aqui (o envio é guardado por `rpaResultReportedRef`).
@@ -432,7 +432,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         celular: values.celular,
         stage: "initial",
         captureChannel: "lead_form",
-        utm: captureUtmFromLocation(),
+        utm: getAttributionUtm(),
       });
       const data = (await response.json().catch(() => null)) as { leadId?: string } | null;
       if (data?.leadId) initialLeadIdRef.current = data.leadId;
@@ -458,7 +458,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         stage: "progress",
         captureChannel: "lead_form",
         leadId: initialLeadIdRef.current ?? undefined,
-        utm: captureUtmFromLocation(),
+        utm: getAttributionUtm(),
       });
     } catch (error) {
       console.error("[LeadForm] Falha na atualização de progresso (não bloqueante):", error);
@@ -694,7 +694,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   async function submitPayload(data: LeadInput, skipStrictValidation?: boolean) {
     setStatus("submitting");
     try {
-      const payload: LeadInput = { ...data, ramo, utm: captureUtmFromLocation() };
+      const payload: LeadInput = { ...data, ramo, utm: getAttributionUtm() };
       await onSuccess?.(payload, initialLeadIdRef.current ?? undefined, skipStrictValidation);
       trackEvent("generate_lead", { ramo, method: "form" });
       setStatus("success");
@@ -816,7 +816,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       captureChannel: "lead_form",
       rpaChoice: "consultor",
       leadId: initialLeadIdRef.current ?? undefined,
-      utm: captureUtmFromLocation(),
+      utm: getAttributionUtm(),
     }).catch((error) => console.error("[LeadForm] Falha ao registrar escolha do consultor (não bloqueante):", error));
 
     finalSubmitInFlightRef.current = true;

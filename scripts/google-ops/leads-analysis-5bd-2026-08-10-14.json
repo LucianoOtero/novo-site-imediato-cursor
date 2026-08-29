@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-08-16T09:24:22.359Z",
+  "sourceProject": "imediato-seguros-site-novo",
+  "window": {
+    "start": "2026-08-10",
+    "end": "2026-08-14"
+  },
+  "scanned": 153,
+  "inWindow": 48,
+  "summary": {
+    "exp": {
+      "total": 40,
+      "withGclid": 40,
+      "stages": {
+        "complete": 12,
+        "progress": 14,
+        "rpa_result": 8,
+        "initial": 5,
+        "consultant_requested": 1
+      },
+      "days": {
+        "2026-08-14": 11,
+        "2026-08-13": 12,
+        "2026-08-11": 6,
+        "2026-08-10": 5,
+        "2026-08-12": 6
+      },
+      "channels": {
+        "contact_modal": 8,
+        "lead_form": 32
+      },
+      "ramos": {
+        "auto": 25,
+        "moto": 12,
+        "uber": 2,
+        "utilitario": 1
+      },
+      "synced": 40,
+      "espocrm": 40,
+      "octadesk": 39
+    },
+    "control": {
+      "total": 0,
+      "withGclid": 0,
+      "stages": {},
+      "days": {},
+      "channels": {},
+      "ramos": {},
+      "synced": 0,
+      "espocrm": 0,
+      "octadesk": 0
+    },
+    "otherAds": {
+      "total": 1,
+      "withGclid": 1,
+      "stages": {
+        "progress": 1
+      },
+      "days": {
+        "2026-08-13": 1
+      },
+      "channels": {
+        "lead_form": 1
+      }
+    },
+    "organicOrUnknown": {
+      "total": 7,
+      "withGclid": 0,
+      "stages": {
+        "progress": 3,
+        "rpa_result": 4
+      },
+      "days": {
+        "2026-08-13": 2,
+        "2026-08-14": 1,
+        "2026-08-11": 1,
+        "2026-08-10": 2,
+        "2026-08-12": 1
+      },
+      "channels": {
+        "lead_form": 7
+      }
+    }
+  },
+  "note": "Agregado sem PII. site_novo RTDB — legado usa outro projeto Firebase."
+}

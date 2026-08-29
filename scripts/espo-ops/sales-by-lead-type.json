@@ -1,0 +1,483 @@
+{
+  "generatedAt": "2026-08-17T03:42:39.428Z",
+  "definition": {
+    "sale": "Opportunity.cDataVenda not empty",
+    "legacy": "read-only",
+    "note": "WA vs telefone agregados em novo_modal_* até Fase 4"
+  },
+  "joinStats": {
+    "matchedFirebase": 1685,
+    "unmatched": 3276,
+    "excludedTests": 1039,
+    "byJoinKey": {
+      "espocrmLeadId": 45,
+      "espocrmOpportunityId": 0,
+      "gclid": 1640,
+      "phone": 0,
+      "none": 3276
+    }
+  },
+  "cohorts": {
+    "legado_espo_only": {
+      "opportunities": 2518,
+      "sold": 236,
+      "saleRate": 0.0937251787132645,
+      "amountSum": 136072.94,
+      "amountAvgSold": 576.58,
+      "premioSum": 664687.94,
+      "medianDaysToSale": 4,
+      "maturity": {
+        "30": {
+          "eligible": 1653,
+          "sold": 172,
+          "saleRate": 0.10405323653962492
+        },
+        "60": {
+          "eligible": 845,
+          "sold": 94,
+          "saleRate": 0.11124260355029586
+        },
+        "90": {
+          "eligible": 197,
+          "sold": 25,
+          "saleRate": 0.12690355329949238
+        }
+      }
+    },
+    "legado_webpage_vazio": {
+      "opportunities": 739,
+      "sold": 466,
+      "saleRate": 0.6305818673883626,
+      "amountSum": 291755.23,
+      "amountAvgSold": 626.08,
+      "premioSum": 1379852.28,
+      "medianDaysToSale": 2,
+      "maturity": {
+        "30": {
+          "eligible": 503,
+          "sold": 335,
+          "saleRate": 0.6660039761431411
+        },
+        "60": {
+          "eligible": 308,
+          "sold": 204,
+          "saleRate": 0.6623376623376623
+        },
+        "90": {
+          "eligible": 100,
+          "sold": 64,
+          "saleRate": 0.64
+        }
+      }
+    },
+    "legado_modal_complete": {
+      "opportunities": 1353,
+      "sold": 164,
+      "saleRate": 0.12121212121212122,
+      "amountSum": 96178.42,
+      "amountAvgSold": 586.45,
+      "premioSum": 448416.93,
+      "medianDaysToSale": 3,
+      "maturity": {
+        "30": {
+          "eligible": 1020,
+          "sold": 128,
+          "saleRate": 0.12549019607843137
+        },
+        "60": {
+          "eligible": 599,
+          "sold": 71,
+          "saleRate": 0.11853088480801335
+        },
+        "90": {
+          "eligible": 149,
+          "sold": 16,
+          "saleRate": 0.10738255033557047
+        }
+      }
+    },
+    "legado_modal_initial": {
+      "opportunities": 287,
+      "sold": 53,
+      "saleRate": 0.18466898954703834,
+      "amountSum": 36862.62,
+      "amountAvgSold": 695.52,
+      "premioSum": 176753.01,
+      "medianDaysToSale": 3,
+      "maturity": {
+        "30": {
+          "eligible": 193,
+          "sold": 38,
+          "saleRate": 0.19689119170984457
+        },
+        "60": {
+          "eligible": 93,
+          "sold": 22,
+          "saleRate": 0.23655913978494625
+        },
+        "90": {
+          "eligible": 23,
+          "sold": 9,
+          "saleRate": 0.391304347826087
+        }
+      }
+    },
+    "novo_form_pessoais": {
+      "opportunities": 13,
+      "sold": 0,
+      "saleRate": 0,
+      "amountSum": 0,
+      "amountAvgSold": null,
+      "premioSum": 0,
+      "medianDaysToSale": null,
+      "maturity": {
+        "30": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "60": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "90": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        }
+      }
+    },
+    "novo_form_calculo": {
+      "opportunities": 20,
+      "sold": 1,
+      "saleRate": 0.05,
+      "amountSum": 507.12,
+      "amountAvgSold": 507.12,
+      "premioSum": 2438.12,
+      "medianDaysToSale": 3,
+      "maturity": {
+        "30": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "60": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "90": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        }
+      }
+    },
+    "novo_form_veiculo": {
+      "opportunities": 6,
+      "sold": 1,
+      "saleRate": 0.16666666666666666,
+      "amountSum": 400.47,
+      "amountAvgSold": 400.47,
+      "premioSum": 2275.42,
+      "medianDaysToSale": 2,
+      "maturity": {
+        "30": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "60": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "90": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        }
+      }
+    },
+    "novo_modal_complete": {
+      "opportunities": 5,
+      "sold": 1,
+      "saleRate": 0.2,
+      "amountSum": 215.5,
+      "amountAvgSold": 215.5,
+      "premioSum": 2693.85,
+      "medianDaysToSale": 3,
+      "maturity": {
+        "30": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "60": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "90": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        }
+      }
+    },
+    "novo_form_telefone": {
+      "opportunities": 1,
+      "sold": 1,
+      "saleRate": 1,
+      "amountSum": 535.97,
+      "amountAvgSold": 535.97,
+      "premioSum": 2382.12,
+      "medianDaysToSale": 2,
+      "maturity": {
+        "30": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "60": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        },
+        "90": {
+          "eligible": 0,
+          "sold": 0,
+          "saleRate": null
+        }
+      }
+    },
+    "other_other": {
+      "opportunities": 19,
+      "sold": 9,
+      "saleRate": 0.47368421052631576,
+      "amountSum": 5231.71,
+      "amountAvgSold": 581.3,
+      "premioSum": 27253.9,
+      "medianDaysToSale": 2,
+      "maturity": {
+        "30": {
+          "eligible": 17,
+          "sold": 9,
+          "saleRate": 0.5294117647058824
+        },
+        "60": {
+          "eligible": 14,
+          "sold": 7,
+          "saleRate": 0.5
+        },
+        "90": {
+          "eligible": 4,
+          "sold": 2,
+          "saleRate": 0.5
+        }
+      }
+    }
+  },
+  "comparable": {
+    "modal": {
+      "novo_initial": null,
+      "novo_complete": {
+        "opportunities": 5,
+        "sold": 1,
+        "saleRate": 0.2,
+        "amountSum": 215.5,
+        "amountAvgSold": 215.5,
+        "premioSum": 2693.85,
+        "medianDaysToSale": 3,
+        "maturity": {
+          "30": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "60": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "90": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          }
+        }
+      },
+      "legado_initial": {
+        "opportunities": 287,
+        "sold": 53,
+        "saleRate": 0.18466898954703834,
+        "amountSum": 36862.62,
+        "amountAvgSold": 695.52,
+        "premioSum": 176753.01,
+        "medianDaysToSale": 3,
+        "maturity": {
+          "30": {
+            "eligible": 193,
+            "sold": 38,
+            "saleRate": 0.19689119170984457
+          },
+          "60": {
+            "eligible": 93,
+            "sold": 22,
+            "saleRate": 0.23655913978494625
+          },
+          "90": {
+            "eligible": 23,
+            "sold": 9,
+            "saleRate": 0.391304347826087
+          }
+        }
+      },
+      "legado_complete": {
+        "opportunities": 1353,
+        "sold": 164,
+        "saleRate": 0.12121212121212122,
+        "amountSum": 96178.42,
+        "amountAvgSold": 586.45,
+        "premioSum": 448416.93,
+        "medianDaysToSale": 3,
+        "maturity": {
+          "30": {
+            "eligible": 1020,
+            "sold": 128,
+            "saleRate": 0.12549019607843137
+          },
+          "60": {
+            "eligible": 599,
+            "sold": 71,
+            "saleRate": 0.11853088480801335
+          },
+          "90": {
+            "eligible": 149,
+            "sold": 16,
+            "saleRate": 0.10738255033557047
+          }
+        }
+      }
+    },
+    "formNovoOnly": {
+      "telefone": {
+        "opportunities": 1,
+        "sold": 1,
+        "saleRate": 1,
+        "amountSum": 535.97,
+        "amountAvgSold": 535.97,
+        "premioSum": 2382.12,
+        "medianDaysToSale": 2,
+        "maturity": {
+          "30": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "60": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "90": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          }
+        }
+      },
+      "pessoais": {
+        "opportunities": 13,
+        "sold": 0,
+        "saleRate": 0,
+        "amountSum": 0,
+        "amountAvgSold": null,
+        "premioSum": 0,
+        "medianDaysToSale": null,
+        "maturity": {
+          "30": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "60": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "90": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          }
+        }
+      },
+      "veiculo": {
+        "opportunities": 6,
+        "sold": 1,
+        "saleRate": 0.16666666666666666,
+        "amountSum": 400.47,
+        "amountAvgSold": 400.47,
+        "premioSum": 2275.42,
+        "medianDaysToSale": 2,
+        "maturity": {
+          "30": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "60": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "90": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          }
+        }
+      },
+      "calculo": {
+        "opportunities": 20,
+        "sold": 1,
+        "saleRate": 0.05,
+        "amountSum": 507.12,
+        "amountAvgSold": 507.12,
+        "premioSum": 2438.12,
+        "medianDaysToSale": 3,
+        "maturity": {
+          "30": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "60": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          },
+          "90": {
+            "eligible": 0,
+            "sold": 0,
+            "saleRate": null
+          }
+        }
+      }
+    }
+  },
+  "hypothesis": {
+    "phoneOnly": {
+      "opportunities": 1,
+      "sold": 1,
+      "saleRate": 1
+    },
+    "enriched": {
+      "opportunities": 44,
+      "sold": 3,
+      "saleRate": 0.06818181818181818
+    }
+  }
+}

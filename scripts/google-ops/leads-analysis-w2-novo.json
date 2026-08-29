@@ -1,0 +1,146 @@
+{
+  "generatedAt": "2026-08-22T06:54:24.170Z",
+  "sourceProject": "imediato-seguros-site-novo",
+  "window": {
+    "start": "2026-08-17",
+    "end": "2026-08-21"
+  },
+  "scanned": 291,
+  "inWindow": 138,
+  "summary": {
+    "exp": {
+      "total": 118,
+      "records": 0,
+      "withGclid": 117,
+      "uniqueGclids": 114,
+      "uniqueContacts": 0,
+      "stages": {
+        "progress": 50,
+        "rpa_result": 30,
+        "complete": 18,
+        "initial": 15,
+        "consultant_requested": 5
+      },
+      "days": {
+        "2026-08-21": 20,
+        "2026-08-17": 29,
+        "2026-08-18": 31,
+        "2026-08-20": 17,
+        "2026-08-19": 21
+      },
+      "channels": {
+        "lead_form": 103,
+        "contact_modal": 15
+      },
+      "sources": {},
+      "ramos": {
+        "auto": 86,
+        "moto": 22,
+        "utilitario": 2,
+        "fianca": 6,
+        "uber": 2
+      },
+      "statuses": {},
+      "synced": 118,
+      "espocrm": 118,
+      "octadesk": 116,
+      "octadeskCloudRun": 0
+    },
+    "control": {
+      "total": 3,
+      "records": 0,
+      "withGclid": 3,
+      "uniqueGclids": 2,
+      "uniqueContacts": 0,
+      "stages": {
+        "complete": 1,
+        "consultant_requested": 1,
+        "progress": 1
+      },
+      "days": {
+        "2026-08-18": 2,
+        "2026-08-19": 1
+      },
+      "channels": {
+        "lead_form": 3
+      },
+      "sources": {},
+      "ramos": {
+        "frota": 2,
+        "auto": 1
+      },
+      "statuses": {},
+      "synced": 3,
+      "espocrm": 3,
+      "octadesk": 2,
+      "octadeskCloudRun": 0
+    },
+    "otherAds": {
+      "total": 3,
+      "records": 0,
+      "withGclid": 3,
+      "uniqueGclids": 3,
+      "uniqueContacts": 0,
+      "stages": {
+        "rpa_result": 1,
+        "complete": 1,
+        "progress": 1
+      },
+      "days": {
+        "2026-08-19": 1,
+        "2026-08-21": 1,
+        "2026-08-18": 1
+      },
+      "channels": {
+        "lead_form": 3
+      },
+      "sources": {},
+      "ramos": {
+        "assistencia-24-horas": 2,
+        "auto": 1
+      },
+      "statuses": {},
+      "synced": 3,
+      "espocrm": 3,
+      "octadesk": 3,
+      "octadeskCloudRun": 0
+    },
+    "organicOrUnknown": {
+      "total": 14,
+      "records": 0,
+      "withGclid": 0,
+      "uniqueGclids": 0,
+      "uniqueContacts": 0,
+      "stages": {
+        "rpa_result": 3,
+        "progress": 4,
+        "consultant_requested": 3,
+        "complete": 4
+      },
+      "days": {
+        "2026-08-20": 4,
+        "2026-08-21": 2,
+        "2026-08-17": 3,
+        "2026-08-18": 4,
+        "2026-08-19": 1
+      },
+      "channels": {
+        "lead_form": 12,
+        "contact_modal": 2
+      },
+      "sources": {},
+      "ramos": {
+        "auto": 10,
+        "moto": 2,
+        "fianca": 1,
+        "uber": 1
+      },
+      "statuses": {},
+      "synced": 14,
+      "espocrm": 14,
+      "octadesk": 13,
+      "octadeskCloudRun": 0
+    }
+  },
+  "note": "Agregado sem PII. site_novo RTDB — legado usa outro projeto Firebase."
+}
