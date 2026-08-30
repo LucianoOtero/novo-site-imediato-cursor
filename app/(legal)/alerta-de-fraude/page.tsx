@@ -12,8 +12,8 @@ import { company } from "@/lib/company";
  * contrário de `/obrigado`) e seção 29.3.
  *
  * Nota: texto aprovado pelo cliente como oficial em 2026-07-03 — ver
- * comentário completo em `components/shared/FraudAlert.tsx` e
- * `docs/DADOS_OFICIAIS.md`.
+ * `docs/DADOS_OFICIAIS.md`. O banner top foi removido (2026-08-30); o
+ * resumo oficial permanece no `Footer` + esta página.
  */
 export const metadata: Metadata = buildPageMetadata({
   title: "Alerta de Fraude | Imediato Seguros",

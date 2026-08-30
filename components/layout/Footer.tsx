@@ -30,13 +30,12 @@ import { company } from "@/lib/company";
  * formato do `wa.me`), com o ícone do WhatsApp (`WhatsAppIcon`) no
  * lugar do ícone de telefone genérico.
  *
- * Nota: o texto do bloco de fraude é um resumo genérico, não a cópia
- * oficial do site atual — `docs/DADOS_OFICIAIS.md` marca o "texto oficial
- * do alerta de fraude" como ainda não confirmado (pendente Jurídico). A
- * página dedicada (`/alerta-de-fraude`, Issue 22) é responsável pelo texto
- * final; aqui o vermelho (`--color-alert`) não é usado, pois a
- * especificação reserva essa cor exclusivamente ao componente `FraudAlert`
- * (seção 29.3: "único uso do vermelho").
+ * Nota: o aviso de fraude no rodapé usa o texto oficial aprovado
+ * (2026-07-03, `docs/DADOS_OFICIAIS.md`) — a página dedicada
+ * (`/alerta-de-fraude`) traz o detalhe completo. Tipografia discreta
+ * do footer (sem faixa vermelha); o banner top `FraudAlert` foi
+ * removido em 2026-08-30. `--color-alert` fica para erros de formulário
+ * e estados de alerta pontuais, não para banner global.
  *
  * **Logotipo (2026-07-08)**: substitui o texto `company.tradeName` que
  * fazia esse papel antes. O arquivo (`imediato-seguros-2026.svg`) tem o
@@ -151,7 +150,8 @@ export function Footer() {
         <Container className="flex items-start gap-3 py-6 text-sm text-white/75">
           <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
           <p>
-            Fique atento a golpes: desconfie de qualquer cobrança via PIX em nome da {company.tradeName}.{" "}
+            A {company.tradeName} nunca solicita pagamento via PIX para &ldquo;liberar&rdquo; rastreador ou qualquer
+            equipamento.{" "}
             <Link
               href={company.legalUrls.fraudAlert}
               className="rounded-sm font-medium text-white underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-white/60"

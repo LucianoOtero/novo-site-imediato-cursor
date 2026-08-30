@@ -13,9 +13,10 @@ import { appEnvironment, isProduction } from "@/lib/env";
  * (`lib/env.ts`, Issue 03A), então não há risco de "vazar" em produção
  * por um cálculo incorreto no client.
  *
- * Cor âmbar (não a cor de alerta `--color-alert`, reservada ao
- * `FraudAlert`, Issue 22 — "único uso do vermelho") — discreto, não é um
- * erro nem uma urgência para o visitante, é um aviso operacional interno.
+ * Cor âmbar (não a cor de alerta `--color-alert`, usada em erros de
+ * formulário e estados pontuais — sem banner global vermelho desde
+ * 2026-08-30) — discreto, não é um erro nem uma urgência para o
+ * visitante, é um aviso operacional interno.
  */
 export function StagingBanner() {
   if (isProduction) return null;

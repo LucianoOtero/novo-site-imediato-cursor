@@ -45,7 +45,7 @@ A coluna "Confirmado?" reflete exatamente o estado registrado na especificação
 | Link de avaliações Google | `g.page/r/CSZR7jnTxayxEAE/review` | cliente | ✅ Confirmado | Marketing | /reputacao, Testimonials |
 | Política de privacidade | não existia texto oficial — versão genérica (padrão LGPD/corretora de seguros) redigida e adotada a pedido do cliente | cliente | ✅ Adotado (2026-07-03, ver nota) | Jurídico | /politica-de-privacidade |
 | Termos | não existia texto oficial — versão genérica redigida e adotada a pedido do cliente | cliente | ✅ Adotado (2026-07-03, ver nota) | Jurídico | /termos |
-| Texto oficial do alerta de fraude | presente no site (PIX/rastreador) | cliente | ✅ Adotado (2026-07-03) — rascunho aprovado como texto oficial pelo cliente | Jurídico | /alerta-de-fraude, FraudAlert |
+| Texto oficial do alerta de fraude | presente no site (PIX/rastreador) | cliente | ✅ Adotado (2026-07-03); banner top removido 2026-08-30 — aviso no Footer + `/alerta-de-fraude` | Jurídico | /alerta-de-fraude, Footer |
 
 > **Regra:** nenhuma informação institucional, regulatória, comercial ou de preço entra em produção sem confirmação explícita nesta tabela. Itens marcados **CRÍTICO/RESOLVER** são bloqueantes (seção 68).
 
@@ -54,7 +54,7 @@ A coluna "Confirmado?" reflete exatamente o estado registrado na especificação
 Todos os itens acima foram confirmados diretamente pelo cliente em uma sessão de revisão dedicada, com uma exceção relevante a registrar:
 
 - **Política de Privacidade e Termos de Uso**: o cliente confirmou que **não existe** texto oficial já aprovado pelo Jurídico para nenhum dos dois documentos. A pedido explícito do cliente ("Pode redigir versões genéricas com base no mercado e adotá-las"), foram redigidas versões genéricas, alinhadas a práticas de mercado para corretoras de seguros brasileiras e à LGPD (Lei 13.709/2018), e adotadas como conteúdo das páginas `/politica-de-privacidade` e `/termos`. **Isto não substitui uma revisão jurídica formal** — é uma decisão de produto do próprio cliente, registrada aqui para rastreabilidade; recomenda-se revisão pelo Jurídico antes ou logo após o go-live, especialmente se houver cláusulas contratuais específicas do negócio não cobertas por um texto genérico.
-- **Texto do Alerta de Fraude**: o cliente aprovou explicitamente o rascunho já existente em `components/shared/FraudAlert.tsx`/`app/(legal)/alerta-de-fraude/page.tsx` como texto oficial, dispensando validação adicional do Jurídico.
+- **Texto do Alerta de Fraude**: o cliente aprovou o texto oficial em 2026-07-03. Em 2026-08-30 o banner top foi removido; a redação oficial permanece no rodapé e em `/alerta-de-fraude`.
 
 ### Nota adicional (2026-07-03) — tags de verificação do Google Search Console
 

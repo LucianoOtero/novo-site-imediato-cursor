@@ -26,7 +26,7 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
  * **Limite importante**: este boundary cobre `page.tsx` (o conteúdo
  * dentro de `<main>`) de cada rota do grupo — **não** cobre o próprio
  * `app/(marketing)/layout.tsx` (Header, Footer, WhatsAppFAB, StickyCTA,
- * PageAnalytics, FraudAlert), já que um `error.tsx` nunca captura erros
+ * PageAnalytics), já que um `error.tsx` nunca captura erros
  * do layout do mesmo segmento (regra do Next.js). Erros nesses
  * componentes só são capturados por `app/global-error.tsx` (raiz).
  *

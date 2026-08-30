@@ -3,7 +3,6 @@ import { Footer } from "@/components/layout/Footer";
 import { WhatsAppFAB } from "@/components/cta/WhatsAppFAB";
 import { StickyCTA } from "@/components/cta/StickyCTA";
 import { PageAnalytics } from "@/components/analytics/PageAnalytics";
-import { FraudAlert } from "@/components/shared/FraudAlert";
 import { buildInsuranceAgencySchema } from "@/lib/schema";
 import { publicEnv } from "@/lib/env";
 
@@ -30,11 +29,8 @@ import { publicEnv } from "@/lib/env";
  * todo — por isso fica no layout (aparece em toda página do grupo),
  * não em uma página específica.
  *
- * `FraudAlert` (Issue 22) entra aqui, acima do `Header` (que é
- * `sticky top-0`) — decisão de posição adiada até a Home existir
- * (Issue 15), agora concluída. Fica fora de `(legal)` de propósito: a
- * própria página `/alerta-de-fraude` já cobre o tema em detalhe, um
- * banner ali seria redundante.
+ * Alerta de fraude (Issue 22): o banner top foi removido (2026-08-30) —
+ * aviso permanece no `Footer` + página `/alerta-de-fraude`.
  */
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const insuranceAgencySchema = buildInsuranceAgencySchema(publicEnv.siteUrl);
@@ -46,7 +42,6 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         // eslint-disable-next-line react/no-danger -- JSON-LD precisa ser injetado como script inline; conteúdo vem de `buildInsuranceAgencySchema`, não de input de usuário.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(insuranceAgencySchema) }}
       />
-      <FraudAlert />
       <Header />
       <main id="main-content">{children}</main>
       <Footer />

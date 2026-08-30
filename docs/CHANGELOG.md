@@ -11,6 +11,26 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.40] — 2026-08-30 (UX: remove banner de golpes)
+
+### Changed
+- Removido `FraudAlert` do topo das páginas de marketing; aviso oficial de PIX/rastreador permanece no `Footer` + `/alerta-de-fraude`.
+
+## [0.2.39] — 2026-08-30 (Docs: consultoria 3ª rodada)
+
+### Docs
+- [`CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md`](docs/CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md): assimetria Ads Exp vs legado = veredito Espo; ordem 0 diagnóstica; ordem 0.5 métrica; ordem 5 inviável por A/B; banner golpes = dono institucional.
+
+## [0.2.38] — 2026-08-30 (Docs: consultoria 2ª rodada)
+
+### Docs
+- [`CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md`](docs/CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md): bidding Ads vs captura, gating por custo de reversão, H1+card acoplados; backlog reordenado (ordem 0 = auditoria goals).
+
+## [0.2.37] — 2026-08-30 (Docs: consultoria hero/form)
+
+### Docs
+- Consultoria Claude + considerações + recomendações: [`CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md`](docs/CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md) (telefone-primeiro, funil GA4/Firebase, priorização P0–P3).
+
 ## [0.2.36] — 2026-08-30 (LeadForm: título cotação online)
 
 ### Changed (UX copy)
