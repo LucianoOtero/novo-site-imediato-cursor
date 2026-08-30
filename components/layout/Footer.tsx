@@ -37,6 +37,11 @@ import { company } from "@/lib/company";
  * removido em 2026-08-30. `--color-alert` fica para erros de formulário
  * e estados de alerta pontuais, não para banner global.
  *
+ * **Identidade jurídica (2026-08-30):** razão social, CNPJ e SUSEP ficam
+ * só nesta faixa inferior do Footer (fonte `lib/company.ts`). A barra
+ * equivalente no Header foi removida — contorno Ads em domínio genérico
+ * que deixou de ser necessário com `novo.segurosimediato.com.br`.
+ *
  * **Logotipo (2026-07-08)**: substitui o texto `company.tradeName` que
  * fazia esse papel antes. O arquivo (`imediato-seguros-2026.svg`) tem o
  * texto "IMEDIATO SEGUROS" desenhado em azul escuro (`#003881`), quase
@@ -164,12 +169,10 @@ export function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <Container className="flex flex-col gap-2 py-6 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
+        <Container className="flex flex-col gap-1 py-6 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p>© {year}. Todos os direitos reservados.</p>
           <p>
-            © {year} {company.legalName}. Todos os direitos reservados.
-          </p>
-          <p>
-            CNPJ {company.cnpj} · SUSEP {company.susep}
+            {company.legalName} · CNPJ {company.cnpj} · SUSEP {company.susep}
           </p>
         </Container>
       </div>

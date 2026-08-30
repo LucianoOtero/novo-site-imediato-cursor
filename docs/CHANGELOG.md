@@ -11,12 +11,32 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.43] — 2026-08-30 (UX: identidade jurídica só no Footer)
+
+### Changed
+- Removida a barra de identidade jurídica (razão social · CNPJ · SUSEP) do [`Header`](components/layout/Header.tsx) — contorno Ads em `comparaseguroonline` dispensável com `novo.segurosimediato.com.br`.
+- Faixa inferior do [`Footer`](components/layout/Footer.tsx): `{legalName} · CNPJ · SUSEP` + © year (fonte `lib/company.ts`).
+- Comentário em [`CredBar`](components/social/CredBar.tsx): SUSEP/CNPJ no Footer, não no Header.
+
+### Docs
+- Consultoria e `PROXIMOS_PASSOS`: barra Header marcada como feita.
+
+## [0.2.42] — 2026-08-30 (Docs: consultoria 5ª rodada)
+
+### Docs
+- [`CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md`](docs/CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md) §11: linha política/banner encerrada (verificação de conta ativa, domínio atual, sem flags); conformidade SF = conta, não página; CNPJ/SUSEP = sinal de LP, não verificação; "Qualificada (limitada)" = QS, não política; Índice de Qualidade como gargalo de volume (1/10 em `cotação de seguro online`); hero promovido à ordem 2 por QS; telemetria rebaixada; higiene de campanha + marca Porto Seguro; **Octadesk antifraude adiada** (todo futuro — decisão cliente); projeto Header CNPJ→Footer liberado.
+
+## [0.2.41] — 2026-08-30 (Docs: consultoria 4ª rodada)
+
+### Docs
+- [`CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md`](docs/CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md): decisão banner registrada; ordem **0.25** Octadesk+RPA; medição ordem 1 = bloco com `e98b262`; barra CNPJ/SUSEP: contorno Ads em `comparaseguroonline` — **dispensável** em `novo.segurosimediato.com.br` (§10.5).
+
 ## [0.2.40] — 2026-08-30 (UX: remove banner de golpes)
 
 ### Changed
 - Removido `FraudAlert` do topo das páginas de marketing; aviso oficial de PIX/rastreador permanece no `Footer` + `/alerta-de-fraude`.
-
-## [0.2.39] — 2026-08-30 (Docs: consultoria 3ª rodada)
+- **Decisão:** cliente, 2026-08-30 — banner circunstancial; aviso reposicionado (não suprimido). Commit `e98b262`; deploy prod ~19:09 BRT.
+- **Pendente:** antifraude na 1ª msg Octadesk + linha na tela de resultado RPA.
 
 ### Docs
 - [`CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md`](docs/CONSULTORIA_CLAUDE_HERO_FORMULARIO_2026-08-30.md): assimetria Ads Exp vs legado = veredito Espo; ordem 0 diagnóstica; ordem 0.5 métrica; ordem 5 inviável por A/B; banner golpes = dono institucional.

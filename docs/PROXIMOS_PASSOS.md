@@ -19,7 +19,7 @@ Status canônico: [`docs/FASE_A_GTM_ESPOCRM_OPS.md`](FASE_A_GTM_ESPOCRM_OPS.md) 
 | GTM v47 | Acionadores `[NovoSite]` com RegEx dos dois domínios |
 | Ads | 21/21 RSAs do braço Exp APPROVED no domínio novo + marca nos títulos; experimento reativado (grupo *Auto*) |
 | Smoke lead | PASS — `cWebpage=novo.segurosimediato.com.br` no EspoCRM; Octadesk/e-mails ok; teste arquivado |
-| Header | Barra de identidade (razão social + CNPJ + SUSEP); SUSEP duplicada removida da CredBar |
+| Header | Barra de identidade jurídica **removida** (2026-08-30) — razão social/CNPJ/SUSEP só no Footer |
 | **Auditoria implementada (v0.2.20)** | Região Vercel `gru1`; Speed Insights no layout; metadata default + `title.template`; headers de segurança; Turnstile integrado (fail-open); GSC coberto pela propriedade de Domínio + sitemap submetido; baseline Lighthouse em `BASELINE_METRICS.md` |
 
 **Próximo natural:** acompanhar serving/aprovação da conta Ads após a migração (a "Veiculação limitada" deve normalizar com o domínio de marca); nova baseline do experimento após alguns dias (`ads-baseline-experiment.mjs`); confirmar com a equipe o workflow do Espo "Receber depois → Perdido" (achado do smoke).

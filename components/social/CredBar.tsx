@@ -44,8 +44,9 @@ export function CredBar({ variant = "full" }: { variant?: "full" | "complementar
       icon: Award,
       label: `${company.business.yearsExperience}+ anos de experiência`,
     },
-    // SUSEP removida daqui (pedido do cliente, 2026-08-07): o registro já
-    // aparece na barra de identidade jurídica do Header — evitar duplicação.
+    // SUSEP removida daqui (pedido do cliente, 2026-08-07): CNPJ/SUSEP
+    // ficam no Footer — evitar duplicação no fold. (A barra jurídica do
+    // Header que motivava esse comentário foi removida em 2026-08-30.)
     {
       icon: Building2,
       label: `${company.business.insurersCount} seguradoras parceiras`,
