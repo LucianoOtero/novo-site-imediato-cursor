@@ -4,20 +4,20 @@
 
 Registro do fluxo definido pelo cliente (2026-07-27) para a sequência de preenchimento do formulário de cotação (`LeadForm`), com as ações de CRM (EspoCRM) e de WhatsApp (Octadesk) em cada etapa. Este documento é a **fonte da verdade** do comportamento esperado; a implementação vive em `app/api/lead/route.ts` + `firebase/functions/index.js` (arquitetura em `docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md`; templates em `docs/GUIA_OCTADESK_TEMPLATES.md`).
 
-## O fluxo, etapa por etapa
+## O fluxo, passo a passo
 
 ```mermaid
 flowchart TD
-    E1["Etapa 1 — DDD + telefone"] --> E2["Etapa 2 — nome + e-mail"]
-    E2 --> E3["Etapa 3 — CPF + CEP + placa"]
-    E3 --> E4{"Etapa 4 — escolha"}
+    E1["Telefone — DDD + celular"] --> E2["Contato — nome + e-mail"]
+    E2 --> E3["Veículo — CPF + CEP + placa"]
+    E3 --> E4{"Escolha — como receber"}
     E4 -->|"Cálculo pelo sistema"| E4a{"Resultado"}
     E4 -->|"Receber depois"| E4b["Especialista calcula"]
     E4a -->|"Sucesso"| OK["Valores na tela"]
     E4a -->|"Falha"| NOK["Cálculo manual"]
 ```
 
-### Etapa 1 — DDD + telefone
+### Telefone — DDD + celular
 
 - **EspoCRM**: cria o lead com DDD+telefone no campo de telefone, nome e e-mail simulados a partir do número (`{ddd}-{celular}-NOVO CLIENTE WHATSAPP` / `{ddd}{celular}@imediatoseguros.com.br`) — mesmo comportamento dos modais de WhatsApp/telefone. ✅ Já implementado e conferido (2026-07-27): `LeadForm.sendInitialContact()` e `ContactLeadModal` enviam o mesmo `stage:"initial"`; os valores simulados são aplicados na Cloud Function (`buildLegacyProxyPayload`).
 - **Octadesk**: envia WhatsApp ao número fornecido com o template **`primeira_etapa_util`** (ID `6a67fa5ce7966478bcf4242a`, criado 2026-07-27) e registra o contato — como nos modais. ✅ Via API direta (`primeira_etapa` no secret), com fallback para o proxy legado.
@@ -26,23 +26,23 @@ flowchart TD
 
 Mesmo `initial` → `primeira_etapa_util`. No `complete`, se o prospect preencheu e-mail, CEP, CPF, placa **ou Nome Completo** (`captureChannel: "contact_modal"`), a CF envia **`cotacao_solicitada_util`** (`cotacao_dados_recebidos` no secret), com `target.contact.name` quando há nome real (`{{nome-contato}}`). Sem dados extras / “ir direto” só com telefone: nenhuma segunda HSM. O `complete` do LeadForm (`captureChannel: "lead_form"`) **não** dispara essa mensagem. A etapa 2 do modal (após o telefone) coleta, opcionalmente e na ordem do legado: CPF → E-mail → Nome Completo → CEP → Placa.
 
-### Etapa 2 — nome + e-mail
+### Contato — nome + e-mail
 
 - **EspoCRM**: atualiza o lead com nome e e-mail reais (substituindo os simulados) — como os modais fazem na atualização final. ✅ Já implementado (estágio `progress`, 2026-07-20).
 - **WhatsApp**: nenhuma mensagem (decisão do cliente).
 
-### Etapa 3 — CPF + CEP + placa
+### Veículo — CPF + CEP + placa
 
 - **EspoCRM**: atualiza o lead com CPF, CEP, placa e dados do veículo (marca/modelo/anos, via Placa Fipe). ✅ Já implementado (estágio `progress`).
 - **WhatsApp**: nenhuma mensagem.
 
-### Etapa 4a — cálculo pelo sistema (RPA)
+### Escolha — cálculo pelo sistema (RPA)
 
 - **Sucesso** → WhatsApp **`opcao_recomendada_util`** (ID `6a679f8fcd5582b40f0b8de2`) com nome/veículo/valor. ✅ Ativo desde 2026-07-27.
 - **Falha** → WhatsApp **`calculo_falhou_util`** (ID `6a67b114b134d17c41842d89`). ✅ Ativo.
 - **EspoCRM** (dados do cálculo — objeto do plano): campos custom no Lead + resumo na `description` + post no Stream. Ver "Modelo de dados no EspoCRM" abaixo.
 
-### Etapa 4b — receber o cálculo depois
+### Escolha — receber o cálculo depois
 
 - **WhatsApp** → **`ultima_confirmacao_calculo`** (ID `6a67c99eb2f6c165b3a499f4`). ✅ Ativo.
 - **EspoCRM** (objeto do plano): sinalizar ao vendedor que precisa calcular manualmente e enviar ao cliente — via **Task** vinculada ao lead + post no Stream + campo de escolha.

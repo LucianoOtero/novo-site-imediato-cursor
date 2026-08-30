@@ -83,9 +83,9 @@ Na opção "Aguardar o cálculo", o site passou a enviar ao RPA um **bloco demog
 - **Pré-requisito** para funcionar: `PH3A_ENRICHMENT_ENABLED=true` e `CPF_VALIDATE_PROXY_URL` válido.
 
 ### Contador de etapas e teaser
-- O `LeadForm` agora exibe "Etapa X de 3" nos passos de coleta (1 a 3); a tela de escolha (passo 4) **não** é contada (`COLLECTION_STEPS = 3`, mantendo `TOTAL_STEPS = 4` para a navegação).
-- A `ProgressBar` reflete as 3 etapas e é ocultada no passo 4; o texto do contador vive no cabeçalho (visível também no Hero, onde a barra é `compact`).
-- Teaser discreto nos passos 1-3: "Poucos dados por etapa — cada uma leva de 15 a 30 segundos."
+- O `LeadForm` exibe rótulos nomeados nos passos de coleta (ex. "Telefone · 1/3"); a tela de escolha (passo 4) **não** é contada (`COLLECTION_STEPS = 3`, mantendo `TOTAL_STEPS = 4` para a navegação).
+- A `ProgressBar` reflete as 3 etapas e é ocultada no passo 4; o texto do progresso vive no cabeçalho (visível também no Hero, onde a barra é `compact`).
+- Teaser discreto nos passos 1-3: "Poucos dados por vez — cerca de 15 a 30 segundos."
 
 ## Critérios de habilitação do cálculo automático (2026-07-17/18)
 

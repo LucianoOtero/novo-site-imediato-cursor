@@ -11,6 +11,23 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.35] — 2026-08-30 (LeadForm: rótulos nomeados)
+
+### Changed (UX copy)
+- Progresso do formulário: `Telefone · 1/3` / `Contato · 2/3` / `Veículo · 3/3` no lugar de “Etapa X de 3”; subtítulos e teaser alinhados; `aria-label` do `ProgressBar` com rótulo nomeado.
+
+## [0.2.34] — 2026-08-30 (Captura leads W1–W3)
+
+### Docs / Ops
+- Análise geração de leads W1+W2+**W3**: [`ANALISE_EXPERIMENTO_LEADS_W1_W2_W3_2026-08-30.md`](docs/ANALISE_EXPERIMENTO_LEADS_W1_W2_W3_2026-08-30.md).
+- Snapshots W3: Ads/Firebase/GA4 + [`experiment-comparison-w1-w2-w3-2026-08-30.json`](scripts/google-ops/experiment-comparison-w1-w2-w3-2026-08-30.json).
+
+## [0.2.33] — 2026-08-30 (Placar comercial W1–W3 as-of)
+
+### Docs / Ops
+- Placar comercial experimento as-of 2026-08-30: W1 (10–14), W2 (17–21), **W3 (24–28)** — [`ANALISE_COMERCIAL_EXPERIMENTO_asof-2026-08-30.md`](docs/ANALISE_COMERCIAL_EXPERIMENTO_asof-2026-08-30.md).
+- Ads W3: [`ads-analysis-w3.json`](scripts/google-ops/ads-analysis-w3.json); snapshots `experiment-commercial-w*-asof-2026-08-30.json`.
+
 ## [0.2.32] — 2026-08-29 (Fase 5: prep runbook + scripts)
 
 ### Docs / Ops

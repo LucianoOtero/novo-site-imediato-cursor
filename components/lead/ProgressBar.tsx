@@ -14,19 +14,26 @@ import type { FormTone } from "@/components/lead/fields";
 export function ProgressBar({
   step,
   totalSteps,
+  label,
   compact = false,
   tone = "light",
 }: {
   step: number;
   totalSteps: number;
+  /** Rótulo nomeado do passo (ex. "Telefone") — usado no aria-label. */
+  label?: string;
   compact?: boolean;
   tone?: FormTone;
 }) {
   const percent = Math.round((step / totalSteps) * 100);
+  const ariaLabel = label
+    ? `${label}, passo ${step} de ${totalSteps}`
+    : `Passo ${step} de ${totalSteps}`;
 
-  // O texto "Etapa X de Y" fica no cabeçalho do LeadForm (visível também no
-  // Hero, onde a barra é `compact`) — aqui exibimos apenas a barra, evitando
-  // duplicar o contador (projeto 2026-07-17).
+  // O texto de progresso ("Telefone · 1/3") fica no cabeçalho do LeadForm
+  // (visível também no Hero, onde a barra é `compact`) — aqui exibimos
+  // apenas a barra, evitando duplicar o contador (projeto 2026-07-17;
+  // rótulos nomeados 2026-08-30).
   return (
     <div className={cn(compact ? "mb-4" : "mb-6")}>
       <div
@@ -34,7 +41,7 @@ export function ProgressBar({
         aria-valuenow={step}
         aria-valuemin={1}
         aria-valuemax={totalSteps}
-        aria-label={`Etapa ${step} de ${totalSteps}`}
+        aria-label={ariaLabel}
         className={cn(
           "h-1.5 w-full overflow-hidden rounded-full",
           tone === "glass" ? "bg-white/20" : "bg-neutral-200"

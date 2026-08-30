@@ -156,19 +156,26 @@ type StepNumber = 1 | 2 | 3 | 4;
 const TOTAL_STEPS = 4;
 /**
  * Passos de COLETA de dados (1 a 3). O passo 4 (`RpaChoiceStep`) é uma
- * decisão, não coleta — por isso o contador exibe "Etapa X de 3" e a última
- * tela não é contada (pedido do cliente, 2026-07-17).
+ * decisão, não coleta — por isso o progresso exibe "Telefone · 1/3" (etc.)
+ * e a última tela não é contada (pedido do cliente, 2026-07-17; rótulos
+ * nomeados 2026-08-30).
  */
 const COLLECTION_STEPS = 3;
 /** Teaser de rapidez exibido nos passos de coleta (1 a 3). */
-const FORM_SPEED_TEASER = "Poucos dados por etapa — cada uma leva de 15 a 30 segundos.";
+const FORM_SPEED_TEASER = "Poucos dados por vez — cerca de 15 a 30 segundos.";
 
 /** Título fixo + subtítulo por passo (pedido do cliente, 2026-07-14) — orienta o que preencher em cada etapa. */
 const FORM_TITLE = "Inicie aqui sua cotação";
+/** Rótulos curtos dos passos de coleta (substitui o genérico "Etapa N"). */
+const STEP_LABELS: Record<1 | 2 | 3, string> = {
+  1: "Telefone",
+  2: "Contato",
+  3: "Veículo",
+};
 const STEP_SUBTITLES: Record<StepNumber, string> = {
-  1: "Informe seu telefone",
-  2: "Informe nome e e-mail",
-  3: "Informe CEP, CPF e placa do veículo",
+  1: "Só DDD e celular para começar",
+  2: "Nome e e-mail (opcional)",
+  3: "CEP, CPF e placa (opcional)",
   4: "Como você quer receber sua cotação?",
 };
 
@@ -974,7 +981,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         {step <= COLLECTION_STEPS && (
           <>
             <p className="mt-1 text-sm font-medium text-neutral-500">
-              Etapa {step} de {COLLECTION_STEPS}
+              {STEP_LABELS[step as 1 | 2 | 3]} · {step}/{COLLECTION_STEPS}
             </p>
             <p className="mt-0.5 text-xs text-neutral-400">
               {FORM_SPEED_TEASER}
@@ -987,6 +994,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         <ProgressBar
           step={step}
           totalSteps={COLLECTION_STEPS}
+          label={STEP_LABELS[step as 1 | 2 | 3]}
           compact={variant === "inline"}
           tone={tone}
         />
