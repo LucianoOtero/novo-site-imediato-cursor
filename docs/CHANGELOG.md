@@ -11,6 +11,11 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.36] — 2026-08-30 (LeadForm: título cotação online)
+
+### Changed (UX copy)
+- Título do card: `Faça aqui a cotação online do seu seguro` (antes “Inicie aqui sua cotação”); `leading-snug` no h2 para quebra no frost/mobile.
+
 ## [0.2.35] — 2026-08-30 (LeadForm: rótulos nomeados)
 
 ### Changed (UX copy)

@@ -165,7 +165,7 @@ const COLLECTION_STEPS = 3;
 const FORM_SPEED_TEASER = "Poucos dados por vez — cerca de 15 a 30 segundos.";
 
 /** Título fixo + subtítulo por passo (pedido do cliente, 2026-07-14) — orienta o que preencher em cada etapa. */
-const FORM_TITLE = "Inicie aqui sua cotação";
+const FORM_TITLE = "Faça aqui a cotação online do seu seguro";
 /** Rótulos curtos dos passos de coleta (substitui o genérico "Etapa N"). */
 const STEP_LABELS: Record<1 | 2 | 3, string> = {
   1: "Telefone",
@@ -969,7 +969,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       <div>
         <h2
           className={cn(
-            "font-display text-xl font-bold md:text-2xl",
+            "font-display text-xl font-bold leading-snug md:text-2xl",
             frost ? "text-brand-700" : "text-neutral-900"
           )}
         >
