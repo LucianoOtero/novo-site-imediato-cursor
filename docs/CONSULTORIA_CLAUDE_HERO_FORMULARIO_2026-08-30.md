@@ -202,8 +202,8 @@ Telefone permanece na etapa 1. Ordem por **custo de reversão** + **métrica de 
 | **0** | **Auditar goals Ads (diagnóstico)** | Confirmar na UI: `iwx7` primária? Offline secundária? **Resultado provável:** manter `iwx7` primária; Offline observação; não rebaixar telefone neste volume. Não bloqueia copy. |
 | **0.25** | **Proteção antifraude (adiada)** | **Octadesk 1ª msg:** **adiada** — todo futuro, pendente de análise (cliente: golpe circunstancial; não chamar atenção na 1ª WA; risco regulatório aceito). Footer + `/alerta-de-fraude` **já feitos**. Linha RPA antifraude: mesma lógica de adiamento por agora (opcional/junto ao polish ordem 4). |
 | **0.5** | **Métrica de veredito do experimento** | Placar **comercial Espo**, não Ads form (assimetria instrumentação). |
-| **1** | **Copy reversível (form)** | Microcopy telefone honesta; CTAs; subtítulos; teaser. **Medição:** bloco com remoção do banner (`e98b262`) — não atribuir lift a uma só mudança. |
-| **2** | **Hero: H1 + título do card (+ fold)** | **Promovido** (§11): message match anúncio↔LP melhora QS. Keywords core **1/10–2/10**. Barra CNPJ/SUSEP do Header → Footer: **feita** (`0.2.43`). Restante: H1/card/âncora. |
+| **1** | **Copy reversível (form)** | **Em revisão** (`feat/hero-form-ads`, `0.2.44`): microcopy telefone; CTAs; subtítulos; teaser. Medição em bloco com `e98b262`. |
+| **2** | **Hero: H1 + título do card (+ fold)** | **Em revisão** (`feat/hero-form-ads`, `0.2.44`): H1 Auto = 21 seguradoras; card = Receba cotação online; barra CNPJ→Footer **feita** (`0.2.43`). |
 | **2.5** | **Higiene de campanha + marca Porto Seguro** | **Novo (§11):** anúncios/keywords/negativas e marca de terceiros (Porto). Ops Ads. |
 | **3** | **Telemetria (ordem de grandeza)** | **Rebaixada** (§11): Explore/Firebase; não agir sobre ±4 pp. |
 | **4** | **RPA — polish de espera** | Justificar espera / WhatsApp; antifraude na tela de resultado só se reabrir o tema. |
@@ -224,10 +224,10 @@ Telefone permanece na etapa 1. Ordem por **custo de reversão** + **métrica de 
 
 ## 5. Próximo checkpoint sugerido
 
-1. Ordem 1 (form) e/ou ordem 2 restante (H1/card por QS — barra CNPJ→Footer **já feita**).  
+1. **Revisão localhost** — branch `feat/hero-form-ads` (ordens 1+2 Auto); merge `main` só com ok do cliente.  
 2. Declarar veredito experimento = Espo comercial (0.5).  
 3. Auditoria Ads 15–30 min (0) — documental.  
-4. Ordem 2.5: higiene de campanha + checagem marca Porto (Ads).  
+4. Ordem 2.5: higiene de campanha + checagem marca Porto (Ads) — após merge, alinhar RSA ao H1.  
 5. Telemetria só como sanity (ordem 3), não como gate.  
 6. **Octadesk antifraude:** todo futuro, pendente de análise — **não** nesta semana.
 

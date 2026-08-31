@@ -161,11 +161,11 @@ const TOTAL_STEPS = 4;
  * nomeados 2026-08-30).
  */
 const COLLECTION_STEPS = 3;
-/** Teaser de rapidez exibido nos passos de coleta (1 a 3). */
-const FORM_SPEED_TEASER = "Poucos dados por vez — cerca de 15 a 30 segundos.";
+/** Teaser de ritmo nos passos de coleta (1 a 3) — copy Ads/QS 2026-08-31. */
+const FORM_SPEED_TEASER = "3 etapas curtas — comece pelo celular";
 
-/** Título fixo + subtítulo por passo (pedido do cliente, 2026-07-14) — orienta o que preencher em cada etapa. */
-const FORM_TITLE = "Faça aqui a cotação online do seu seguro";
+/** Título do card — complementa o H1 (21 seguradoras), sem repetir. */
+const FORM_TITLE = "Receba sua cotação online";
 /** Rótulos curtos dos passos de coleta (substitui o genérico "Etapa N"). */
 const STEP_LABELS: Record<1 | 2 | 3, string> = {
   1: "Telefone",
@@ -173,11 +173,20 @@ const STEP_LABELS: Record<1 | 2 | 3, string> = {
   3: "Veículo",
 };
 const STEP_SUBTITLES: Record<StepNumber, string> = {
-  1: "Só DDD e celular para começar",
-  2: "Nome e e-mail (opcional)",
-  3: "CEP, CPF e placa (opcional)",
+  1: "Para onde enviamos o resultado da cotação?",
+  2: "Nome e e-mail ajudam as seguradoras a montar seu perfil.",
+  3: "CEP muda bastante o preço. Placa e CPF agilizam o cálculo.",
   4: "Como você quer receber sua cotação?",
 };
+/** CTAs por passo de coleta (benefício > “Continuar”). */
+const STEP_CTAS: Record<1 | 2 | 3, string> = {
+  1: "Receber cotação",
+  2: "Falta pouco",
+  3: "Ver meu preço",
+};
+/** Transparência do uso do celular (etapa 1) — WhatsApp/CRM reais. */
+const PHONE_MICROCOPY =
+  "Usamos o número para enviar o resultado por WhatsApp e seguir sua cotação.";
 
 /**
  * Card "frost" (v3 visual, 2026-08-08, pedido do cliente): na variante
@@ -1008,59 +1017,66 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         className="flex flex-col gap-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-2 motion-safe:duration-200"
       >
         {step === 1 && (
-          <div className="grid grid-cols-[5rem_1fr] gap-3">
-            <Field
-              label="DDD"
-              htmlFor="ddd"
-              error={errors.ddd?.message}
-              tone={tone}
-              valid={isFieldValid("ddd")}
-            >
-              <Input
-                id="ddd"
-                inputMode="numeric"
-                autoComplete="tel-area-code"
-                placeholder="11"
-                maxLength={2}
-                aria-invalid={!!errors.ddd}
-                aria-describedby={errors.ddd ? "ddd-error" : undefined}
-                {...ddd}
-                onChange={(event) => {
-                  event.target.value = formatDdd(event.target.value);
-                  void ddd.onChange(event);
-                }}
-                onBlur={(event) => {
-                  void ddd.onBlur(event);
-                  void trigger("ddd");
-                }}
-              />
-            </Field>
-            <Field
-              label="Celular"
-              htmlFor="celular"
-              error={errors.celular?.message}
-              tone={tone}
-              valid={isFieldValid("celular")}
-            >
-              <Input
-                id="celular"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                placeholder="98765-4321"
-                aria-invalid={!!errors.celular}
-                aria-describedby={errors.celular ? "celular-error" : undefined}
-                {...celular}
-                onChange={(event) => {
-                  event.target.value = formatCelular(event.target.value);
-                  void celular.onChange(event);
-                }}
-                onBlur={(event) => {
-                  void celular.onBlur(event);
-                  void checkCelularApi();
-                }}
-              />
-            </Field>
-          </div>
+          <>
+            <div className="grid grid-cols-[5rem_1fr] gap-3">
+              <Field
+                label="DDD"
+                htmlFor="ddd"
+                error={errors.ddd?.message}
+                tone={tone}
+                valid={isFieldValid("ddd")}
+              >
+                <Input
+                  id="ddd"
+                  inputMode="numeric"
+                  autoComplete="tel-area-code"
+                  placeholder="11"
+                  maxLength={2}
+                  aria-invalid={!!errors.ddd}
+                  aria-describedby={errors.ddd ? "ddd-error" : "phone-microcopy"}
+                  {...ddd}
+                  onChange={(event) => {
+                    event.target.value = formatDdd(event.target.value);
+                    void ddd.onChange(event);
+                  }}
+                  onBlur={(event) => {
+                    void ddd.onBlur(event);
+                    void trigger("ddd");
+                  }}
+                />
+              </Field>
+              <Field
+                label="Celular"
+                htmlFor="celular"
+                error={errors.celular?.message}
+                tone={tone}
+                valid={isFieldValid("celular")}
+              >
+                <Input
+                  id="celular"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  placeholder="98765-4321"
+                  aria-invalid={!!errors.celular}
+                  aria-describedby={
+                    errors.celular ? "celular-error" : "phone-microcopy"
+                  }
+                  {...celular}
+                  onChange={(event) => {
+                    event.target.value = formatCelular(event.target.value);
+                    void celular.onChange(event);
+                  }}
+                  onBlur={(event) => {
+                    void celular.onBlur(event);
+                    void checkCelularApi();
+                  }}
+                />
+              </Field>
+            </div>
+            <p id="phone-microcopy" className="text-xs leading-snug text-neutral-500">
+              {PHONE_MICROCOPY}
+            </p>
+          </>
         )}
 
         {step === 2 && (
@@ -1232,7 +1248,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         )}
         {!isFinalStep && (
           <Button type="submit" variant="primary" fullWidth loading={isBusy}>
-            Continuar
+            {STEP_CTAS[step as 1 | 2 | 3]}
           </Button>
         )}
       </div>

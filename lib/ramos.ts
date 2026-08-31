@@ -105,14 +105,13 @@ export const ramos: InsuranceBranch[] = [
     category: "auto",
     icon: "car-front",
     priceFrom: 79.9, // CONFIRMADO (2026-07-03) — ver docs/DADOS_OFICIAIS.md
-    priceLabel: "a partir de R$ 79,90/mês",
-    // `\n` (ajuste mobile 2026-08-08, pedido do cliente): quebras controladas
-    // em 3 linhas no H1 do Hero mobile (via `whitespace-pre-line`); no
-    // desktop o `md:whitespace-normal` colapsa os \n em espaço — texto
-    // idêntico ao da seção 31.2, só formatação.
-    headline: "Seguro auto\na partir de R$ 79,90/mês,\ncom cobertura FIPE 100%",
-    subheadline: "Cotação grátis, sem compromisso, comparando 21 seguradoras.",
-    eyebrow: "Seguro Auto",
+    // Âncora qualificada (2026-08-31, consultoria Ads/QS): sai do H1; cards/grid.
+    priceLabel: "a partir de R$ 79,90/mês para perfis de menor risco",
+    // H1 message-match Ads (2026-08-31): preço/21 seguradoras — não categoria+âncora.
+    // `\n` = lockup mobile no Hero; desktop colapsa em espaço.
+    headline: "O preço do seu seguro\nem 21 seguradoras",
+    subheadline: "Preencha em 3 etapas curtas. Comparamos e mostramos o valor na tela.",
+    eyebrow: "Seguro auto · Cotação online",
     seo: {
       title: "Seguro Auto Online | Cotação Grátis em 21 Seguradoras — Imediato",
       description:
@@ -120,7 +119,7 @@ export const ramos: InsuranceBranch[] = [
       keywordFocus: "seguro auto cotação online",
       canonicalPath: "/seguro-auto",
     },
-    ads: { messageMatchHeadline: "Seguro auto a partir de R$ 79,90/mês, com cobertura FIPE 100%", campaignIntent: "transacional" },
+    ads: { messageMatchHeadline: "O preço do seu seguro em 21 seguradoras", campaignIntent: "transacional" },
     benefits: ["Cobertura FIPE 100%", "Assistência 24h + carro reserva", "Bônus integral"],
     arguments: ["Cobertura FIPE 100%", "Assistência 24h + carro reserva", "Bônus integral"],
     objections: [

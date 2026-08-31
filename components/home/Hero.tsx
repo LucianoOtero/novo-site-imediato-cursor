@@ -149,7 +149,7 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
     <>
       <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
         <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
-        Cotação grátis, sem compromisso
+        Sem compromisso · 21 seguradoras
       </p>
       {/* Pilha de linhas (2026-08-09, pedido do cliente): a versão em linha
           única quebrava no meio da frase em telas estreitas — agora estrelas,
