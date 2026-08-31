@@ -173,7 +173,7 @@ const STEP_LABELS: Record<1 | 2 | 3, string> = {
   3: "Veículo",
 };
 const STEP_SUBTITLES: Record<StepNumber, string> = {
-  1: "Para onde enviamos o resultado da cotação?",
+  1: "O melhor preço para o seu seguro virá em seguida",
   2: "Nome e e-mail ajudam as seguradoras a montar seu perfil.",
   3: "CEP muda bastante o preço. Placa e CPF agilizam o cálculo.",
   4: "Como você quer receber sua cotação?",
@@ -984,18 +984,16 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         >
           {FORM_TITLE}
         </h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          {STEP_SUBTITLES[step]}
-        </p>
-        {step <= COLLECTION_STEPS && (
+        {step <= COLLECTION_STEPS ? (
           <>
+            <p className="mt-1 text-xs text-neutral-400">{FORM_SPEED_TEASER}</p>
             <p className="mt-1 text-sm font-medium text-neutral-500">
               {STEP_LABELS[step as 1 | 2 | 3]} · {step}/{COLLECTION_STEPS}
             </p>
-            <p className="mt-0.5 text-xs text-neutral-400">
-              {FORM_SPEED_TEASER}
-            </p>
+            <p className="mt-0.5 text-sm text-neutral-500">{STEP_SUBTITLES[step]}</p>
           </>
+        ) : (
+          <p className="mt-1 text-sm text-neutral-500">{STEP_SUBTITLES[step]}</p>
         )}
       </div>
 

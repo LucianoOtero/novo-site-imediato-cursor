@@ -188,12 +188,8 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
               {ramo.eyebrow}
             </p>
           )}
-          {/* H1 em "lockup" de 3 linhas (ajuste 2026-08-08, pedido do cliente):
-              headlines com `\n` (hoje só o Auto) viram linhas com tamanhos
-              próprios — 1ª grande (como antes), 2ª/3ª menores: no desktop com
-              largura ~igual à da 1ª ("Seguro auto" em text-6xl ≈ 330px); no
-              mobile dimensionadas para caber inteiras até em telas de 360px
-              (antes a 2ª linha quebrava em 4ª linha e empurrava o formulário).
+          {/* H1 em lockup com `\n` (Auto): 1ª linha em tamanho que cabe
+              inteira em ~360px; 2ª linha menor (message-match “21 seguradoras”).
               Headlines sem `\n` (demais ramos) seguem no layout original. */}
           {ramo.headline.includes("\n") ? (
             <h1 className="font-display font-bold tracking-tight text-white">
@@ -202,7 +198,8 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
                   key={line}
                   className={
                     index === 0
-                      ? "block text-[1.75rem] leading-[1.15] md:text-6xl md:leading-[1.08]"
+                      ? // ~"O preço do seu seguro" em 360px: clamp evita quebra
+                        "block whitespace-nowrap text-[clamp(1.2rem,5.2vw,1.75rem)] leading-[1.15] md:text-5xl md:leading-[1.08] lg:text-6xl"
                       : "mt-1 block text-[1.35rem] leading-[1.3] md:text-[1.65rem] md:leading-[1.3]"
                   }
                 >
@@ -215,9 +212,26 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
               {ramo.headline}
             </h1>
           )}
-          <p className="mt-3 max-w-xl text-lg leading-relaxed text-brand-50/90 md:mt-5">
-            {ramo.subheadline}
-          </p>
+          {ramo.subheadline.includes("\n") ? (
+            <div className="mt-3 max-w-xl text-brand-50/90 md:mt-5">
+              {ramo.subheadline.split("\n").map((line, index) => (
+                <p
+                  key={line}
+                  className={
+                    index === 0
+                      ? "text-lg leading-relaxed"
+                      : "mt-1 text-base leading-relaxed text-brand-50/80 md:text-[1.05rem]"
+                  }
+                >
+                  {line}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 max-w-xl text-lg leading-relaxed text-brand-50/90 md:mt-5">
+              {ramo.subheadline}
+            </p>
+          )}
 
           <div className="mt-8 hidden gap-8 border-t border-white/15 pt-6 lg:flex">
             <div>

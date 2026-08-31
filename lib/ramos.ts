@@ -108,9 +108,11 @@ export const ramos: InsuranceBranch[] = [
     // Âncora qualificada (2026-08-31, consultoria Ads/QS): sai do H1; cards/grid.
     priceLabel: "a partir de R$ 79,90/mês para perfis de menor risco",
     // H1 message-match Ads (2026-08-31): preço/21 seguradoras — não categoria+âncora.
-    // `\n` = lockup mobile no Hero; desktop colapsa em espaço.
+    // `\n` = lockup no Hero (1ª linha cabe inteira; 2ª menor).
     headline: "O preço do seu seguro\nem 21 seguradoras",
-    subheadline: "Preencha em 3 etapas curtas. Comparamos e mostramos o valor na tela.",
+    // Sub em 2 linhas no Hero (2ª menor) — 2026-08-31, pedido do cliente.
+    subheadline:
+      "Preencha em 3 etapas curtas.\nComparamos e mostramos o valor na tela.",
     eyebrow: "Seguro auto · Cotação online",
     seo: {
       title: "Seguro Auto Online | Cotação Grátis em 21 Seguradoras — Imediato",

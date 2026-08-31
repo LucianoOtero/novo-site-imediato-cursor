@@ -16,7 +16,8 @@ ATIVO (preenchido a cada release)
 ### Changed
 - Ramo **auto** ([`lib/ramos.ts`](lib/ramos.ts)): H1 `O preço do seu seguro em 21 seguradoras`; sub/eyebrow message-match; `priceLabel` qualificada (fora do H1); `ads.messageMatchHeadline` alinhado.
 - [`Hero.tsx`](components/home/Hero.tsx): selo mobile `Sem compromisso · 21 seguradoras`.
-- [`LeadForm.tsx`](components/lead/LeadForm.tsx): título `Receba sua cotação online`; teaser; subtítulos; microcopy WhatsApp no telefone; CTAs `Receber cotação` / `Falta pouco` / `Ver meu preço`.
+- [`LeadForm.tsx`](components/lead/LeadForm.tsx): título `Receba sua cotação online`; teaser; subtítulo passo 1 `O melhor preço para o seu seguro virá em seguida`; microcopy WhatsApp; CTAs por passo.
+- Hero Auto: H1 1ª linha em tamanho que cabe numa linha; sub em 2 linhas (2ª menor).
 
 ### Docs
 - Consultoria: ordens 1+2 (Auto) em revisão na branch `feat/hero-form-ads`.
