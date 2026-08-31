@@ -173,7 +173,7 @@ const STEP_LABELS: Record<1 | 2 | 3, string> = {
   3: "Veículo",
 };
 const STEP_SUBTITLES: Record<StepNumber, string> = {
-  1: "O melhor preço para o seu seguro virá em seguida",
+  1: "A melhor cotação para o seu seguro virá em seguida",
   2: "Nome e e-mail ajudam as seguradoras a montar seu perfil.",
   3: "CEP muda bastante o preço. Placa e CPF agilizam o cálculo.",
   4: "Como você quer receber sua cotação?",
