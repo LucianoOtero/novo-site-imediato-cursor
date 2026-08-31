@@ -127,18 +127,18 @@ export function ConsentBanner() {
     <div
       role="region"
       aria-label="Preferências de cookies"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] sm:p-6"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] sm:p-6 [@media(orientation:landscape)_and_(max-height:500px)]:p-2.5"
     >
-      <div className="mx-auto flex max-w-5xl flex-col gap-4">
-        <div>
-          <p className="text-sm text-neutral-700">
+      <div className="mx-auto flex max-w-5xl flex-col gap-4 [@media(orientation:landscape)_and_(max-height:500px)]:flex-row [@media(orientation:landscape)_and_(max-height:500px)]:items-center [@media(orientation:landscape)_and_(max-height:500px)]:gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm text-neutral-700 [@media(orientation:landscape)_and_(max-height:500px)]:line-clamp-2 [@media(orientation:landscape)_and_(max-height:500px)]:text-xs">
             Usamos cookies para melhorar sua experiência, medir audiência e personalizar anúncios. Você pode aceitar
             todos, rejeitar os não essenciais ou escolher suas preferências.
           </p>
         </div>
 
         {showPreferences && (
-          <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+          <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4 [@media(orientation:landscape)_and_(max-height:500px)]:max-h-[40vh] [@media(orientation:landscape)_and_(max-height:500px)]:overflow-y-auto">
             <label className="flex items-start gap-3">
               <input type="checkbox" checked disabled className="mt-1 size-4 shrink-0 rounded border-neutral-300" />
               <span className="text-sm text-neutral-700">
@@ -173,7 +173,7 @@ export function ConsentBanner() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex shrink-0 flex-wrap gap-3 [@media(orientation:landscape)_and_(max-height:500px)]:gap-2">
           {showPreferences ? (
             <Button type="button" variant="primary" size="md" onClick={savePreferences}>
               Salvar preferências

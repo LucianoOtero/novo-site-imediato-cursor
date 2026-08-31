@@ -63,7 +63,14 @@ export function Header() {
           <img
             src="/logos/imediato-seguros-2026.svg"
             alt=""
-            className={cn("w-auto transition-[height] duration-200", scrolled ? "h-12 md:h-16" : "h-14 md:h-24")}
+            className={cn(
+              "w-auto transition-[height] duration-200",
+              // Celular/tablet paisagem baixo: logo md:h-24 comia a dobra
+              // (auditoria 2026-08-31). Compacta só quando a altura é crítica.
+              scrolled
+                ? "h-12 md:h-16 [@media(orientation:landscape)_and_(max-height:500px)]:h-10"
+                : "h-14 md:h-24 [@media(orientation:landscape)_and_(max-height:500px)]:h-12"
+            )}
           />
         </Link>
 

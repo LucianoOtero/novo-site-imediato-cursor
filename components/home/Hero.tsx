@@ -173,7 +173,10 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
     // Section somado ao py-12 do Container dava 112px de espaço morto antes
     // do conteúdo — principal culpado do formulário nascer abaixo da dobra.
     // md/lg preservam o ritmo original.
-    <Section className="relative overflow-hidden py-4 md:py-28">
+    // py: mobile compacto; md moderado; lg+ respira. Em celular paisagem
+    // (altura ≤500px) zera o espaço morto — senão H1/form somem da dobra
+    // (auditoria 2026-08-31: iPhone 14 land 844×390).
+    <Section className="relative overflow-hidden py-4 md:py-16 lg:py-28 [@media(orientation:landscape)_and_(max-height:500px)]:py-2">
       <HeroBackground ramoSlug={ramoSlug} />
       {/* Overlay do gradiente da marca (navy → azul) para legibilidade do texto claro. */}
       <div
@@ -181,16 +184,16 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
         className="absolute inset-0 bg-linear-to-r from-[#0a2540]/90 via-[#0a2540]/70 to-[#0f55b8]/40"
       />
 
-      <Container className="relative grid gap-6 py-8 md:py-12 lg:grid-cols-2 lg:items-center lg:gap-10 lg:py-20">
+      <Container className="relative grid gap-6 py-8 max-[360px]:py-5 md:py-10 lg:grid-cols-2 lg:items-center lg:gap-6 lg:py-12 xl:gap-10 xl:py-16 [@media(orientation:landscape)_and_(min-width:640px)_and_(max-height:500px)]:grid-cols-2 [@media(orientation:landscape)_and_(min-width:640px)_and_(max-height:500px)]:items-center [@media(orientation:landscape)_and_(max-height:500px)]:gap-4 [@media(orientation:landscape)_and_(max-height:500px)]:py-3">
         {/* min-w-0: evita overflow do H1 nowrap para cima/embaixo do form no grid */}
-        <div className="min-w-0">
+        <div className="min-w-0 lg:pr-2">
           {ramo.eyebrow && (
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-100 backdrop-blur-sm">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-100 backdrop-blur-sm [@media(orientation:landscape)_and_(max-height:500px)]:mb-1.5 [@media(orientation:landscape)_and_(max-height:500px)]:py-0.5 [@media(orientation:landscape)_and_(max-height:500px)]:text-[0.65rem]">
               {ramo.eyebrow}
             </p>
           )}
-          {/* H1 em lockup com `\n` (Auto): 1ª linha nowrap em tamanho que
-              cabe na coluna (não invade o form); 2ª linha menor. */}
+          {/* H1 lockup Auto: 1ª linha nowrap; no lg (tablet paisagem / 2 cols)
+              o tamanho baixa para caber na coluna sem invadir o form. */}
           {ramo.headline.includes("\n") ? (
             <h1 className="font-display font-bold tracking-tight text-white">
               {ramo.headline.split("\n").map((line, index) => (
@@ -198,10 +201,8 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
                   key={line}
                   className={
                     index === 0
-                      ? // Mobile maior (proporcional ao desktop); nowrap + clamp
-                        // para "A cotação do seu seguro" caber numa linha.
-                        "block max-w-full whitespace-nowrap text-[clamp(1.45rem,5.8vw+0.35rem,2.85rem)] leading-[1.12]"
-                      : "mt-1 block text-[1.25rem] leading-[1.3] md:text-[1.5rem] md:leading-[1.3]"
+                      ? "block max-w-full whitespace-nowrap text-[clamp(1.45rem,5.5vw+0.35rem,2.1rem)] leading-[1.12] lg:text-[clamp(1.35rem,1.35vw+0.85rem,1.65rem)] lg:leading-[1.15] xl:text-[clamp(1.55rem,1.2vw+0.9rem,2.05rem)] [@media(orientation:landscape)_and_(max-height:500px)]:text-[clamp(1.15rem,2.2vw+0.6rem,1.45rem)]"
+                      : "mt-1 block text-[1.2rem] leading-[1.3] md:text-[1.4rem] lg:text-[1.2rem] xl:text-[1.45rem] [@media(orientation:landscape)_and_(max-height:500px)]:mt-0.5 [@media(orientation:landscape)_and_(max-height:500px)]:text-[1rem]"
                   }
                 >
                   {line}
@@ -214,14 +215,14 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
             </h1>
           )}
           {ramo.subheadline.includes("\n") ? (
-            <div className="mt-3 max-w-xl text-brand-50/90 md:mt-5">
+            <div className="mt-3 max-w-xl text-brand-50/90 md:mt-4 lg:mt-3 [@media(orientation:landscape)_and_(max-height:500px)]:mt-1.5">
               {ramo.subheadline.split("\n").map((line, index) => (
                 <p
                   key={line}
                   className={
                     index === 0
-                      ? "text-lg leading-relaxed"
-                      : "mt-1 text-base leading-relaxed text-brand-50/80 md:text-[1.05rem]"
+                      ? "text-base leading-relaxed md:text-lg lg:text-[0.95rem] xl:text-base [@media(orientation:landscape)_and_(max-height:500px)]:text-sm"
+                      : "mt-1 text-sm leading-relaxed text-brand-50/80 md:text-base lg:text-[0.85rem] xl:text-[0.95rem] [@media(orientation:landscape)_and_(max-height:500px)]:mt-0.5 [@media(orientation:landscape)_and_(max-height:500px)]:text-xs"
                   }
                 >
                   {line}
@@ -234,24 +235,24 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
             </p>
           )}
 
-          <div className="mt-8 hidden gap-8 border-t border-white/15 pt-6 lg:flex">
+          <div className="mt-6 hidden gap-5 border-t border-white/15 pt-5 lg:flex xl:mt-8 xl:gap-8 xl:pt-6">
             <div>
-              <p className="font-display text-3xl font-bold text-white">
+              <p className="font-display text-2xl font-bold text-white xl:text-3xl">
                 {company.business.yearsExperience}+
               </p>
-              <p className="mt-0.5 text-sm text-brand-50/80">anos de experiência</p>
+              <p className="mt-0.5 text-xs text-brand-50/80 xl:text-sm">anos de experiência</p>
             </div>
             <div>
-              <p className="font-display text-3xl font-bold text-white">
+              <p className="font-display text-2xl font-bold text-white xl:text-3xl">
                 {company.business.insurersCount}
               </p>
-              <p className="mt-0.5 text-sm text-brand-50/80">seguradoras comparadas</p>
+              <p className="mt-0.5 text-xs text-brand-50/80 xl:text-sm">seguradoras comparadas</p>
             </div>
             <div>
               {/* nota ÷ 5, não `satisfactionRate` — padronização 2026-08-09
                   (mesmo número em CredBar, Hero e /cotacao). */}
-              <p className="font-display text-3xl font-bold text-white">{satisfaction}%</p>
-              <p className="mt-0.5 text-sm text-brand-50/80">clientes satisfeitos</p>
+              <p className="font-display text-2xl font-bold text-white xl:text-3xl">{satisfaction}%</p>
+              <p className="mt-0.5 text-xs text-brand-50/80 xl:text-sm">clientes satisfeitos</p>
             </div>
           </div>
         </div>

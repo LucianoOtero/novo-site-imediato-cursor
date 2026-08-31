@@ -108,16 +108,17 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* CredBar antes do Hero só no desktop (conversão mobile, 2026-08-07):
-          no mobile ela duplica selos que já estão no hero (estrelas/anos) e
-          empurra o formulário para baixo da dobra — desce para depois dele. */}
-      <div className="hidden md:block">
+      {/* CredBar antes do Hero só a partir de lg (2026-08-31): em md
+          (ex.: iPhone paisagem ~844×390) o header alto + CredBar +
+          py do hero empurravam H1/form para fora da dobra. Mobile e
+          tablet estreito continuam com a variante complementar abaixo. */}
+      <div className="hidden lg:block">
         <CredBar />
       </div>
       <Hero ramoSlug="auto" />
       {/* Variante complementar (2026-08-09): só anos de experiência +
           seguradoras — o selo do hero, logo acima, já mostra 96%/+2.200. */}
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <CredBar variant="complementar" />
       </div>
 

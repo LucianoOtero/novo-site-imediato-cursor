@@ -972,6 +972,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       }
       className={cn(
         "flex flex-col gap-4 rounded-xl border p-6",
+        frost &&
+          "max-[360px]:gap-3 max-[360px]:p-4 lg:gap-3 lg:p-5 xl:gap-4 xl:p-6 [@media(orientation:landscape)_and_(max-height:500px)]:gap-2 [@media(orientation:landscape)_and_(max-height:500px)]:p-3",
         frost ? FROST_CARD_CLASS : "border-neutral-200 bg-white"
       )}
     >
@@ -979,6 +981,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         <h2
           className={cn(
             "font-display text-xl font-bold leading-snug md:text-2xl",
+            frost &&
+              "lg:text-lg xl:text-xl 2xl:text-2xl [@media(orientation:landscape)_and_(max-height:500px)]:text-base",
             frost ? "text-brand-700" : "text-neutral-900"
           )}
         >
@@ -986,11 +990,30 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         </h2>
         {step <= COLLECTION_STEPS ? (
           <>
-            <p className="mt-1 text-xs text-neutral-400">{FORM_SPEED_TEASER}</p>
-            <p className="mt-1 text-sm font-medium text-neutral-500">
+            <p
+              className={cn(
+                "mt-1 text-xs text-neutral-400",
+                frost && "lg:text-[0.7rem] xl:text-xs"
+              )}
+            >
+              {FORM_SPEED_TEASER}
+            </p>
+            <p
+              className={cn(
+                "mt-1 text-sm font-medium text-neutral-500",
+                frost && "lg:text-xs xl:text-sm"
+              )}
+            >
               {STEP_LABELS[step as 1 | 2 | 3]} · {step}/{COLLECTION_STEPS}
             </p>
-            <p className="mt-0.5 text-sm text-neutral-500">{STEP_SUBTITLES[step]}</p>
+            <p
+              className={cn(
+                "mt-0.5 text-sm text-neutral-500",
+                frost && "lg:text-xs xl:text-sm"
+              )}
+            >
+              {STEP_SUBTITLES[step]}
+            </p>
           </>
         ) : (
           <p className="mt-1 text-sm text-neutral-500">{STEP_SUBTITLES[step]}</p>

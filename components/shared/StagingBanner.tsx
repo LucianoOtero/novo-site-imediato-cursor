@@ -22,9 +22,11 @@ export function StagingBanner() {
   if (isProduction) return null;
 
   return (
-    <div role="status" className="flex items-center justify-center gap-2 bg-amber-400 px-4 py-1.5 text-center text-xs font-semibold text-amber-950">
-      <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-      Ambiente de homologação ({appEnvironment}) — não indexável, não usar em campanhas
+    <div role="status" className="flex items-center justify-center gap-2 bg-amber-400 px-3 py-1 text-center text-[0.65rem] font-semibold leading-snug text-amber-950 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs">
+      <AlertTriangle className="size-3 shrink-0 sm:size-3.5" aria-hidden="true" />
+      <span className="line-clamp-2 sm:line-clamp-none">
+        Ambiente de homologação ({appEnvironment}) — não indexável, não usar em campanhas
+      </span>
     </div>
   );
 }
