@@ -198,7 +198,9 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
                   key={line}
                   className={
                     index === 0
-                      ? "block max-w-full whitespace-nowrap text-[clamp(1.125rem,2.4vw+0.55rem,2.65rem)] leading-[1.15]"
+                      ? // Mobile maior (proporcional ao desktop); nowrap + clamp
+                        // para "A cotação do seu seguro" caber numa linha.
+                        "block max-w-full whitespace-nowrap text-[clamp(1.45rem,5.8vw+0.35rem,2.85rem)] leading-[1.12]"
                       : "mt-1 block text-[1.25rem] leading-[1.3] md:text-[1.5rem] md:leading-[1.3]"
                   }
                 >

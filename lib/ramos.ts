@@ -107,9 +107,10 @@ export const ramos: InsuranceBranch[] = [
     priceFrom: 79.9, // CONFIRMADO (2026-07-03) — ver docs/DADOS_OFICIAIS.md
     // Âncora qualificada (2026-08-31, consultoria Ads/QS): sai do H1; cards/grid.
     priceLabel: "a partir de R$ 79,90/mês para perfis de menor risco",
-    // H1 message-match Ads (2026-08-31): preço/21 seguradoras — não categoria+âncora.
+    // H1 message-match Ads (2026-08-31): cotação/21 seguradoras — não categoria+âncora.
     // `\n` = lockup no Hero (1ª linha cabe inteira; 2ª menor).
-    headline: "O preço do seu seguro\nem 21 seguradoras",
+    // Mobile (2026-08-31): "A cotação…" (mais curto/claro que "O preço…").
+    headline: "A cotação do seu seguro\nem 21 seguradoras",
     // Sub em 2 linhas no Hero (2ª menor) — 2026-08-31, pedido do cliente.
     subheadline:
       "Preencha em 3 etapas curtas.\nComparamos e mostramos o valor na tela.",
@@ -121,7 +122,7 @@ export const ramos: InsuranceBranch[] = [
       keywordFocus: "seguro auto cotação online",
       canonicalPath: "/seguro-auto",
     },
-    ads: { messageMatchHeadline: "O preço do seu seguro em 21 seguradoras", campaignIntent: "transacional" },
+    ads: { messageMatchHeadline: "A cotação do seu seguro em 21 seguradoras", campaignIntent: "transacional" },
     benefits: ["Cobertura FIPE 100%", "Assistência 24h + carro reserva", "Bônus integral"],
     arguments: ["Cobertura FIPE 100%", "Assistência 24h + carro reserva", "Bônus integral"],
     objections: [
