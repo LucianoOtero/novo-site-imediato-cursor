@@ -182,15 +182,15 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
       />
 
       <Container className="relative grid gap-6 py-8 md:py-12 lg:grid-cols-2 lg:items-center lg:gap-10 lg:py-20">
-        <div>
+        {/* min-w-0: evita overflow do H1 nowrap para cima/embaixo do form no grid */}
+        <div className="min-w-0">
           {ramo.eyebrow && (
             <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-100 backdrop-blur-sm">
               {ramo.eyebrow}
             </p>
           )}
-          {/* H1 em lockup com `\n` (Auto): 1ª linha em tamanho que cabe
-              inteira em ~360px; 2ª linha menor (message-match “21 seguradoras”).
-              Headlines sem `\n` (demais ramos) seguem no layout original. */}
+          {/* H1 em lockup com `\n` (Auto): 1ª linha nowrap em tamanho que
+              cabe na coluna (não invade o form); 2ª linha menor. */}
           {ramo.headline.includes("\n") ? (
             <h1 className="font-display font-bold tracking-tight text-white">
               {ramo.headline.split("\n").map((line, index) => (
@@ -198,9 +198,8 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
                   key={line}
                   className={
                     index === 0
-                      ? // ~"O preço do seu seguro" em 360px: clamp evita quebra
-                        "block whitespace-nowrap text-[clamp(1.2rem,5.2vw,1.75rem)] leading-[1.15] md:text-5xl md:leading-[1.08] lg:text-6xl"
-                      : "mt-1 block text-[1.35rem] leading-[1.3] md:text-[1.65rem] md:leading-[1.3]"
+                      ? "block max-w-full whitespace-nowrap text-[clamp(1.125rem,2.4vw+0.55rem,2.65rem)] leading-[1.15]"
+                      : "mt-1 block text-[1.25rem] leading-[1.3] md:text-[1.5rem] md:leading-[1.3]"
                   }
                 >
                   {line}
