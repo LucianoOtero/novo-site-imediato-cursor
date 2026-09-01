@@ -14,16 +14,17 @@ ATIVO (preenchido a cada release)
 ## [0.2.44] — 2026-08-31 (UX: hero Auto + LeadForm alinhados ao Ads/QS)
 
 ### Changed
-- Ramo **auto** ([`lib/ramos.ts`](lib/ramos.ts)): H1 `O preço do seu seguro em 21 seguradoras`; sub/eyebrow message-match; `priceLabel` qualificada (fora do H1); `ads.messageMatchHeadline` alinhado.
-- [`Hero.tsx`](components/home/Hero.tsx): selo mobile `Sem compromisso · 21 seguradoras`.
-- [`LeadForm.tsx`](components/lead/LeadForm.tsx): título `Receba sua cotação online`; teaser; subtítulo passo 1 `O melhor preço para o seu seguro virá em seguida`; microcopy WhatsApp; CTAs por passo.
-- Hero Auto: H1 1ª linha em tamanho que cabe numa linha; sub em 2 linhas (2ª menor).
+- Ramo **auto** ([`lib/ramos.ts`](lib/ramos.ts)): H1 `A cotação do seu seguro / em 21 seguradoras`; sub/eyebrow message-match; `priceLabel` qualificada (fora do H1); `ads.messageMatchHeadline` alinhado.
+- [`Hero.tsx`](components/home/Hero.tsx): selo mobile `Sem compromisso · 21 seguradoras`; tipografia do H1 recalibrada (mobile / `lg` tablet / `xl+`).
+- [`LeadForm.tsx`](components/lead/LeadForm.tsx): título `Receba sua cotação online`; teaser; subtítulo passo 1 `A melhor cotação para o seu seguro virá em seguida`; microcopy WhatsApp; CTAs por passo.
+- Responsividade (auditoria 2026-08-31): CredBar antes do hero só a partir de `lg`; hero/form/header/cookies compactos em celular paisagem (altura ≤500px) com 2 colunas cedo — evita dobra vazia em ~844×390 e overlap H1/form no tablet paisagem.
+- [`StagingBanner.tsx`](components/shared/StagingBanner.tsx): tipografia mais compacta em telas estreitas (só staging).
 
 ### Docs
-- Consultoria: ordens 1+2 (Auto) em revisão na branch `feat/hero-form-ads`.
+- Consultoria Claude hero/form + CHANGELOG desta versão.
 
 ### Ops Ads (após merge em produção)
-- [ ] RSA / títulos do grupo Auto ecoarem **preço / 21 seguradoras / cotação online** (não só âncora R$ 79,90).
+- [ ] RSA / títulos do grupo Auto ecoarem **cotação / 21 seguradoras / cotação online** (não só âncora R$ 79,90).
 
 ## [0.2.43] — 2026-08-30 (UX: identidade jurídica só no Footer)
 
