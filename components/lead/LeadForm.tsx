@@ -39,6 +39,12 @@ import {
   type LeadInput,
 } from "@/lib/validators";
 import { trackEvent } from "@/lib/analytics";
+import {
+  markLeadFormFunnelComplete,
+  markLeadFormHadInitialContact,
+  markLeadFormMaxStep,
+  trackLeadFormAbandon,
+} from "@/lib/analytics-funnel";
 import { cn } from "@/lib/utils";
 
 /**
@@ -245,6 +251,58 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const initialCallInFlightRef = useRef(false);
   /** Garante que o evento `rpa_result` (projeto 2026-07-20) é enviado uma única vez por cálculo. */
   const rpaResultReportedRef = useRef(false);
+  const hasStartedRef = useRef(false);
+  const stepRef = useRef<StepNumber>(1);
+  const ramoRef = useRef(ramo);
+  const funnelEffectIdRef = useRef(0);
+  ramoRef.current = ramo;
+  hasStartedRef.current = hasStarted;
+  stepRef.current = step;
+
+  /**
+   * Abandono do funil (GA4): `pagehide` primário; `visibilitychange`→hidden
+   * com debounce curto; `unmount` no cleanup (SPA). No máximo 1× por sessão e
+   * só se o funil não completou (`form_quote_choice` / `generate_lead`).
+   * Microtask no unmount evita falso positivo do React Strict Mode (remount).
+   */
+  useEffect(() => {
+    const effectId = ++funnelEffectIdRef.current;
+    let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const emit = (reason: "pagehide" | "hidden" | "unmount") => {
+      trackLeadFormAbandon({
+        lastStep: stepRef.current,
+        reason,
+        ramo: ramoRef.current,
+        hasStarted: hasStartedRef.current,
+      });
+    };
+
+    const onPageHide = () => emit("pagehide");
+    const onVisibility = () => {
+      if (document.visibilityState !== "hidden") {
+        if (hiddenTimer) {
+          clearTimeout(hiddenTimer);
+          hiddenTimer = null;
+        }
+        return;
+      }
+      if (hiddenTimer) clearTimeout(hiddenTimer);
+      hiddenTimer = setTimeout(() => emit("hidden"), 400);
+    };
+
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (hiddenTimer) clearTimeout(hiddenTimer);
+      queueMicrotask(() => {
+        if (funnelEffectIdRef.current !== effectId) return;
+        emit("unmount");
+      });
+    };
+  }, []);
 
   /**
    * Resultado do cálculo RPA → lead (projeto "leads EspoCRM/Octadesk por
@@ -418,7 +476,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   function markStarted() {
     if (!hasStarted) {
       setHasStarted(true);
+      markLeadFormMaxStep(1);
       trackEvent("form_start", { form_id: "lead_form", ramo });
+      // Entrada no funil: step 1 explícito (além dos avanços 2–4).
+      trackEvent("form_step", { step: 1, ramo });
     }
   }
 
@@ -439,6 +500,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     initialCallInFlightRef.current = true;
 
     trackEvent("form_initial_contact", { ramo, method: "form" });
+    markLeadFormHadInitialContact();
 
     try {
       const values = getValues();
@@ -700,6 +762,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
     const nextStep = (step + 1) as StepNumber;
     setStep(nextStep);
+    markLeadFormMaxStep(nextStep);
     trackEvent("form_step", { step: nextStep, ramo });
   }
 
@@ -712,6 +775,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     try {
       const payload: LeadInput = { ...data, ramo, utm: getAttributionUtm() };
       await onSuccess?.(payload, initialLeadIdRef.current ?? undefined, skipStrictValidation);
+      markLeadFormFunnelComplete();
       trackEvent("generate_lead", { ramo, method: "form" });
       setStatus("success");
     } catch {
@@ -824,6 +888,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   function handleChooseConsultant() {
     if (finalSubmitInFlightRef.current) return;
 
+    markLeadFormFunnelComplete();
     trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form" });
 
     void postLead({
@@ -858,6 +923,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     if (!publicEnv.rpaEnabled) return;
     if (!rpaEnabled) return;
     if (finalSubmitInFlightRef.current) return;
+    markLeadFormFunnelComplete();
     trackEvent("form_quote_choice", { ramo, choice: "aguardar", method: "form" });
     finalSubmitInFlightRef.current = true;
     setStatus("submitting");

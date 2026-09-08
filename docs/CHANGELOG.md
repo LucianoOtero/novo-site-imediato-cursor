@@ -11,6 +11,15 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.45] — 2026-09-08 (Analytics: abandono LeadForm + modais)
+
+### Added
+- Evento `form_abandon` e helpers em [`lib/analytics-funnel.ts`](lib/analytics-funnel.ts); instrumentação em [`LeadForm.tsx`](components/lead/LeadForm.tsx) e [`ContactLeadModal.tsx`](components/cta/ContactLeadModal.tsx) (`reason` no dismiss).
+- `form_step` também no step 1; GTM v48 (`gtm-apply-form-abandon.mjs`); relatório `ga4-funnel-abandon-report.mjs` + playbook [`ABANDONO_FORMULARIO_RETENCAO.md`](docs/ABANDONO_FORMULARIO_RETENCAO.md).
+
+### Docs
+- SEO/FLUXO/FASE_A atualizados; baseline asof 2026-09-08.
+
 ## [0.2.44] — 2026-08-31 (UX: hero Auto + LeadForm alinhados ao Ads/QS)
 
 ### Changed

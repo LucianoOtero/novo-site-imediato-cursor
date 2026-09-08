@@ -165,3 +165,11 @@ leads-imediato-seguros")]
 - Desenvolvimento: `dev.flyingdonkeys.com.br` — usado enquanto `environment` ≠ `production`.
 - **Produção (virada Fase A 2026-07-29 + onda 2 2026-08-01):** com `NEXT_PUBLIC_APP_ENV=production`, a CF usa API direta (`ESPOCRM_API_CONFIG.prod`, user `add_travelangels` / mesma key do Cloud Run) → **`flyingdonkeys.com.br`**. Campos funil + `cWebpage=comparaseguroonline.com.br` confirmados no smoke. Ops: `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
 - Produção: replicar as parametrizações manuais (campos, layout, API User) e atualizar o secret quando o fluxo for aprovado no dev.
+
+## Abandono client-side (GA4)
+
+Além do funil CRM (`cEtapaFunil`), o site mede abandono **no browser**:
+
+- **LeadForm**: `form_abandon` em `pagehide` / aba oculta (debounce) / unmount SPA, se o funil não completou (`form_quote_choice` / `generate_lead`). Params: `last_step`, `max_step`, `reason`, `had_initial_contact` — sem PII. Implementação: `lib/analytics-funnel.ts` + listeners em `components/lead/LeadForm.tsx`.
+- **ContactLeadModal**: `whatsapp_modal_dismiss` com `reason` (`dismiss_ui` \| `pagehide`); submit marca funil completo para não contar dismiss depois.
+- Relatório e playbook: `scripts/google-ops/ga4-funnel-abandon-report.mjs`, `docs/ABANDONO_FORMULARIO_RETENCAO.md`.

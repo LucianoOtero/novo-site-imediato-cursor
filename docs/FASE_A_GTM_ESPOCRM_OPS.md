@@ -176,6 +176,7 @@ Decisão do cliente (~08:00 BRT, mesma manhã da v43): a conversão Ads do **for
 
 ## Telemetria GA4 dos envios finais (2026-08-04, GTM **v45**)
 
+
 Complemento analítico da v44 (zero tags Ads — conversões intactas): os 4 cliques de envio final passam a chegar ao GA4 `G-694K3F1XQ1`, fechando o funil pós-conversão.
 
 - **Site** (deploy Vercel): `whatsapp_modal_submit` ganha `submit_mode: "full" | "skip"` (`skipSubmitRef` marcado no clique de "Prosseguir sem preencher o resto" no `ContactLeadModal`).
@@ -198,6 +199,47 @@ Complemento analítico da v44 (zero tags Ads — conversões intactas): os 4 cli
 Pré-requisitos que foram necessários: habilitar a **Google Analytics Admin API** no projeto GCP do OAuth kit; conceder papel na property ao e-mail do token (`lrotero@gmail.com`); re-login com `node auth-login.mjs --with-analytics` (escopo `analytics.edit`).
 
 **Leitura de relatórios (2026-08-04, tarde):** `--with-analytics` passou a incluir também o escopo `analytics.readonly` (GA4 **Data API** — `runReport`/`runRealtimeReport` via `getAnalyticsData()` em `lib/auth.mjs`); a "Google Analytics Data API" foi habilitada no projeto `leads-imediato-seguros` via `gcloud services enable analyticsdata.googleapis.com`. Token atual cobre GTM + Ads + Admin + leitura GA4.
+
+---
+
+## Abandono funil (`form_abandon`) — 2026-09-08
+
+Telemetria GA4 **sem** conversão Ads. Escopo: LeadForm + ContactLeadModal.
+
+### Site
+
+- Contrato: `form_abandon` + `reason` em `whatsapp_modal_dismiss` (`lib/analytics.ts` / `lib/analytics-funnel.ts`).
+- LeadForm: `pagehide` / `visibilitychange` (debounce) / unmount; `form_step` também no step 1.
+- Modal: dismiss UI + `pagehide` com modal aberto; flags de sessão (1×).
+
+### GTM
+
+Script: `node scripts/google-ops/gtm-apply-form-abandon.mjs [--publish]`
+
+Cria/atualiza `[NovoSite]`:
+
+- DLVs: `last_step`, `max_step`, `reason`, `form_id`, `had_initial_contact`
+- CE + tag GA4 `form_abandon` → `G-694K3F1XQ1` (hostname regex Exp)
+- Tag dismiss: param `reason`
+
+**Publicado 2026-09-08:** container version **48** (`form_abandon + dismiss reason`). **Não** marcar `form_abandon` / dismiss como conversão Ads.
+
+### GA4 Admin — custom dims (EVENT)
+
+`last_step`, `max_step`, `reason`, `form_id`, `had_initial_contact` — UI Admin ou:
+
+`node scripts/google-ops/ga4-ensure-abandon-dimensions.mjs`  
+(requer re-login `node auth-login.mjs --with-analytics` se o token não tiver `analytics.edit`).
+
+### Checklist Preview / DebugView
+
+1. Deploy Vercel com a instrumentação.
+2. GTM Preview no hostname novo: focar form → `form_start` + `form_step` 1; sair da página incompleto → `form_abandon` (sem PII).
+3. Modal × → `whatsapp_modal_dismiss` com `reason=dismiss_ui`.
+4. DebugView GA4: mesmos eventos; confirmar que **não** há tag Ads no abandon.
+5. Após 24–48h: `node scripts/google-ops/ga4-funnel-abandon-report.mjs` → JSON + MD em `docs/`.
+
+Playbook: `docs/ABANDONO_FORMULARIO_RETENCAO.md`.
 
 ---
 

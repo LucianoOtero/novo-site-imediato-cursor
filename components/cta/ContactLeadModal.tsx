@@ -16,6 +16,11 @@ import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { company } from "@/lib/company";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { trackEvent } from "@/lib/analytics";
+import {
+  markModalFunnelComplete,
+  resetModalAbandonFlags,
+  trackModalAbandon,
+} from "@/lib/analytics-funnel";
 import { postLead } from "@/lib/leads/post-lead";
 import { getAttributionUtm } from "@/lib/leads/attribution";
 import {
@@ -202,7 +207,27 @@ export function ContactLeadModal() {
     initialCallInFlightRef.current = false;
     finalSubmitInFlightRef.current = false;
     skipSubmitRef.current = false;
+    resetModalAbandonFlags();
   }, [state, reset]);
+
+  /**
+   * Se a página some com o modal aberto, conta como abandono
+   * (`reason: pagehide`) — no máximo 1× por abertura (flags de sessão).
+   */
+  useEffect(() => {
+    if (!state) return;
+    const onPageHide = () => {
+      trackModalAbandon({
+        modal_channel: state.channel,
+        location: state.location,
+        ramo: state.ramo,
+        modal_step: step2Visible ? 2 : 1,
+        reason: "pagehide",
+      });
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [state, step2Visible]);
 
   if (!state) return null;
 
@@ -226,12 +251,12 @@ export function ContactLeadModal() {
    * que o telefone já tinha sido capturado via lead `initial`).
    */
   function handleDismiss() {
-    trackEvent("whatsapp_modal_dismiss", {
-      form_type: "whatsapp_modal",
+    trackModalAbandon({
       modal_channel: channel,
       location,
       ramo,
       modal_step: step2Visible ? 2 : 1,
+      reason: "dismiss_ui",
     });
     close();
     reset();
@@ -430,6 +455,7 @@ export function ContactLeadModal() {
       // Não-bloqueante: nunca impedir a navegação por causa de uma falha de rede/servidor.
       console.error("[ContactLeadModal] Falha ao enviar lead (não impede a navegação):", error);
     } finally {
+      markModalFunnelComplete();
       trackEvent("whatsapp_modal_submit", {
         form_type: "whatsapp_modal",
         modal_channel: channel,

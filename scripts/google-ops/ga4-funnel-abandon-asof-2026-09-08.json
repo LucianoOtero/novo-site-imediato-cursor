@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-09-08T10:30:00.000Z",
+  "propertyId": "281067607",
+  "hosts": [
+    "novo.segurosimediato.com.br",
+    "comparaseguroonline.com.br",
+    "www.comparaseguroonline.com.br"
+  ],
+  "range": {
+    "start": "2026-08-31",
+    "end": "2026-09-04"
+  },
+  "asof": "2026-09-08",
+  "source": "baseline from ga4-analysis-w4-asof-2026-09-05.json (OAuth token sem analytics.readonly no momento da geração; re-rodar ga4-funnel-abandon-report.mjs após auth-login --with-analytics)",
+  "eventCounts": {
+    "form_start": 0,
+    "form_initial_contact": 0,
+    "form_step": 0,
+    "form_quote_choice": 40,
+    "generate_lead": 0,
+    "form_abandon": 0,
+    "whatsapp_modal_initial_contact": 0,
+    "phone_modal_initial_contact": 0,
+    "whatsapp_modal_submit": 11,
+    "whatsapp_modal_dismiss": 0
+  },
+  "formSteps": {},
+  "dropOff": {
+    "form_start→form_initial_contact": null,
+    "form_step1→form_step2": null,
+    "form_step2→form_step3": null,
+    "form_step3→form_step4": null,
+    "form_step4→form_quote_choice": null,
+    "form_quote_choice→generate_lead": {
+      "from": 40,
+      "to": 0,
+      "rate": 100
+    }
+  },
+  "abandonByLastStep": {},
+  "abandonReasons": {},
+  "abandonByDevice": {},
+  "modal": {
+    "dismissTotal": 0,
+    "submitTotal": 11,
+    "dismissRatePct": 0,
+    "dismissByChannelStep": {},
+    "dismissReasons": {},
+    "submitByChannelMode": {}
+  },
+  "topGaps": [
+    {
+      "gap": "form_quote_choice→generate_lead",
+      "from": 40,
+      "to": 0,
+      "rate": 100
+    }
+  ],
+  "notes": [
+    "`form_abandon` zerado — instrumentação + GTM v48 publicados em 2026-09-08; aguardar deploy Vercel + 24–48h de tráfego.",
+    "Snapshot W4 (31/08–04/09) no hostname novo só mostrou `form_quote_choice` (40) e `whatsapp_modal_submit` (11) entre eventos de funil listados — `form_start`/`form_initial_contact`/`whatsapp_modal_dismiss` não apareceram no pull (tags GA4 ou volume).",
+    "Reexecutar `node scripts/google-ops/ga4-funnel-abandon-report.mjs` após `node auth-login.mjs --with-analytics` e custom dims EVENT.",
+    "Registrar dims: last_step, max_step, reason, form_id, had_initial_contact (Admin ou ga4-ensure-abandon-dimensions.mjs)."
+  ]
+}

@@ -46,10 +46,15 @@ Contrato único: o app empurra eventos; o GTM mapeia p/ GA4/Ads. Nomes em `snake
 |---|---|---|
 | `page_view` | navegação (SPA) | page_path, page_title, ramo |
 | `form_start` | 1º campo focado | form_id, ramo |
-| `form_step` | avança passo | step (1–3), ramo |
+| `form_step` | entrada (step 1) e cada avanço | step (1–4), ramo |
+| `form_initial_contact` | passo 1 confirmado (DDD+cel) | ramo, method |
+| `form_quote_choice` | escolha RPA/consultor (passo 4) | ramo, choice, method |
+| `form_abandon` | sai do LeadForm incompleto | form_id, last_step, max_step, reason, ramo?, had_initial_contact |
 | `generate_lead` | form enviado com sucesso | ramo, value, method:'form' |
 | `whatsapp_click` | clique WhatsApp | location (hero/sticky/fab), ramo |
 | `call_click` | clique telefone | location, ramo |
+| `whatsapp_modal_dismiss` | fecha modal sem submit | modal_channel, modal_step, reason?, location, ramo |
+| `whatsapp_modal_submit` | envio/skip do modal | modal_channel, submit_mode, location, ramo |
 | `scroll_depth` | 25/50/75/90% | percent, page_path |
 | `engaged_time` | 30s / 60s | seconds, page_path |
 | `cta_click` | qualquer CTA primário | cta_id, location |

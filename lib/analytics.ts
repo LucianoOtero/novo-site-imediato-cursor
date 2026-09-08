@@ -63,6 +63,18 @@ type AnalyticsEventMap = {
    * formulário, sem valor) — ver `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
    */
   form_initial_contact: { ramo: RamoSlug; method: "form" };
+  /**
+   * Abandono do LeadForm (pagehide / aba oculta / unmount) sem completar
+   * a jornada (`form_quote_choice` / `generate_lead`). Sem PII.
+   */
+  form_abandon: {
+    form_id: string;
+    last_step: 1 | 2 | 3 | 4;
+    max_step: 1 | 2 | 3 | 4;
+    reason: "pagehide" | "hidden" | "unmount";
+    ramo?: RamoSlug;
+    had_initial_contact: boolean;
+  };
   whatsapp_click: { location: "hero" | "sticky" | "fab" | string; ramo?: RamoSlug };
   call_click: { location: string; ramo?: RamoSlug };
   scroll_depth: { percent: 25 | 50 | 75 | 90; page_path: string };
@@ -112,6 +124,8 @@ type AnalyticsEventMap = {
     location: string;
     ramo?: RamoSlug;
     modal_step: 1 | 2;
+    /** `dismiss_ui` = ×/Esc/fora; `pagehide` = saída com modal aberto. */
+    reason?: "dismiss_ui" | "pagehide";
   };
   /** Envio bem-sucedido do formulário da página `/contato`. */
   contact_form_submit: { location: "contato" };
