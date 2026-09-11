@@ -11,33 +11,32 @@ import { persistAttributionFromLocation } from "@/lib/leads/attribution";
  * Fonte: ESPECIFICACAO v3.md, seção 20 ("scroll_depth | 25/50/75/90% |
  * percent, page_path" e "engaged_time | 30s / 60s | seconds, page_path").
  *
+ * Fase 1 UX: mantém série `scope: "page"` (25/50/75/90) e adiciona
+ * `scope: "below_hero"` (25/50/75/100) quando existe `[data-hero]`.
+ * Sem hero → below_hero no-op (sem eventos falsos).
+ *
  * Também persiste o pacote Ads/UTM no primeiro hit / troca de rota
- * (Fase 1 atribuição — `lib/leads/attribution.ts`).
- *
- * Contexto: esses dois eventos já existiam no contrato tipado desde a
- * Issue 03B (`lib/analytics.ts`), mas nenhum componente os disparava
- * ainda — `docs/DATA_LAYER_ATUAL.md` (Issue P-09) confirma que isso
- * também não existe hoje no site atual com esses nomes ("requer acesso
- * ao workspace do GTM para confirmar" triggers nativos equivalentes).
- * Esta é a parte do objetivo da Issue 18 que é puramente código
- * ("confirmar push ao dataLayer com todos os eventos da seção 20") —
- * ver nota mais abaixo sobre a parte que NÃO pôde ser feita nesta issue.
- *
- * Renderizado uma vez no layout `(marketing)`, junto de `WhatsAppFAB`/
- * `StickyCTA` (Issue 19) — não renderiza nada visualmente.
- *
- * Reinicia a cada troca de rota (`pathname` como dependência do efeito),
- * já que os limiares são por page view, não cumulativos entre páginas.
- * `engaged_time` só conta segundos com `document.visibilityState ===
- * "visible"` (aba em primeiro plano) para não inflar o tempo real.
+ * (`lib/leads/attribution.ts`).
  */
-const SCROLL_THRESHOLDS = [25, 50, 75, 90] as const;
+const PAGE_SCROLL_THRESHOLDS = [25, 50, 75, 90] as const;
+const BELOW_HERO_SCROLL_THRESHOLDS = [25, 50, 75, 100] as const;
 const TIME_THRESHOLDS_SECONDS = [30, 60] as const;
 
-function getScrollPercent(): number {
+function getPageScrollPercent(): number {
   const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
   if (scrollableHeight <= 0) return 100;
   return Math.round((window.scrollY / scrollableHeight) * 100);
+}
+
+/** % do scroll no trecho abaixo do hero (0 = topo do pós-hero; 100 = fim da página). */
+function getBelowHeroScrollPercent(heroBottom: number): number {
+  const docBottom = document.documentElement.scrollHeight;
+  const viewportBottom = window.scrollY + window.innerHeight;
+  const range = docBottom - heroBottom;
+  if (range <= 0) return 100;
+  const progressed = viewportBottom - heroBottom;
+  if (progressed <= 0) return 0;
+  return Math.min(100, Math.round((progressed / range) * 100));
 }
 
 export function PageAnalytics() {
@@ -48,16 +47,36 @@ export function PageAnalytics() {
   }, [pathname]);
 
   useEffect(() => {
-    const firedScrollThresholds = new Set<number>();
+    const firedPageScroll = new Set<number>();
+    const firedBelowHeroScroll = new Set<number>();
     const firedTimeThresholds = new Set<number>();
     let engagedSeconds = 0;
 
     function checkScrollDepth() {
-      const percent = getScrollPercent();
-      for (const threshold of SCROLL_THRESHOLDS) {
-        if (percent >= threshold && !firedScrollThresholds.has(threshold)) {
-          firedScrollThresholds.add(threshold);
-          trackEvent("scroll_depth", { percent: threshold, page_path: pathname });
+      const pagePercent = getPageScrollPercent();
+      for (const threshold of PAGE_SCROLL_THRESHOLDS) {
+        if (pagePercent >= threshold && !firedPageScroll.has(threshold)) {
+          firedPageScroll.add(threshold);
+          trackEvent("scroll_depth", {
+            percent: threshold,
+            page_path: pathname,
+            scope: "page",
+          });
+        }
+      }
+
+      const hero = document.querySelector("[data-hero]");
+      if (!(hero instanceof HTMLElement)) return;
+      const heroBottom = hero.getBoundingClientRect().bottom + window.scrollY;
+      const belowPercent = getBelowHeroScrollPercent(heroBottom);
+      for (const threshold of BELOW_HERO_SCROLL_THRESHOLDS) {
+        if (belowPercent >= threshold && !firedBelowHeroScroll.has(threshold)) {
+          firedBelowHeroScroll.add(threshold);
+          trackEvent("scroll_depth", {
+            percent: threshold,
+            page_path: pathname,
+            scope: "below_hero",
+          });
         }
       }
     }
@@ -74,7 +93,7 @@ export function PageAnalytics() {
     }, 1000);
 
     window.addEventListener("scroll", checkScrollDepth, { passive: true });
-    checkScrollDepth(); // cobre o caso de a página já carregar rolada (ex.: âncora)
+    checkScrollDepth();
 
     return () => {
       window.removeEventListener("scroll", checkScrollDepth);

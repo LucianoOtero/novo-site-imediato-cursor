@@ -40,6 +40,17 @@ type AnalyticsEventMap = {
   page_view: { page_path: string; page_title: string; ramo?: RamoSlug };
   form_start: { form_id: string; ramo?: RamoSlug };
   form_step: { step: 1 | 2 | 3 | 4; ramo?: RamoSlug };
+  /**
+   * Tempo por etapa do LeadForm (Fase 1 UX telemetria). Evento dedicado —
+   * não altera a semântica de `form_step` (tags GTM/Ads existentes).
+   */
+  form_step_timing: {
+    form_id: string;
+    step: 1 | 2 | 3 | 4;
+    action: "enter" | "leave";
+    dwell_ms?: number;
+    ramo?: RamoSlug;
+  };
   generate_lead: { ramo: RamoSlug; value?: number; method: "form" };
   /**
    * Escolha do cálculo no passo 4 (`aguardar` = automático,
@@ -74,10 +85,26 @@ type AnalyticsEventMap = {
     reason: "pagehide" | "hidden" | "unmount";
     ramo?: RamoSlug;
     had_initial_contact: boolean;
+    /** Nome do campo em foco (whitelist) — nunca o valor. */
+    focus_field?: "ddd" | "celular" | "nome" | "email" | "cpf" | "cep" | "placa" | "other";
+    had_filled_field: boolean;
+  };
+  /** Início da espera percebida na tela RPA (Fase 1 UX). */
+  rpa_wait_start: { ramo: RamoSlug };
+  /** Fim da espera RPA — complementar a `form_abandon` (não substitui). */
+  rpa_wait_end: {
+    ramo: RamoSlug;
+    wait_ms: number;
+    outcome: "success" | "error" | "abandon";
   };
   whatsapp_click: { location: "hero" | "sticky" | "fab" | string; ramo?: RamoSlug };
   call_click: { location: string; ramo?: RamoSlug };
-  scroll_depth: { percent: 25 | 50 | 75 | 90; page_path: string };
+  scroll_depth: {
+    percent: 25 | 50 | 75 | 90 | 100;
+    page_path: string;
+    /** Default implícito histórico = page; below_hero só com `[data-hero]`. */
+    scope?: "page" | "below_hero";
+  };
   engaged_time: { seconds: 30 | 60; page_path: string };
   cta_click: { cta_id: string; location: string };
   faq_open: { question: string };

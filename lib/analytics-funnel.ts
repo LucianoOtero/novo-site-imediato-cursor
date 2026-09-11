@@ -11,6 +11,21 @@ const FORM_HAD_INITIAL_KEY = "imediato_funnel_form_had_initial";
 const MODAL_ABANDON_KEY = "imediato_funnel_modal_abandon_sent";
 const MODAL_COMPLETE_KEY = "imediato_funnel_modal_complete";
 
+/** Whitelist fechada (Fase 1 UX) — só nomes de campo, nunca valores. */
+export const LEAD_FOCUS_FIELD_WHITELIST = [
+  "ddd",
+  "celular",
+  "nome",
+  "email",
+  "cpf",
+  "cep",
+  "placa",
+] as const;
+
+export type LeadFocusField = (typeof LEAD_FOCUS_FIELD_WHITELIST)[number] | "other";
+
+const FOCUS_SET = new Set<string>(LEAD_FOCUS_FIELD_WHITELIST);
+
 function ssGet(key: string): string | null {
   if (typeof window === "undefined") return null;
   try {
@@ -52,8 +67,19 @@ export function markModalFunnelComplete(): void {
   ssSet(MODAL_COMPLETE_KEY, "1");
 }
 
+/** Resolve o campo em foco para `form_abandon.focus_field` (sem valor). */
+export function resolveLeadFocusField(): LeadFocusField {
+  if (typeof document === "undefined") return "other";
+  const el = document.activeElement;
+  if (!(el instanceof HTMLElement)) return "other";
+  const name = (el.getAttribute("name") || el.getAttribute("id") || "").trim();
+  if (FOCUS_SET.has(name)) return name as LeadFocusField;
+  return "other";
+}
+
 /**
  * Emite `form_abandon` no máximo 1× por sessão, se o funil não completou.
+ * Continua via `dataLayer` (Opção A — transport beacon é responsabilidade do GTM).
  */
 export function trackLeadFormAbandon(opts: {
   formId?: string;
@@ -61,6 +87,8 @@ export function trackLeadFormAbandon(opts: {
   reason: "pagehide" | "hidden" | "unmount";
   ramo?: string;
   hasStarted: boolean;
+  focusField?: LeadFocusField;
+  hadFilledField?: boolean;
 }): boolean {
   if (!opts.hasStarted) return false;
   if (ssGet(FORM_COMPLETE_KEY) === "1") return false;
@@ -69,6 +97,7 @@ export function trackLeadFormAbandon(opts: {
   const maxStored = getLeadFormMaxStep(opts.lastStep);
   const lastStep = opts.lastStep;
   const maxStep = (lastStep > maxStored ? lastStep : maxStored) as 1 | 2 | 3 | 4;
+  const focus_field = opts.focusField ?? resolveLeadFocusField();
 
   ssSet(FORM_ABANDON_KEY, "1");
   trackEvent("form_abandon", {
@@ -78,6 +107,8 @@ export function trackLeadFormAbandon(opts: {
     reason: opts.reason,
     ramo: opts.ramo,
     had_initial_contact: ssGet(FORM_HAD_INITIAL_KEY) === "1",
+    focus_field,
+    had_filled_field: Boolean(opts.hadFilledField),
   });
   return true;
 }

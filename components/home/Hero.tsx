@@ -176,7 +176,10 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
     // py: mobile compacto; md moderado; lg+ respira. Em celular paisagem
     // (altura ≤500px) zera o espaço morto — senão H1/form somem da dobra
     // (auditoria 2026-08-31: iPhone 14 land 844×390).
-    <Section className="relative overflow-hidden py-4 md:py-16 lg:py-28 [@media(orientation:landscape)_and_(max-height:500px)]:py-2">
+    <Section
+      data-hero
+      className="relative overflow-hidden py-4 md:py-16 lg:py-28 [@media(orientation:landscape)_and_(max-height:500px)]:py-2"
+    >
       <HeroBackground ramoSlug={ramoSlug} />
       {/* Overlay do gradiente da marca (navy → azul) para legibilidade do texto claro. */}
       <div

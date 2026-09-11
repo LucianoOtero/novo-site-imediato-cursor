@@ -43,6 +43,7 @@ import {
   markLeadFormFunnelComplete,
   markLeadFormHadInitialContact,
   markLeadFormMaxStep,
+  resolveLeadFocusField,
   trackLeadFormAbandon,
 } from "@/lib/analytics-funnel";
 import { cn } from "@/lib/utils";
@@ -255,6 +256,10 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const stepRef = useRef<StepNumber>(1);
   const ramoRef = useRef(ramo);
   const funnelEffectIdRef = useRef(0);
+  const stepEnteredAtRef = useRef<number | null>(null);
+  const rpaWaitStartedAtRef = useRef<number | null>(null);
+  const rpaWaitEndedRef = useRef(false);
+  const getValuesRef = useRef<(() => LeadFormValues) | null>(null);
   ramoRef.current = ramo;
   hasStartedRef.current = hasStarted;
   stepRef.current = step;
@@ -264,17 +269,61 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * com debounce curto; `unmount` no cleanup (SPA). No máximo 1× por sessão e
    * só se o funil não completou (`form_quote_choice` / `generate_lead`).
    * Microtask no unmount evita falso positivo do React Strict Mode (remount).
+   * Fase 1: focus_field + had_filled_field; leave timing; rpa_wait_end abandon.
    */
   useEffect(() => {
     const effectId = ++funnelEffectIdRef.current;
     let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
 
+    const hadFilledField = () => {
+      try {
+        const getter = getValuesRef.current;
+        if (!getter) return false;
+        const values = getter();
+        const fields = Object.values(LEAD_FORM_STEPS).flat();
+        return fields.some((field) => {
+          const v = values[field as keyof LeadFormValues];
+          return typeof v === "string" && v.trim().length > 0;
+        });
+      } catch {
+        return false;
+      }
+    };
+
+    const leaveStepTiming = () => {
+      if (stepEnteredAtRef.current == null) return;
+      const dwell_ms = Math.max(0, Date.now() - stepEnteredAtRef.current);
+      trackEvent("form_step_timing", {
+        form_id: "lead_form",
+        step: stepRef.current,
+        action: "leave",
+        dwell_ms,
+        ramo: ramoRef.current,
+      });
+      stepEnteredAtRef.current = null;
+    };
+
+    const endRpaWaitAbandon = () => {
+      if (rpaWaitEndedRef.current) return;
+      if (rpaWaitStartedAtRef.current == null) return;
+      rpaWaitEndedRef.current = true;
+      trackEvent("rpa_wait_end", {
+        ramo: ramoRef.current,
+        wait_ms: Math.max(0, Date.now() - rpaWaitStartedAtRef.current),
+        outcome: "abandon",
+      });
+    };
+
     const emit = (reason: "pagehide" | "hidden" | "unmount") => {
+      leaveStepTiming();
+      endRpaWaitAbandon();
       trackLeadFormAbandon({
         lastStep: stepRef.current,
         reason,
         ramo: ramoRef.current,
         hasStarted: hasStartedRef.current,
+        focusField: resolveLeadFocusField(),
+        hadFilledField: hadFilledField(),
       });
     };
 
@@ -342,6 +391,32 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     // que interessa aqui (o envio é guardado por `rpaResultReportedRef`).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rpaActive, rpa.phase, rpa.result]);
+
+  /** Fase 1 UX: rpa_wait_start / rpa_wait_end (complementar a form_abandon). */
+  useEffect(() => {
+    if (!rpaActive) return;
+
+    if (
+      (rpa.phase === "starting" || rpa.phase === "progress") &&
+      rpaWaitStartedAtRef.current == null
+    ) {
+      rpaWaitStartedAtRef.current = Date.now();
+      rpaWaitEndedRef.current = false;
+      trackEvent("rpa_wait_start", { ramo });
+    }
+
+    if (rpa.phase === "success" || rpa.phase === "error") {
+      if (rpaWaitStartedAtRef.current != null && !rpaWaitEndedRef.current) {
+        rpaWaitEndedRef.current = true;
+        trackEvent("rpa_wait_end", {
+          ramo,
+          wait_ms: Math.max(0, Date.now() - rpaWaitStartedAtRef.current),
+          outcome: rpa.phase,
+        });
+      }
+    }
+  }, [rpaActive, rpa.phase, ramo]);
+
   /**
    * Guarda contra reenvio duplicado no passo final (correção 2026-07-15,
    * ver docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md) — achado real:
@@ -395,6 +470,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       veiculoAnoModelo: "",
     },
   });
+  getValuesRef.current = getValues;
 
   /** Ficha do veículo (projeto 2026-07-16) — reflete os `setValue` de `handlePlacaBlur` na UI, ver `VehicleInfoDisplay`. */
   const watchedVeiculoMarca = watch("veiculoMarca");
@@ -480,6 +556,13 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       trackEvent("form_start", { form_id: "lead_form", ramo });
       // Entrada no funil: step 1 explícito (além dos avanços 2–4).
       trackEvent("form_step", { step: 1, ramo });
+      stepEnteredAtRef.current = Date.now();
+      trackEvent("form_step_timing", {
+        form_id: "lead_form",
+        step: 1,
+        action: "enter",
+        ramo,
+      });
     }
   }
 
@@ -761,13 +844,49 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     }
 
     const nextStep = (step + 1) as StepNumber;
+    if (stepEnteredAtRef.current != null) {
+      trackEvent("form_step_timing", {
+        form_id: "lead_form",
+        step,
+        action: "leave",
+        dwell_ms: Math.max(0, Date.now() - stepEnteredAtRef.current),
+        ramo,
+      });
+    }
     setStep(nextStep);
     markLeadFormMaxStep(nextStep);
     trackEvent("form_step", { step: nextStep, ramo });
+    stepEnteredAtRef.current = Date.now();
+    trackEvent("form_step_timing", {
+      form_id: "lead_form",
+      step: nextStep,
+      action: "enter",
+      ramo,
+    });
   }
 
   function goBack() {
-    setStep((current) => (current > 1 ? ((current - 1) as StepNumber) : current));
+    setStep((current) => {
+      if (current <= 1) return current;
+      const prev = (current - 1) as StepNumber;
+      if (stepEnteredAtRef.current != null) {
+        trackEvent("form_step_timing", {
+          form_id: "lead_form",
+          step: current,
+          action: "leave",
+          dwell_ms: Math.max(0, Date.now() - stepEnteredAtRef.current),
+          ramo,
+        });
+      }
+      stepEnteredAtRef.current = Date.now();
+      trackEvent("form_step_timing", {
+        form_id: "lead_form",
+        step: prev,
+        action: "enter",
+        ramo,
+      });
+      return prev;
+    });
   }
 
   async function submitPayload(data: LeadInput, skipStrictValidation?: boolean) {

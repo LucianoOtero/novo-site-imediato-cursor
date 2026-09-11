@@ -11,6 +11,19 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.46] — 2026-09-11 (Analytics UX Fase 1: funil dataLayer)
+
+### Added
+- `form_step_timing` (enter/leave + dwell), enrich de `form_abandon` (`focus_field` whitelist + `had_filled_field`), `rpa_wait_start` / `rpa_wait_end`.
+- Scroll `below_hero` (`data-hero` no Hero + `PageAnalytics`).
+
+### Docs
+- [`UX_TELEMETRIA_PLAN.md`](UX_TELEMETRIA_PLAN.md), [`PERF_BASELINE.md`](PERF_BASELINE.md) (Fase 0 lab + status F1).
+
+### Ops (após prod)
+- [ ] Gate C: tags GA4 no GTM para eventos novos (zero Ads).
+- [ ] Gate D: 7 dias SI antes da Fase 2 (Clarity).
+
 ## [0.2.45] — 2026-09-08 (Analytics: abandono LeadForm + modais)
 
 ### Added
