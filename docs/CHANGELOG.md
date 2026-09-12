@@ -11,6 +11,16 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.47] — 2026-09-12 (Docs + GTM script Gate C; próximos passos)
+
+### Added
+- [`PROXIMOS_PASSOS_UX_TELEMETRIA.md`](PROXIMOS_PASSOS_UX_TELEMETRIA.md) — roadmap pós-F1 (Gate D → F2 → F3).
+- [`SMOKE_UX_FASE1_GATE_C_asof-2026-09-11.md`](SMOKE_UX_FASE1_GATE_C_asof-2026-09-11.md).
+- `scripts/google-ops/gtm-apply-ux-fase1.mjs` (tags GA4 F1; Live v49 já aplicada).
+
+### Docs
+- Status Gate C / janela Gate D em [`UX_TELEMETRIA_PLAN.md`](UX_TELEMETRIA_PLAN.md).
+
 ## [0.2.46] — 2026-09-11 (Analytics UX Fase 1: funil dataLayer)
 
 ### Added
@@ -21,7 +31,7 @@ ATIVO (preenchido a cada release)
 - [`UX_TELEMETRIA_PLAN.md`](UX_TELEMETRIA_PLAN.md), [`PERF_BASELINE.md`](PERF_BASELINE.md) (Fase 0 lab + status F1).
 
 ### Ops (após prod)
-- [ ] Gate C: tags GA4 no GTM para eventos novos (zero Ads).
+- [x] Gate C: tags GA4 no GTM para eventos novos (zero Ads) — Live **v49** “UX Fase 1 — Gate C GA4” (`gtm-apply-ux-fase1.mjs`).
 - [ ] Gate D: 7 dias SI antes da Fase 2 (Clarity).
 
 ## [0.2.45] — 2026-09-08 (Analytics: abandono LeadForm + modais)

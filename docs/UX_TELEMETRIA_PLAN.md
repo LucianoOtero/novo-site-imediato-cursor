@@ -1,9 +1,10 @@
 # Plano: telemetria UX (Fases 0–3)
 
-**Status:** Fase 0 OK (lab+SI). **Fase 1 código implementado** (2026-09-11) — Gate C (tags GA4 no GTM) + Gate D (7d CWV) pendentes antes da Fase 2.  
+**Status:** Fase 0 OK. Fase 1 em prod. Gate C OK (GTM v49 + smoke). **Gate D em curso** (SI 7d desde 2026-09-11 → ~18/set).  
+**Próximos passos (operacional):** [PROXIMOS_PASSOS_UX_TELEMETRIA.md](PROXIMOS_PASSOS_UX_TELEMETRIA.md).  
 **Escopo:** site novo `novo.segurosimediato.com.br` (braço Exp). Legado fora.  
 **Fonte canônica no repo:** este arquivo (`docs/UX_TELEMETRIA_PLAN.md`). O espelho em `.cursor/plans/` deve conter só ponteiro para cá — não duplicar o texto.  
-**Atualizado:** 2026-09-11 — Fase 1 código no app.
+**Atualizado:** 2026-09-12 — doc próximos passos + release v0.2.47.
 
 ---
 
@@ -160,9 +161,9 @@ Gate D + roteiro de gravações de teste (mín. 3–5), **todos** os caminhos:
 
 ### GTM
 
-Só GA4; Gate C completo (incl. transport) — **ainda pendente (ops)**.
+Só GA4; Gate C **publicado** via `gtm-apply-ux-fase1.mjs` (versão Live “UX Fase 1 — Gate C GA4”). Transport = gaawe padrão (beacon no unload; validar Preview iOS se necessário).
 
-**Saída:** eventos no GA4; Gates C+D; coluna pós-F1.
+**Saída:** eventos no GA4; Gate D (7d SI) → coluna pós-F1.
 
 ---
 
