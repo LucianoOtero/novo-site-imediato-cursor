@@ -58,9 +58,9 @@
  * - Campos do painel "Cotação do Site" (`cEtapaFunil`,
  *   `cEscolhaCalculo`, `cStatusCalculo`, `cValorRecomendado`,
  *   `cValorAlternativo` — mesmos nomes no Lead e na Opportunity) +
- *   `cWebpage` = "novo.segurosimediato.com.br" (origem; sobrescreve o
- *   "mdmidia.com.br" fixo do proxy) gravados via PUT direto nas DUAS
- *   entidades a cada momento do funil (2026-07-28).
+ *   `cWebpage` = "novo.segurosimediato.com.br" (origem; no fallback via
+ *   proxy, o payload sobrescreve o default legado) gravados via PUT
+ *   direto nas DUAS entidades a cada momento do funil (2026-07-28).
  * - Mensagens Octadesk pós-iniciais via API direta (secret
  *   `OCTADESK_API_CONFIG`, com kill-switch `enabled`): "cálculo pronto",
  *   "cálculo manual" e "cálculo completo depois" — templates aprovados
@@ -199,6 +199,10 @@ function buildLegacyProxyPayload(leadData, name) {
       produto: leadData.ramo || "",
       utm_source: utm.utm_source || "",
       utm_campaign: utm.utm_campaign || "",
+      // Override do default do proxy legado (segurosimediato.com.br) —
+      // origem do site novo. Aceito como webpage / WEBPAGE / cWebpage.
+      webpage: espo.SITE_WEBPAGE,
+      WEBPAGE: espo.SITE_WEBPAGE,
       ...(leadData.espocrmLeadId ? { lead_id: leadData.espocrmLeadId, contact_id: leadData.espocrmLeadId } : {}),
       ...(leadData.espocrmOpportunityId ? { opportunity_id: leadData.espocrmOpportunityId } : {}),
     },
@@ -655,15 +659,16 @@ exports.deliverLead = onValueWritten(
       updates.espocrmOpportunityId || workingRecord.espocrmOpportunityId || leadData.espocrmOpportunityId;
 
     // Campos do painel "Cotação do Site" + `cWebpage` (origem) no Lead E
-    // na Opportunity (2026-07-28) — via API direta, pois o proxy legado
-    // não carrega nenhum deles (e grava cWebpage="mdmidia.com.br" fixo,
-    // que é sobrescrito aqui). Mesmo contrato best-effort/dedupe das
-    // Notes (`espo_fields_{stage}_sent`); o PUT é idempotente.
+    // na Opportunity (2026-07-28) — via API direta. `cWebpage` vai SEMPRE
+    // que a API estiver pronta e houver IDs (não depende do funil ter
+    // campos neste estágio). Funil continua no mesmo PUT quando existir.
+    // Mesmo contrato best-effort/dedupe das Notes (`espo_fields_{stage}_sent`);
+    // o PUT é idempotente.
     const funnelFields = buildFunnelFields(stage, leadData);
     const fieldsFlag = `espo_fields_${stage}_sent`;
-    if (espoApiReady && espoLeadIdForApi && funnelFields && workingRecord[fieldsFlag] !== true) {
+    if (espoApiReady && espoLeadIdForApi && workingRecord[fieldsFlag] !== true) {
       const payload = {
-        ...funnelFields,
+        ...(funnelFields || {}),
         cWebpage: espo.SITE_WEBPAGE,
       };
       try {

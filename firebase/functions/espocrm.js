@@ -24,7 +24,9 @@
  *   cUtmCampaign) + cGbraid;
  * - cVeiculo/cAnoFab (o proxy só preenche cMarca/cAnoMod);
  * - cDataDoLead (data de captura);
- * - cWebpage = SITE_WEBPAGE (o proxy grava "mdmidia.com.br" fixo);
+ * - cWebpage = SITE_WEBPAGE (origem do site novo; no fallback via proxy
+ *   legado, o payload envia webpage=SITE_WEBPAGE e o proxy respeita o
+ *   override — default do proxy sem override = segurosimediato.com.br);
  * - na Opportunity, cLeadId (vínculo em texto usado pelos relatórios).
  *
  * Atribuição Ads (Fase 2, 2026-08-29): ValueTrack/gad_* no Lead (POST);
