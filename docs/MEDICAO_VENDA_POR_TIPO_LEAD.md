@@ -28,8 +28,8 @@ A conversão Ads no passo 1 do formulário (`form_initial_contact` / telefone in
 
 ### Discriminadores
 
-- Site novo Espo: `cWebpage` ∈ `novo.segurosimediato.com.br`, `comparaseguroonline.com.br`
-- Legado Espo: tipicamente `mdmidia.com.br` (proxy); `cWebpage` vazio = legado operacional antigo (`legado_webpage_vazio`)
+- Site novo Espo: `cWebpage` ∈ `novo.segurosimediato.com.br`, `comparaseguroonline.com.br` (legado do experimento)
+- Legado Espo (a partir de 2026-09-15): `segurosimediato.com.br`; histórico tipicamente `mdmidia.com.br` ou **vazio** (`legado_webpage_vazio`)
 - Firebase novo: `captureChannel` + `stage` (+ `modalChannel` a partir da Fase 4)
 - Firebase legado: `source` = `webflow_modal_*`
 

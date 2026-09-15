@@ -308,7 +308,7 @@ Metadata API com a chave atual costuma retornar **405** na criação de campos �
 
 ## 8. Exclusões explícitas
 
-- Site legado / Webflow / proxy `mdmidia` — sem mudanças.
+- Site legado / Webflow / proxy — fora deste pacote Ads; em 2026-09-15 o proxy passou a default `segurosimediato.com.br` (com override `webpage` do site novo). Histórico `mdmidia` permanece só em registros antigos.
 - Octadesk — sem novos params Ads neste plano.
 - Conta Google Ads inteira / campanha Controle — sem Final URL suffix deste pacote.
 - Incluir params Ads incompletos no POST de criação Espo se o campo ainda não existir — proibido; usar PUT best-effort.
