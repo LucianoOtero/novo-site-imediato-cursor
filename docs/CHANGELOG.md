@@ -11,6 +11,18 @@ ATIVO (preenchido a cada release)
 
 ---
 
+## [0.2.48] — 2026-09-15 (cWebpage: discriminação legado formulário / modal / site novo)
+
+### Fixed
+- Cloud Function `deliverLead`: payload do proxy legado envia `webpage`/`WEBPAGE` = `SITE_WEBPAGE`; PUT de `cWebpage` no Lead/Opp **sempre** que a API Espo estiver pronta (não só quando há campos de funil).
+
+### Docs
+- Discriminação operacional de `cWebpage`: `mdmidia.com.br` = formulário Webflow legado; `segurosimediato.com.br` = modais legado; `novo.segurosimediato.com.br` = site novo ([`FLUXO_LEADFORM_CRM_WHATSAPP.md`](FLUXO_LEADFORM_CRM_WHATSAPP.md), [`MEDICAO_VENDA_POR_TIPO_LEAD.md`](MEDICAO_VENDA_POR_TIPO_LEAD.md)).
+
+### Ops (paralelo, repo WEBFLOW / Cloud Run)
+- `create`/`update`/`add-flyingdonkeys` Cloud Run: default modal/legado Cloud Run = `segurosimediato.com.br`.
+- Formulário Webflow API V2 continua em `prod.bssegurosimediato.com.br` com `mdmidia.com.br` (intencional).
+
 ## [0.2.47] — 2026-09-12 (Docs + GTM script Gate C; próximos passos)
 
 ### Added

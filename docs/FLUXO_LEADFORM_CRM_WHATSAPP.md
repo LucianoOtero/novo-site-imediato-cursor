@@ -116,10 +116,11 @@ Depois: Administração → Layout Manager → Lead → Detail → arrastar os 4
 4. `cDataDoLead` (Data) existe e não é preenchido pelo proxy — a integração direta preencherá com a data de captura.
 5. `cValorpret` ("Valor Pretendido") tem semântica de desejo do cliente, não de resultado de cálculo — mantém-se a decisão de criar `cValorRecomendado`/`cValorAlternativo` em vez de reaproveitá-lo.
 6. Na Opportunity, `cLeadId` (Varchar) é o vínculo em texto usado pelo processo atual — a integração direta deve preenchê-lo na criação, além do link nativo `leadId`, para não quebrar relatórios existentes.
-6b. **Origem do lead (`cWebpage`)**:
-   - **Site novo** (2026-07-28 → migração 2026-08-06): `novo.segurosimediato.com.br` (antes `comparaseguroonline.com.br` em smokes antigos) — constante `SITE_WEBPAGE` em `firebase/functions/espocrm.js`, gravada no create direto e no PUT de enrichment; no fallback via proxy, o payload envia `webpage`/`WEBPAGE` e o proxy respeita o override.
-   - **Site legado** (fix 2026-09-15): `segurosimediato.com.br` em `create_lead_opportunity` / `update_lead_opportunity` / default de `add_flyingdonkeys`.
-   - **Histórico**: `mdmidia.com.br` (default antigo do proxy) ou **vazio** (create/update Firebase-only antes do fix) — só leitura/relatórios; não é mais o default de novos registros.
+6b. **Origem do lead (`cWebpage`) — discriminação operacional (2026-09-15)**:
+   - `mdmidia.com.br` — formulário Webflow do site antigo (webhook API V2 → `prod.bssegurosimediato.com.br/add_flyingdonkeys.php`).
+   - `segurosimediato.com.br` — modais telefone/WhatsApp do site antigo (Firebase → `create_lead_opportunity` / `update_lead_opportunity`).
+   - `novo.segurosimediato.com.br` — site novo (`SITE_WEBPAGE` em `firebase/functions/espocrm.js`; fallback proxy com override `webpage`).
+   - Histórico: `cWebpage` **vazio** = modal Firebase-only antes do fix; `comparaseguroonline.com.br` = smokes/experimento antigos do site novo.
 6c. **Campos do funil replicados na Opportunity (2026-07-28)**: os mesmos 5 campos do painel "Cotação do Site" foram criados na **Opportunity** do dev (mesmos nomes/tipos/opções do Lead, painel idêntico no layout de detalhe — feito via edição dos arquivos custom no servidor + rebuild, com backup em `/root/backup-espo-custom-*-pre-opp-fields.tar.gz`). A Cloud Function grava os valores nas **duas** entidades a cada momento (`putEspoFields` + `buildFunnelFields`); como os nomes são idênticos, a conversão nativa Lead → Opportunity do EspoCRM também os copia automaticamente.
 7. O campo `status` (Lead) e o `stage`/`cStatus` (Opportunity) são do processo de vendas do time — **intocados**, conforme decidido.
 
