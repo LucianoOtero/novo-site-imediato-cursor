@@ -1,0 +1,6 @@
+# Pastas auxiliares no monorepo — não fazem parte do site Next.js na Vercel
+agger-ops
+ahk
+firebase/functions/node_modules
+scripts/tmp-responsive-audit
+scripts/tmp-responsive-audit.mjs
