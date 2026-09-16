@@ -7,7 +7,9 @@ Histórico de mudanças do projeto (Conventional Commits).
 Derivado de `ESPECIFICACAO v3.md` (convenção das seções 23/58) e `PLANO_IMPLEMENTACAO.md` rev. 4.1 (seção 4).
 
 ## Status
-ATIVO (preenchido a cada release)
+ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
+
+> Produto separado: dashboard de produção comercial usa tags `dash-v*` e changelog em [`dash-producao/CHANGELOG.md`](dash-producao/CHANGELOG.md). Ver [`VERSIONING.md`](VERSIONING.md).
 
 ---
 
