@@ -132,6 +132,34 @@ node scripts/google-ops/experiment-compare-weeks.mjs \
 
 Relatório analítico: [`docs/ANALISE_EXPERIMENTO_COMPARATIVO_2026-08-10-14_vs_2026-08-17-21.md`](../docs/ANALISE_EXPERIMENTO_COMPARATIVO_2026-08-10-14_vs_2026-08-17-21.md). Metodologia de referência: [`docs/ANALISE_EXPERIMENTO_5DU_2026-08-10-14.md`](../docs/ANALISE_EXPERIMENTO_5DU_2026-08-10-14.md).
 
+## 7. Porto Seguro — duas camadas (campanha dedicada + PHRASE nas atuais)
+
+**Problema:** PHRASE `"porto seguro"` nas campanhas genéricas também bloqueia intenções úteis (`porto seguro cotação`). EXACT sozinho na marca nua não corta admin longo nem o volume de marca com palavras extras.
+
+**Desenho**
+
+1. **Campanha nova** `ATIVA - Porto Seguro Cotacao - Site Novo` — Final URL `https://novo.segurosimediato.com.br/cotacao-porto` (LP dedicada no padrão home); keywords PHRASE/EXACT de cotação/comparação; negativas EXACT `[porto seguro]` + admin + clone das negativas do Exp.
+2. **Campanhas atuais** (Diurna, Noturna, Exp) — PHRASE `"porto seguro"` / `"porto seguros"` para parar marca/admin nessas campanhas. O braço Exp do site novo continua com Final URL principal em `/cotacao` (página alinhada ao formato da home).
+
+Parâmetros espelhados do Exp (`24095000558`): Search, redes Search+partners, Maximize Conversions, geo/idioma/agenda úteis 9–18, tracking `{lpurl}?gclid={gclid}`, finalUrlSuffix canônico UTM. Budget default Porto: **R$ 200/dia** (próprio).
+
+**Arquivos**
+
+- Spec: [`scripts/google-ops/ads-porto-campaign-spec.json`](../scripts/google-ops/ads-porto-campaign-spec.json)
+- Snapshot Exp: `node scripts/google-ops/ads-snapshot-exp-campaign.mjs`
+- Criar campanha: `node scripts/google-ops/ads-create-porto-campaign.mjs --dry-run` / `--apply` (`--enable` para ativar)
+- PHRASE nas atuais: `node scripts/google-ops/ads-add-porto-phrase-existing.mjs --dry-run` / `--apply`
+- Orquestrador domingo: [`ads-porto-sunday-orchestrator.mjs`](../scripts/google-ops/ads-porto-sunday-orchestrator.mjs) + wrapper `.ps1`
+- Lista admin EXACT (legado / higiene): [`ads-porto-negatives.json`](../scripts/google-ops/ads-porto-negatives.json)
+
+**Agendamento:** tarefa `Imediato-Ads-PortoCampaign-20260921` (21/09/2026 06:00) → orchestrator `--apply --enable` + e-mail SES. Substitui `Imediato-Ads-PortoNegatives-20260921`.
+
+**Rollback**
+
+1. Pausar a campanha Porto no Ads.
+2. Remover as PHRASE negativas `porto seguro` / `porto seguros` nas campanhas Diurna/Noturna/Exp.
+3. (Opcional) apagar a campanha Porto se não for reutilizar.
+
 ## Arquivos (gitignored)
 
 | Arquivo | Conteúdo |

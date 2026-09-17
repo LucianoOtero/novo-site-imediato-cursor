@@ -7,16 +7,12 @@ import { RamoSelector } from "@/components/lead/RamoSelector";
 import { useSubmitLead } from "@/lib/leads/use-submit-lead";
 
 /**
- * CotacaoForm — combina seleção de ramo + LeadForm para `/cotacao`
- * (Issue 13). Isolado em Client Component para a página em si
- * (`app/(marketing)/cotacao/page.tsx`) continuar Server Component.
+ * CotacaoForm — combina seleção de ramo + LeadForm (`variant="page"`).
+ * Mantido no codebase; `/cotacao` passou a usar o padrão home (`Hero` +
+ * `LeadForm` inline). Isolado em Client Component para páginas Server.
  *
- * Envio via `useSubmitLead` (Issue 15) — chama `/api/lead` de verdade
- * (Issue 12) e navega para `/obrigado` (Issue 14) com o `ramo` na
- * querystring; usado quando o usuário escolhe "Prefiro falar com um
- * consultor depois" no passo 4 do `LeadForm`. A opção "Aguardar o
- * cálculo" (RPA de verdade, projeto 2026-07-16) é orquestrada
- * inteiramente dentro do próprio `LeadForm`, sem passar por aqui.
+ * Envio via `useSubmitLead` — chama `/api/lead` e navega para `/obrigado`
+ * com o `ramo` na querystring.
  */
 export function CotacaoForm() {
   const [ramo, setRamo] = useState("auto");

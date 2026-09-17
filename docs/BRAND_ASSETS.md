@@ -55,7 +55,7 @@ Todos os 6 mantêm o padrão do catálogo: **vetor puro** (sem `<image>` raster 
 | Marca | Tipo | Formato atual | Formato ideal | Origem | Uso novo | Migrar? | Observações |
 |---|---|---|---|---|---|---|---|
 | Imediato Seguros | Logo próprio | SVG (`imediato-seguros-2026.svg`) | SVG (manter) | Cliente (novo projeto de marca, 2026-07-08) | Header, Footer, OG, favicon | ✅ **Conectado (2026-07-08)** — ver nota abaixo | Substitui o `imediato-seguros.svg` migrado do Webflow em 2026-07-03 (mantido no repositório, sem uso ativo, para referência histórica) |
-| Porto | Logo parceiro | SVG (`porto-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | Confirmado: não existe versão colorida separada — cor cinza cravada no vetor, não um filtro CSS |
+| Porto | Logo parceiro | SVG (`porto.svg` cinza no grid; `porto-2022.svg` colorido na LP) | SVG | Webflow CDN (grid); marca 2022 via Wikimedia/blog oficial (`porto-2022.svg`) | InsurersGrid + `/cotacao-porto` | ✅ **Migrado (2026-07-03)**; LP colorida **2026-09-17** | Grid: cinza cravado. LP Porto: wordmark oficial azul `#00a1fc` (`porto-2022.svg`, origem [Commons File:Porto_2022.svg](https://commons.wikimedia.org/wiki/File:Porto_2022.svg) / blog Porto) |
 | Bradesco | Logo parceiro | SVG (`bradesco-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | — |
 | Azul Seguros | Logo parceiro | SVG (`azul-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | — |
 | Itaú | Logo parceiro | SVG (`itau-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | — |

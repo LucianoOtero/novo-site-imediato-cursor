@@ -13,6 +13,16 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## [0.2.49] — 2026-09-17 (`/cotacao` formato home + LP `/cotacao-porto`)
+
+### Changed
+- [`/cotacao`](app/(marketing)/cotacao/page.tsx): mesmo formato da home (`CredBar` + `Hero` com `LeadForm` inline + blocos de confiança), alinhado à Final URL do Exp.
+
+### Added
+- [`/cotacao-porto`](app/(marketing)/cotacao-porto/page.tsx): LP Porto Seguro (padrão home, logo oficial `porto-2022.svg`, SEO próprio).
+- Props opcionais no [`Hero`](components/home/Hero.tsx): `eyebrow` / `headline` / `subheadline` / `partnerLogo`.
+- Sitemap: `/cotacao-porto`. Spec Ads Porto: Final URL → `/cotacao-porto`.
+
 ## [0.2.48] — 2026-09-15 (cWebpage: discriminação legado formulário / modal / site novo)
 
 ### Fixed

@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "campaignName": "ATIVA - Porto Seguro Cotacao - Site Novo",
+  "notes": [
+    "Espelha parametros operacionais do Exp 24095000558 (nao e experimento).",
+    "LP apenas novo.segurosimediato.com.br. PHRASE porto seguro fica nas campanhas atuais.",
+    "Nesta campanha: positivas de cotacao/comparacao; EXACT [porto seguro] como negativa (marca nua)."
+  ],
+  "mirrorFromExpId": "24095000558",
+  "statusOnCreate": "PAUSED",
+  "enableOnSundayIfHealthy": true,
+  "budgetDailyBrl": 200,
+  "biddingStrategyType": "MAXIMIZE_CONVERSIONS",
+  "networkSettings": {
+    "targetGoogleSearch": true,
+    "targetSearchNetwork": true,
+    "targetContentNetwork": false,
+    "targetPartnerSearchNetwork": false
+  },
+  "geoTargetTypeSetting": {
+    "positiveGeoTargetType": "PRESENCE",
+    "negativeGeoTargetType": "PRESENCE"
+  },
+  "geoTargetConstants": ["geoTargetConstants/20106"],
+  "languageConstants": ["languageConstants/1014"],
+  "adSchedule": [
+    { "dayOfWeek": "MONDAY", "startHour": 9, "endHour": 18, "startMinute": "ZERO", "endMinute": "ZERO" },
+    { "dayOfWeek": "TUESDAY", "startHour": 9, "endHour": 18, "startMinute": "ZERO", "endMinute": "ZERO" },
+    { "dayOfWeek": "WEDNESDAY", "startHour": 9, "endHour": 18, "startMinute": "ZERO", "endMinute": "ZERO" },
+    { "dayOfWeek": "THURSDAY", "startHour": 9, "endHour": 18, "startMinute": "ZERO", "endMinute": "ZERO" },
+    { "dayOfWeek": "FRIDAY", "startHour": 9, "endHour": 18, "startMinute": "ZERO", "endMinute": "ZERO" }
+  ],
+  "trackingUrlTemplate": "{lpurl}?gclid={gclid}",
+  "finalUrlSuffix": "utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_id={campaignid}&utm_content={creative}&utm_term={keyword}&gad_source=1&gad_campaignid={campaignid}&matchtype={matchtype}&device={device}&network={network}&placement={placement}&adgroupid={adgroupid}&creative={creative}&campaign_name={campaignname}",
+  "adGroup": {
+    "name": "Auto",
+    "cpcBidMicros": "10000"
+  },
+  "finalUrl": "https://novo.segurosimediato.com.br/cotacao-porto",
+  "allowedHost": "novo.segurosimediato.com.br",
+  "path1": "cotacao",
+  "path2": "porto",
+  "rsa": {
+    "headlines": [
+      { "text": "Imediato Seguros", "pinnedField": "HEADLINE_1" },
+      { "text": "Compare Porto e Outras" },
+      { "text": "Cotação Porto Seguro Online" },
+      { "text": "Cote Grátis em Segundos" },
+      { "text": "Corretora Independente" },
+      { "text": "Várias Seguradoras Aqui" },
+      { "text": "Simulação Fácil e Grátis" },
+      { "text": "Atendimento Via WhatsApp" },
+      { "text": "Seguro Auto Econômico" },
+      { "text": "Melhor Preço do Seguro" },
+      { "text": "Calcule Agora Sem Compromisso" },
+      { "text": "Cotação Rápida Online" },
+      { "text": "Especialistas em Seguro Auto" },
+      { "text": "Compare Ofertas Agora" },
+      { "text": "Cote Seguro em Minutos" }
+    ],
+    "descriptions": [
+      { "text": "Corretora independente: compare Porto Seguro e outras. Cotação online grátis e atendimento rápido." },
+      { "text": "Simule seguro auto sem compromisso. Várias seguradoras, você escolhe a melhor oferta." },
+      { "text": "Cobertura sob medida. Atendimento WhatsApp e telefone. Faça sua cotação agora." },
+      { "text": "Não é o site oficial da Porto. Somos corretora: comparamos e orientamos sua contratação." }
+    ]
+  },
+  "positiveKeywords": [
+    { "text": "porto seguro cotação", "matchType": "PHRASE" },
+    { "text": "porto seguro cotacao", "matchType": "PHRASE" },
+    { "text": "cotação porto seguro", "matchType": "PHRASE" },
+    { "text": "cotacao porto seguro", "matchType": "PHRASE" },
+    { "text": "porto seguros cotação", "matchType": "PHRASE" },
+    { "text": "cotação porto seguros", "matchType": "PHRASE" },
+    { "text": "seguro auto porto seguro", "matchType": "PHRASE" },
+    { "text": "seguro de carro porto seguro", "matchType": "PHRASE" },
+    { "text": "porto seguro auto cotação", "matchType": "PHRASE" },
+    { "text": "porto seguro auto", "matchType": "PHRASE" },
+    { "text": "comparar porto seguro", "matchType": "PHRASE" },
+    { "text": "simulação porto seguro", "matchType": "PHRASE" },
+    { "text": "simulacao porto seguro", "matchType": "PHRASE" },
+    { "text": "simular seguro porto seguro", "matchType": "PHRASE" },
+    { "text": "preço seguro porto seguro", "matchType": "PHRASE" },
+    { "text": "preco seguro porto seguro", "matchType": "PHRASE" },
+    { "text": "valor seguro porto seguro", "matchType": "PHRASE" },
+    { "text": "cotar porto seguro", "matchType": "PHRASE" },
+    { "text": "cotar seguro porto seguro", "matchType": "PHRASE" },
+    { "text": "porto seguro cotação", "matchType": "EXACT" },
+    { "text": "cotação porto seguro", "matchType": "EXACT" },
+    { "text": "seguro auto porto seguro", "matchType": "EXACT" },
+    { "text": "comparar porto seguro", "matchType": "EXACT" }
+  ],
+  "brandExactNegatives": ["porto seguro", "porto seguros"],
+  "adminNegativesFile": "ads-porto-negatives.json",
+  "importExpCampaignNegatives": true,
+  "expNegativesSnapshot": "logs/exp-snapshot-for-porto.json",
+  "phraseOnExistingCampaigns": ["porto seguro", "porto seguros"]
+}

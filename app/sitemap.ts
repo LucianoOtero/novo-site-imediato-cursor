@@ -28,6 +28,7 @@ const STATIC_PATHS = [
   "/reputacao",
   "/contato",
   "/cotacao",
+  "/cotacao-porto",
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

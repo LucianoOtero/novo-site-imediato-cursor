@@ -1,6 +1,6 @@
 "use client";
 
-import { getImageProps } from "next/image";
+import Image, { getImageProps } from "next/image";
 import { ShieldCheck, Star } from "lucide-react";
 
 import { Container } from "@/components/ui/container";
@@ -10,6 +10,23 @@ import { company } from "@/lib/company";
 import { getRamo } from "@/lib/ramos";
 import { useSubmitLead } from "@/lib/leads/use-submit-lead";
 import { HERO_BLUR } from "@/lib/hero-blur.generated";
+
+export type HeroPartnerLogo = {
+  src: string;
+  alt: string;
+};
+
+export type HeroProps = {
+  ramoSlug: string;
+  /** Sobrescreve `ramo.eyebrow` quando informado. */
+  eyebrow?: string;
+  /** Sobrescreve `ramo.headline` quando informado. */
+  headline?: string;
+  /** Sobrescreve `ramo.subheadline` quando informado. */
+  subheadline?: string;
+  /** Logo de parceiro (ex.: LP Porto) acima do H1; home não passa. */
+  partnerLogo?: HeroPartnerLogo;
+};
 
 /**
  * Hero — seção de abertura (Home, Issue 15; generalizado para LPs de
@@ -125,11 +142,15 @@ function HeroBackground({ ramoSlug }: { ramoSlug: string }) {
   );
 }
 
-export function Hero({ ramoSlug }: { ramoSlug: string }) {
+export function Hero({ ramoSlug, eyebrow, headline, subheadline, partnerLogo }: HeroProps) {
   const ramo = getRamo(ramoSlug);
   const { submitLead } = useSubmitLead(ramoSlug);
 
   if (!ramo) return null;
+
+  const displayEyebrow = eyebrow ?? ramo.eyebrow;
+  const displayHeadline = headline ?? ramo.headline;
+  const displaySubheadline = subheadline ?? ramo.subheadline;
 
   // Satisfação sempre derivada da nota real do Google (nota ÷ 5 × 100) —
   // mesma fórmula da CredBar/CotacaoTrustPanel (2026-08-09), nunca hardcoded.
@@ -190,16 +211,28 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
       <Container className="relative grid gap-6 py-8 max-[360px]:py-5 md:py-10 lg:grid-cols-2 lg:items-center lg:gap-6 lg:py-12 xl:gap-10 xl:py-16 [@media(orientation:landscape)_and_(min-width:640px)_and_(max-height:500px)]:grid-cols-2 [@media(orientation:landscape)_and_(min-width:640px)_and_(max-height:500px)]:items-center [@media(orientation:landscape)_and_(max-height:500px)]:gap-4 [@media(orientation:landscape)_and_(max-height:500px)]:py-3">
         {/* min-w-0: evita overflow do H1 nowrap para cima/embaixo do form no grid */}
         <div className="min-w-0 lg:pr-2">
-          {ramo.eyebrow && (
+          {partnerLogo && (
+            <div className="mb-4 inline-flex items-center rounded-lg bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur-sm md:px-5 md:py-3 [@media(orientation:landscape)_and_(max-height:500px)]:mb-2 [@media(orientation:landscape)_and_(max-height:500px)]:px-3 [@media(orientation:landscape)_and_(max-height:500px)]:py-2">
+              <Image
+                src={partnerLogo.src}
+                alt={partnerLogo.alt}
+                width={138}
+                height={32}
+                className="h-9 w-auto md:h-11"
+                unoptimized
+              />
+            </div>
+          )}
+          {displayEyebrow && (
             <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-100 backdrop-blur-sm [@media(orientation:landscape)_and_(max-height:500px)]:mb-1.5 [@media(orientation:landscape)_and_(max-height:500px)]:py-0.5 [@media(orientation:landscape)_and_(max-height:500px)]:text-[0.65rem]">
-              {ramo.eyebrow}
+              {displayEyebrow}
             </p>
           )}
           {/* H1 lockup Auto: 1ª linha nowrap; no lg (tablet paisagem / 2 cols)
               o tamanho baixa para caber na coluna sem invadir o form. */}
-          {ramo.headline.includes("\n") ? (
+          {displayHeadline.includes("\n") ? (
             <h1 className="font-display font-bold tracking-tight text-white">
-              {ramo.headline.split("\n").map((line, index) => (
+              {displayHeadline.split("\n").map((line, index) => (
                 <span
                   key={line}
                   className={
@@ -214,12 +247,12 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
             </h1>
           ) : (
             <h1 className="font-display text-[1.75rem] font-bold leading-[1.15] tracking-tight text-white md:text-6xl md:leading-[1.08]">
-              {ramo.headline}
+              {displayHeadline}
             </h1>
           )}
-          {ramo.subheadline.includes("\n") ? (
+          {displaySubheadline.includes("\n") ? (
             <div className="mt-3 max-w-xl text-brand-50/90 md:mt-4 lg:mt-3 [@media(orientation:landscape)_and_(max-height:500px)]:mt-1.5">
-              {ramo.subheadline.split("\n").map((line, index) => (
+              {displaySubheadline.split("\n").map((line, index) => (
                 <p
                   key={line}
                   className={
@@ -234,7 +267,7 @@ export function Hero({ ramoSlug }: { ramoSlug: string }) {
             </div>
           ) : (
             <p className="mt-3 max-w-xl text-lg leading-relaxed text-brand-50/90 md:mt-5">
-              {ramo.subheadline}
+              {displaySubheadline}
             </p>
           )}
 

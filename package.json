@@ -1,6 +1,6 @@
 {
   "name": "imediato-seguros",
-  "version": "0.2.48",
+  "version": "0.2.49",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,6 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "check:hardcode": "node scripts/check-hardcoded-business-data.mjs",
+    "test:dash-producao": "node --test scripts/dash-producao/test/**/*.test.mjs",
     "test:e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "dependencies": {
@@ -21,6 +22,7 @@
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "firebase-admin": "^14.1.0",
+    "google-auth-library": "^10.9.1",
     "lucide-react": "^1.23.0",
     "next": "^15.0.0",
     "nodemailer": "^9.0.3",
