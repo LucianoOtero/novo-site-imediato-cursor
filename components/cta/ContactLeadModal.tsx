@@ -550,6 +550,7 @@ export function ContactLeadModal() {
                   placeholder="11"
                   maxLength={2}
                   aria-invalid={!!errors.ddd}
+                  data-clarity-mask="true"
                   {...register("ddd")}
                   onChange={(event) => {
                     event.target.value = formatDdd(event.target.value);
@@ -568,6 +569,7 @@ export function ContactLeadModal() {
                   autoComplete="tel-national"
                   placeholder="98765-4321"
                   aria-invalid={!!errors.celular}
+                  data-clarity-mask="true"
                   {...register("celular")}
                   onChange={(event) => {
                     event.target.value = formatCelular(event.target.value);
@@ -596,6 +598,7 @@ export function ContactLeadModal() {
                     autoComplete="off"
                     placeholder="000.000.000-00"
                     aria-invalid={!!errors.cpf}
+                    data-clarity-mask="true"
                     {...register("cpf")}
                     onChange={(event) => {
                       event.target.value = formatCpf(event.target.value);
@@ -615,6 +618,7 @@ export function ContactLeadModal() {
                     autoComplete="email"
                     placeholder="voce@email.com"
                     aria-invalid={!!errors.email}
+                    data-clarity-mask="true"
                     {...register("email")}
                     onBlur={(event) => {
                       void register("email").onBlur(event);
@@ -640,6 +644,7 @@ export function ContactLeadModal() {
                     autoComplete="postal-code"
                     placeholder="00000-000"
                     aria-invalid={!!errors.cep}
+                    data-clarity-mask="true"
                     {...register("cep")}
                     onChange={(event) => {
                       event.target.value = formatCep(event.target.value);
@@ -658,6 +663,7 @@ export function ContactLeadModal() {
                     autoComplete="off"
                     placeholder="ABC1D23"
                     aria-invalid={!!errors.placa}
+                    data-clarity-mask="true"
                     {...register("placa")}
                     onChange={(event) => {
                       event.target.value = formatPlaca(event.target.value);

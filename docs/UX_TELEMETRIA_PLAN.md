@@ -1,10 +1,10 @@
 # Plano: telemetria UX (Fases 0–3)
 
-**Status:** Fase 0 OK. Fase 1 em prod. Gate C OK (GTM v49 + smoke). **Gate D em curso** (SI 7d desde 2026-09-11 → ~18/set).  
+**Status:** Fase 0–1 OK. Gate C/D OK (F1 + F0′). Gate A privacidade OK. **Fase 2 código pronto** — ativar com `NEXT_PUBLIC_CLARITY_ID` só em Production → Gate E.  
 **Próximos passos (operacional):** [PROXIMOS_PASSOS_UX_TELEMETRIA.md](PROXIMOS_PASSOS_UX_TELEMETRIA.md).  
 **Escopo:** site novo `novo.segurosimediato.com.br` (braço Exp). Legado fora.  
 **Fonte canônica no repo:** este arquivo (`docs/UX_TELEMETRIA_PLAN.md`). O espelho em `.cursor/plans/` deve conter só ponteiro para cá — não duplicar o texto.  
-**Atualizado:** 2026-09-12 — doc próximos passos + release v0.2.47.
+**Atualizado:** 2026-09-26 — ClarityScript + mask + privacidade.
 
 ---
 
@@ -169,12 +169,14 @@ Só GA4; Gate C **publicado** via `gtm-apply-ux-fase1.mjs` (versão Live “UX F
 
 ## Fase 2 — Clarity
 
-Após Gate A (privacidade) + Gate D da F1.
+**Status código:** implementado 2026-09-26 (`ClarityScript`, mask, tags, privacidade).
+
+Após Gate A (privacidade) + Gate D da F1 — **ambos OK**.
 
 - `components/analytics/ClarityScript.tsx` no layout.
 - Condições: prod + ID + sample localStorage + consent wire + sem cookie kill.
-- Mask + custom tags.
-- Env Production: `NEXT_PUBLIC_CLARITY_ID` (não Preview).
+- Mask + custom tags (`form_step`, `rpa_active`).
+- Env Production: `NEXT_PUBLIC_CLARITY_ID` (não Preview) + `NEXT_PUBLIC_CLARITY_RAMP_UNTIL` (48h @ 5%).
 - 48h @ 5% → Gate E (roteiro branches) → 20% novos sorteios.
 - Regressão: cookie kill e/ou Instant Rollback.
 

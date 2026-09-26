@@ -13,6 +13,49 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## [0.2.52] — 2026-09-26 (UX Fase 2: Clarity + Gate A privacidade)
+
+### Added
+- [`components/analytics/ClarityScript.tsx`](components/analytics/ClarityScript.tsx) + [`lib/clarity.ts`](lib/clarity.ts): load condicional (prod, ID, sample, consent, kill cookie).
+- Tags Clarity `form_step` / `rpa_active` no [`LeadForm`](components/lead/LeadForm.tsx).
+- `data-clarity-mask` em campos sensíveis (LeadForm + ContactLeadModal).
+
+### Changed
+- Banner Analytics menciona Clarity; [`politica-de-privacidade`](app/(legal)/politica-de-privacidade/page.tsx) §6 atualizada.
+- Envs: `NEXT_PUBLIC_CLARITY_ID` / `RAMP_UNTIL` / `SAMPLE_RATE` em `.env.example` + `lib/env.ts`.
+
+### Docs
+- Gate A OK; próximos passos = ativar ID em Production → Gate E ([`PROXIMOS_PASSOS_UX_TELEMETRIA.md`](docs/PROXIMOS_PASSOS_UX_TELEMETRIA.md)).
+
+### Ops
+- [x] Projeto Clarity `yobd1yovia` + envs Production (`NEXT_PUBLIC_CLARITY_ID` / `RAMP_UNTIL=2026-09-28T11:11:44.000Z` @ 5%).
+- [ ] Redeploy Production com este commit → smoke `clarity.ms`.
+- [ ] Gate E após 48h.
+
+## [0.2.51] — 2026-09-26 (Docs: Gate D C→A — F1 PASS + F0′)
+
+### Docs
+- [`GATE_D_EVAL_asof-2026-09-26.md`](GATE_D_EVAL_asof-2026-09-26.md): timeseries SI diário `/cotacao` mobile — F1 (11–16/set) LCP Δ ≤200 ms (**PASS**); degrau **17/set** (redesign). Waiver FAIL 7d vs F0 + **re-baseline F0′**.
+- [`PERF_BASELINE.md`](PERF_BASELINE.md), [`PROXIMOS_PASSOS_UX_TELEMETRIA.md`](PROXIMOS_PASSOS_UX_TELEMETRIA.md), [`UX_TELEMETRIA_PLAN.md`](UX_TELEMETRIA_PLAN.md).
+- Artefato: `docs/_psi_fase0/gate-d-si-daily-cotacao-mobile-lcp.json`.
+
+### Ops
+- [x] Gate D F1 liberada (sem bissect).
+- [ ] Gate A privacidade → Fase 2 Clarity; Gate E vs **F0′**.
+
+## [0.2.50] — 2026-09-25 (sold-sync: enrich clear + missClass)
+
+### Fixed
+- [`firebase/functions/sold-sync.js`](firebase/functions/sold-sync.js): `enrichPayloadFromEspo` completa `cLeadId`/click IDs também no **clear** (evita `no_firebase_match` quando OppId no RTDB está stale).
+- Match por `espocrmLeadId` reconcilia `espocrmOpportunityId` no lead (sem `autoSync`).
+
+### Changed
+- `no_firebase_match` classificado (`missClass`): e-mail só para `actionable_*`; `expected_*` só em `sold_sync_errors/`.
+- Monitor [`scripts/espo-ops/monitor-sold-sync-check.mjs`](scripts/espo-ops/monitor-sold-sync-check.mjs): agrega por `missClass` / `reason`.
+
+### Docs
+- [`FASE3_HARDENING_SOLD_SYNC.md`](docs/FASE3_HARDENING_SOLD_SYNC.md), [`ESPO_VENDIDO_FIREBASE_SYNC.md`](docs/ESPO_VENDIDO_FIREBASE_SYNC.md).
+
 ## [0.2.49] — 2026-09-17 (`/cotacao` formato home + LP `/cotacao-porto`)
 
 ### Changed
@@ -56,7 +99,7 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ### Ops (após prod)
 - [x] Gate C: tags GA4 no GTM para eventos novos (zero Ads) — Live **v49** “UX Fase 1 — Gate C GA4” (`gtm-apply-ux-fase1.mjs`).
-- [ ] Gate D: 7 dias SI antes da Fase 2 (Clarity).
+- [x] Gate D: C→A 2026-09-26 — F1 PASS isolada; waiver + F0′ ([GATE_D_EVAL_asof-2026-09-26.md](GATE_D_EVAL_asof-2026-09-26.md)).
 
 ## [0.2.45] — 2026-09-08 (Analytics: abandono LeadForm + modais)
 

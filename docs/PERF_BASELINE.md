@@ -3,7 +3,7 @@
 **Fonte do plano:** [UX_TELEMETRIA_PLAN.md](UX_TELEMETRIA_PLAN.md)  
 **Escopo:** `novo.segurosimediato.com.br` (braço Exp). Legado fora.  
 **Fase 0 concluída (lab):** 2026-09-11  
-**Campo (Speed Insights):** pendente — Gate A / Gate B
+**Campo (Speed Insights):** F0 OK (2026-09-11). Gate D: F1 isolada **PASS**; FAIL vs F0 antigo **waived** (redesign 17/set). **F0′** = SI 7d 19–26/set ([GATE_D_EVAL_asof-2026-09-26.md](GATE_D_EVAL_asof-2026-09-26.md)).
 
 ---
 
@@ -11,11 +11,11 @@
 
 | # | Item | Status |
 |---|------|--------|
-| 1 | Vercel Speed Insights habilitado e com dados em produção (plano Pro) | **OK** (2026-09-11) — time `lucianootero's projects` **Pro**; projeto `imediato-seguros`; SI Plus com dados Production últimos 7 dias (`Sep 4–11`). URL: https://vercel.com/lucianooteros-projects/imediato-seguros/speed-insights |
-| 2 | CSP/WAF externo bloqueando `clarity.ms`? | **PENDENTE** (repo: sem `script-src` restritivo no Next; validar CDN) |
-| 3 | Consent Clarity = categoria Analytics (`imediato_consent`) | **Confirmado no plano** (wire na Fase 2) |
-| 4 | Privacidade/banner atualizados antes da Fase 2 | **PENDENTE** (bloqueante para F2) |
-| 5 | Freeze Ads/criativo nas janelas de 7 dias; experimento URL continua? | **PENDENTE** |
+| 1 | Vercel Speed Insights habilitado e com dados em produção (plano Pro) | **OK** (2026-09-11) |
+| 2 | CSP/WAF externo bloqueando `clarity.ms`? | **OK no app** (2026-09-26) — Next só envia `frame-ancestors 'self'` (sem `script-src`). CDN Cloudflare historicamente DNS-only → Vercel; smoke pós-deploy se proxy for ligado |
+| 3 | Consent Clarity = categoria Analytics (`imediato_consent`) | **OK** — wire em `ClarityScript` + banner atualizado |
+| 4 | Privacidade/banner atualizados antes da Fase 2 | **OK** (2026-09-26) — banner + `/politica-de-privacidade` §6 |
+| 5 | Freeze Ads/criativo nas janelas de 7 dias; experimento URL continua? | **Ops** — recomendado na janela Gate E; experimento URL Exp continua |
 
 **Gate B (RUM):** cumprido pelo critério **≥7 dias de RUM** (janela SI 7d com tráfego real). Volume forte em `/cotacao` (mobile ~396 eventos LCP); `/` ainda com amostra pequena no SI — gates CWV das próximas fases devem privilegiar `/cotacao` + agregados device, e tratar `/` com cautela até haver mais eventos.
 
@@ -135,24 +135,38 @@ Fonte: dashboard Vercel Speed Insights Plus (sessão autenticada CLI/browser `lu
 |-----|-----|
 | `NEXT_PUBLIC_GTM_ID` | Container GTM |
 | `NEXT_PUBLIC_GA4_ID` | Schema/prod |
-| `NEXT_PUBLIC_CLARITY_ID` | **Só Fase 2** — Production only; ainda não definir |
+| `NEXT_PUBLIC_CLARITY_ID` | Fase 2 — **só Production**; sem valor = no-op |
+| `NEXT_PUBLIC_CLARITY_RAMP_UNTIL` | ISO até quando sample = 5% (depois 20% novos) |
+| `NEXT_PUBLIC_CLARITY_SAMPLE_RATE` | Override opcional 0–1 |
 
 ---
 
 ## Colunas pós-fase (preencher depois)
 
-### Pós Fase 1 (dataLayer)
+### Pós Fase 1 (dataLayer) + Gate D C→A
 
-| Fonte | Path | LCP | INP | CLS | vs F0 |
-|-------|------|-----|-----|-----|-------|
-| Lab / SI | `/` mobile | TBD (após 7d) | TBD | TBD | TBD |
-| Lab / SI | `/cotacao` mobile | TBD (após 7d) | TBD | TBD | TBD |
+| Fonte | Path | LCP | INP | CLS | vs F0 (11/set) |
+|-------|------|-----|-----|-----|----------------|
+| SI diário 11–16/set | `/cotacao` mobile | ~2,07–2,12 s | — | — | Δ +90–140 ms → **PASS F1** |
+| SI diário **17/set** | `/cotacao` mobile | **2,36 s** | — | — | degrau = redesign v0.2.49 |
+| SI 7d 19–26/set (**F0′**) | `/cotacao` mobile | **2,21 s** | 248 ms | 0 | FAIL vs F0 antigo; **nova baseline** |
+| SI 7d (**F0′**) | mobile agregado | 2,15 s | 272 ms | 0 | — |
+| SI 7d (**F0′**) | desktop agregado | 1,21 s | 88 ms | 0,02 | — |
+| SI 7d (**F0′**) | `/cotacao` desktop | 1,64 s | 80 ms | 0,01 | — |
 
-**Código Fase 1 (2026-09-11):** `form_step_timing`, enrich `form_abandon` (`focus_field`/`had_filled_field`), `rpa_wait_*`, `scroll_depth` com `scope` page/below_hero + `data-hero` no Hero.  
-**Gate C (GTM):** tags GA4 dos eventos novos ainda **pendentes** (só GA4, zero Ads; auditar transport unload).  
-**Gate D:** medir 7 dias após deploy prod.
+**Gate C:** **PASS** · **Gate D:** F1 **PASS** (isolada) · FAIL 7d vs F0 **waived** · **F0′** adotada para Gate E.
 
-Gates C/D: TBD
+Artefato: [`_psi_fase0/gate-d-si-daily-cotacao-mobile-lcp.json`](_psi_fase0/gate-d-si-daily-cotacao-mobile-lcp.json).
+
+---
+
+### F0′ — Campo SI (pós-redesign, baseline para Gate E)
+
+| Item | Valor |
+|------|--------|
+| Snapshot | **2026-09-26** — Production · Last 7 Days (19–26/set) · **P75** |
+| Motivo | Redesign `/cotacao` 17/set invalidou F0 (11/set) para esse path |
+| Decisão | Waiver Gate D + re-baseline — [GATE_D_EVAL_asof-2026-09-26.md](GATE_D_EVAL_asof-2026-09-26.md) |
 
 ### Pós Fase 2 (Clarity)
 

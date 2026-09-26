@@ -70,6 +70,10 @@ function saveConsent(analytics: boolean, marketing: boolean) {
     // localStorage indisponível (ex.: modo privado) — não bloqueia a decisão do usuário na sessão atual.
   }
   applyConsentUpdate(analytics, marketing);
+  // Clarity (Fase 2) e demais ouvintes reagem ao wire de analytics.
+  window.dispatchEvent(
+    new CustomEvent("imediato:consent-updated", { detail: { analytics, marketing } })
+  );
 }
 
 export function ConsentBanner() {
@@ -132,8 +136,9 @@ export function ConsentBanner() {
       <div className="mx-auto flex max-w-5xl flex-col gap-4 [@media(orientation:landscape)_and_(max-height:500px)]:flex-row [@media(orientation:landscape)_and_(max-height:500px)]:items-center [@media(orientation:landscape)_and_(max-height:500px)]:gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm text-neutral-700 [@media(orientation:landscape)_and_(max-height:500px)]:line-clamp-2 [@media(orientation:landscape)_and_(max-height:500px)]:text-xs">
-            Usamos cookies para melhorar sua experiência, medir audiência e personalizar anúncios. Você pode aceitar
-            todos, rejeitar os não essenciais ou escolher suas preferências.
+            Usamos cookies para melhorar sua experiência, medir audiência (incluindo gravações de sessão via Microsoft
+            Clarity, quando ativo) e personalizar anúncios. Você pode aceitar todos, rejeitar os não essenciais ou
+            escolher suas preferências.
           </p>
         </div>
 
@@ -155,7 +160,7 @@ export function ConsentBanner() {
               />
               <span className="text-sm text-neutral-700">
                 <span className="font-medium text-neutral-900">Analytics</span> — nos ajuda a entender como o site é
-                usado (Google Analytics).
+                usado (Google Analytics e, em produção, Microsoft Clarity com campos sensíveis mascarados).
               </span>
             </label>
             <label className="flex items-start gap-3">

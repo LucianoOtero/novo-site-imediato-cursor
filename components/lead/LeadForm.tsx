@@ -46,6 +46,7 @@ import {
   resolveLeadFocusField,
   trackLeadFormAbandon,
 } from "@/lib/analytics-funnel";
+import { setClarityTag } from "@/lib/clarity";
 import { cn } from "@/lib/utils";
 
 /**
@@ -263,6 +264,14 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   ramoRef.current = ramo;
   hasStartedRef.current = hasStarted;
   stepRef.current = step;
+
+  useEffect(() => {
+    setClarityTag("form_step", step);
+  }, [step]);
+
+  useEffect(() => {
+    setClarityTag("rpa_active", rpaActive ? "1" : "0");
+  }, [rpaActive]);
 
   /**
    * Abandono do funil (GA4): `pagehide` primário; `visibilitychange`→hidden
@@ -1240,6 +1249,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                   maxLength={2}
                   aria-invalid={!!errors.ddd}
                   aria-describedby={errors.ddd ? "ddd-error" : "phone-microcopy"}
+                  data-clarity-mask="true"
                   {...ddd}
                   onChange={(event) => {
                     event.target.value = formatDdd(event.target.value);
@@ -1267,6 +1277,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                   aria-describedby={
                     errors.celular ? "celular-error" : "phone-microcopy"
                   }
+                  data-clarity-mask="true"
                   {...celular}
                   onChange={(event) => {
                     event.target.value = formatCelular(event.target.value);
@@ -1318,6 +1329,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                 placeholder="voce@email.com"
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "email-error" : undefined}
+                data-clarity-mask="true"
                 {...email}
                 onBlur={(event) => {
                   void email.onBlur(event);
@@ -1347,6 +1359,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                 autoComplete="off"
                 placeholder="000.000.000-00"
                 aria-invalid={!!errors.cpf}
+                data-clarity-mask="true"
                 {...cpf}
                 onBlur={(event) => {
                   void cpf.onBlur(event);
@@ -1373,6 +1386,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                 placeholder="00000-000"
                 aria-invalid={!!errors.cep}
                 aria-describedby={errors.cep ? "cep-error" : undefined}
+                data-clarity-mask="true"
                 {...cep}
                 onChange={(event) => {
                   event.target.value = formatCep(event.target.value);
@@ -1397,6 +1411,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                 autoComplete="off"
                 placeholder="ABC1D23"
                 aria-invalid={!!errors.placa}
+                data-clarity-mask="true"
                 {...placa}
                 onChange={(event) => {
                   event.target.value = formatPlaca(event.target.value);

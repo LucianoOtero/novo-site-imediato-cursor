@@ -102,9 +102,12 @@ export default function PoliticaDePrivacidadePage() {
           <section>
             <h2 className="font-display text-xl font-bold text-neutral-900">6. Cookies e tecnologias de rastreamento</h2>
             <p className="mt-2">
-              Usamos cookies essenciais ao funcionamento do site e, mediante seu consentimento, cookies de analytics
-              e marketing (para entender como o site é usado e personalizar anúncios). Você pode gerenciar suas
-              preferências a qualquer momento pelo link &ldquo;Preferências de cookies&rdquo; no rodapé deste site.
+              Usamos cookies essenciais ao funcionamento do site e, na categoria Analytics (opt-out via preferências),
+              ferramentas de medição de audiência e experiência — incluindo Google Analytics (GA4) e, em produção,
+              Microsoft Clarity (gravações de sessão com mascaramento de campos sensíveis como telefone, CPF, e-mail e
+              placa). Na categoria Marketing/Anúncios, usamos cookies para medir e personalizar anúncios (Google Ads).
+              Você pode gerenciar suas preferências a qualquer momento pelo link &ldquo;Preferências de cookies&rdquo;
+              no rodapé deste site.
             </p>
           </section>
 
@@ -148,7 +151,7 @@ export default function PoliticaDePrivacidadePage() {
               Esta Política de Privacidade pode ser atualizada periodicamente para refletir mudanças em nossas
               práticas ou na legislação aplicável. A data da última atualização estará sempre indicada nesta página.
             </p>
-            <p className="mt-2 text-sm text-neutral-500">Última atualização: julho de 2026.</p>
+            <p className="mt-2 text-sm text-neutral-500">Última atualização: setembro de 2026.</p>
           </section>
         </div>
       </Container>

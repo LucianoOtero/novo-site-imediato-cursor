@@ -1,0 +1,24 @@
+{
+  "source": "vercel-speed-insights-v2-timeseries",
+  "asOf": "2026-09-26",
+  "device": "mobile",
+  "route": "/cotacao",
+  "metric": "LCP_p75_ms",
+  "from": "2026-08-27",
+  "to": "2026-09-26",
+  "daily": [
+    {"date":"2026-09-10","lcp_p75_ms":1784,"datapoints":72},
+    {"date":"2026-09-11","lcp_p75_ms":2076,"datapoints":90,"note":"F1 deploy"},
+    {"date":"2026-09-14","lcp_p75_ms":2108,"datapoints":142},
+    {"date":"2026-09-15","lcp_p75_ms":2116,"datapoints":109},
+    {"date":"2026-09-16","lcp_p75_ms":2072,"datapoints":101},
+    {"date":"2026-09-17","lcp_p75_ms":2364,"datapoints":87,"note":"redesign /cotacao v0.2.49"},
+    {"date":"2026-09-18","lcp_p75_ms":2228,"datapoints":56},
+    {"date":"2026-09-21","lcp_p75_ms":1880,"datapoints":38},
+    {"date":"2026-09-22","lcp_p75_ms":1888,"datapoints":41},
+    {"date":"2026-09-23","lcp_p75_ms":2520,"datapoints":52},
+    {"date":"2026-09-24","lcp_p75_ms":2360,"datapoints":113},
+    {"date":"2026-09-25","lcp_p75_ms":2216,"datapoints":123}
+  ],
+  "conclusion": "F1 window 11-16/set LCP~2.07-2.12s (PASS vs F0 1.98 within +200ms). Step-up on 17/set redesign to 2.36s."
+}

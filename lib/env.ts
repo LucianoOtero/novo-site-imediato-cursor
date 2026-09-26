@@ -86,6 +86,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_CONTACT_PHONE: z.string().optional(),
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
+  // Microsoft Clarity (Fase 2 UX) — só Production; opcional (sem ID = no-op).
+  NEXT_PUBLIC_CLARITY_ID: z.string().optional(),
+  NEXT_PUBLIC_CLARITY_RAMP_UNTIL: z.string().optional(),
+  NEXT_PUBLIC_CLARITY_SAMPLE_RATE: z.string().optional(),
   // RPA (cotação automatizada, rpaimediatoseguros.com.br) — chamada
   // direta do navegador (confirmado em docs/WEBFLOW_CUSTOM_CODE_DEV.md),
   // por isso client-exposed. Mesma URL em todos os ambientes.
@@ -298,6 +302,8 @@ export const publicEnv = {
    */
   rpaEnabled: process.env.NEXT_PUBLIC_RPA_ENABLED !== "false",
   rpaApiBaseUrl: process.env.NEXT_PUBLIC_RPA_API_BASE_URL || "https://rpaimediatoseguros.com.br",
+  /** Microsoft Clarity project ID — só Production; sem valor = ClarityScript no-op. */
+  clarityId: sanitizeSingleLineId(process.env.NEXT_PUBLIC_CLARITY_ID),
 } as const;
 
 /**

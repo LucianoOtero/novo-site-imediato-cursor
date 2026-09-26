@@ -3,6 +3,7 @@ import { Inter, Manrope } from "next/font/google";
 import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import { ClarityScript } from "@/components/analytics/ClarityScript";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
 import { GtmNoScript, GtmScripts, consentDefaultScript } from "@/components/consent/GtmConsentScripts";
 import { StagingBanner } from "@/components/shared/StagingBanner";
@@ -105,6 +106,8 @@ export default function RootLayout({
         </ContactModalProvider>
         <ConsentBanner />
         <GtmScripts />
+        {/* Clarity Fase 2: só Production + NEXT_PUBLIC_CLARITY_ID + sample/consent. */}
+        <ClarityScript />
         {/* RUM da Vercel (auditoria 2026-08-07): coleta LCP/INP/CLS de campo
             (BASELINE_METRICS.md). No-op até o Speed Insights ser habilitado
             no projeto (requer plano Pro). */}
