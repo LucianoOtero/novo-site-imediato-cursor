@@ -48,6 +48,14 @@ O cliente confirmou a nova lista de **21 parceiras**: saem **Darwin, Liberty e U
 
 Todos os 6 mantêm o padrão do catálogo: **vetor puro** (sem `<image>` raster embutida), cores originais da marca no arquivo, uniformização em cinza via CSS no `InsurersGrid` (`grayscale` + `hover:grayscale-0`). Validados visualmente em ~100px de altura (tamanho do grid desktop), coloridos e em grayscale. Ordem de exibição (por reputação de mercado, definida com o cliente) e lista completa em `lib/seguradoras.ts`; contagem oficial em `docs/DADOS_OFICIAIS.md`.
 
+### Troca Sompo → AXA (2026-09-30)
+
+A Sompo saiu da lista (consolidada com a HDI). `sompo.svg` foi removido de `/public/logos/seguradoras/`. Entra **AXA Seguros** no mesmo lugar da grade (depois da HDI). A contagem permanece **21**.
+
+| Arquivo | Marca | Origem | Formato |
+|---|---|---|---|
+| `axa.svg` | AXA Seguros | SVG oficial [Commons File:AXA_Logo.svg](https://commons.wikimedia.org/wiki/File:AXA_Logo.svg) (marca atual, azul `#00008f` e traço vermelho `#ff1721`). Paths intactos; só o `viewBox` foi aberto para o encaixe 2/1 da grade | Vetor puro, viewBox `-14.07 0 56.26 28.13` (arte original quadrada `0 0 28.13 28.13`) |
+
 ---
 
 ## Tabela 2 — Logos de marca
@@ -61,7 +69,8 @@ Todos os 6 mantêm o padrão do catálogo: **vetor puro** (sem `<image>` raster 
 | Itaú | Logo parceiro | SVG (`itau-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | — |
 | HDI | Logo parceiro | SVG (`hdi-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | — |
 | Tokio Marine | Logo parceiro | SVG (`tokio-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | — |
-| Sompo | Logo parceiro | SVG (`sompo-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | — |
+| Sompo | Logo parceiro | SVG (`sompo.svg`) removido em 2026-09-30 | — | Webflow CDN | — | Substituído por AXA | Consolidada com a HDI; o arquivo saiu de `/public/logos/seguradoras/` |
+| AXA | Logo parceiro | SVG (`axa.svg`) | SVG | [Commons AXA_Logo.svg](https://commons.wikimedia.org/wiki/File:AXA_Logo.svg) | InsurersGrid | ✅ **Incluído (2026-09-30)** | Marca oficial; viewBox aberto para 2/1 |
 | Mapfre | Logo parceiro | SVG (`mapfre-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | — |
 | Liberty Seguros | Logo parceiro | SVG (`liberty-grey.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | — |
 | Allianz | Logo parceiro | SVG (`allianz-grey-quadrado.svg`) | SVG | Webflow CDN | InsurersGrid | ✅ **Migrado (2026-07-03)** | Único arquivo disponível é a variante "quadrada" — usado como está |

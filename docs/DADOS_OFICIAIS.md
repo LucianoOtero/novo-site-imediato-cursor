@@ -72,6 +72,10 @@ A auditoria real de assets (Issue P-10, ver `BRAND_ASSETS.md`) havia encontrado 
 
 O cliente confirmou a nova lista de **21 seguradoras parceiras**: saem **Darwin, Liberty e Usebens**; entram **Aliro** (grafia oficial da marca — o pedido citava "Alliro"), **BP Seguradora, Ituran, Mitsui Sumitomo, Suhai e Yelum** (nova marca da antiga Liberty Seguros no Brasil). Valor aplicado em `lib/company.ts` (`insurersCount: 21`), catálogo/ordem em `lib/seguradoras.ts` (ordem de exibição por reputação de mercado definida com o cliente) e textos hardcoded em `lib/ramos.ts`/`components/lead/RpaChoiceStep.tsx`. Logos novos documentados em `BRAND_ASSETS.md`. **Pendência registrada:** templates de WhatsApp no Octadesk aprovados na Meta ainda citam "18 seguradoras" (ver `GUIA_OCTADESK_TEMPLATES.md`).
 
+### Atualização (2026-09-30) — Sompo sai, AXA entra (contagem permanece 21)
+
+A Sompo foi consolidada com a HDI. No lugar dela entra **AXA Seguros** (grafia oficial AXA), no mesmo ponto da lista, depois da HDI. `insurersCount` continua **21**. Assistência 24h: **0800 292 4357** (opção 1), publicado em [axa.com.br](https://axa.com.br/central-de-ajuda/seguros/qual-o-telefone-para-atendimento-do-seguro-auto-frota). Área do cliente: `https://www.axa.com.br`. Logo: `public/logos/seguradoras/axa.svg`.
+
 ---
 
 > Este documento é uma fatia fiel de `ESPECIFICACAO v3.md`. Nenhum dado foi preenchido, alterado ou inventado nesta extração. Para atualizar o estado de confirmação de um item, marque `☐` como `✅ Confirmado` apenas quando o dado real for oficialmente validado pelo responsável indicado — nunca antecipe uma confirmação.

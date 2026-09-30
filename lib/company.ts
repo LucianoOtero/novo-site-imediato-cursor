@@ -108,7 +108,7 @@ export const company: CompanyConfig = {
   },
   business: {
     yearsExperience: 25, // CONFIRMADO (2026-07-03) — resolve divergência 25 (hero) vs 35+ (rodapé) do site legado
-    insurersCount: 21, // CONFIRMADO (2026-07-31) — atualização 18 → 21 (saem Darwin/Liberty/Usebens; entram Aliro, BP, Ituran, Mitsui, Suhai, Yelum), ver docs/DADOS_OFICIAIS.md
+    insurersCount: 21, // CONFIRMADO — 21 desde 2026-07-31; em 2026-09-30 Sompo saiu e AXA entrou, a contagem não mudou (docs/DADOS_OFICIAIS.md)
     googleRating: 4.8, // CONFIRMADO (2026-07-03)
     googleReviewsCount: 2200, // CONFIRMADO (2026-07-03) — "+2.200 avaliações"
     satisfactionRate: 98, // CONFIRMADO (2026-07-03) — resolve divergência 96% vs 98% do site legado
