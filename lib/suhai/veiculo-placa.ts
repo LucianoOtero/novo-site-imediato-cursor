@@ -1,5 +1,5 @@
-import { consultarFipe, gatewayConfigurado } from "@/lib/suhai/gateway";
-import { codigoFipePublico } from "@/lib/suhai/fipe-publica";
+import { consultarFipe, gatewayConfigurado, type VeiculoFipe } from "@/lib/suhai/gateway";
+import { candidatosFipePublicos, type CandidatoFipe } from "@/lib/suhai/fipe-publica";
 import { validatePlacaViaFipe } from "@/lib/validation/placa-fipe";
 
 const CATEGORIA_POR_CODIGO: Record<number, string> = {
@@ -7,6 +7,12 @@ const CATEGORIA_POR_CODIGO: Record<number, string> = {
   2: "moto",
   3: "caminhao",
   4: "van",
+};
+
+export type OpcaoVeiculo = {
+  marca: string;
+  modelo: string;
+  codFipe: string;
 };
 
 export type VeiculoPreenchido = {
@@ -17,18 +23,42 @@ export type VeiculoPreenchido = {
   marca: string;
   modelo: string;
   codFipe?: string;
+  /** Mais de uma versão no ano. A cotação espera a escolha, sem adivinhar. */
+  opcoes?: OpcaoVeiculo[];
 };
 
+async function grafiaSuhai(candidato: CandidatoFipe, marcaPlaca: string): Promise<OpcaoVeiculo & { categoria?: string }> {
+  if (!gatewayConfigurado()) {
+    return { marca: marcaPlaca, modelo: candidato.nome, codFipe: candidato.codFipe };
+  }
+  try {
+    const veiculos = await consultarFipe({ codFipe: candidato.codFipe });
+    const suhai: VeiculoFipe | undefined = veiculos[0];
+    if (suhai?.marca && suhai.modelo) {
+      return {
+        marca: suhai.marca,
+        modelo: suhai.modelo,
+        codFipe: suhai.codFipe || candidato.codFipe,
+        categoria: suhai.codCategoria ? CATEGORIA_POR_CODIGO[suhai.codCategoria] : undefined,
+      };
+    }
+  } catch (error) {
+    console.warn("[suhai/veiculo] ConsultaVeiculos indisponível; mantendo a grafia da tabela pública.", error);
+  }
+  return { marca: marcaPlaca, modelo: candidato.nome, codFipe: candidato.codFipe };
+}
+
 /**
- * Placa Fipe para categoria e ano, e, quando o código público é único e o
- * gateway está configurado, a grafia de marca e modelo da Suhai.
+ * Placa Fipe para categoria e ano. A grafia enviada à Suhai sai do catálogo
+ * dela quando a abreviação da placa e o ano apontam uma versão. Várias
+ * versões voltam em `opcoes`, sem escolher uma.
  */
 export async function veiculoPorPlaca(placa: string): Promise<VeiculoPreenchido | { ok: false }> {
   const consulta = await validatePlacaViaFipe(placa);
   if (!consulta.ok || !consulta.anoModelo) return { ok: false };
 
   const tipo = consulta.tipoVeiculo === "moto" ? "moto" : "carro";
-  const codFipe = await codigoFipePublico({
+  const candidatos = await candidatosFipePublicos({
     tipo,
     marca: consulta.marca,
     modelo: consulta.modelo,
@@ -36,32 +66,20 @@ export async function veiculoPorPlaca(placa: string): Promise<VeiculoPreenchido 
   });
 
   let categoria = tipo === "moto" ? "moto" : "auto";
-  let marca = consulta.marca ?? "";
-  let modelo = consulta.modelo ?? "";
-
-  if (codFipe && gatewayConfigurado()) {
-    try {
-      const veiculos = await consultarFipe({ codFipe });
-      const suhai = veiculos[0];
-      if (suhai?.marca && suhai.modelo) {
-        marca = suhai.marca;
-        modelo = suhai.modelo;
-        if (suhai.codCategoria && CATEGORIA_POR_CODIGO[suhai.codCategoria]) {
-          categoria = CATEGORIA_POR_CODIGO[suhai.codCategoria];
-        }
-      }
-    } catch (error) {
-      console.warn("[suhai/veiculo] ConsultaVeiculos indisponível; mantendo a grafia da Placa Fipe.", error);
-    }
-  }
+  const marca = consulta.marca ?? "";
+  const modelo = consulta.modelo ?? "";
+  const opcoes = await Promise.all(candidatos.map((candidato) => grafiaSuhai(candidato, marca)));
+  const unica = opcoes.length === 1 ? opcoes[0] : undefined;
+  if (unica?.categoria) categoria = unica.categoria;
 
   return {
     ok: true,
     categoria,
     anoModelo: consulta.anoModelo,
     anoFabricacao: consulta.anoFabricacao ?? consulta.anoModelo,
-    marca,
-    modelo,
-    codFipe,
+    marca: unica?.marca || marca,
+    modelo: unica?.modelo || (opcoes.length > 1 ? "" : modelo),
+    codFipe: unica?.codFipe,
+    opcoes: opcoes.length > 1 ? opcoes.map(({ marca: marcaOpcao, modelo: modeloOpcao, codFipe }) => ({ marca: marcaOpcao, modelo: modeloOpcao, codFipe })) : undefined,
   };
 }

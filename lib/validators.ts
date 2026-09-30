@@ -295,6 +295,32 @@ export function formatPlaca(value: string): string {
     .slice(0, 7);
 }
 
+/**
+ * Máscara visual da placa no formulário Suhai: `ABC-1D23`.
+ * Três letras, hífen e quatro caracteres. A 5ª posição aceita número
+ * (placa antiga) ou letra (Mercosul). O hífen é só de tela — quem envia
+ * a placa tira tudo que não é letra ou número.
+ */
+export function formatPlacaMascara(value: string): string {
+  const bruto = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  let placa = "";
+  for (const caractere of bruto) {
+    const posicao = placa.length;
+    if (posicao >= 7) break;
+    const letra = /[A-Z]/.test(caractere);
+    const numero = /\d/.test(caractere);
+    if (posicao < 3) {
+      if (letra) placa += caractere;
+    } else if (posicao === 3 || posicao > 4) {
+      if (numero) placa += caractere;
+    } else if (letra || numero) {
+      placa += caractere;
+    }
+  }
+  if (placa.length <= 3) return placa;
+  return `${placa.slice(0, 3)}-${placa.slice(3)}`;
+}
+
 export function formatDdd(value: string): string {
   return onlyDigits(value).slice(0, 2);
 }

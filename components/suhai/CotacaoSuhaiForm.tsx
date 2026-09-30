@@ -8,9 +8,10 @@ import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO } from "@/lib/suhai/dominio";
+import type { OpcaoVeiculo } from "@/lib/suhai/veiculo-placa";
 import type { CotacaoResultado } from "@/lib/suhai/types";
 import { cn } from "@/lib/utils";
-import { formatCep, formatCpf, formatPlaca, isValidCpf, isValidPlacaFormat, onlyDigits } from "@/lib/validators";
+import { formatCep, formatCpf, formatPlacaMascara, isValidCpf, isValidPlacaFormat, onlyDigits } from "@/lib/validators";
 
 /**
  * Card da cotação Suhai no mesmo frost do LeadForm inline.
@@ -59,6 +60,7 @@ type Estado = {
   anoModelo: string;
   anoFabricacao: string;
   codFipe: string;
+  opcoes: OpcaoVeiculo[];
   cepPernoite: string;
   nome: string;
   cpf: string;
@@ -78,6 +80,7 @@ const INICIAL: Estado = {
   anoModelo: "",
   anoFabricacao: "",
   codFipe: "",
+  opcoes: [],
   cepPernoite: "",
   nome: "",
   cpf: "",
@@ -133,8 +136,10 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         marca?: string;
         modelo?: string;
         codFipe?: string;
+        opcoes?: OpcaoVeiculo[];
       };
-      if (!corpo.ok || !corpo.marca || !corpo.modelo || !corpo.anoModelo) {
+      const opcoes = corpo.opcoes ?? [];
+      if (!corpo.ok || !corpo.marca || !corpo.anoModelo || (opcoes.length === 0 && !corpo.modelo)) {
         setErros((anterior) => ({ ...anterior, placa: "Não encontramos essa placa. Confira ou informe o veículo." }));
         setEstado((anterior) => ({ ...anterior, semPlaca: true }));
         return null;
@@ -145,8 +150,9 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         anoModelo: corpo.anoModelo,
         anoFabricacao: corpo.anoFabricacao || corpo.anoModelo,
         marca: corpo.marca,
-        modelo: corpo.modelo,
-        codFipe: corpo.codFipe || "",
+        modelo: opcoes.length > 1 ? "" : corpo.modelo || "",
+        codFipe: opcoes.length > 1 ? "" : corpo.codFipe || "",
+        opcoes,
       };
       setErros((anterior) => ({ ...anterior, placa: "" }));
       setEstado((anterior) => ({ ...anterior, ...patch }));
@@ -200,6 +206,8 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         if (!/^\d{4}$/.test(atual.anoModelo)) proximos.anoModelo = "Informe o ano com 4 dígitos.";
       } else if (!isValidPlacaFormat(atual.placa.replace(/[^A-Za-z0-9]/g, ""))) {
         proximos.placa = "Informe a placa.";
+      } else if (atual.opcoes.length > 1 && !atual.codFipe) {
+        proximos.versao = "Escolha a versão do veículo.";
       } else if (!atual.marca || !atual.modelo || !atual.anoModelo) {
         proximos.placa = "Aguarde a identificação do veículo ou informe os dados.";
       }
@@ -242,7 +250,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
             anoFabricacao: atual.anoFabricacao ? Number(atual.anoFabricacao) : undefined,
             codFipe: atual.codFipe || undefined,
             zeroKm: atual.semPlaca,
-            placa: atual.semPlaca ? undefined : atual.placa,
+            placa: atual.semPlaca ? undefined : atual.placa.replace(/[^A-Za-z0-9]/g, "").toUpperCase(),
           },
           uso: {
             utilizacao: usadas.utilizacao,
@@ -346,9 +354,39 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                   id="placa"
                   value={estado.placa}
                   autoComplete="off"
-                  onChange={(event) => definir("placa", formatPlaca(event.target.value))}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  placeholder="ABC-1D23"
+                  maxLength={8}
+                  data-clarity-mask="true"
+                  onChange={(event) => definir("placa", formatPlacaMascara(event.target.value))}
                   onBlur={(event) => void preencherPorPlaca(event.target.value)}
                 />
+              </Field>
+            )}
+            {estado.opcoes.length > 1 && (
+              <Field label="Versão" htmlFor="versao" error={erros.versao}>
+                <select
+                  id="versao"
+                  className={selectClasses}
+                  value={estado.codFipe}
+                  onChange={(event) => {
+                    const escolhida = estado.opcoes.find((opcao) => opcao.codFipe === event.target.value);
+                    setEstado((anterior) => ({
+                      ...anterior,
+                      codFipe: escolhida?.codFipe ?? "",
+                      marca: escolhida?.marca ?? anterior.marca,
+                      modelo: escolhida?.modelo ?? "",
+                    }));
+                  }}
+                >
+                  <option value="">Escolha a versão</option>
+                  {estado.opcoes.map((opcao) => (
+                    <option key={opcao.codFipe} value={opcao.codFipe}>
+                      {opcao.modelo}
+                    </option>
+                  ))}
+                </select>
               </Field>
             )}
             {fichaVisivel && !estado.semPlaca && (
@@ -387,6 +425,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                   semPlaca: !anterior.semPlaca,
                   placa: anterior.semPlaca ? anterior.placa : "",
                   codFipe: "",
+                  opcoes: [],
                 }))
               }
             >
@@ -414,6 +453,32 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
         {etapa === 3 && (
           <>
+            <div className="rounded-lg bg-neutral-50 px-3.5 py-3">
+              <p className="text-sm font-medium text-neutral-900">
+                {[estado.marca, estado.modelo].filter(Boolean).join(" ")}
+                {estado.anoModelo ? ` · ${estado.anoModelo}` : ""}
+              </p>
+              <p className="mt-0.5 text-sm text-neutral-500">
+                {estado.semPlaca ? "Sem placa" : `Placa ${estado.placa}`}
+                {estado.cepPernoite ? ` · CEP ${estado.cepPernoite}` : ""}
+              </p>
+              <p className="mt-1.5 flex gap-3">
+                <button
+                  type="button"
+                  className="text-sm font-medium text-brand-700 underline-offset-2 hover:underline"
+                  onClick={() => setEtapa(1)}
+                >
+                  Alterar veículo
+                </button>
+                <button
+                  type="button"
+                  className="text-sm font-medium text-brand-700 underline-offset-2 hover:underline"
+                  onClick={() => setEtapa(2)}
+                >
+                  Alterar CEP
+                </button>
+              </p>
+            </div>
             <Field label="Nome completo" htmlFor="nome" error={erros.nome}>
               <Input
                 id="nome"

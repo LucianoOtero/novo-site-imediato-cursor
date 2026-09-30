@@ -18,6 +18,8 @@ export type HeroPartnerLogo = {
   alt: string;
   /** Tamanho do arquivo. O padrão cabe no wordmark horizontal da Porto. */
   className?: string;
+  /** Sem o quadro branco. O selo da Suhai já tem fundo próprio. */
+  semMoldura?: boolean;
 };
 
 export type HeroProps = {
@@ -228,7 +230,13 @@ export function Hero({
         {/* min-w-0: evita overflow do H1 nowrap para cima/embaixo do form no grid */}
         <div className="min-w-0 lg:pr-2">
           {partnerLogo && (
-            <div className="mb-4 flex w-fit items-center rounded-lg bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur-sm md:px-5 md:py-3 [@media(orientation:landscape)_and_(max-height:500px)]:mb-2 [@media(orientation:landscape)_and_(max-height:500px)]:px-3 [@media(orientation:landscape)_and_(max-height:500px)]:py-2">
+            <div
+              className={cn(
+                "mb-4 flex w-fit items-center [@media(orientation:landscape)_and_(max-height:500px)]:mb-2",
+                !partnerLogo.semMoldura &&
+                  "rounded-lg bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur-sm md:px-5 md:py-3 [@media(orientation:landscape)_and_(max-height:500px)]:px-3 [@media(orientation:landscape)_and_(max-height:500px)]:py-2",
+              )}
+            >
               <Image
                 src={partnerLogo.src}
                 alt={partnerLogo.alt}

@@ -63,6 +63,7 @@ export function CotacaoSuhaiBloco() {
           src: "/logos/seguradoras/suhai.svg",
           alt: "Suhai Seguros",
           className: "h-14 w-auto md:h-16",
+          semMoldura: true,
         }}
         eyebrow="Seguro contra roubo e furto"
         headline={"Veja o preço agora\nsem esperar retorno"}
