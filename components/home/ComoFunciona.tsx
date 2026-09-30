@@ -17,8 +17,12 @@ import { company } from "@/lib/company";
  * ("01/02/03", padrão editorial de agência) e linha-guia sutil ligando
  * os passos no desktop — substitui os círculos com ícone genéricos.
  */
-export function ComoFunciona() {
-  const steps = [
+export function ComoFunciona({
+  steps: stepsProp,
+}: {
+  steps?: { title: string; description: string }[];
+} = {}) {
+  const steps = stepsProp ?? [
     { title: "Cote", description: "Preencha o formulário em poucos passos — leva menos de 1 minuto." },
     {
       title: "Especialista compara",

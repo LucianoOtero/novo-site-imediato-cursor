@@ -67,40 +67,53 @@ const COVERAGE_ICON_SRC: Record<string, string> = {
   Guincho: "/icons-3d/cov-guincho.webp",
 };
 
-export function CoverageCards({ ramoSlug }: { ramoSlug: string }) {
-  const ramo = getRamo(ramoSlug);
-  const coverages = ramo?.coverages ?? [];
+export function CoverageCards({
+  ramoSlug,
+  items,
+  eyebrow = "Proteção completa",
+  title = "Coberturas principais",
+}: {
+  ramoSlug?: string;
+  /** Lista própria. Sem ela, usa as coberturas do ramo. */
+  items?: { label: string; icon: string }[];
+  eyebrow?: string;
+  title?: string;
+}) {
+  const ramo = ramoSlug ? getRamo(ramoSlug) : undefined;
+  const coverages =
+    items ??
+    (ramo?.coverages ?? []).map((coverage) => ({
+      label: coverage,
+      icon: COVERAGE_ICON_SRC[coverage] ?? "",
+    }));
 
   if (coverages.length === 0) return null;
 
   return (
     <Section>
       <Container>
-        <SectionHeader eyebrow="Proteção completa" title="Coberturas principais" />
+        <SectionHeader eyebrow={eyebrow} title={title} />
         <div className="mt-12 grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-          {coverages.map((coverage) => {
-            const iconSrc = COVERAGE_ICON_SRC[coverage];
-            return (
-              <div
-                key={coverage}
-                className="group flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white p-2.5 text-center shadow-[0_1px_2px_rgba(11,31,58,0.06)] transition-all duration-200 ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:border-brand-100 hover:shadow-[0_6px_20px_rgba(11,31,58,0.08)]"
-              >
-                {iconSrc ? (
-                  <Image
-                    src={iconSrc}
-                    alt=""
-                    width={44}
-                    height={44}
-                    className="size-11 shrink-0 transition-transform duration-200 group-hover:scale-110"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Shield className="size-7 shrink-0 text-brand-500" aria-hidden="true" />
-                )}
-                <span className="text-sm leading-tight font-medium text-neutral-900">{coverage}</span>
-              </div>
-            );
-          })}
+          {coverages.map((coverage) => (
+            <div
+              key={coverage.label}
+              className="group flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white p-2.5 text-center shadow-[0_1px_2px_rgba(11,31,58,0.06)] transition-all duration-200 ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:border-brand-100 hover:shadow-[0_6px_20px_rgba(11,31,58,0.08)]"
+            >
+              {coverage.icon ? (
+                <Image
+                  src={coverage.icon}
+                  alt=""
+                  width={44}
+                  height={44}
+                  className="size-11 shrink-0 transition-transform duration-200 group-hover:scale-110"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Shield className="size-7 shrink-0 text-brand-500" aria-hidden="true" />
+              )}
+              <span className="text-sm leading-tight font-medium text-neutral-900">{coverage.label}</span>
+            </div>
+          ))}
         </div>
       </Container>
     </Section>

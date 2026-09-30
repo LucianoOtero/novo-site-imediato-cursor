@@ -20,20 +20,22 @@ import { SectionHeader } from "@/components/ui/section-header";
  * (render 3D navy/azul, ver docs/VISUAL_HIGGSFIELD.md) substituem os
  * ícones genéricos do Lucide — WebP 256px, ~5 KB cada, lazy.
  */
-const BENEFITS = [
+export type BenefitItem = { icon: string; title: string; description: string };
+
+const BENEFITS: BenefitItem[] = [
   { icon: "/icons-3d/preco.webp", title: "Preço", description: "Comparamos entre seguradoras parceiras para encontrar o melhor custo-benefício." },
   { icon: "/icons-3d/bonus.webp", title: "Bônus integral", description: "Você mantém sua classe de bônus ao migrar seu seguro para a Imediato." },
   { icon: "/icons-3d/sobmedida.webp", title: "Sob medida", description: "Cobertura ajustada ao seu perfil, veículo e necessidade — sem pacote genérico." },
   { icon: "/icons-3d/sinistro.webp", title: "Apoio no sinistro", description: "Suporte humano do início ao fim, inclusive na hora que mais importa." },
 ];
 
-export function Benefits() {
+export function Benefits({ items = BENEFITS }: { items?: BenefitItem[] }) {
   return (
     <Section className="bg-neutral-50">
       <Container>
         <SectionHeader eyebrow="Nossos diferenciais" title="Por que a Imediato" />
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {BENEFITS.map((benefit) => (
+          {items.map((benefit) => (
             <div
               key={benefit.title}
               className="group rounded-2xl border border-neutral-200 bg-white p-6 shadow-[0_1px_2px_rgba(11,31,58,0.06)] transition-all duration-200 ease-[var(--ease-standard)] hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(11,31,58,0.12)]"

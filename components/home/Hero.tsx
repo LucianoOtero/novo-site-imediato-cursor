@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Image, { getImageProps } from "next/image";
 import { ShieldCheck, Star } from "lucide-react";
 
@@ -10,10 +11,13 @@ import { company } from "@/lib/company";
 import { getRamo } from "@/lib/ramos";
 import { useSubmitLead } from "@/lib/leads/use-submit-lead";
 import { HERO_BLUR } from "@/lib/hero-blur.generated";
+import { cn } from "@/lib/utils";
 
 export type HeroPartnerLogo = {
   src: string;
   alt: string;
+  /** Tamanho do arquivo. O padrão cabe no wordmark horizontal da Porto. */
+  className?: string;
 };
 
 export type HeroProps = {
@@ -26,6 +30,10 @@ export type HeroProps = {
   subheadline?: string;
   /** Logo de parceiro (ex.: LP Porto) acima do H1; home não passa. */
   partnerLogo?: HeroPartnerLogo;
+  /** Substitui o LeadForm inline. A home não passa. */
+  form?: ReactNode;
+  /** Selo mobile abaixo do card. A home usa a frase das 21 seguradoras. */
+  badge?: string;
 };
 
 /**
@@ -142,7 +150,15 @@ function HeroBackground({ ramoSlug }: { ramoSlug: string }) {
   );
 }
 
-export function Hero({ ramoSlug, eyebrow, headline, subheadline, partnerLogo }: HeroProps) {
+export function Hero({
+  ramoSlug,
+  eyebrow,
+  headline,
+  subheadline,
+  partnerLogo,
+  form,
+  badge = "Sem compromisso · 21 seguradoras",
+}: HeroProps) {
   const ramo = getRamo(ramoSlug);
   const { submitLead } = useSubmitLead(ramoSlug);
 
@@ -170,7 +186,7 @@ export function Hero({ ramoSlug, eyebrow, headline, subheadline, partnerLogo }: 
     <>
       <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
         <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
-        Sem compromisso · 21 seguradoras
+        {badge}
       </p>
       {/* Pilha de linhas (2026-08-09, pedido do cliente): a versão em linha
           única quebrava no meio da frase em telas estreitas — agora estrelas,
@@ -212,13 +228,13 @@ export function Hero({ ramoSlug, eyebrow, headline, subheadline, partnerLogo }: 
         {/* min-w-0: evita overflow do H1 nowrap para cima/embaixo do form no grid */}
         <div className="min-w-0 lg:pr-2">
           {partnerLogo && (
-            <div className="mb-4 inline-flex items-center rounded-lg bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur-sm md:px-5 md:py-3 [@media(orientation:landscape)_and_(max-height:500px)]:mb-2 [@media(orientation:landscape)_and_(max-height:500px)]:px-3 [@media(orientation:landscape)_and_(max-height:500px)]:py-2">
+            <div className="mb-4 flex w-fit items-center rounded-lg bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur-sm md:px-5 md:py-3 [@media(orientation:landscape)_and_(max-height:500px)]:mb-2 [@media(orientation:landscape)_and_(max-height:500px)]:px-3 [@media(orientation:landscape)_and_(max-height:500px)]:py-2">
               <Image
                 src={partnerLogo.src}
                 alt={partnerLogo.alt}
                 width={138}
                 height={32}
-                className="h-9 w-auto md:h-11"
+                className={cn("h-9 w-auto md:h-11", partnerLogo.className)}
                 unoptimized
               />
             </div>
@@ -292,7 +308,7 @@ export function Hero({ ramoSlug, eyebrow, headline, subheadline, partnerLogo }: 
             </div>
           </div>
         </div>
-        <LeadForm ramo={ramoSlug} variant="inline" onSuccess={submitLead} />
+        {form ?? <LeadForm ramo={ramoSlug} variant="inline" onSuccess={submitLead} />}
         <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 md:hidden">
           {badges}
         </div>
