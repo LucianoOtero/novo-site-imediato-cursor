@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { CardsNumerados, PerguntasSuhai } from "@/components/suhai/MarcaSuhaiBlocos";
 import { PagamentoSuhaiCard } from "@/components/suhai/PagamentoSuhaiCard";
+import { ReputacaoSuhaiCard } from "@/components/suhai/ReputacaoSuhaiCard";
 import { MarcaSuhaiCasca } from "@/components/suhai/MarcaSuhaiCasca";
 import { CotacaoSuhaiExperiencia } from "@/components/suhai/CotacaoSuhaiExperiencia";
 import { ASSISTENCIA, COBERTURAS, NOTA_PRECO, PASSOS, PERGUNTAS_HOME } from "@/components/suhai/marca-suhai-conteudo";
@@ -141,6 +142,8 @@ export function MarcaSuhaiLanding() {
           ))}
         </div>
       </section>
+
+      <ReputacaoSuhaiCard variante="suhai" />
 
       <PerguntasSuhai
         titulo="Quer entender melhor como o seguro Suhai funciona?"

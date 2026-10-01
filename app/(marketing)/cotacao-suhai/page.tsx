@@ -7,6 +7,7 @@ import { TeamStrip } from "@/components/home/TeamStrip";
 import { Testimonials } from "@/components/home/Testimonials";
 import { CotacaoSuhaiBloco } from "@/components/suhai/CotacaoSuhaiBloco";
 import { PagamentoSuhaiCard } from "@/components/suhai/PagamentoSuhaiCard";
+import { ReputacaoSuhaiCard } from "@/components/suhai/ReputacaoSuhaiCard";
 import { CredBar } from "@/components/social/CredBar";
 import { CTASection } from "@/components/cta/CTASection";
 import { FAQ } from "@/components/shared/FAQ";
@@ -129,6 +130,7 @@ export default async function CotacaoSuhaiPage() {
         columns={3}
       />
       <PagamentoSuhaiCard variante="imediato" />
+      <ReputacaoSuhaiCard variante="imediato" />
       <Testimonials reviews={reviews} rating={rating} reviewCount={reviewCount} />
       <TeamStrip />
       <Section tone="soft">

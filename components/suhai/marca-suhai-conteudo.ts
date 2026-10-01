@@ -175,7 +175,7 @@ export const PERGUNTAS_HOME: PerguntaSuhai[] = [
   {
     question: "A Suhai é confiável?",
     answer:
-      "Sim. É uma seguradora autorizada e regulada pela SUSEP. Publica mais de 1,5 milhão de clientes e se apresenta pela transparência e pelo atendimento próximo.",
+      "Sim. É uma seguradora autorizada e regulada pela SUSEP. Publica mais de 1,5 milhão de clientes e se apresenta pela transparência e pelo atendimento próximo. A reputação pública dela está no bloco desta página e na página da Suhai no Reclame Aqui.",
   },
   {
     question: "Quanto tempo leva para aprovar o seguro?",

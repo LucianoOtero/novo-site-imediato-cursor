@@ -4,6 +4,7 @@ import Image from "next/image";
 
 import { CardsNumerados, PerguntasSuhai } from "@/components/suhai/MarcaSuhaiBlocos";
 import { PagamentoSuhaiCard } from "@/components/suhai/PagamentoSuhaiCard";
+import { ReputacaoSuhaiCard } from "@/components/suhai/ReputacaoSuhaiCard";
 import { MarcaSuhaiCasca } from "@/components/suhai/MarcaSuhaiCasca";
 import { CotacaoSuhaiExperiencia } from "@/components/suhai/CotacaoSuhaiExperiencia";
 import {
@@ -120,6 +121,8 @@ export function MarcaSuhaiProduto({ slug }: { slug: ProdutoSuhaiSlug }) {
       ) : null}
 
       <PagamentoSuhaiCard variante="suhai" />
+
+      <ReputacaoSuhaiCard variante="suhai" />
 
       <CardsNumerados
         titulo="Contratar o seguro da Suhai é simples e rápido"
