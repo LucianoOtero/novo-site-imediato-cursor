@@ -42,19 +42,22 @@ export function MarcaSuhaiCasca({ children }: { children: ReactNode }) {
         <a href="#cotacao" className="shrink-0">
           <Image src="/marca-suhai/logo-dark.svg" alt="Suhai Seguradora" width={110} height={48} priority />
         </a>
-        <nav aria-label="Navegação principal" className="hidden items-center gap-6 text-sm md:flex">
+        <nav aria-label="Navegação principal" className="hidden items-center gap-6 text-sm lg:flex">
           {MENU.map((item) => fora(item.href, item.rotulo))}
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex max-w-full flex-wrap items-center gap-2 sm:gap-3">
           <a
             href={ajuda}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-semibold text-[#1D2D0F] underline-offset-2 hover:underline"
+            className="whitespace-nowrap text-sm font-semibold text-[#1D2D0F] underline-offset-2 hover:underline"
           >
             Preciso de ajuda agora
           </a>
-          <a href="#cotacao" className="rounded-lg bg-[#B0F867] px-4 py-2.5 text-sm font-semibold text-[#1D2D0F]">
+          <a
+            href="#cotacao"
+            className="shrink-0 whitespace-nowrap rounded-lg bg-[#B0F867] px-3 py-2.5 text-sm font-semibold text-[#1D2D0F] sm:px-4"
+          >
             Iniciar Cotação
           </a>
         </div>

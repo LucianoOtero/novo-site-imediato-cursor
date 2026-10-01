@@ -11,7 +11,7 @@ export const PASSOS: CardSuhai[] = [
 ];
 
 const PARCELAMENTO =
-  "Dá para parcelar em até 12 vezes no boleto ou no cartão, e no cartão há opção de até 3 vezes sem juros. Nesta página a cotação mostra o preço. O boleto e o cartão não são cobrados aqui.";
+  "Até 12 vezes no boleto ou no cartão, direto para a Suhai. No cartão, a parcela do mês entra na fatura, com opção de até 3 vezes sem juros.";
 
 export const COBERTURAS: CardSuhai[] = [
   {

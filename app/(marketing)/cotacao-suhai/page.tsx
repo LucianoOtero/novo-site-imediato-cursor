@@ -6,6 +6,7 @@ import { CoverageCards } from "@/components/home/CoverageCards";
 import { TeamStrip } from "@/components/home/TeamStrip";
 import { Testimonials } from "@/components/home/Testimonials";
 import { CotacaoSuhaiBloco } from "@/components/suhai/CotacaoSuhaiBloco";
+import { PagamentoSuhaiCard } from "@/components/suhai/PagamentoSuhaiCard";
 import { CredBar } from "@/components/social/CredBar";
 import { CTASection } from "@/components/cta/CTASection";
 import { FAQ } from "@/components/shared/FAQ";
@@ -61,16 +62,17 @@ const DIFERENCIAIS = [
 const COBERTURAS = [
   { label: "Roubo e furto", icon: "/icons-3d/cov-roubo.webp" },
   { label: "Perda total por colisão", icon: "/icons-3d/cov-colisao.webp" },
+  { label: "Assistência 24h com guincho de 200 km ou 500 km", icon: "/icons-3d/cov-assistencia.webp" },
   { label: "Danos materiais a terceiros", icon: "/icons-3d/cov-danos-materiais.webp" },
   { label: "Danos corporais a terceiros", icon: "/icons-3d/cov-danos-pessoais.webp" },
-  { label: "Assistência 24h com guincho de 200 km ou 500 km", icon: "/icons-3d/cov-assistencia.webp" },
+  { label: "Danos morais a terceiros", icon: "/icons-3d/cov-rcf.webp" },
 ];
 
 const FAQ_ITEMS = [
   {
     question: "O que esse preço cobre?",
     answer:
-      "Roubo e furto, e, conforme o plano, perda total por colisão e danos materiais e corporais a terceiros. A assistência 24h entra com guincho de 200 km ou de 500 km.",
+      "Roubo e furto, e, conforme o plano, perda total por colisão e danos materiais, corporais e morais a terceiros. A assistência 24h entra com guincho de 200 km ou de 500 km.",
   },
   {
     question: "O que não está incluído?",
@@ -124,7 +126,9 @@ export default async function CotacaoSuhaiPage() {
         items={COBERTURAS}
         eyebrow="Este seguro"
         title="Coberturas que entram no preço"
+        columns={3}
       />
+      <PagamentoSuhaiCard variante="imediato" />
       <Testimonials reviews={reviews} rating={rating} reviewCount={reviewCount} />
       <TeamStrip />
       <Section tone="soft">

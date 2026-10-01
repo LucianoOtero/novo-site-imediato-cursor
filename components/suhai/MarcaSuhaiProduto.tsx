@@ -3,6 +3,7 @@
 import Image from "next/image";
 
 import { CardsNumerados, PerguntasSuhai } from "@/components/suhai/MarcaSuhaiBlocos";
+import { PagamentoSuhaiCard } from "@/components/suhai/PagamentoSuhaiCard";
 import { MarcaSuhaiCasca } from "@/components/suhai/MarcaSuhaiCasca";
 import { CotacaoSuhaiExperiencia } from "@/components/suhai/CotacaoSuhaiExperiencia";
 import {
@@ -61,26 +62,35 @@ export function MarcaSuhaiProduto({ slug }: { slug: ProdutoSuhaiSlug }) {
 
   return (
     <MarcaSuhaiCasca>
-      <div className="mx-auto max-w-6xl px-4 pb-12 md:px-6">
-        <section className="grid items-center gap-8 overflow-hidden rounded-[28px] bg-[#1D2D0F] lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="relative min-h-[280px]">
-            <Image
-              src={produto.imagem}
-              alt=""
-              fill
-              priority
-              className="object-cover"
-              sizes="(min-width: 1024px) 40vw, 100vw"
-            />
+      <CotacaoSuhaiExperiencia
+        cabecalho={(formulario) => (
+          <div className="mx-auto max-w-6xl px-4 pb-8 md:px-6">
+            <section className="grid items-center gap-8 overflow-hidden rounded-[28px] bg-[#1D2D0F] lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="relative min-h-[280px] px-6 py-10 md:px-10 md:py-14">
+                <Image
+                  src={produto.imagem}
+                  alt=""
+                  fill
+                  priority
+                  className="object-cover"
+                  sizes="(min-width: 1024px) 60vw, 100vw"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(105deg,#1D2D0F_0%,rgba(29,45,15,0.88)_42%,rgba(29,45,15,0.2)_78%)]" />
+                <div className="relative max-w-xl">
+                  <h1 className="font-display text-4xl font-bold leading-[1.05] text-[#B0F867] md:text-5xl">
+                    {produto.titulo}
+                  </h1>
+                  <p className="mt-4 max-w-md text-base text-white/90 md:text-lg">{produto.texto}</p>
+                  <p className="mt-3 max-w-md text-sm text-white/80">{produto.paraQuem}</p>
+                </div>
+              </div>
+              <div id="cotacao" className="scroll-mt-6 px-4 pb-6 lg:py-8 lg:pr-8 lg:pl-0">
+                {formulario}
+              </div>
+            </section>
           </div>
-          <div className="px-6 py-10 md:px-10">
-            <h1 className="font-display text-4xl font-bold leading-[1.05] text-[#B0F867] md:text-5xl">{produto.titulo}</h1>
-            <p className="mt-4 text-lg text-white/90">{produto.texto}</p>
-            <p className="mt-4 text-white/80">{produto.paraQuem}</p>
-            <p className="mt-3 text-white/80">{produto.protege}</p>
-          </div>
-        </section>
-      </div>
+        )}
+      />
 
       <CardsNumerados
         titulo="Escolha e combine as coberturas do seu jeito"
@@ -109,13 +119,7 @@ export function MarcaSuhaiProduto({ slug }: { slug: ProdutoSuhaiSlug }) {
         </section>
       ) : null}
 
-      <CotacaoSuhaiExperiencia
-        cabecalho={(formulario) => (
-          <div id="cotacao" className="mx-auto max-w-xl scroll-mt-6 px-4 pb-8 md:px-6">
-            {formulario}
-          </div>
-        )}
-      />
+      <PagamentoSuhaiCard variante="suhai" />
 
       <CardsNumerados
         titulo="Contratar o seguro da Suhai é simples e rápido"

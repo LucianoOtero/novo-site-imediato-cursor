@@ -72,12 +72,15 @@ export function CoverageCards({
   items,
   eyebrow = "Proteção completa",
   title = "Coberturas principais",
+  columns = 4,
 }: {
   ramoSlug?: string;
   /** Lista própria. Sem ela, usa as coberturas do ramo. */
   items?: { label: string; icon: string }[];
   eyebrow?: string;
   title?: string;
+  /** No desktop, 3 colunas fecham duas linhas quando a lista tem seis itens. */
+  columns?: 3 | 4;
 }) {
   const ramo = ramoSlug ? getRamo(ramoSlug) : undefined;
   const coverages =
@@ -93,7 +96,13 @@ export function CoverageCards({
     <Section>
       <Container>
         <SectionHeader eyebrow={eyebrow} title={title} />
-        <div className="mt-12 grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+        <div
+          className={
+            columns === 3
+              ? "mt-12 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 lg:gap-4"
+              : "mt-12 grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4"
+          }
+        >
           {coverages.map((coverage) => (
             <div
               key={coverage.label}

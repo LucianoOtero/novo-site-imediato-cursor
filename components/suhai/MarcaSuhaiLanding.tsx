@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { CardsNumerados, PerguntasSuhai } from "@/components/suhai/MarcaSuhaiBlocos";
+import { PagamentoSuhaiCard } from "@/components/suhai/PagamentoSuhaiCard";
 import { MarcaSuhaiCasca } from "@/components/suhai/MarcaSuhaiCasca";
 import { CotacaoSuhaiExperiencia } from "@/components/suhai/CotacaoSuhaiExperiencia";
 import { ASSISTENCIA, COBERTURAS, NOTA_PRECO, PASSOS, PERGUNTAS_HOME } from "@/components/suhai/marca-suhai-conteudo";
@@ -20,6 +21,10 @@ const PILARES = [
   {
     titulo: "É seguro de verdade, não é proteção veicular",
     texto: "A Suhai é uma seguradora regulamentada pela SUSEP, o que significa garantia, confiança e tranquilidade quando você mais precisa",
+  },
+  {
+    titulo: "Contratação 100% online",
+    texto: "Resolva tudo pelo celular ou pelo computador, de forma rápida e segura, sem papelada",
   },
 ] as const;
 
@@ -61,7 +66,7 @@ export function MarcaSuhaiLanding() {
         <h2 className="max-w-xl font-display text-3xl font-bold md:text-4xl">
           Cada veículo tem suas necessidades. A Suhai entende todas elas
         </h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {PRODUTOS_SUHAI.map((produto) => (
             <Link
               key={produto.slug}
@@ -69,12 +74,20 @@ export function MarcaSuhaiLanding() {
               className="relative flex min-h-[500px] overflow-hidden rounded-lg bg-[#B0F867]"
             >
               <span className="absolute inset-0 overflow-hidden">
-                <Image src={produto.imagem} alt="" fill className="object-cover" sizes="(min-width: 768px) 33vw, 100vw" />
+                <Image
+                  src={produto.imagem}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                />
               </span>
               <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(176,248,103,0)_27.885%,rgba(176,248,103,0.95)_85.577%)]" />
-              <span className="relative z-[1] mt-auto flex flex-col gap-3 p-10">
-                <h3 className="font-display text-[2rem] font-bold leading-tight text-[#1D2D0F]">{produto.titulo}</h3>
-                <p className="text-xl font-semibold text-[#1D2D0F]">{produto.texto}</p>
+              <span className="relative z-[1] mt-auto flex min-w-0 flex-col gap-3 p-6 lg:p-10">
+                <h3 className="font-display text-2xl font-bold leading-tight text-[#1D2D0F] lg:text-[2rem]">
+                  {produto.titulo}
+                </h3>
+                <p className="text-base font-semibold text-[#1D2D0F] lg:text-xl">{produto.texto}</p>
               </span>
             </Link>
           ))}
@@ -93,6 +106,8 @@ export function MarcaSuhaiLanding() {
         texto="Proteção extra, com socorro em qualquer lugar do Brasil."
         itens={ASSISTENCIA}
       />
+
+      <PagamentoSuhaiCard variante="suhai" />
 
       <CardsNumerados
         titulo="Contratar o seguro da Suhai é simples e rápido"
@@ -116,7 +131,7 @@ export function MarcaSuhaiLanding() {
           Desde 2013, mais de 1,5 milhão de clientes. A Suhai é regulada pela SUSEP e publica preços até 60% mais
           acessíveis que a média do mercado.
         </p>
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {PILARES.map((pilar, indice) => (
             <article key={pilar.titulo} className="rounded-2xl bg-white p-6">
               <p className="text-sm font-semibold text-[#1D2D0F]">0{indice + 1}</p>
