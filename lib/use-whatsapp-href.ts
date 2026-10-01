@@ -29,12 +29,12 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
  * `phoneNumber` (2026-07-15): opcional — permite montar o link para um
  * número diferente do WhatsApp principal (ex.: Ouvidoria, no rodapé).
  */
-export function useWhatsappHref(ramo?: string, phoneNumber?: string): string {
-  const [href, setHref] = useState(() => buildWhatsappUrl(ramo, false, phoneNumber));
+export function useWhatsappHref(ramo?: string, phoneNumber?: string, message?: string): string {
+  const [href, setHref] = useState(() => buildWhatsappUrl(ramo, false, phoneNumber, message));
 
   useEffect(() => {
-    setHref(buildWhatsappUrl(ramo, true, phoneNumber));
-  }, [ramo, phoneNumber]);
+    setHref(buildWhatsappUrl(ramo, true, phoneNumber, message));
+  }, [ramo, phoneNumber, message]);
 
   return href;
 }

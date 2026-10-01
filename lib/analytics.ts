@@ -156,6 +156,16 @@ type AnalyticsEventMap = {
   };
   /** Envio bem-sucedido do formulário da página `/contato`. */
   contact_form_submit: { location: "contato" };
+  /** Início da cotação Suhai (foco no formulário). Igual nos dois hosts do experimento. */
+  suhai_quote_start: { form_id: "cotacao_suhai" };
+  /** Preço exibido — conversão do experimento Suhai. Uma vez por carregamento. */
+  suhai_quote_price: { form_id: "cotacao_suhai" };
+  /** Saiu depois de começar e antes de ver o preço. */
+  suhai_quote_abandon: {
+    form_id: "cotacao_suhai";
+    last_step: 1 | 2 | 3;
+    reason: "pagehide" | "hidden" | "unmount";
+  };
 };
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;

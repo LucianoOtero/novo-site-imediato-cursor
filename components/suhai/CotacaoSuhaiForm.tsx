@@ -1,13 +1,15 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
+import { EnderecoCepDisplay } from "@/components/lead/EnderecoCepDisplay";
 import { Field } from "@/components/lead/fields";
 import { ProgressBar } from "@/components/lead/ProgressBar";
 import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO } from "@/lib/suhai/dominio";
+import { trackEvent } from "@/lib/analytics";
 import type { OpcaoVeiculo } from "@/lib/suhai/veiculo-placa";
 import type { CotacaoResultado } from "@/lib/suhai/types";
 import { cn } from "@/lib/utils";
@@ -62,6 +64,7 @@ type Estado = {
   codFipe: string;
   opcoes: OpcaoVeiculo[];
   cepPernoite: string;
+  enderecoLinha: string;
   nome: string;
   cpf: string;
   dataNascimento: string;
@@ -82,6 +85,7 @@ const INICIAL: Estado = {
   codFipe: "",
   opcoes: [],
   cepPernoite: "",
+  enderecoLinha: "",
   nome: "",
   cpf: "",
   dataNascimento: "",
@@ -113,9 +117,89 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   estadoRef.current = estado;
   const premissasRef = useRef(premissas);
   premissasRef.current = premissas;
+  const cepConsultaRef = useRef(0);
+  const etapaRef = useRef(etapa);
+  etapaRef.current = etapa;
+  const comecouRef = useRef(false);
+  const precoEmitidoRef = useRef(false);
+  const abandonouRef = useRef(false);
+  const efeitoAbandonoRef = useRef(0);
+
+  function marcarInicio() {
+    if (comecouRef.current) return;
+    comecouRef.current = true;
+    trackEvent("suhai_quote_start", { form_id: "cotacao_suhai" });
+  }
+
+  useEffect(() => {
+    const efeito = ++efeitoAbandonoRef.current;
+    let espera: ReturnType<typeof setTimeout> | null = null;
+
+    const emitir = (reason: "pagehide" | "hidden" | "unmount") => {
+      if (abandonouRef.current || !comecouRef.current || precoEmitidoRef.current) return;
+      abandonouRef.current = true;
+      trackEvent("suhai_quote_abandon", {
+        form_id: "cotacao_suhai",
+        last_step: etapaRef.current,
+        reason,
+      });
+    };
+
+    const aoSair = () => emitir("pagehide");
+    const aoOcultar = () => {
+      if (document.visibilityState !== "hidden") {
+        if (espera) {
+          clearTimeout(espera);
+          espera = null;
+        }
+        return;
+      }
+      if (espera) clearTimeout(espera);
+      espera = setTimeout(() => emitir("hidden"), 400);
+    };
+
+    window.addEventListener("pagehide", aoSair);
+    document.addEventListener("visibilitychange", aoOcultar);
+    return () => {
+      window.removeEventListener("pagehide", aoSair);
+      document.removeEventListener("visibilitychange", aoOcultar);
+      if (espera) clearTimeout(espera);
+      queueMicrotask(() => {
+        if (efeitoAbandonoRef.current !== efeito) return;
+        emitir("unmount");
+      });
+    };
+  }, []);
 
   function definir<K extends keyof Estado>(campo: K, valor: Estado[K]) {
     setEstado((anterior) => ({ ...anterior, [campo]: valor }));
+  }
+
+  async function consultarCep(valor: string) {
+    const digits = onlyDigits(valor);
+    if (digits.length !== 8) return;
+    const consulta = ++cepConsultaRef.current;
+    try {
+      const resposta = await fetch("/api/validate/cep", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cep: digits }),
+      });
+      const corpo = (await resposta.json()) as { ok?: boolean; linha?: string };
+      if (consulta !== cepConsultaRef.current || onlyDigits(estadoRef.current.cepPernoite) !== digits) return;
+      if (corpo.ok === false) {
+        setEstado((anterior) => ({ ...anterior, enderecoLinha: "" }));
+        setErros((anterior) => ({
+          ...anterior,
+          cep: "Não encontramos esse CEP — revise ou prossiga assim mesmo",
+        }));
+        return;
+      }
+      setErros((anterior) => ({ ...anterior, cep: "" }));
+      setEstado((anterior) => ({ ...anterior, enderecoLinha: corpo.linha ?? "" }));
+    } catch {
+      // A consulta que falha não trava o formulário.
+    }
   }
 
   async function preencherPorPlaca(placaInformada?: string) {
@@ -275,6 +359,10 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         return;
       }
       onResultado(corpo as CotacaoResultado, atual.categoria, usadas);
+      if (!precoEmitidoRef.current) {
+        precoEmitidoRef.current = true;
+        trackEvent("suhai_quote_price", { form_id: "cotacao_suhai" });
+      }
     } catch {
       setErroGeral("Falha de conexão. Tente novamente.");
     } finally {
@@ -324,6 +412,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         "flex scroll-mt-28 flex-col gap-4 rounded-xl border p-6 max-[360px]:gap-3 max-[360px]:p-4 lg:gap-3 lg:p-5 xl:gap-4 xl:p-6",
         FROST_CARD_CLASS,
       )}
+      onFocusCapture={marcarInicio}
       onSubmit={(event) => {
         event.preventDefault();
         void avancar();
@@ -435,20 +524,29 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         )}
 
         {etapa === 2 && (
-          <Field
-            label="CEP onde o veículo dorme"
-            htmlFor="cep"
-            error={erros.cep}
-            hint="É o CEP de pernoite, o lugar em que o carro passa a noite."
-          >
-            <Input
-              id="cep"
-              inputMode="numeric"
-              autoComplete="postal-code"
-              value={estado.cepPernoite}
-              onChange={(event) => definir("cepPernoite", formatCep(event.target.value))}
-            />
-          </Field>
+          <>
+            <Field
+              label="CEP onde o veículo dorme"
+              htmlFor="cep"
+              error={erros.cep}
+              hint="É o CEP de pernoite, o lugar em que o carro passa a noite."
+            >
+              <Input
+                id="cep"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                value={estado.cepPernoite}
+                onChange={(event) => {
+                  cepConsultaRef.current += 1;
+                  const cep = formatCep(event.target.value);
+                  setEstado((anterior) => ({ ...anterior, cepPernoite: cep, enderecoLinha: "" }));
+                  setErros((anterior) => ({ ...anterior, cep: "" }));
+                }}
+                onBlur={(event) => void consultarCep(event.target.value)}
+              />
+            </Field>
+            <EnderecoCepDisplay linha={estado.enderecoLinha} />
+          </>
         )}
 
         {etapa === 3 && (
@@ -460,7 +558,11 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
               </p>
               <p className="mt-0.5 text-sm text-neutral-500">
                 {estado.semPlaca ? "Sem placa" : `Placa ${estado.placa}`}
-                {estado.cepPernoite ? ` · CEP ${estado.cepPernoite}` : ""}
+                {estado.enderecoLinha
+                  ? ` · ${estado.enderecoLinha}`
+                  : estado.cepPernoite
+                    ? ` · CEP ${estado.cepPernoite}`
+                    : ""}
               </p>
               <p className="mt-1.5 flex gap-3">
                 <button
