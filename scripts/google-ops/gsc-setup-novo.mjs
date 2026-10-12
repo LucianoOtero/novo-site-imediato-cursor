@@ -3,7 +3,8 @@
  *
  * 1) Lista as propriedades acessíveis à conta autenticada.
  * 2) Se existir propriedade de Domínio `sc-domain:segurosimediato.com.br`,
- *    o subdomínio novo já está coberto — só submete o sitemap nela.
+ *    o subdomínio novo já está coberto — submete o sitemap de www e
+ *    remove o sitemap do host novo.
  * 3) Senão, adiciona a propriedade URL-prefix
  *    `https://novo.segurosimediato.com.br/` (a verificação acontece pelas
  *    meta tags google-site-verification já publicadas no site) e submete
@@ -17,7 +18,8 @@ import { getAuthorizedClient } from "./lib/auth.mjs";
 
 const DOMAIN_PROPERTY = "sc-domain:segurosimediato.com.br";
 const URL_PROPERTY = "https://novo.segurosimediato.com.br/";
-const SITEMAP_URL = "https://novo.segurosimediato.com.br/sitemap.xml";
+const SITEMAP_URL = "https://www.segurosimediato.com.br/sitemap.xml";
+const LEGACY_SITEMAP_URL = "https://novo.segurosimediato.com.br/sitemap.xml";
 
 async function main() {
   const auth = await getAuthorizedClient();
@@ -51,7 +53,12 @@ async function main() {
     target = URL_PROPERTY;
   }
 
-  console.log(`\nSubmetendo sitemap ${SITEMAP_URL} na propriedade ${target}…`);
+  console.log(`\nRemovendo sitemap legado ${LEGACY_SITEMAP_URL}…`);
+  await gsc.sitemaps.delete({ siteUrl: target, feedpath: LEGACY_SITEMAP_URL }).catch((err) => {
+    console.log(`Sitemap legado não removido: ${err.response?.data?.error?.message || err.message}`);
+  });
+
+  console.log(`Submetendo sitemap ${SITEMAP_URL} na propriedade ${target}…`);
   await gsc.sitemaps.submit({ siteUrl: target, feedpath: SITEMAP_URL });
 
   const { data: sm } = await gsc.sitemaps.list({ siteUrl: target });

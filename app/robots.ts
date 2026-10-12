@@ -11,9 +11,10 @@ import { isProduction, publicEnv } from "@/lib/env";
  * Fora de produção: bloqueia **tudo** (`disallow: "/"`) e omite o
  * sitemap (reduz a chance de descoberta/crawling acidental de staging).
  *
- * Em produção: bloqueia apenas `/api/*`. **`/obrigado` não é bloqueado
- * aqui de propósito** — bloquear via `robots.txt` impediria o Google de
- * sequer rastrear a página e ler sua meta tag `noindex` (Issue 14, já
+ * Em produção: bloqueia `/api/*`, assets de build (`/_next/`) e a imagem
+ * Open Graph servida como URL. **`/obrigado` não é bloqueado aqui de
+ * propósito** — bloquear via `robots.txt` impediria o Google de sequer
+ * rastrear a página e ler sua meta tag `noindex` (Issue 14, já
  * implementada); a prática correta é deixar rastrear e confiar no
  * `noindex` da própria página, não duplicar via disallow.
  */
@@ -30,7 +31,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: "/api/",
+      disallow: ["/api/", "/_next/", "/opengraph-image"],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
   };
