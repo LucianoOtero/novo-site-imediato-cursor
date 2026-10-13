@@ -13,6 +13,23 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## [0.2.54] — 2026-10-13 (Fix SEO: auditoria Semrush)
+
+### Fixed
+- [`app/robots.ts`](app/robots.ts): `/_next/` sai do `Disallow` (bloqueava CSS, JS, fontes e `/_next/image`; Semrush apontou 751 recursos bloqueados). Continua bloqueado: `/api/` e `/opengraph-image`.
+- [`lib/seguradoras.ts`](lib/seguradoras.ts): área do cliente Allianz aponta para `allianz.com.br/.../allianz-cliente.html` (`www.allianzcliente.com.br` com certificado inválido).
+- [`lib/company.ts`](lib/company.ts): Facebook em `www.facebook.com` (era `web.facebook.com`, que redireciona).
+- Títulos: `/contato` → "Contato e Atendimento | Imediato Seguros" (era curto demais); `/a-imediato` deixa de repetir o H1.
+
+### Added
+- [`app/llms.txt/route.ts`](app/llms.txt/route.ts): `/llms.txt` (formato llmstxt.org) gerado de `lib/company.ts` + `lib/ramos.ts`, `force-static`.
+
+### Notas
+- Não alterado: `lib/google-reviews.ts`, `force-static` das 4 páginas e `instrumentation.ts` (fix 0.2.53). Build confirma `/`, `/cotacao`, `/cotacao-porto`, `/reputacao` como `○` sem Revalidate.
+- `/cotacao-porto` órfã é intencional (LP do Google Ads, no sitemap); os links internos entram com a branch `uat-*`.
+- Falsos positivos: links HDI, Yelum, Aliro, Facebook e LinkedIn respondem 403/999 a robôs e IPs fora do Brasil; o crawler do Semrush roda fora do país.
+- Fora do escopo: razão texto/HTML (payload RSC do Next) e páginas com poucas palavras (`/equipe`).
+
 ## [0.2.53] — 2026-10-13 (Fix: HTTP 500 para crawlers nas páginas ISR → reprovação no Google Ads)
 
 ### Fixed

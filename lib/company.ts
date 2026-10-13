@@ -121,7 +121,7 @@ export const company: CompanyConfig = {
     fraudAlert: "/alerta-de-fraude",
   },
   social: {
-    facebook: "https://web.facebook.com/imediatocorretora", // CONFIRMADO
+    facebook: "https://www.facebook.com/imediatocorretora", // CONFIRMADO (web.facebook.com redireciona para www)
     instagram: "https://www.instagram.com/imediato.seguros/", // CONFIRMADO
     linkedin: "https://www.linkedin.com/company/imediato-solu%C3%A7%C3%B5es-em-seguros/", // CONFIRMADO
   },

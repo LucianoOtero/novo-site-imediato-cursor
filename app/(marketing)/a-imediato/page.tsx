@@ -17,7 +17,7 @@ import { team } from "@/lib/team";
  * `docs/DADOS_OFICIAIS.md` — sem biografia inventada.
  */
 export const metadata: Metadata = buildPageMetadata({
-  title: `Sobre a ${company.tradeName}`,
+  title: `Sobre a ${company.tradeName} | Corretora há ${company.business.yearsExperience} anos`,
   description: `Conheça a ${company.tradeName}: corretora com ${company.business.yearsExperience}+ anos, registro SUSEP ${company.susep}, comparando ${company.business.insurersCount} seguradoras.`,
   path: "/a-imediato",
 });
