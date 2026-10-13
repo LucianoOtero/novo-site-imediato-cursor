@@ -56,6 +56,9 @@ export const metadata: Metadata = buildPageMetadata({
   path: "/cotacao-porto",
 });
 
+/** Sem ISR: avaliações resolvidas no build (ver nota 2026-10-13 em `lib/google-reviews.ts`). */
+export const dynamic = "force-static";
+
 export default async function CotacaoPortoPage() {
   const { reviews, rating, reviewCount } = await fetchGoogleReviewsSummary();
 

@@ -33,6 +33,19 @@ import { env } from "@/lib/env";
  * dados fictícios, apenas uma fonte estática em vez de uma chamada de
  * API ao vivo. Ver `docs/BACKLOG.md` para o registro completo desta
  * decisão.
+ *
+ * **Dado resolvido no build, sem ISR (2026-10-13)**: o `fetch` abaixo
+ * usava `next: { revalidate: 86400 }`, o que transformava todas as
+ * páginas que o chamam (`/`, `/cotacao`, `/cotacao-porto`, `/reputacao`)
+ * em rotas ISR regeneradas em runtime a cada 24h. Nos logs da Vercel,
+ * 100% dessas regenerações em runtime falhavam ("Server Components
+ * render", digest só) — pessoas recebiam a cópia em cache (HIT/STALE),
+ * mas crawlers (AdsBot, Googlebot, bingbot) recebiam `BYPASS — Crawler`
+ * → function → HTTP 500, o que reprovou os anúncios do Google Ads por
+ * "Destino que não funciona" (21/09 e 13/10/2026). Decisão: avaliações
+ * resolvidas uma vez no build (`cache: "force-cache"`, sem revalidate);
+ * atualizam a cada deploy. As páginas chamadoras declaram
+ * `dynamic = "force-static"` como trava.
  */
 export type GoogleReview = {
   author: string;
@@ -142,8 +155,8 @@ export async function fetchGoogleReviewsSummary(): Promise<GoogleReviewsSummary>
         "X-Goog-Api-Key": env.googlePlacesApiKey,
         "X-Goog-FieldMask": "reviews,rating,userRatingCount",
       },
-      // Avaliações/nota não mudam com frequência — revalida 1x/dia em vez de a cada request.
-      next: { revalidate: 60 * 60 * 24 },
+      // Resolvido uma vez no build (sem ISR) — ver nota "Dado resolvido no build" no cabeçalho.
+      cache: "force-cache",
     });
 
     if (!response.ok) {

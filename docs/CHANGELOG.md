@@ -13,6 +13,20 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## [0.2.53] — 2026-10-13 (Fix: HTTP 500 para crawlers nas páginas ISR → reprovação no Google Ads)
+
+### Fixed
+- `/`, `/cotacao`, `/cotacao-porto` e `/reputacao` deixam de ser ISR (`Revalidate 1d`) e passam a ser 100% estáticas. Causa: o `fetch` da Places API em [`lib/google-reviews.ts`](lib/google-reviews.ts) usava `next: { revalidate: 86400 }`; nos logs da Vercel, 68/68 regenerações em runtime (12–13/10) falharam com "Server Components render" (digest `3000337422`/`2676725244`). Pessoas recebiam a cópia em cache (`HIT`/`STALE`); crawlers (AdsBot-Google, Googlebot, bingbot, entrando por iad1/pdx1) recebiam `BYPASS — Crawler` → function → **HTTP 500** → anúncios reprovados por "Destino que não funciona" (21/09 Porto; 13/10 Exp + Porto). Mesmo padrão nos 5XX do Search Console desde agosto.
+- Fix: `cache: "force-cache"` no `fetch` (avaliações resolvidas no build, atualizadas a cada deploy) + `export const dynamic = "force-static"` nas 4 páginas como trava.
+
+### Added
+- [`instrumentation.ts`](instrumentation.ts): hook `onRequestError` (Next 15) grava nos logs da Vercel a mensagem/stack/digest reais de qualquer erro de renderização em runtime (hoje só o digest aparece).
+
+### Ops
+- [ ] Após deploy: Vercel Logs sem invocação de function nas 4 rotas; `curl` com UA AdsBot a partir dos EUA → 200.
+- [ ] Nova contestação no Google Ads (campanhas Exp `24095000558` e Porto `24278639461`).
+- [ ] Aplicar o mesmo padrão em `app/(marketing)/cotacao-suhai/page.tsx` nas branches `uat-*` antes de irem para `main`.
+
 ## [0.2.52] — 2026-09-26 (UX Fase 2: Clarity + Gate A privacidade)
 
 ### Added
