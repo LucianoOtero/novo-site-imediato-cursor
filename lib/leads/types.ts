@@ -36,7 +36,7 @@ export const apiLeadSchema = leadSchema.extend({
    * `"complete"` (não é um estágio separado — o complete desse caminho
    * já existe e precisa continuar atualizando o lead normalmente).
    */
-  stage: z.enum(["initial", "progress", "complete", "rpa_result", "consultant_requested"]).optional(),
+  stage: z.enum(["initial", "progress", "complete", "rpa_result", "consultant_requested", "suhai_plan_selected"]).optional(),
   /** Escolha do passo 4 (`"aguardar"` = acompanhar o cálculo RPA agora; `"consultor"` = receber o cálculo completo depois). */
   rpaChoice: z.enum(["aguardar", "consultor"]).optional(),
   /** Resumo do resultado do cálculo RPA (estágio `"rpa_result"`) — dados que antes morriam no browser. */
@@ -69,14 +69,72 @@ export const apiLeadSchema = leadSchema.extend({
    * enviar `cotacao_dados_recebidos` só no `complete` do modal com dados
    * extras, sem afetar o funil de cotação.
    */
-  captureChannel: z.enum(["contact_modal", "lead_form"]).optional(),
+  captureChannel: z.enum(["contact_modal", "lead_form", "suhai_form"]).optional(),
   /**
    * Canal do ContactLeadModal (2026-08-17) — discrimina WhatsApp vs
    * telefone no Firebase/Espo. Só faz sentido com `captureChannel:
    * "contact_modal"`. Ausente no LeadForm.
    */
   modalChannel: z.enum(["whatsapp", "phone"]).optional(),
+  /** Etapa concluída da cotação Suhai em cada `progress` (`captureChannel: "suhai_form"`). */
+  suhaiEtapa: z.enum(["veiculo", "cep"]).optional(),
+  /**
+   * `cdCobertura` escolhido (estágio `suhai_plan_selected`). Os valores do
+   * plano saem da cotação gravada no servidor, nunca do browser.
+   */
+  suhaiCdCobertura: z.number().int().positive().optional(),
 });
+
+/** Estágios da cotação Suhai gravados no servidor, fora de `/api/lead`. */
+export type SuhaiStage = "suhai_quote" | "suhai_plan_selected" | "suhai_proposal";
+
+export type SuhaiOfertaResumo = {
+  cdCobertura: number;
+  plano: string;
+  assistencia: number;
+  premioTotal: number;
+  premioMensalEstimado: number;
+  franquia: number | null;
+  importanciaSegurada: number | null;
+  parcelamentoMaximo: number;
+};
+
+export type SuhaiCotacaoResumo = {
+  status: "sucesso" | "falha";
+  ambiente: "homologacao" | "producao";
+  simulado: boolean;
+  protocolo?: string;
+  valorFipe?: number | null;
+  veiculo?: string;
+  premissas?: {
+    utilizacao: string;
+    tipoUtilizacao?: number;
+    garagemResidencia: boolean;
+    garagemTrabalho: boolean;
+    garagemEscola: boolean;
+    classeBonus: number;
+    cepPernoite: string;
+  };
+  ofertas?: SuhaiOfertaResumo[];
+  erro?: string;
+  codigoSuhai?: string | null;
+  geradoEm: string;
+};
+
+export type SuhaiPropostaResumo = {
+  status: "sucesso" | "falha";
+  ambiente: "homologacao" | "producao";
+  protocolo: string;
+  numeroProposta?: string;
+  cdCobertura: number;
+  formaPagamento: "boleto";
+  parcelas: number;
+  diaVencimento: number;
+  vigenciaInicio: string;
+  erro?: string;
+  codigoSuhai?: string | null;
+  geradoEm: string;
+};
 
 export type ApiLeadPayload = z.infer<typeof apiLeadSchema>;
 
@@ -112,13 +170,15 @@ export type LeadRecord = {
    * só — comportamento anterior a esta issue, mantido por padrão).
    * Estágios de evento (2026-07-20): ver comentário em `apiLeadSchema.stage`.
    */
-  stage: "initial" | "progress" | "complete" | "rpa_result" | "consultant_requested";
+  stage: "initial" | "progress" | "complete" | "rpa_result" | "consultant_requested" | SuhaiStage;
+  /** Etapa da cotação Suhai — ver `apiLeadSchema.suhaiEtapa`. */
+  suhaiEtapa?: "veiculo" | "cep";
   /** Escolha do passo 4 (projeto 2026-07-20) — `"aguardar"` ou `"consultor"`. */
   rpaChoice?: "aguardar" | "consultor";
   /** Resumo do resultado do cálculo RPA (projeto 2026-07-20). */
   rpaResultado?: ApiLeadPayload["rpaResultado"];
   /** Origem da captura — ver `apiLeadSchema.captureChannel`. */
-  captureChannel?: "contact_modal" | "lead_form";
+  captureChannel?: "contact_modal" | "lead_form" | "suhai_form";
   /** Canal do modal — ver `apiLeadSchema.modalChannel`. */
   modalChannel?: "whatsapp" | "phone";
   ramo: string;

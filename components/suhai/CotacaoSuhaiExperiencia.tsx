@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { OfertasSuhai } from "@/components/suhai/OfertasSuhai";
+import { PropostaSuhaiForm, type ContextoProposta } from "@/components/suhai/PropostaSuhaiForm";
 import {
   CotacaoSuhaiForm,
   PREMISSAS_INICIAIS,
@@ -12,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { postLead } from "@/lib/leads/post-lead";
 import { TIPO_UTILIZACAO, UTILIZACAO_DUT } from "@/lib/suhai/dominio";
 import type { CotacaoResultado, Oferta } from "@/lib/suhai/types";
 
@@ -35,6 +37,25 @@ export function CotacaoSuhaiExperiencia({
   const [ajustando, setAjustando] = useState(false);
   const [recalculando, setRecalculando] = useState(false);
   const [escolhida, setEscolhida] = useState<Oferta | null>(null);
+  const [contexto, setContexto] = useState<ContextoProposta>({ placa: "", cep: "", nome: "", ddd: "", celular: "" });
+  const planoEnviadoRef = useRef<string>("");
+
+  function escolher(oferta: Oferta) {
+    setEscolhida(oferta);
+    if (!resultado || resultado.simulado || !contexto.leadId) return;
+    const chave = `${resultado.protocolo}:${oferta.cdCobertura}`;
+    if (planoEnviadoRef.current === chave) return;
+    planoEnviadoRef.current = chave;
+    void postLead({
+      ramo: "auto",
+      ddd: contexto.ddd,
+      celular: contexto.celular,
+      stage: "suhai_plan_selected",
+      captureChannel: "suhai_form",
+      leadId: contexto.leadId,
+      suhaiCdCobertura: oferta.cdCobertura,
+    }).catch((error) => console.error("[CotacaoSuhaiExperiencia] Falha ao registrar o plano (não bloqueante):", error));
+  }
 
   useEffect(() => {
     if (!resultado) return;
@@ -61,10 +82,11 @@ export function CotacaoSuhaiExperiencia({
     <CotacaoSuhaiForm
       ref={formRef}
       premissas={premissas}
-      onResultado={(cotacao, categoriaVeiculo, usadas) => {
+      onResultado={(cotacao, categoriaVeiculo, usadas, origem) => {
         setCategoria(categoriaVeiculo);
         setCotadas(usadas);
         setResultado(cotacao);
+        setContexto(origem);
         setEscolhida(null);
       }}
     />
@@ -164,11 +186,14 @@ export function CotacaoSuhaiExperiencia({
             )}
 
             <div className="mt-8">
-              <OfertasSuhai resultado={resultado} onEscolher={setEscolhida} />
-              {escolhida && (
+              <OfertasSuhai resultado={resultado} onEscolher={escolher} />
+              {escolhida && resultado.simulado && (
                 <p role="status" className="mt-4 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">
-                  Plano selecionado. A transmissão da proposta entra na próxima fase.
+                  Plano selecionado. A transmissão da proposta só abre com uma cotação real da Suhai.
                 </p>
+              )}
+              {escolhida && !resultado.simulado && (
+                <PropostaSuhaiForm protocolo={resultado.protocolo} oferta={escolhida} contexto={contexto} />
               )}
             </div>
           </Container>

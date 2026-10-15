@@ -23,7 +23,7 @@ export function CotacaoSuhaiBloco() {
             }}
             eyebrow="Seguro contra roubo e furto"
             headline={"Veja o preço agora\nsem esperar retorno"}
-            subheadline={"Três etapas curtas: placa, CEP e CPF.\nO plano você escolhe em seguida."}
+            subheadline={"Etapas curtas: celular, placa, CEP e CPF.\nO plano você escolhe em seguida."}
             badge="Preço na hora · sem compromisso"
             form={formulario}
           />

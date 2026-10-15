@@ -108,21 +108,55 @@ async function chamar<T>(caminho: string, corpo: unknown): Promise<T> {
 /**
  * Executa a cotação (`IncluirCotacaoSuhai`). Sem gateway configurado,
  * devolve a cotação simulada — marcada com `simulado: true` para a UI avisar.
+ * Com gateway configurado, falha de credencial ou de transporte segue como
+ * erro: o preview não pode mostrar preço simulado no lugar do da Suhai.
  */
 export async function realizarCotacao(payload: CotacaoPayload): Promise<CotacaoResultado> {
   if (!gatewayConfigurado()) return gerarCotacaoSimulada(payload);
 
-  try {
-    const bruta = await chamar<CotacaoBruta>("/cotacao", payload);
-    return normalizarCotacao(bruta, payload);
-  } catch (error) {
-    // Gateway no ar mas ainda sem credencial de Cotador: mantém o fluxo
-    // navegável com a cotação simulada em vez de quebrar a tela.
-    if (error instanceof GatewayError && error.codigo === "sem_credenciais") {
-      return gerarCotacaoSimulada(payload);
-    }
-    throw error;
+  const bruta = await chamar<CotacaoBruta>("/cotacao", payload);
+  return normalizarCotacao(bruta, payload);
+}
+
+export type PropostaPayload = {
+  protocolo: string;
+  cdCobertura: number;
+  email: string;
+  dddCel: string;
+  numCel: string;
+  endereco: {
+    logradouro: string;
+    numero: string;
+    complemento?: string;
+    bairro: string;
+    uf: string;
+    cidade: string;
+    cep: string;
+  };
+  veiculo: {
+    chassi: string;
+    placa: string;
+    cor: number;
+    combustivel: number;
+  };
+  vigenciaInicio: string;
+  diaVencimento: number;
+  parcelas: number;
+};
+
+export type PropostaResultado = {
+  protocolo: string;
+  numeroProposta: string;
+  codMsgRet: string;
+  textoMsgRet: string;
+};
+
+/** Transmite a proposta com boleto. Exige gateway: não há transmissão simulada. */
+export async function transmitirProposta(payload: PropostaPayload): Promise<PropostaResultado> {
+  if (!gatewayConfigurado()) {
+    throw new GatewayError("Gateway Suhai não configurado neste ambiente.", "sem_gateway", 503);
   }
+  return chamar<PropostaResultado>("/proposta", payload);
 }
 
 /** Item do catálogo FIPE Suhai, com a grafia exata aceita na cotação. */

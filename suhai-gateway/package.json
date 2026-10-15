@@ -1,0 +1,18 @@
+{
+  "name": "suhai-gateway",
+  "version": "0.1.0",
+  "//versionamento": "Linha própria de tags suhai-vX.Y.Z — ver docs/VERSIONING.md",
+  "private": true,
+  "description": "Gateway de saída com IP fixo para a integração Suhai (Cloud Run + Cloud NAT)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.2.5"
+  }
+}

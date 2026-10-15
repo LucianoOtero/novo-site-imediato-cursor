@@ -10,27 +10,46 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO } from "@/lib/suhai/dominio";
 import { trackEvent } from "@/lib/analytics";
+import { getAttributionUtm } from "@/lib/leads/attribution";
+import { postLead } from "@/lib/leads/post-lead";
 import type { OpcaoVeiculo } from "@/lib/suhai/veiculo-placa";
+import type { ContextoProposta } from "@/components/suhai/PropostaSuhaiForm";
 import type { CotacaoResultado } from "@/lib/suhai/types";
 import { cn } from "@/lib/utils";
-import { formatCep, formatCpf, formatPlacaMascara, isValidCpf, isValidPlacaFormat, onlyDigits } from "@/lib/validators";
+import {
+  formatCelular,
+  formatCep,
+  formatCpf,
+  formatDdd,
+  formatPlacaMascara,
+  isValidCpf,
+  isValidPlacaFormat,
+  onlyDigits,
+} from "@/lib/validators";
 
 /**
  * Card da cotação Suhai no mesmo frost do LeadForm inline.
- * Três etapas: placa, CEP de pernoite, nome e CPF. Uso, garagem e bônus
- * não aparecem aqui — entram como premissas depois do preço.
+ * Quatro etapas: celular, placa, CEP de pernoite, nome e CPF. Uso, garagem
+ * e bônus não aparecem aqui — entram como premissas depois do preço.
+ *
+ * Mesmo pipeline de leads do LeadForm: o celular cria o lead (`initial`),
+ * cada etapa seguinte atualiza (`progress`) e a cotação leva o `leadId`
+ * para o servidor registrar protocolo e ofertas no CRM.
  */
 
 const FROST_CARD_CLASS =
   "border-white/50 bg-white/95 supports-[backdrop-filter]:bg-white/85 backdrop-blur-md shadow-2xl";
 
 const ETAPAS = [
+  { rotulo: "Celular", subtitulo: "Para enviar o seu preço pelo WhatsApp e seguir a cotação." },
   { rotulo: "Placa", subtitulo: "A placa identifica o veículo e já adianta marca, modelo e ano." },
   { rotulo: "CEP", subtitulo: "O CEP de onde o carro dorme muda o preço." },
   { rotulo: "Seus dados", subtitulo: "Nome e CPF fecham o cálculo. O restante a gente completa para você." },
 ] as const;
 
-const CTAS = ["Continuar", "Falta pouco", "Ver meu preço"] as const;
+const CTAS = ["Começar", "Continuar", "Falta pouco", "Ver meu preço"] as const;
+
+type Etapa = 1 | 2 | 3 | 4;
 
 const selectClasses =
   "flex h-11 w-full rounded-lg border border-neutral-200 bg-white px-3.5 text-base text-neutral-900 outline-none focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/30";
@@ -54,6 +73,8 @@ export const PREMISSAS_INICIAIS: PremissasSuhai = {
 };
 
 type Estado = {
+  ddd: string;
+  celular: string;
   semPlaca: boolean;
   placa: string;
   categoria: string;
@@ -75,6 +96,8 @@ type Estado = {
 };
 
 const INICIAL: Estado = {
+  ddd: "",
+  celular: "",
   semPlaca: false,
   placa: "",
   categoria: "auto",
@@ -101,14 +124,19 @@ export type CotacaoSuhaiHandle = {
 
 type Props = {
   premissas: PremissasSuhai;
-  onResultado: (resultado: CotacaoResultado, categoria: string, usadas: PremissasSuhai) => void;
+  onResultado: (
+    resultado: CotacaoResultado,
+    categoria: string,
+    usadas: PremissasSuhai,
+    contexto: ContextoProposta,
+  ) => void;
 };
 
 export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function CotacaoSuhaiForm(
   { premissas, onResultado },
   ref,
 ) {
-  const [etapa, setEtapa] = useState<1 | 2 | 3>(1);
+  const [etapa, setEtapa] = useState<Etapa>(1);
   const [estado, setEstado] = useState<Estado>(INICIAL);
   const [erros, setErros] = useState<Record<string, string>>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
@@ -124,6 +152,99 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   const precoEmitidoRef = useRef(false);
   const abandonouRef = useRef(false);
   const efeitoAbandonoRef = useRef(0);
+  const leadIdRef = useRef<string | undefined>(undefined);
+  const contatoInicialRef = useRef<Promise<void> | null>(null);
+  const telefoneEnviadoRef = useRef("");
+
+  /**
+   * Campos do lead já conhecidos — cada `progress` reenvia tudo, como o
+   * LeadForm. Nome e CPF chegam ao CRM pela cotação: o servidor grava os
+   * dados da etapa 4 junto com o protocolo, sem disputar a ordem com ela.
+   */
+  function dadosLead(atual: Estado) {
+    const placa = atual.semPlaca ? undefined : atual.placa.replace(/[^A-Za-z0-9]/g, "").toUpperCase() || undefined;
+    const cep = onlyDigits(atual.cepPernoite);
+    const cpf = onlyDigits(atual.cpf);
+    return {
+      ramo: "auto",
+      ddd: onlyDigits(atual.ddd),
+      celular: onlyDigits(atual.celular),
+      captureChannel: "suhai_form",
+      placa,
+      veiculoMarca: atual.marca || undefined,
+      veiculoModelo: atual.modelo || undefined,
+      veiculoAnoFabricacao: atual.anoFabricacao || undefined,
+      veiculoAnoModelo: atual.anoModelo || undefined,
+      veiculoMarcaModelo: [atual.marca, atual.modelo].filter(Boolean).join(" ") || undefined,
+      veiculoAno: atual.anoModelo || undefined,
+      cep: cep.length === 8 ? cep : undefined,
+      nome: atual.nome.trim().length >= 3 ? atual.nome.trim() : undefined,
+      cpf: isValidCpf(cpf) ? cpf : undefined,
+      utm: getAttributionUtm(),
+    };
+  }
+
+  /** Cria o lead no CRM assim que o celular é confirmado. Não bloqueia a navegação. */
+  function enviarContatoInicial(atual: Estado) {
+    const telefone = `${onlyDigits(atual.ddd)}${onlyDigits(atual.celular)}`;
+    if (telefoneEnviadoRef.current === telefone) return;
+    telefoneEnviadoRef.current = telefone;
+    leadIdRef.current = undefined;
+    trackEvent("form_initial_contact", { ramo: "auto", method: "suhai" });
+    contatoInicialRef.current = (async () => {
+      try {
+        const resposta = await postLead({
+          ramo: "auto",
+          ddd: onlyDigits(atual.ddd),
+          celular: onlyDigits(atual.celular),
+          stage: "initial",
+          captureChannel: "suhai_form",
+          utm: getAttributionUtm(),
+        });
+        const corpo = (await resposta.json().catch(() => null)) as { leadId?: string } | null;
+        if (corpo?.leadId) leadIdRef.current = corpo.leadId;
+      } catch (error) {
+        console.error("[CotacaoSuhaiForm] Falha no contato inicial (não bloqueante):", error);
+      }
+    })();
+  }
+
+  /** Atualiza o lead ao concluir cada etapa. Best-effort, como no LeadForm. */
+  async function enviarProgresso(atual: Estado, suhaiEtapa: "veiculo" | "cep") {
+    try {
+      await contatoInicialRef.current;
+      await postLead({
+        ...dadosLead(atual),
+        stage: "progress",
+        suhaiEtapa,
+        leadId: leadIdRef.current,
+      });
+    } catch (error) {
+      console.error("[CotacaoSuhaiForm] Falha na atualização de progresso (não bloqueante):", error);
+    }
+  }
+
+  async function validarCelularApi(atual: Estado) {
+    const ddd = onlyDigits(atual.ddd);
+    const celular = onlyDigits(atual.celular);
+    if (!/^\d{2}$/.test(ddd) || !/^9\d{8}$/.test(celular)) return;
+    try {
+      const resposta = await fetch("/api/validate/phone", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ddd, celular }),
+      });
+      const corpo = (await resposta.json()) as { ok?: boolean };
+      if (corpo.ok === false) {
+        setErros((anterior) => ({
+          ...anterior,
+          celular: "Não conseguimos confirmar esse celular — revise ou prossiga assim mesmo",
+        }));
+      }
+    } catch {
+      // Best-effort — nunca bloqueia.
+    }
+  }
 
   function marcarInicio() {
     if (comecouRef.current) return;
@@ -281,9 +402,15 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     }
   }
 
-  function validarEtapa(atual: Estado, passo: 1 | 2 | 3): Record<string, string> {
+  function validarEtapa(atual: Estado, passo: Etapa): Record<string, string> {
     const proximos: Record<string, string> = {};
     if (passo === 1) {
+      if (!/^\d{2}$/.test(onlyDigits(atual.ddd))) proximos.ddd = "DDD inválido";
+      if (!/^9\d{8}$/.test(onlyDigits(atual.celular))) {
+        proximos.celular = "Celular inválido — deve ter 9 dígitos e começar com 9";
+      }
+    }
+    if (passo === 2) {
       if (atual.semPlaca) {
         if (!atual.marca.trim()) proximos.marca = "Informe a marca.";
         if (!atual.modelo.trim()) proximos.modelo = "Informe o modelo.";
@@ -296,10 +423,10 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         proximos.placa = "Aguarde a identificação do veículo ou informe os dados.";
       }
     }
-    if (passo === 2 && onlyDigits(atual.cepPernoite).length !== 8) {
+    if (passo === 3 && onlyDigits(atual.cepPernoite).length !== 8) {
       proximos.cep = "Informe o CEP com 8 dígitos.";
     }
-    if (passo === 3) {
+    if (passo === 4) {
       if (atual.nome.trim().length < 3) proximos.nome = "Informe o nome completo.";
       if (!isValidCpf(atual.cpf)) proximos.cpf = "CPF inválido.";
       if (atual.perfilManual && !/^\d{4}-\d{2}-\d{2}$/.test(atual.dataNascimento)) {
@@ -320,10 +447,12 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         sexo: Number(atual.sexo),
         estadoCivil: Number(atual.estadoCivil),
       };
+      await contatoInicialRef.current;
       const resposta = await fetch("/api/suhai/cotacao", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          leadId: leadIdRef.current,
           proponente: pessoa,
           condutorPrincipal: pessoa,
           veiculo: {
@@ -358,7 +487,14 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         setErroGeral(corpo.mensagem ?? "Não foi possível calcular agora.");
         return;
       }
-      onResultado(corpo as CotacaoResultado, atual.categoria, usadas);
+      onResultado(corpo as CotacaoResultado, atual.categoria, usadas, {
+        placa: atual.semPlaca ? "" : atual.placa.replace(/[^A-Za-z0-9]/g, "").toUpperCase(),
+        cep: onlyDigits(atual.cepPernoite),
+        nome: atual.nome.trim(),
+        ddd: onlyDigits(atual.ddd),
+        celular: onlyDigits(atual.celular),
+        leadId: leadIdRef.current,
+      });
       if (!precoEmitidoRef.current) {
         precoEmitidoRef.current = true;
         trackEvent("suhai_quote_price", { form_id: "cotacao_suhai" });
@@ -376,7 +512,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
   async function avancar() {
     let atual = estadoRef.current;
-    if (etapa === 1 && !atual.semPlaca && (!atual.marca || !atual.modelo || !atual.anoModelo)) {
+    if (etapa === 2 && !atual.semPlaca && (!atual.marca || !atual.modelo || !atual.anoModelo)) {
       const patch = await preencherPorPlaca(atual.placa);
       if (patch) atual = { ...atual, ...patch };
     }
@@ -384,8 +520,12 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     setErros(falhas);
     if (Object.values(falhas).some(Boolean)) return;
 
-    if (etapa < 3) {
-      setEtapa((passo) => (passo + 1) as 2 | 3);
+    if (etapa === 1) enviarContatoInicial(atual);
+    if (etapa === 2) void enviarProgresso(atual, "veiculo");
+    if (etapa === 3) void enviarProgresso(atual, "cep");
+
+    if (etapa < 4) {
+      setEtapa((passo) => (passo + 1) as Etapa);
       return;
     }
 
@@ -422,20 +562,59 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         <h2 className="font-display text-xl font-bold leading-snug text-brand-700 lg:text-lg xl:text-xl 2xl:text-2xl">
           Veja seu preço agora
         </h2>
-        <p className="mt-1 text-xs text-neutral-400 lg:text-[0.7rem] xl:text-xs">3 etapas curtas — comece pela placa</p>
+        <p className="mt-1 text-xs text-neutral-400 lg:text-[0.7rem] xl:text-xs">4 etapas curtas — comece pelo celular</p>
         <p className="mt-1 text-sm font-medium text-neutral-500 lg:text-xs xl:text-sm">
-          {ETAPAS[indice].rotulo} · {etapa}/3
+          {ETAPAS[indice].rotulo} · {etapa}/4
         </p>
         <p className="mt-0.5 text-sm text-neutral-500 lg:text-xs xl:text-sm">{ETAPAS[indice].subtitulo}</p>
       </div>
 
-      <ProgressBar step={etapa} totalSteps={3} label={ETAPAS[indice].rotulo} compact />
+      <ProgressBar step={etapa} totalSteps={4} label={ETAPAS[indice].rotulo} compact />
 
       <div
         key={etapa}
         className="flex flex-col gap-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-2 motion-safe:duration-200"
       >
         {etapa === 1 && (
+          <>
+            <div className="grid grid-cols-[5rem_1fr] gap-3">
+              <Field label="DDD" htmlFor="suhai-ddd" error={erros.ddd}>
+                <Input
+                  id="suhai-ddd"
+                  inputMode="numeric"
+                  autoComplete="tel-area-code"
+                  placeholder="11"
+                  maxLength={2}
+                  data-clarity-mask="true"
+                  value={estado.ddd}
+                  aria-invalid={Boolean(erros.ddd)}
+                  onChange={(event) => definir("ddd", formatDdd(event.target.value))}
+                />
+              </Field>
+              <Field label="Celular" htmlFor="suhai-celular" error={erros.celular}>
+                <Input
+                  id="suhai-celular"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  placeholder="98765-4321"
+                  data-clarity-mask="true"
+                  value={estado.celular}
+                  aria-invalid={Boolean(erros.celular)}
+                  onChange={(event) => {
+                    definir("celular", formatCelular(event.target.value));
+                    setErros((anterior) => ({ ...anterior, celular: "" }));
+                  }}
+                  onBlur={() => void validarCelularApi(estadoRef.current)}
+                />
+              </Field>
+            </div>
+            <p className="text-xs leading-snug text-neutral-500">
+              Usamos o número para enviar o resultado por WhatsApp e seguir sua cotação.
+            </p>
+          </>
+        )}
+
+        {etapa === 2 && (
           <>
             {!estado.semPlaca && (
               <Field label="Placa" htmlFor="placa" error={erros.placa || undefined}>
@@ -523,7 +702,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
           </>
         )}
 
-        {etapa === 2 && (
+        {etapa === 3 && (
           <>
             <Field
               label="CEP onde o veículo dorme"
@@ -549,7 +728,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
           </>
         )}
 
-        {etapa === 3 && (
+        {etapa === 4 && (
           <>
             <div className="rounded-lg bg-neutral-50 px-3.5 py-3">
               <p className="text-sm font-medium text-neutral-900">
@@ -568,14 +747,14 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                 <button
                   type="button"
                   className="text-sm font-medium text-brand-700 underline-offset-2 hover:underline"
-                  onClick={() => setEtapa(1)}
+                  onClick={() => setEtapa(2)}
                 >
                   Alterar veículo
                 </button>
                 <button
                   type="button"
                   className="text-sm font-medium text-brand-700 underline-offset-2 hover:underline"
-                  onClick={() => setEtapa(2)}
+                  onClick={() => setEtapa(3)}
                 >
                   Alterar CEP
                 </button>
@@ -659,7 +838,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
       <div className="flex items-center gap-3">
         {etapa > 1 && (
-          <Button type="button" variant="ghost" onClick={() => setEtapa((passo) => (passo - 1) as 1 | 2)}>
+          <Button type="button" variant="ghost" onClick={() => setEtapa((passo) => (passo - 1) as Etapa)}>
             Voltar
           </Button>
         )}

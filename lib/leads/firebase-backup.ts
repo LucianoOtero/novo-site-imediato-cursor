@@ -40,38 +40,44 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord): Promise<void> 
     return;
   }
 
+  const data: Record<string, unknown> = {
+    ramo: lead.ramo,
+    phoneE164: lead.phoneE164,
+    nome: lead.nome,
+    cpf: lead.cpf,
+    cep: lead.cep,
+    placa: lead.placa,
+    email: lead.email,
+    veiculoAno: lead.veiculoAno,
+    veiculoMarcaModelo: lead.veiculoMarcaModelo,
+    // Granulares (projeto 2026-07-16) — uso futuro no cálculo do RPA.
+    veiculoMarca: lead.veiculoMarca,
+    veiculoModelo: lead.veiculoModelo,
+    veiculoAnoFabricacao: lead.veiculoAnoFabricacao,
+    veiculoAnoModelo: lead.veiculoAnoModelo,
+    utm: lead.utm,
+    // A Cloud Function usa isso para decidir o comportamento por
+    // estágio (Octadesk só no "initial"; EspoCRM sempre atualiza no
+    // "complete") e para o fallback de NOME/Email "falsos".
+    stage: lead.stage,
+    // Projeto "leads EspoCRM/Octadesk por momento" (2026-07-20): a
+    // escolha do passo 4 e o resumo do cálculo RPA viajam ao Firebase
+    // para a Cloud Function enriquecer o EspoCRM (description + Note
+    // no Stream) e disparar as mensagens Octadesk por momento.
+    rpaChoice: lead.rpaChoice,
+    rpaResultado: lead.rpaResultado,
+    // Origem da captura (2026-07-29) — CF dispara HSM extra só no modal.
+    captureChannel: lead.captureChannel,
+    // Canal WA vs telefone (2026-08-17) — espelhado no Espo como cCanalCaptura.
+    modalChannel: lead.modalChannel,
+    suhaiEtapa: lead.suhaiEtapa,
+  };
+
+  // Caminhos `data/<campo>` em vez do objeto `data` inteiro: campo ausente
+  // nesta gravação preserva o valor anterior. A cotação e a proposta Suhai
+  // são gravadas pelo servidor (`lib/leads/suhai-etapas.ts`) e não podem
+  // sumir quando o browser envia o estágio seguinte.
   const record: Record<string, unknown> = {
-    data: {
-      ramo: lead.ramo,
-      phoneE164: lead.phoneE164,
-      nome: lead.nome ?? null,
-      cpf: lead.cpf ?? null,
-      cep: lead.cep ?? null,
-      placa: lead.placa ?? null,
-      email: lead.email ?? null,
-      veiculoAno: lead.veiculoAno ?? null,
-      veiculoMarcaModelo: lead.veiculoMarcaModelo ?? null,
-      // Granulares (projeto 2026-07-16) — uso futuro no cálculo do RPA.
-      veiculoMarca: lead.veiculoMarca ?? null,
-      veiculoModelo: lead.veiculoModelo ?? null,
-      veiculoAnoFabricacao: lead.veiculoAnoFabricacao ?? null,
-      veiculoAnoModelo: lead.veiculoAnoModelo ?? null,
-      utm: lead.utm ?? null,
-      // A Cloud Function usa isso para decidir o comportamento por
-      // estágio (Octadesk só no "initial"; EspoCRM sempre atualiza no
-      // "complete") e para o fallback de NOME/Email "falsos".
-      stage: lead.stage,
-      // Projeto "leads EspoCRM/Octadesk por momento" (2026-07-20): a
-      // escolha do passo 4 e o resumo do cálculo RPA viajam ao Firebase
-      // para a Cloud Function enriquecer o EspoCRM (description + Note
-      // no Stream) e disparar as mensagens Octadesk por momento.
-      rpaChoice: lead.rpaChoice ?? null,
-      rpaResultado: lead.rpaResultado ?? null,
-      // Origem da captura (2026-07-29) — CF dispara HSM extra só no modal.
-      captureChannel: lead.captureChannel ?? null,
-      // Canal WA vs telefone (2026-08-17) — espelhado no Espo como cCanalCaptura.
-      modalChannel: lead.modalChannel ?? null,
-    },
     timestamp: lead.createdAt,
     status: "pending",
     synced: false,
@@ -79,6 +85,9 @@ export async function saveLeadBackupToFirebase(lead: LeadRecord): Promise<void> 
     environment: appEnvironment,
     autoSync: true,
   };
+  for (const [campo, valor] of Object.entries(data)) {
+    if (valor !== null && valor !== undefined) record[`data/${campo}`] = valor;
+  }
 
   // Novo ciclo de captura (`initial`): zera o orçamento de retry da CF
   // e tira `failed_permanently`. IDs do CRM NÃO são apagados aqui —

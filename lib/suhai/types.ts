@@ -2,16 +2,23 @@
  * lib/suhai/types.ts — contrato entre o formulário `/cotacao-suhai`, a rota
  * `/api/suhai/cotacao` e o gateway com IP fixo.
  *
- * O schema cobre o mínimo exigido por `RealizarCotacao`
- * (docs/suhai-integracao/02-WS-COTACAO-PROPOSTA.md). Campos da proposta —
- * endereço, cor, combustível, vigência, parcelamento — só entram na fase
- * seguinte e não pertencem a este contrato.
+ * O schema de cotação cobre o mínimo de `IncluirCotacaoSuhai`. O de proposta
+ * cobre `TransmitirProposta` com boleto. Cartão não entra neste contrato.
  */
 
 import { z } from "zod";
 
 import { isValidCpf, isValidPlacaFormat, onlyDigits } from "@/lib/validators";
-import { CATEGORIA_SUHAI, ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO, TIPO_UTILIZACAO, UTILIZACAO_DUT } from "./dominio";
+import {
+  CATEGORIA_SUHAI,
+  COMBUSTIVEL,
+  COR_VEICULO,
+  ESTADO_CIVIL,
+  SEXO,
+  TIPO_CONTRATACAO,
+  TIPO_UTILIZACAO,
+  UTILIZACAO_DUT,
+} from "./dominio";
 import type { PlanoId } from "./planos";
 
 const digitos = (tamanho: number) =>
@@ -114,6 +121,61 @@ export type CotacaoResultado = {
   /** Marca resposta vinda do mock, para não confundir teste com produção. */
   simulado: boolean;
   geradoEm: string;
+};
+
+const cores = Object.keys(COR_VEICULO).map(Number) as [number, ...number[]];
+const combustiveis = Object.keys(COMBUSTIVEL).map(Number) as [number, ...number[]];
+
+function vigenciaValida(valor: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false;
+  const data = new Date(`${valor}T12:00:00`);
+  if (Number.isNaN(data.getTime())) return false;
+  const hoje = new Date();
+  hoje.setHours(12, 0, 0, 0);
+  const limite = new Date(hoje);
+  limite.setMonth(limite.getMonth() + 1);
+  return data >= hoje && data <= limite;
+}
+
+/** Transmissão da proposta. O pagamento é boleto no servidor; o cliente não escolhe. */
+export const propostaInputSchema = z.object({
+  protocolo: z.string().min(1, "Cotação sem protocolo."),
+  cdCobertura: z.number().int().positive(),
+  email: z.string().email("E-mail inválido."),
+  dddCel: digitos(2),
+  numCel: z
+    .string()
+    .transform(onlyDigits)
+    .refine((valor) => valor.length === 8 || valor.length === 9, { message: "Celular inválido." }),
+  endereco: z.object({
+    logradouro: z.string().min(1, "Informe o logradouro."),
+    numero: z.string().min(1, "Informe o número."),
+    complemento: z.string().optional(),
+    bairro: z.string().min(1, "Informe o bairro."),
+    uf: z.string().length(2, "Informe a UF."),
+    cidade: z.string().min(1, "Informe a cidade."),
+    cep: digitos(8),
+  }),
+  veiculo: z.object({
+    chassi: z.string().trim().min(5, "Informe o chassi."),
+    placa: placaSchema,
+    cor: z.number().int().refine((valor) => cores.includes(valor), { message: "Cor inválida." }),
+    combustivel: z.number().int().refine((valor) => combustiveis.includes(valor), { message: "Combustível inválido." }),
+  }),
+  vigenciaInicio: z.string().refine(vigenciaValida, { message: "A vigência deve ser hoje ou até um mês à frente." }),
+  diaVencimento: z.number().int().min(1).max(31),
+  parcelas: z.number().int().min(1).max(12),
+  aceite: z.boolean().refine((valor) => valor === true, { message: "Confirme o envio da proposta." }),
+});
+
+export type PropostaInput = z.input<typeof propostaInputSchema>;
+export type PropostaPayload = z.output<typeof propostaInputSchema>;
+
+export type PropostaResultado = {
+  protocolo: string;
+  numeroProposta: string;
+  codMsgRet: string;
+  textoMsgRet: string;
 };
 
 export type CotacaoErro = {

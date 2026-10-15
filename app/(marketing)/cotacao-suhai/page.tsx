@@ -24,7 +24,7 @@ import { buildPageMetadata } from "@/lib/metadata";
 
 const PASSOS = [
   {
-    title: "Informe a placa",
+    title: "Informe celular e placa",
     description: "A gente identifica o veículo. Em seguida, o CEP e o CPF.",
   },
   {
