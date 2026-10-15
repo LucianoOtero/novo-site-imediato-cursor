@@ -60,9 +60,29 @@ const nextConfig = {
 
   async redirects() {
     return [
+      // Host antigo do experimento: a canônica de produção é www.
+      // `/` separado de `/:path+` porque o catch-all não cobre a raiz.
+      {
+        source: "/",
+        has: [{ type: "host", value: "novo.segurosimediato.com.br" }],
+        destination: "https://www.segurosimediato.com.br/",
+        permanent: true,
+      },
+      {
+        source: "/:path+",
+        has: [{ type: "host", value: "novo.segurosimediato.com.br" }],
+        destination: "https://www.segurosimediato.com.br/:path+",
+        permanent: true,
+      },
       {
         source: "/seguro-motos",
         destination: "/seguro-moto",
+        permanent: true,
+      },
+      // Plural legado (404 hoje). A página canônica é o singular.
+      {
+        source: "/politicas-de-privacidade",
+        destination: "/politica-de-privacidade",
         permanent: true,
       },
       // Alias do rótulo de menu "Sobre" → rota canônica do mapa do site

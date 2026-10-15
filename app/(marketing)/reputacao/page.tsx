@@ -38,6 +38,9 @@ function StarRow({ rating, size = "size-5" }: { rating: number; size?: string })
   );
 }
 
+/** Sem ISR: avaliações resolvidas no build (ver nota 2026-10-13 em `lib/google-reviews.ts`). */
+export const dynamic = "force-static";
+
 export default async function ReputacaoPage() {
   const { reviews, rating, reviewCount } = await fetchReputationPageData();
   const themes = buildReputationThemes(reviews);

@@ -17,7 +17,7 @@ import { buildWhatsappUrl } from "@/lib/whatsapp";
  * `/contato` — canais oficiais + formulário (destino: `company.contact.formEmail`).
  */
 export const metadata: Metadata = buildPageMetadata({
-  title: "Contato",
+  title: `Contato e Atendimento | ${company.tradeName}`,
   description: `Fale com a ${company.tradeName}: telefone, WhatsApp, e-mail, ouvidoria, endereço em São Paulo e formulário de contato.`,
   path: "/contato",
 });

@@ -81,7 +81,8 @@ export const seguradoras: Seguradora[] = [
     logo: "/logos/seguradoras/allianz.svg",
     assistancePhoneDisplay: "0800 013 0700",
     assistancePhoneTel: "08000130700",
-    clientAreaUrl: "https://www.allianzcliente.com.br",
+    // `www.allianzcliente.com.br` com certificado inválido (2026-10-13); esta página da Allianz leva ao portal.
+    clientAreaUrl: "https://www.allianz.com.br/sobre-allianz/allianz-cliente.html",
   },
   {
     slug: "tokio-marine",
