@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Resumo técnico — Integração Suhai — IMEDIATO SEGUROS</title>
+    <style>
+      @page { size: A4; margin: 16mm 15mm; }
+      body { font-family: "Segoe UI", Arial, sans-serif; color: #1a1a1a; font-size: 10.5pt; line-height: 1.45; }
+      h1 { font-size: 15pt; margin: 0 0 2mm; }
+      h2 { font-size: 11pt; margin: 6mm 0 2mm; border-bottom: 1px solid #d5d5d5; padding-bottom: 1mm; }
+      p { margin: 0 0 2.5mm; }
+      table { border-collapse: collapse; width: 100%; margin: 0 0 3mm; }
+      th, td { border: 1px solid #ccc; padding: 1.6mm 2.4mm; text-align: left; vertical-align: top; font-size: 9.5pt; }
+      th { background: #f2f4f7; font-weight: 600; }
+      ul { margin: 0 0 3mm; padding-left: 5mm; }
+      li { margin-bottom: 1.2mm; }
+      .cabecalho { border-bottom: 2px solid #1366d6; padding-bottom: 2mm; margin-bottom: 4mm; }
+      .sub { color: #555; font-size: 9.5pt; }
+      .destaque { background: #f7f9fc; border-left: 3px solid #1366d6; padding: 2.5mm 3mm; }
+      code { font-family: Consolas, monospace; font-size: 9.5pt; }
+    </style>
+  </head>
+  <body>
+    <div class="cabecalho">
+      <h1>Integração Suhai — Resumo técnico da solicitação</h1>
+      <p class="sub">
+        IMEDIATO SEGUROS · IMEDIATO CORRETORA DE SEGUROS LTDA · CNPJ 33.216.054/0001-48 · SUSEP 252174522
+        · Responsável técnico: Luciano Rodrigues Otero (SUSEP 251168701) · lrotero@gmail.com · (11) 3230-1422
+      </p>
+    </div>
+
+    <h2>1. Objetivo</h2>
+    <p>
+      Implementar no site <strong>novo.segurosimediato.com.br</strong> uma jornada de cotação e contratação online
+      do seguro Suhai, do cálculo do prêmio à emissão da apólice, consumindo os WebServices de Vendas e
+      Multicálculos e a API de Pagamento.
+    </p>
+
+    <h2>2. IPs fixos de saída para whitelist</h2>
+    <table>
+      <tr><th>IP</th><th>Origem</th><th>Uso</th></tr>
+      <tr><td><code>34.39.164.249</code></td><td>Google Cloud Run, região São Paulo, saída por Cloud NAT com IP reservado</td><td>Ambiente definitivo (homologação e produção)</td></tr>
+      <tr><td><code>37.27.92.160</code></td><td>Servidor dedicado próprio</td><td>Testes iniciais de homologação</td></tr>
+    </table>
+    <p class="sub">Ambos são endereços estáticos e dedicados. Qualquer alteração futura será comunicada previamente por este mesmo canal.</p>
+
+    <h2>3. Métodos previstos na primeira fase</h2>
+    <table>
+      <tr><th>Serviço</th><th>Operações</th></tr>
+      <tr><td>WebService FIPE Suhai</td><td><code>ConsultaVeiculos</code> — carga diária do catálogo em base interna, conforme recomendação da documentação</td></tr>
+      <tr><td>WebService Multicálculos</td><td><code>IncluirCotacaoSuhai</code>, Transmitir Proposta, Consultar Status da Proposta, Consultar Pendências de Emissão, Gerar e Consultar boleto da 1ª parcela</td></tr>
+      <tr><td>API Pagamento (REST)</td><td><code>/pagamento/gerartoken</code> e <code>/pagamento</code>, com criptografia AES-256</td></tr>
+    </table>
+    <p>Categorias pretendidas: automóvel, moto, caminhão e van/VUC. Meios de pagamento: cartão de crédito como principal e boleto como alternativa.</p>
+
+    <h2>4. Arquitetura e segurança</h2>
+    <ul>
+      <li>Todas as chamadas partem de um serviço backend dedicado, com os IPs fixos acima; o navegador do cliente nunca acessa a Suhai diretamente.</li>
+      <li>Credenciais de Cotador e chaves AES ficam em cofre de segredos gerenciado (Google Secret Manager), sem trânsito pelo front-end e sem registro em log.</li>
+      <li>Dados sensíveis de cartão não são armazenados nem registrados em log em nenhuma etapa.</li>
+      <li>Em homologação serão usados exclusivamente dados fictícios de proponente, conforme orientação do portal de integrações.</li>
+    </ul>
+
+    <h2>5. Itens solicitados</h2>
+    <ul>
+      <li>Whitelist dos dois IPs, em homologação e produção.</li>
+      <li>Login e senha de Cotador para homologação e, na sequência, produção.</li>
+      <li>Chaves AES da API de Pagamento (KEY Source e IV Source em Base64), por ambiente.</li>
+      <li>Apikey dos pipelines Digibee (pagamento e pós-vendas).</li>
+      <li>Cartões de teste (mock) de homologação.</li>
+      <li>Confirmação dos endpoints de homologação e produção do <code>MultiCalculos.svc</code> e do <code>veiculosfipe.svc</code>, com porta e protocolo.</li>
+      <li>Tabela de comissão a utilizar nas cotações e restrições por categoria ou ano do veículo.</li>
+    </ul>
+
+    <h2>6. Questão em aberto</h2>
+    <div class="destaque">
+      <p style="margin:0">
+        A captura dos dados de cartão pode ser feita em formulário próprio, com envio criptografado em AES conforme a
+        documentação, ou a Suhai disponibiliza página/link de pagamento hospedado? A resposta altera nossa arquitetura
+        de segurança e o escopo PCI, por isso confirmamos antes de implementar.
+      </p>
+    </div>
+  </body>
+</html>

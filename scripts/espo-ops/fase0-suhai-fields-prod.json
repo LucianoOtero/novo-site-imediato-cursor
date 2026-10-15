@@ -1,0 +1,178 @@
+{
+  "baseUrl": "https://flyingdonkeys.com.br",
+  "prefer": "prod",
+  "entities": {
+    "Lead": {
+      "fields": [
+        {
+          "field": "cNumeroCotacao",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cNumeroProposta",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cPlanoEscolhido",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cPremioTotal",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cPagamento",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cFranquia",
+          "existed": true,
+          "created": false,
+          "error": null
+        }
+      ],
+      "opcoes": {
+        "cEtapaFunil": {
+          "campo": "enum",
+          "faltando": [],
+          "atuais": [
+            "",
+            "Telefone informado",
+            "Dados pessoais",
+            "Dados do veículo",
+            "Aguardando cálculo",
+            "Cálculo concluído",
+            "Cálculo manual pendente",
+            "Cotação Suhai apresentada",
+            "Plano escolhido",
+            "Proposta transmitida",
+            "Proposta com erro"
+          ]
+        },
+        "cCanalCaptura": {
+          "campo": "enum",
+          "faltando": [],
+          "atuais": [
+            "formulario",
+            "whatsapp",
+            "telefone",
+            "cotacao_suhai"
+          ]
+        }
+      }
+    },
+    "Opportunity": {
+      "fields": [
+        {
+          "field": "cNumeroCotacao",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cNumeroProposta",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cPlanoEscolhido",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cPremioTotal",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cPagamento",
+          "existed": true,
+          "created": false,
+          "error": null
+        },
+        {
+          "field": "cFranquia",
+          "existed": true,
+          "created": false,
+          "error": null
+        }
+      ],
+      "opcoes": {
+        "cEtapaFunil": {
+          "campo": "enum",
+          "faltando": [],
+          "atuais": [
+            "",
+            "Telefone informado",
+            "Dados pessoais",
+            "Dados do veículo",
+            "Aguardando cálculo",
+            "Cálculo concluído",
+            "Cálculo manual pendente",
+            "Cotação Suhai apresentada",
+            "Plano escolhido",
+            "Proposta transmitida",
+            "Proposta com erro"
+          ]
+        },
+        "cCanalCaptura": {
+          "campo": "enum",
+          "faltando": [],
+          "atuais": [
+            "formulario",
+            "telefone",
+            "whatsapp",
+            "cotacao_suhai"
+          ]
+        },
+        "cSeguradora": {
+          "campo": "enum",
+          "faltando": [],
+          "atuais": [
+            "Aliro",
+            "Allianz",
+            "Azul",
+            "Azul + Cartão",
+            "Azul Mensal",
+            "Bradesco",
+            "Darwin",
+            "Ezze",
+            "HDI",
+            "Ituran",
+            "Justos",
+            "Liberty",
+            "Loovi faz o M",
+            "Mapfre",
+            "Mitsui",
+            "Novo Seguros",
+            "Pier",
+            "Porto",
+            "Porto + Cartão",
+            "Pottencial",
+            "Suhai",
+            "Tokio",
+            "Usebens",
+            "Youse",
+            "Zurich",
+            "Axa",
+            "Bem Protege",
+            "APVS"
+          ]
+        }
+      }
+    }
+  }
+}

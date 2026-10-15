@@ -164,3 +164,64 @@ Após as iterações com o classificador da Meta (as primeiras versões foram re
 - [x] Teste dos templates no número do cliente (11-97668-7668) — 2026-07-27, `calculo_pronto` e `calculo_completo_depois` entregues; **2026-07-28**: `primeira_etapa_util` (sem variáveis) e `calculo_falhou_util` entregues no funil de validação da integração direta
 
 **Nota (2026-07-28)**: o template `primeira_etapa_util` aprovado **não tem variáveis** (texto fixo: "Olá. Recebemos seu contato. Prossiga com os demais dados solicitados para a elaboração do cálculo do seguro.") — confirmado via `GET /chat/templates-message`. Ideal para a etapa 1, onde o nome real ainda não foi coletado.
+
+## Templates da cotação Suhai (`/cotacao-suhai`, 2026-10-15)
+
+A jornada Suhai reaproveita `primeira_etapa` (celular informado) e `calculo_manual` (cotação Suhai falhou), que já estão aprovados. Faltam **dois** templates novos. Fluxo completo: [`FLUXO_SUHAI_CRM_WHATSAPP.md`](./FLUXO_SUHAI_CRM_WHATSAPP.md).
+
+Enquanto a chave não existir em `templates` do `OCTADESK_API_CONFIG`, a Cloud Function **pula o envio em silêncio** (log `template ... não configurado`), sem e-mail de erro. Cotação **simulada** (sem gateway) nunca gera WhatsApp.
+
+Criar no Octadesk (Configurações → Canais → WhatsApp → Modelos de mensagem), **Português (BR)**, categoria **Utilidade**, evitando termos promocionais ("grátis", "melhor preço", "aproveite", "a partir de"):
+
+**Status: ✅ ATIVADOS em 2026-10-15.** Aprovados como Utilitário, com os IDs gravados no `OCTADESK_API_CONFIG` (versão 6) e o `deliverLead` publicado de novo. As duas mensagens foram entregues ao celular de teste com flags `octa_suhai_*_sent`.
+
+| Chave no secret | Nome no Octadesk | ID |
+|---|---|---|
+| `suhai_cotacao_pronta` | `cotacao_suhai_util_v2` | `6ad14ebafd9bfe03fe3018f2` |
+| `suhai_proposta_enviada` | `proposta_suhai_util_v2` | `6ad14f1be4fd8ff31da9c3ff` |
+
+As primeiras versões (`cotacao_suhai_util` e `proposta_suhai_util`) foram aprovadas **sem variáveis**, porque `{{var-N}}` foi digitado como texto. Não devem ser usadas. Cada variável precisa ser inserida pelo botão **"Adicionar variável genérica"** do editor. Os dois templates têm cabeçalho de texto fixo ("Cotação do seu seguro" e "Proposta do seu seguro"), sem rodapé e sem botões.
+
+### `suhai_cotacao_pronta` — preço real apresentado na tela
+
+Nome no Octadesk: `cotacao_suhai_util_v2`.
+
+> Olá, {{var-1}}. A cotação do seguro do seu {{var-2}} na seguradora Suhai foi concluída. Opção recomendada: plano {{var-3}}, {{var-4}} por ano. Número da cotação: {{var-5}}. Um especialista da Imediato Seguros vai acompanhar a contratação por aqui. Se precisar, responda esta mensagem.
+
+| Variável | Conteúdo enviado pela CF | Exemplo |
+|---|---|---|
+| `{{var-1}}` | primeiro nome | Maria |
+| `{{var-2}}` | veículo da cotação | VW - VolksWagen Golf 1.6 Black & Silver 2000 |
+| `{{var-3}}` | plano recomendado + assistência | Completo — assistência 200 km |
+| `{{var-4}}` | prêmio total anual | R$ 1.261,12 |
+| `{{var-5}}` | protocolo (nº da cotação Suhai) | 532114 |
+
+### `suhai_proposta_enviada` — proposta transmitida com boleto
+
+Nome no Octadesk: `proposta_suhai_util_v2`.
+
+> Olá, {{var-1}}. Sua proposta de seguro Suhai nº {{var-2}} foi transmitida. Pagamento: {{var-3}}. Um especialista da Imediato Seguros vai enviar o boleto e acompanhar a emissão da apólice por aqui. Se precisar, responda esta mensagem.
+
+| Variável | Conteúdo enviado pela CF | Exemplo |
+|---|---|---|
+| `{{var-1}}` | primeiro nome | Maria |
+| `{{var-2}}` | número da proposta Suhai | 9061210 |
+| `{{var-3}}` | forma de pagamento | Boleto em 12x (≈ R$ 105,09), vencimento dia 10 |
+
+### Ativação
+
+1. Criar os dois modelos acima e aguardar a aprovação (Etapa 2). Anotar os IDs.
+2. Acrescentar as chaves ao JSON do secret, mantendo as existentes:
+
+```bash
+firebase functions:secrets:set OCTADESK_API_CONFIG
+# ..."templates":{ ...existentes..., "suhai_cotacao_pronta":"ID_COTACAO", "suhai_proposta_enviada":"ID_PROPOSTA" }
+firebase deploy --only functions:deliverLead
+```
+
+3. Validar com o número de teste em `/cotacao-suhai` (homologação): cotação real → `suhai_cotacao_pronta`; proposta transmitida → `suhai_proposta_enviada`. Os flags `octa_suhai_*_sent` aparecem em `leads_backup/{leadId}`.
+
+- [x] `suhai_cotacao_pronta` criado e aprovado — 2026-10-15
+- [x] `suhai_proposta_enviada` criado e aprovado — 2026-10-15
+- [x] IDs gravados no `OCTADESK_API_CONFIG` e `deliverLead` redeployada — 2026-10-15
+- [x] Entrega testada no celular de teste (lead sintético `staging`, registros apagados) — 2026-10-15
