@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { saveLeadBackupToFirebase } from "@/lib/leads/firebase-backup";
 import { generateLeadId, leadStore } from "@/lib/leads/store";
+import { registrarPlanoSuhai } from "@/lib/leads/suhai-etapas";
 import { checkRateLimit, getClientIp, hashIp, verifyTurnstile } from "@/lib/leads/security";
 import { apiLeadSchema, apiLeadSchemaLenient } from "@/lib/leads/types";
 import type { LeadRecord } from "@/lib/leads/types";
@@ -143,6 +144,16 @@ export async function POST(request: NextRequest) {
   const stage = data.stage ?? "complete";
   const now = new Date().toISOString();
 
+  // Escolha do plano na cotação Suhai: só o `cdCobertura` vem do browser;
+  // os valores saem da cotação que o servidor gravou no registro do lead.
+  if (stage === "suhai_plan_selected") {
+    if (!data.leadId || !data.suhaiCdCobertura) {
+      return respond(idempotencyKey, 422, { error: "validation", message: "leadId e suhaiCdCobertura são obrigatórios." });
+    }
+    await registrarPlanoSuhai(data.leadId, data.suhaiCdCobertura);
+    return respond(idempotencyKey, 200, { leadId: data.leadId });
+  }
+
   // Estágios de EVENTO (projeto "leads EspoCRM/Octadesk por momento",
   // 2026-07-20): "progress" (concluiu passo 2/3), "rpa_result" (cálculo
   // terminou) e "consultant_requested" (prefere o cálculo completo
@@ -175,6 +186,7 @@ export async function POST(request: NextRequest) {
           rpaResultado: data.rpaResultado ?? existing.rpaResultado,
           captureChannel: data.captureChannel ?? existing.captureChannel,
           modalChannel: data.modalChannel ?? existing.modalChannel,
+          suhaiEtapa: data.suhaiEtapa,
           updatedAt: now,
         }
       : {
@@ -202,6 +214,7 @@ export async function POST(request: NextRequest) {
           rpaResultado: data.rpaResultado,
           captureChannel: data.captureChannel,
           modalChannel: data.modalChannel,
+          suhaiEtapa: data.suhaiEtapa,
           status: "received",
           dedupeKey,
           createdAt: now,

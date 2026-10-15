@@ -169,7 +169,7 @@ export function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <Container className="flex flex-col gap-1 py-6 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <Container className="flex flex-col gap-1 pt-6 pb-24 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between sm:gap-4 md:py-6">
           <p>© {year}. Todos os direitos reservados.</p>
           <p>
             {company.legalName} · CNPJ {company.cnpj} · SUSEP {company.susep}

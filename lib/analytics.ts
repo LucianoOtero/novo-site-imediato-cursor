@@ -73,7 +73,7 @@ type AnalyticsEventMap = {
    * Tag `[NovoSite] Ads - form initial contact` (label da action de
    * formulário, sem valor) — ver `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
    */
-  form_initial_contact: { ramo: RamoSlug; method: "form" };
+  form_initial_contact: { ramo: RamoSlug; method: "form" | "suhai" };
   /**
    * Abandono do LeadForm (pagehide / aba oculta / unmount) sem completar
    * a jornada (`form_quote_choice` / `generate_lead`). Sem PII.
@@ -156,6 +156,16 @@ type AnalyticsEventMap = {
   };
   /** Envio bem-sucedido do formulário da página `/contato`. */
   contact_form_submit: { location: "contato" };
+  /** Início da cotação Suhai (foco no formulário). Igual nos dois hosts do experimento. */
+  suhai_quote_start: { form_id: "cotacao_suhai" };
+  /** Preço exibido — conversão do experimento Suhai. Uma vez por carregamento. */
+  suhai_quote_price: { form_id: "cotacao_suhai" };
+  /** Saiu depois de começar e antes de ver o preço. */
+  suhai_quote_abandon: {
+    form_id: "cotacao_suhai";
+    last_step: 1 | 2 | 3 | 4;
+    reason: "pagehide" | "hidden" | "unmount";
+  };
 };
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;

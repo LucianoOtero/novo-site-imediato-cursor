@@ -27,12 +27,20 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Fase 2 dash — amostra com docDigits (PII)
+scripts/dash-producao/fase2-espo-vendido-sample.json
+
 # Chaves de service account do Firebase (nunca commitar) — ver
 # docs/ARQUITETURA_LEADS_FIREBASE_CLOUD_FUNCTION.md
 firebase-*-key.json
 firebase/functions/.env
 firebase/functions/*-key.json
 firebase/functions/node_modules
+suhai-gateway/node_modules/
+chave suhai.txt
+novas chaves suhai.txt
+chave agger*.txt
+senha *.txt
 firebase/.firebase
 
 # vercel
@@ -88,3 +96,6 @@ scripts/google-ops/node_modules/
 scripts/google-ops/_dump-*.json
 scripts/google-ops/_dump-*-out.txt
 scripts/google-ops/ads-approval-status.json
+scripts/google-ops/ads-offline-shadow-last.json
+scripts/google-ops/logs/
+docs/suhai-integracao/_raw/

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Trecho do exemplo oficial de retorno publicado no portal SUHAPI
+     (Realizar Cotação, página 438370307), reduzido a três coberturas e
+     quatro parcelas para manter o teste legível. Valores preservados. -->
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+   <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+      <IncluirCotacaoSuhaiResponse xmlns="suhaiseguradoracotacao.com.br:5155">
+         <IncluirCotacaoSuhaiResult>
+            <protocolo>414324</protocolo>
+            <codMsgRet>001</codMsgRet>
+            <textoMsgRet>Sucesso</textoMsgRet>
+            <premioLiquido>1,670.18</premioLiquido>
+            <premioTotalAVista>1,793.44</premioTotalAVista>
+            <valorFipe>40,222.00</valorFipe>
+            <fatorFipe>100</fatorFipe>
+            <valorFipexFator>40,222.00</valorFipexFator>
+            <corretor>95472081017</corretor>
+            <cdCobertura>1003</cdCobertura>
+            <Calculo id="414324" numero="263230">
+               <Automovel valorFipe="40222.00" fatorFipe="100" valorIS="40222.00"/>
+               <RCF valorISDanosMateriais="100000.00" premioDanosMateriais="798.88" valorISDanosCorporais="100000.00" premioDanosCorporais="123.59" valorISDanosMorais="10000.00" premioDanosMorais="14.36"/>
+               <Franquia planoFranquia="Básica" valorFranquia="7241.58"/>
+               <PremioCoberturas>
+                  <Cobertura id="1003" nome="Seguro Roubo/Furto Total + Assistência 24h - 200 km" premioLiquido="733.35">
+                     <Parcelamento>
+                        <Parcela quantidade="1" valorTotal="787.47" valorJuros="0.00" valorIOF="54.12" percentualJuros="0.000000">787.47</Parcela>
+                        <Parcela quantidade="12" valorTotal="1015.39" valorJuros="17.69" valorIOF="5.82" percentualJuros="28.943600">84.62</Parcela>
+                     </Parcelamento>
+                  </Cobertura>
+                  <Cobertura id="1009" nome="Seguro Roubo/Furto Total e de Perda Total por Colisão/Danos + Assistência 24h - 200 km" premioLiquido="1089.15">
+                     <Parcelamento>
+                        <Parcela quantidade="1" valorTotal="1169.53" valorJuros="0.00" valorIOF="80.38" percentualJuros="0.000000">1169.53</Parcela>
+                        <Parcela quantidade="12" valorTotal="1508.03" valorJuros="26.27" valorIOF="8.64" percentualJuros="28.943600">125.67</Parcela>
+                     </Parcelamento>
+                  </Cobertura>
+                  <Cobertura id="10091" nome="Seguro Roubo/Furto Total e de Perda Total por Colisão/Danos + Assistência 24h - 200 km + RCF" premioLiquido="2025.98">
+                     <Parcelamento>
+                        <Parcela quantidade="1" valorTotal="2175.50" valorJuros="0.00" valorIOF="149.52" percentualJuros="0.000000">2175.50</Parcela>
+                        <Parcela quantidade="12" valorTotal="2805.16" valorJuros="48.87" valorIOF="16.07" percentualJuros="28.943600">233.76</Parcela>
+                     </Parcelamento>
+                  </Cobertura>
+               </PremioCoberturas>
+            </Calculo>
+         </IncluirCotacaoSuhaiResult>
+      </IncluirCotacaoSuhaiResponse>
+   </s:Body>
+</s:Envelope>

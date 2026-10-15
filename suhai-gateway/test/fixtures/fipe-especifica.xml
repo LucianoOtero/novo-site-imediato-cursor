@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exemplo oficial de retorno do ConsultaVeiculos (página 439484515). -->
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+   <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+      <ConsultaVeiculosResponse xmlns="suhaiseguradoracotacao.com.br:5155">
+         <ConsultaVeiculosResult>
+            <TabelaFipe>
+               <cod_fipe>886002-5</cod_fipe>
+               <num_passageiros>2</num_passageiros>
+               <cod_marca>133</cod_marca>
+               <marca>BAJAJ</marca>
+               <cod_modelo>1035210</cod_modelo>
+               <modelo>BEE 125cv Monaco</modelo>
+               <cod_categoria_suhai>2</cod_categoria_suhai>
+               <categoria_suhai>Moto</categoria_suhai>
+               <cod_categoria_tarifaria>31</cod_categoria_tarifaria>
+            </TabelaFipe>
+         </ConsultaVeiculosResult>
+      </ConsultaVeiculosResponse>
+   </s:Body>
+</s:Envelope>

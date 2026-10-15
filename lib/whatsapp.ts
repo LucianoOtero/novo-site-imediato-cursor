@@ -47,8 +47,13 @@ function buildContextSuffix(ramo?: string): string {
  * whatsapp`) — aceita E.164 (com "+") ou só dígitos, normalizado aqui
  * (`wa.me` exige só dígitos, sem "+").
  */
-export function buildWhatsappUrl(ramo?: string, withContext = true, phoneNumber?: string): string {
-  const message = getWhatsappMessage(ramo) + (withContext ? buildContextSuffix(ramo) : "");
+export function buildWhatsappUrl(
+  ramo?: string,
+  withContext = true,
+  phoneNumber?: string,
+  message?: string,
+): string {
+  const text = (message ?? getWhatsappMessage(ramo)) + (withContext ? buildContextSuffix(ramo) : "");
   const target = (phoneNumber ?? company.contact.whatsapp).replace(/\D/g, "");
-  return `https://wa.me/${target}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${target}?text=${encodeURIComponent(text)}`;
 }

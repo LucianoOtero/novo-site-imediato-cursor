@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+  <soapenv:Body>
+    <TransmitirPropostaResponse>
+      <TransmitirPropostaResult>
+        <protocolo>414324</protocolo>
+        <codMsgRet>001</codMsgRet>
+        <textoMsgRet>Sucesso</textoMsgRet>
+        <Proposta>987654</Proposta>
+      </TransmitirPropostaResult>
+    </TransmitirPropostaResponse>
+  </soapenv:Body>
+</soapenv:Envelope>

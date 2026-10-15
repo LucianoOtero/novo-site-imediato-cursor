@@ -313,6 +313,13 @@ export const publicEnv = {
  * server-only (Server Components, Route Handlers, Server Actions).
  * Para código que também roda no client, use `publicEnv`.
  */
+/** Remove quebra de linha colada pelo PowerShell no fim de URLs (`\r\n` literal). */
+function urlLimpa(valor: string | undefined): string | undefined {
+  if (!valor) return undefined;
+  const limpa = valor.replace(/\\r\\n/g, "").replace(/\\n/g, "").replace(/[\r\n\s]+/g, "");
+  return limpa || undefined;
+}
+
 export const env = {
   ...publicEnv,
   googleAdsConversionId: sanitizeSingleLineId(parsed.GOOGLE_ADS_CONVERSION_ID),
@@ -329,7 +336,6 @@ export const env = {
   databaseUrl: parsed.DATABASE_URL,
   /** PH3A — desabilitado por padrão, como no ambiente DEV do Webflow. */
   ph3aEnrichmentEnabled: parsed.PH3A_ENRICHMENT_ENABLED === "true",
-  cpfValidateProxyUrl: parsed.CPF_VALIDATE_PROXY_URL,
   /** Testimonials via Google Places API — ver lib/google-reviews.ts. Sem valor real: usa fallback com avaliações reais extraídas manualmente. */
   googlePlacesApiKey: parsed.GOOGLE_PLACES_API_KEY,
   googlePlaceId: parsed.GOOGLE_PLACE_ID,
@@ -356,7 +362,8 @@ export const env = {
    * produção usa `PLACA_VALIDATE_URL_PROD`; development/staging usam
    * `PLACA_VALIDATE_URL_DEV`. Ver lib/validation/placa-fipe.ts.
    */
-  placaValidateUrl: isProduction ? parsed.PLACA_VALIDATE_URL_PROD : parsed.PLACA_VALIDATE_URL_DEV,
+  placaValidateUrl: urlLimpa(isProduction ? parsed.PLACA_VALIDATE_URL_PROD : parsed.PLACA_VALIDATE_URL_DEV),
+  cpfValidateProxyUrl: urlLimpa(parsed.CPF_VALIDATE_PROXY_URL),
 } as const;
 
 /**

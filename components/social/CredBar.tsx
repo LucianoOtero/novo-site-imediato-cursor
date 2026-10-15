@@ -21,7 +21,14 @@ import { company } from "@/lib/company";
  * logo após o hero e a versão completa duplicava "96%"/"+2.200" que o
  * selo acabou de exibir.
  */
-export function CredBar({ variant = "full" }: { variant?: "full" | "complementar" }) {
+export function CredBar({
+  variant = "full",
+  omitirParceiras = false,
+}: {
+  variant?: "full" | "complementar";
+  /** Omite "N seguradoras parceiras" quando a página não compara seguradoras. */
+  omitirParceiras?: boolean;
+}) {
   const reviewsCount = new Intl.NumberFormat("pt-BR").format(company.business.googleReviewsCount);
   // Satisfação sempre derivada da nota real do Google (nota ÷ 5 × 100 —
   // mesma fórmula do selo do Testimonials), nunca hardcoded (2026-08-08).
@@ -47,10 +54,14 @@ export function CredBar({ variant = "full" }: { variant?: "full" | "complementar
     // SUSEP removida daqui (pedido do cliente, 2026-08-07): CNPJ/SUSEP
     // ficam no Footer — evitar duplicação no fold. (A barra jurídica do
     // Header que motivava esse comentário foi removida em 2026-08-30.)
-    {
-      icon: Building2,
-      label: `${company.business.insurersCount} seguradoras parceiras`,
-    },
+    ...(omitirParceiras
+      ? []
+      : [
+          {
+            icon: Building2,
+            label: `${company.business.insurersCount} seguradoras parceiras`,
+          },
+        ]),
   ];
 
   return (

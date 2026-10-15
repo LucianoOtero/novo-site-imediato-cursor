@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Evidências de UAT — Imediato Seguros — 6 de outubro de 2026</title>
+  <style>
+    body { font-family: Georgia, "Times New Roman", serif; color: #1a1a1a; max-width: 760px; margin: 40px auto; line-height: 1.45; }
+    h1 { font-size: 1.45rem; margin-bottom: 0.2rem; }
+    h2 { font-size: 1.1rem; margin-top: 1.8rem; }
+    p, li { font-size: 1rem; }
+    .meta { color: #333; font-size: 0.95rem; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.55rem; text-align: left; vertical-align: top; font-size: 0.92rem; }
+    th { background: #f4f4f4; }
+    code { font-family: Consolas, monospace; font-size: 0.86rem; }
+  </style>
+</head>
+<body>
+  <h1>Evidências de homologação em UAT</h1>
+  <p class="meta">Imediato Seguros Ltda — ME · CNPJ 33.216.054/0001-48<br />
+  Responsável técnico: Luciano Rodrigues Otero · lrotero@gmail.com<br />
+  Data desta conferência: 6 de outubro de 2026<br />
+  Em resposta ao pedido de Fábio Pavanelli Edo, de 5 de outubro de 2026, de evidências das chamadas feitas em UAT/homologação.</p>
+
+  <h2>1. O que este documento comprova</h2>
+  <p>Há dois ambientes de página em homologação, fora de produção e fora de indexação, e uma chamada SOAP de consulta FIPE concluída no host de UAT da Suhai. A transmissão de cotação (<code>IncluirCotacaoSuhai</code>) ainda não foi enviada.</p>
+
+  <h2>2. Páginas de homologação conferidas em 6 de outubro de 2026</h2>
+  <p>Cada endereço abaixo respondeu HTTP 200, com <code>robots = noindex, nofollow</code> e a faixa visível “Ambiente de homologação (staging) — não indexável, não usar em campanhas”. Nenhuma dessas rotas está no site de produção.</p>
+  <table>
+    <thead>
+      <tr><th>Página</th><th>Título observado</th><th>Endereço</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Home no visual da Suhai, com formulário de placa</td>
+        <td>Seguro de Carro, Moto e Caminhão | Suhai</td>
+        <td>https://imediato-seguros-git-uat-marca-suhai-lucianooteros-projects.vercel.app/marca-suhai</td>
+      </tr>
+      <tr>
+        <td>Moto</td>
+        <td>Seguro Moto | Suhai</td>
+        <td>https://imediato-seguros-git-uat-marca-suhai-lucianooteros-projects.vercel.app/marca-suhai/moto</td>
+      </tr>
+      <tr>
+        <td>Carro</td>
+        <td>Seguro Carro | Suhai</td>
+        <td>https://imediato-seguros-git-uat-marca-suhai-lucianooteros-projects.vercel.app/marca-suhai/carro</td>
+      </tr>
+      <tr>
+        <td>Caminhão, van e VUC</td>
+        <td>Seguro para Caminhões, Vans e VUCs | Suhai</td>
+        <td>https://imediato-seguros-git-uat-marca-suhai-lucianooteros-projects.vercel.app/marca-suhai/caminhao</td>
+      </tr>
+      <tr>
+        <td>Cotação no visual da Imediato</td>
+        <td>Seguro contra roubo e furto online | Imediato Seguros</td>
+        <td>https://imediato-seguros-git-uat-suhai-lucianooteros-projects.vercel.app/cotacao-suhai</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>A home mostra o logotipo Suhai, o título “Seguro essencial para o seu carro, moto ou caminhão” e o passo 1 do formulário, o campo de placa. As três páginas de produto repetem o mesmo aviso de homologação. O cálculo exibido na página ainda não chama o WebService de cotação: a credencial de cotação permanece só no servidor de saída, e a página pública segue sem essa ligação.</p>
+
+  <h2>3. Chamada concluída no host de UAT</h2>
+  <p>Em 30 de setembro de 2026, a partir do IP de saída já informado à Suhai, <code>34.39.164.249</code>, a operação <code>ConsultaVeiculos</code> foi aceita pelo host de homologação <code>uat.integracao.suhaiseguradoracotacao.com.br</code>.</p>
+  <ul>
+    <li>Operação: <code>VeiculosFipe/ConsultaVeiculos</code>.</li>
+    <li>Código de exemplo da documentação da Suhai: <code>886002-5</code>.</li>
+    <li>Retorno: marca BAJAJ, modelo BEE 125cv Monaco, categoria Moto.</li>
+    <li>O endereço de saída não foi recusado. Uma tentativa anterior tinha recebido HTTP 500 porque o SOAPAction estava incorreto; depois do ajuste para o WSDL de UAT, a consulta passou.</li>
+  </ul>
+
+  <h2>4. Chamada ainda não enviada</h2>
+  <p><code>IncluirCotacaoSuhai</code> não foi transmitida. Em um caso piloto, a FIPE da Suhai reconheceu o veículo (código <code>005085-7</code>, marca VW - VolksWagen, modelo Golf 1.6 Black &amp; Silver, ano 2000). O perfil do proponente não ficou disponível, então a cotação não saiu. Não há código de recusa da seguradora para essa cotação, porque a chamada não foi feita.</p>
+
+  <h2>5. O que permanece fora deste pacote</h2>
+  <ul>
+    <li>Produção do site e DNS de um host próprio da jornada Suhai.</li>
+    <li>Transmissão de proposta, pagamento, apólice, sinistro e comissão.</li>
+    <li>Credenciais, chaves e senhas. Elas não acompanham este documento.</li>
+  </ul>
+</body>
+</html>

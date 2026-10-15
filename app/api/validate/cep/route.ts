@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { checkRateLimit, getClientIp, hashIp } from "@/lib/leads/security";
-import { validateCepViaViaCep } from "@/lib/validation/cep-viacep";
+import { linhaEnderecoCep, validateCepViaViaCep } from "@/lib/validation/cep-viacep";
 
 /**
  * POST /api/validate/cep — proxy server-side para o ViaCEP (projeto
@@ -37,5 +37,14 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await validateCepViaViaCep(digits);
-  return NextResponse.json({ ok: result.ok, reason: result.ok ? "ok" : "nao_encontrado", cidade: result.cidade, estado: result.estado });
+  const linha = result.ok ? linhaEnderecoCep(result) : "";
+  return NextResponse.json({
+    ok: result.ok,
+    reason: result.ok ? "ok" : "nao_encontrado",
+    logradouro: result.logradouro,
+    bairro: result.bairro,
+    cidade: result.cidade,
+    estado: result.estado,
+    linha,
+  });
 }

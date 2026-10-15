@@ -31,6 +31,9 @@ export interface CTASectionProps {
   showCotarButton?: boolean;
   showCallButton?: boolean;
   ramo?: string;
+  /** Destino e rótulo do botão de cotar. A home segue em `/cotacao`. */
+  cotarHref?: string;
+  cotarLabel?: string;
 }
 
 export function CTASection({
@@ -42,6 +45,8 @@ export function CTASection({
   showCotarButton = false,
   showCallButton = false,
   ramo,
+  cotarHref = "/cotacao",
+  cotarLabel = "Cotar agora",
 }: CTASectionProps) {
   const isBrand = tone === "brand";
 
@@ -60,11 +65,11 @@ export function CTASection({
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
           {showCotarButton && (
             <Button
-              render={<Link href="/cotacao" />}
+              render={<Link href={cotarHref} />}
               variant="secondary"
               onClick={() => trackEvent("cta_click", { cta_id: ctaId, location })}
             >
-              Cotar agora
+              {cotarLabel}
             </Button>
           )}
           <WhatsAppButton location={location} ramo={ramo} variant={isBrand ? "secondary" : "whatsapp"} />

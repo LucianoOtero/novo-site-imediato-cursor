@@ -47,6 +47,28 @@ function extractPh3aFields(json: unknown): Ph3aResult {
 }
 
 /**
+ * Consulta o proxy de CPF e devolve sexo, nascimento e estado civil quando
+ * a PH3A responde. Não grava lead. Falha de rede ou login vira resultado
+ * vazio — o chamador decide se o formulário segue manual.
+ */
+export async function consultarPh3a(cpf: string): Promise<Ph3aResult> {
+  if (!env.cpfValidateProxyUrl || !cpf) return {};
+
+  try {
+    const response = await fetch(env.cpfValidateProxyUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpf }),
+    });
+    if (!response.ok) return {};
+    return extractPh3aFields(await response.json());
+  } catch (error) {
+    console.error("[lib/ph3a] Erro ao consultar PH3A:", error);
+    return {};
+  }
+}
+
+/**
  * Consulta o PH3A (via proxy) e atualiza o `LeadRecord` com os campos
  * retornados, se houver. Não lança erro — falhas são apenas logadas,
  * pois este enriquecimento nunca deve bloquear ou reverter a captura do
@@ -66,19 +88,7 @@ export async function enrichLeadWithPh3a(lead: LeadRecord): Promise<Ph3aResult> 
   }
 
   try {
-    const response = await fetch(env.cpfValidateProxyUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cpf: lead.cpf }),
-    });
-
-    if (!response.ok) {
-      console.warn(`[lib/ph3a] Proxy retornou status ${response.status} para o lead ${lead.id} — enriquecimento não aplicado.`);
-      return {};
-    }
-
-    const json = await response.json();
-    const result = extractPh3aFields(json);
+    const result = await consultarPh3a(lead.cpf);
     const { sexo, dataNascimento, estadoCivil } = result;
 
     if (!sexo && !dataNascimento && !estadoCivil) {

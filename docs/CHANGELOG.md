@@ -13,6 +13,24 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Não publicado — 2026-10-15 (cotação Suhai no CRM, WhatsApp e e-mail)
+
+### Added
+- `/cotacao-suhai` passa pelo mesmo caminho dos modais e do formulário RPA (`/api/lead` → Firebase → `deliverLead`). O celular virou a etapa 1; o Lead e a Oportunidade nascem no Espo logo depois dele e são atualizados a cada etapa ([`FLUXO_SUHAI_CRM_WHATSAPP.md`](FLUXO_SUHAI_CRM_WHATSAPP.md)).
+- Novos estágios `suhai_quote`, `suhai_plan_selected` e `suhai_proposal`. Cotação e proposta são gravadas pelo servidor; o plano escolhido é resolvido a partir da cotação gravada.
+- CRM: Notes com todas as ofertas, Tasks de cálculo manual, emissão de apólice e proposta pendente, `cSeguradora` Suhai na Oportunidade. Campos `cNumeroCotacao`, `cNumeroProposta`, `cPlanoEscolhido`, `cPremioTotal`, `cPagamento`, `cFranquia` e as opções novas de `cEtapaFunil`/`cCanalCaptura` criados no Espo DEV e PROD em 2026-10-15, com layout no painel "Cotação do Site" e validação de ponta a ponta nos dois ambientes ([`FLUXO_SUHAI_CRM_WHATSAPP.md`](FLUXO_SUHAI_CRM_WHATSAPP.md) §3 e §7).
+- WhatsApp nos marcos (`primeira_etapa`, `suhai_cotacao_pronta`, `calculo_manual`, `suhai_proposta_enviada`). Os dois templates novos foram aprovados e ativados em 2026-10-15 (`cotacao_suhai_util_v2` e `proposta_suhai_util_v2`), com entrega testada ([`GUIA_OCTADESK_TEMPLATES.md`](GUIA_OCTADESK_TEMPLATES.md)).
+- E-mail administrativo em cada etapa da cotação Suhai.
+- `npm run test:functions` (testes `node:test` das regras da Cloud Function).
+
+### Changed
+- `deliverLead` (publicada em 2026-10-15): flags de campos do funil por ocorrência; o segundo `progress` do LeadForm passa a atualizar `cEtapaFunil`.
+
+### Fixed
+- `deliverLead`: o `POST Lead` que recebe 409 da checagem de duplicidade do Espo (por exemplo, mesmo CPF com outro celular) agora adota e atualiza o Lead indicado, em vez de falhar até esgotar as tentativas. Vale para todos os canais e foi publicado em 2026-10-15.
+
+---
+
 ## [0.2.54] — 2026-10-13 (Fix SEO: auditoria Semrush)
 
 ### Fixed
@@ -42,7 +60,30 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 ### Ops
 - [ ] Após deploy: Vercel Logs sem invocação de function nas 4 rotas; `curl` com UA AdsBot a partir dos EUA → 200.
 - [ ] Nova contestação no Google Ads (campanhas Exp `24095000558` e Porto `24278639461`).
-- [ ] Aplicar o mesmo padrão em `app/(marketing)/cotacao-suhai/page.tsx` nas branches `uat-*` antes de irem para `main`.
+- [x] Aplicar o mesmo padrão em `app/(marketing)/cotacao-suhai/page.tsx` nas branches `uat-*` antes de irem para `main`.
+
+---
+
+## Preview — 2026-10-01 (dois UATs da jornada Suhai)
+
+Não é release de produção. `novo.segurosimediato.com.br` segue na linha `v0.2.x` de `main`.
+
+### Added
+- Landing no visual da Suhai, `noindex`, fora do menu e do sitemap: `/marca-suhai`, `/marca-suhai/moto`, `/marca-suhai/carro` e `/marca-suhai/caminhao`. O cálculo é o mesmo formulário da cotação (`CotacaoSuhaiExperiencia`).
+- Preview público do branch `uat-marca-suhai` (commit `0ac3001`): [landing](https://imediato-seguros-git-uat-marca-suhai-lucianooteros-projects.vercel.app/marca-suhai).
+- O preview anterior permanece no branch `uat-suhai`: cotação no visual da Imediato em [cotacao-suhai](https://imediato-seguros-git-uat-suhai-lucianooteros-projects.vercel.app/cotacao-suhai).
+- Cards de moto, carro e caminhão com o véu de foto medido no site da Suhai ([`SUHAI_CARDS_IMAGEM.md`](SUHAI_CARDS_IMAGEM.md)).
+- Eventos `suhai_quote_start`, `suhai_quote_price` e `suhai_quote_abandon` no código. As tags do GTM não foram publicadas.
+
+### Changed
+- Nas três subpáginas o formulário passou para a hero, no mesmo formato da home: foto e título à esquerda, cotação à direita. No celular, o título fica em cima e o formulário logo abaixo. Aceito em 01/10/2026 no workspace. O preview publicado ainda está no commit `0ac3001`, em que esse formulário vinha depois do conteúdo.
+
+### Fora desta etapa
+- DNS de `suhai.segurosimediato.com.br` e de `novo.segurosimediato.com.br` intocados.
+- `SUHAI_GATEWAY_URL` não foi definido em Production.
+- O experimento de Ads não foi aberto.
+
+---
 
 ## [0.2.52] — 2026-09-26 (UX Fase 2: Clarity + Gate A privacidade)
 
@@ -56,12 +97,15 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 - Envs: `NEXT_PUBLIC_CLARITY_ID` / `RAMP_UNTIL` / `SAMPLE_RATE` em `.env.example` + `lib/env.ts`.
 
 ### Docs
-- Gate A OK; próximos passos = ativar ID em Production → Gate E ([`PROXIMOS_PASSOS_UX_TELEMETRIA.md`](docs/PROXIMOS_PASSOS_UX_TELEMETRIA.md)).
+- Gate A OK; Clarity **ativado** em Production → próximo = Gate E ([`PROXIMOS_PASSOS_UX_TELEMETRIA.md`](docs/PROXIMOS_PASSOS_UX_TELEMETRIA.md)).
+- Contrato Espo: Formula Vendido bloqueia também `amount == 0` ([`ESPO_VENDIDO_FIREBASE_SYNC.md`](docs/ESPO_VENDIDO_FIREBASE_SYNC.md) §6.1; espelho FASE2/FASE4).
+- sold-sync: e-mail de alerta com resumo leigo (`explainSoldSyncErrorPlain`) documentado em [`FASE3_HARDENING_SOLD_SYNC.md`](docs/FASE3_HARDENING_SOLD_SYNC.md).
 
 ### Ops
 - [x] Projeto Clarity `yobd1yovia` + envs Production (`NEXT_PUBLIC_CLARITY_ID` / `RAMP_UNTIL=2026-09-28T11:11:44.000Z` @ 5%).
-- [ ] Redeploy Production com este commit → smoke `clarity.ms`.
-- [ ] Gate E após 48h.
+- [x] Redeploy Production + smoke `clarity.ms` OK.
+- [ ] Gate E após ramp (~2026-09-28T11:11Z) + roteiro mask.
+- [x] Espo PROD Formula: `amount == null || amount == '' || amount == 0` (2026-09-26).
 
 ## [0.2.51] — 2026-09-26 (Docs: Gate D C→A — F1 PASS + F0′)
 
