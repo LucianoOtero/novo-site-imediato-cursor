@@ -152,6 +152,33 @@ async function gravar(leadId: string | undefined, stage: SuhaiStage, montar: (da
   }
 }
 
+/** Consultas de perfil (PH3A) por lead: cobre correções de CPF digitado errado. */
+const MAX_CONSULTAS_PERFIL = 3;
+
+/**
+ * Reserva uma consulta de perfil por CPF para o lead. A consulta devolve
+ * dados pessoais, então só vale para um lead de telefone que já existe e
+ * tem limite por lead. Fica fora de `leads_backup/` para não disparar a
+ * Cloud Function.
+ */
+export async function reservarConsultaPerfil(leadId: string | undefined): Promise<boolean> {
+  if (!leadId || !LEAD_ID.test(leadId)) return false;
+  const database = getLeadBackupDatabase();
+  if (!database) return false;
+
+  try {
+    const telefone = await database.ref(`leads_backup/${leadId}/data/phoneE164`).get();
+    if (!telefone.exists()) return false;
+    const resultado = await database
+      .ref(`suhai_perfil_consultas/${leadId}`)
+      .transaction((atual: number | null) => ((atual ?? 0) >= MAX_CONSULTAS_PERFIL ? undefined : (atual ?? 0) + 1));
+    return resultado.committed;
+  } catch (error) {
+    console.warn(`[suhai-etapas] Falha ao reservar consulta de perfil do lead ${leadId}:`, error);
+    return false;
+  }
+}
+
 export function registrarCotacaoSuhai(leadId: string | undefined, payload: CotacaoPayload, cotacao: SuhaiCotacaoResumo) {
   return gravar(leadId, "suhai_quote", () => ({ ...dadosDaCotacao(payload), suhaiCotacao: cotacao }));
 }

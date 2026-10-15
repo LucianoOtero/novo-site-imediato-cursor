@@ -372,10 +372,11 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     const cpf = onlyDigits(cpfInformado ?? estadoRef.current.cpf);
     if (!isValidCpf(cpf)) return null;
     try {
+      await contatoInicialRef.current;
       const resposta = await fetch("/api/suhai/perfil", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ cpf }),
+        body: JSON.stringify({ cpf, leadId: leadIdRef.current }),
       });
       const corpo = (await resposta.json()) as {
         ok?: boolean;
