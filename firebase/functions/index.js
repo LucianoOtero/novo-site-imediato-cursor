@@ -92,6 +92,8 @@ const espo = require("./espocrm");
 const octa = require("./octadesk");
 const emailNotif = require("./email-notification");
 const contactEmail = require("./contact-email");
+const soldSync = require("./sold-sync");
+const suhai = require("./suhai");
 
 const DATABASE_URL = "https://imediato-seguros-site-novo-default-rtdb.firebaseio.com";
 
@@ -148,6 +150,16 @@ const SEND_EMAIL_NOTIFICATION_URL_PROD = defineSecret("SEND_EMAIL_NOTIFICATION_U
  * pass/from/to. Ver firebase/functions/contact-email.js.
  */
 const CONTACT_SMTP_CONFIG = defineSecret("CONTACT_SMTP_CONFIG");
+
+/** Secret compartilhado para smoke HTTP do syncOpportunitySold. */
+const ESPO_SOLD_WEBHOOK_SECRET = defineSecret("ESPO_SOLD_WEBHOOK_SECRET");
+/** JSON {dev:{id,secretKey}, prod:{id,secretKey}} — upload Ads só no prod. */
+const ESPO_WEBHOOK_AUTH = defineSecret("ESPO_WEBHOOK_AUTH");
+/**
+ * Google Ads / Data Manager. enabled fica false até o corte explícito
+ * do lote CSV. Ver docs/ADS_OFFLINE_VENDIDO_FIREBASE.md.
+ */
+const GOOGLE_ADS_API_CONFIG = defineSecret("GOOGLE_ADS_API_CONFIG");
 
 const RETRY_DELAYS_MS = [1000, 4000, 9000];
 /**
@@ -332,6 +344,9 @@ function buildFunnelFields(stage, leadData) {
     }
     return { cEtapaFunil: "Cálculo manual pendente", cStatusCalculo: "Falhou" };
   }
+  if (suhai.SUHAI_STAGES.includes(stage)) {
+    return suhai.funnelFieldsExistentes(stage, leadData);
+  }
   return null;
 }
 
@@ -384,9 +399,10 @@ async function maybeSendAdminEmail({
   flag,
   momento,
   erro,
+  detalhe,
 }) {
   if (!url || record[flag] === true || updates[flag] === true) return;
-  const payload = emailNotif.buildEmailPayload(leadData, { momento, erro: erro || null });
+  const payload = emailNotif.buildEmailPayload(leadData, { momento, erro: erro || null, detalhe: detalhe || null });
   if (!payload) return;
   const result = await emailNotif.sendAdminEmail(url, payload, leadId);
   if (result.success) {
@@ -446,8 +462,12 @@ exports.deliverLead = onValueWritten(
     // "rpa_result" (cálculo terminou) e "consultant_requested" (prefere
     // o cálculo completo depois) — todos atualizam o EspoCRM como o
     // "complete"; nenhum reenvia a mensagem inicial do Octadesk.
-    const KNOWN_STAGES = ["initial", "progress", "complete", "rpa_result", "consultant_requested"];
+    // Cotação Suhai (2026-10-15): estágios gravados pelo servidor do site
+    // com protocolo, plano e proposta — ver suhai.js.
+    const KNOWN_STAGES = ["initial", "progress", "complete", "rpa_result", "consultant_requested", ...suhai.SUHAI_STAGES];
     const stage = KNOWN_STAGES.includes(leadData.stage) ? leadData.stage : "complete";
+    const isSuhai = suhai.isSuhai(leadData);
+    const stageKey = suhai.flagKey(stage, leadData);
     const updates = {};
     const cfAttempts = workingRecord.cf_retry_count || 0;
 
@@ -463,8 +483,12 @@ exports.deliverLead = onValueWritten(
     // do payload legado, e uma atualização sem `espocrmLeadId` faz o
     // proxy devolver erro de ambiguidade) — o valor deles está no
     // enriquecimento via API direta (Note/description) abaixo.
+    // Os estágios Suhai carregam nome/CPF/e-mail novos e já têm o
+    // `espocrmLeadId` do "initial" — atualizam a ficha como o "complete".
     const needsEspocrm =
-      stage === "initial" ? workingRecord.espocrm_sent !== true : stage === "progress" || stage === "complete";
+      stage === "initial"
+        ? workingRecord.espocrm_sent !== true
+        : stage === "progress" || stage === "complete" || suhai.SUHAI_STAGES.includes(stage);
     // Octadesk (mensagem inicial via proxy legado): só no "initial" —
     // nunca depois, para não duplicar a notificação (achado 2026-07-13).
     // As mensagens dos momentos pós-inicial saem pela API direta abaixo.
@@ -665,7 +689,10 @@ exports.deliverLead = onValueWritten(
     // Mesmo contrato best-effort/dedupe das Notes (`espo_fields_{stage}_sent`);
     // o PUT é idempotente.
     const funnelFields = buildFunnelFields(stage, leadData);
-    const fieldsFlag = `espo_fields_${stage}_sent`;
+    // Flag por ocorrência (`stageKey`): os dois `progress` do formulário e
+    // os estágios Suhai que se repetem (recálculo, troca de plano) gravam
+    // cada um o seu `cEtapaFunil`.
+    const fieldsFlag = `espo_fields_${stageKey}_sent`;
     if (espoApiReady && espoLeadIdForApi && workingRecord[fieldsFlag] !== true) {
       const payload = {
         ...(funnelFields || {}),
@@ -674,7 +701,13 @@ exports.deliverLead = onValueWritten(
       try {
         await espo.putFields(espoApiConfig, "Lead", espoLeadIdForApi, payload, leadId);
         if (espoOppIdForApi) {
-          await espo.putFields(espoApiConfig, "Opportunity", espoOppIdForApi, payload, leadId);
+          await espo.putFields(
+            espoApiConfig,
+            "Opportunity",
+            espoOppIdForApi,
+            { ...payload, ...(isSuhai ? suhai.opportunityFieldsExistentes(stage) || {} : {}) },
+            leadId
+          );
         }
         updates[fieldsFlag] = true;
       } catch (error) {
@@ -767,6 +800,64 @@ exports.deliverLead = onValueWritten(
       }
     }
 
+    // ——— Cotação Suhai no EspoCRM (2026-10-15) ———
+    // PUTs separados para o que ainda pode faltar no Entity Manager
+    // (opções novas de cEtapaFunil; campos cNumeroCotacao, cNumeroProposta,
+    // cPlanoEscolhido, cPremioTotal, cPagamento, cFranquia), Note com os
+    // valores apresentados e Task acionável. Tudo best-effort, com flag por
+    // ocorrência (`stageKey`).
+    if (isSuhai && espoApiReady && espoLeadIdForApi) {
+      const putBoth = async (fields) => {
+        await espo.putFields(espoApiConfig, "Lead", espoLeadIdForApi, fields, leadId);
+        if (espoOppIdForApi) await espo.putFields(espoApiConfig, "Opportunity", espoOppIdForApi, fields, leadId);
+      };
+
+      const etapaNova = suhai.etapaFunilNova(stage, leadData);
+      const etapaFlag = `espo_suhai_etapa_${stageKey}_sent`;
+      if (etapaNova && workingRecord[etapaFlag] !== true) {
+        try {
+          await putBoth({ cEtapaFunil: etapaNova });
+          updates[etapaFlag] = true;
+        } catch (error) {
+          logger.warn(`[deliverLead/suhai] Lead ${leadId}: cEtapaFunil "${etapaNova}" falhou (opção pode não existir ainda).`, error);
+        }
+      }
+
+      const novos = suhai.camposNovos(stage, leadData);
+      const novosFlag = `espo_suhai_campos_${stageKey}_sent`;
+      if (novos && workingRecord[novosFlag] !== true) {
+        try {
+          await putBoth(novos);
+          updates[novosFlag] = true;
+        } catch (error) {
+          logger.warn(`[deliverLead/suhai] Lead ${leadId}: campos Suhai falharam (campos podem não existir ainda).`, error);
+        }
+      }
+
+      const nota = suhai.buildNote(stage, leadData);
+      const notaFlag = `espo_suhai_note_${stageKey}_sent`;
+      if (nota && workingRecord[notaFlag] !== true) {
+        try {
+          await espo.postNote(espoApiConfig, espoLeadIdForApi, nota, leadId);
+          await espo.appendDescription(espoApiConfig, espoLeadIdForApi, nota, leadId);
+          updates[notaFlag] = true;
+        } catch (error) {
+          logger.warn(`[deliverLead/suhai] Lead ${leadId}: Note (${stageKey}) falhou (best-effort).`, error);
+        }
+      }
+
+      const tarefa = suhai.taskSpec(stage, leadData);
+      const tarefaFlag = `espo_suhai_task_${tarefa?.chave || stageKey}_sent`;
+      if (tarefa && workingRecord[tarefaFlag] !== true) {
+        try {
+          await espo.createTask(espoApiConfig, espoLeadIdForApi, tarefa, leadId);
+          updates[tarefaFlag] = true;
+        } catch (error) {
+          logger.warn(`[deliverLead/suhai] Lead ${leadId}: Task (${stageKey}) falhou (best-effort).`, error);
+        }
+      }
+    }
+
     // ——— Mensagens Octadesk por momento, via API direta (2026-07-20) ———
     // "calculo_pronto"/"calculo_manual" (fim do RPA),
     // "calculo_completo_depois" (escolheu especialista) e
@@ -779,7 +870,17 @@ exports.deliverLead = onValueWritten(
       let templateKey = null;
       let variables = [];
 
-      if (stage === "consultant_requested") {
+      if (isSuhai && suhai.SUHAI_STAGES.includes(stage)) {
+        // Templates Suhai só saem quando o ID aprovado pela Meta estiver no
+        // secret — até lá, nada de mensagem nem e-mail de erro.
+        const escolha = suhai.octaTemplate(stage, leadData, nome);
+        if (escolha && octaConfig.templates && octaConfig.templates[escolha.key]) {
+          templateKey = escolha.key;
+          variables = escolha.variables;
+        } else if (escolha) {
+          logger.info(`[deliverLead/suhai] Lead ${leadId}: template "${escolha.key}" sem ID no OCTADESK_API_CONFIG — envio pulado.`);
+        }
+      } else if (stage === "consultant_requested") {
         templateKey = "calculo_completo_depois";
         variables = [nome];
       } else if (stage === "rpa_result") {
@@ -813,15 +914,18 @@ exports.deliverLead = onValueWritten(
         try {
           await octa.sendTemplate(octaConfig, templateKey, leadData, variables, leadId);
           updates[octaFlag] = true;
-          await maybeSendAdminEmail({
-            url: emailUrl,
-            leadData,
-            leadId,
-            record: workingRecord,
-            updates,
-            flag: `email_octa_${templateKey}_sent`,
-            momento: "update",
-          });
+          // A cotação Suhai tem e-mail próprio por etapa (bloco abaixo).
+          if (!isSuhai) {
+            await maybeSendAdminEmail({
+              url: emailUrl,
+              leadData,
+              leadId,
+              record: workingRecord,
+              updates,
+              flag: `email_octa_${templateKey}_sent`,
+              momento: "update",
+            });
+          }
         } catch (error) {
           logger.warn(`[deliverLead/octa-api] Lead ${leadId}: template "${templateKey}" falhou (best-effort).`, error);
           await maybeSendAdminEmail({
@@ -835,6 +939,26 @@ exports.deliverLead = onValueWritten(
             erro: emailNotif.errorPayload(error),
           });
         }
+      }
+    }
+
+    // ——— E-mail admin a cada etapa da cotação Suhai (2026-10-15) ———
+    // O "initial" já sai pelo fluxo comum acima; aqui entram as etapas de
+    // veículo/CEP, a cotação, o plano e a proposta (e os erros).
+    if (isSuhai) {
+      const alerta = suhai.emailMomento(stage, leadData);
+      if (alerta) {
+        await maybeSendAdminEmail({
+          url: emailUrl,
+          leadData,
+          leadId,
+          record: workingRecord,
+          updates,
+          flag: `email_suhai_${stageKey}_sent`,
+          momento: alerta.momento,
+          erro: alerta.erro,
+          detalhe: alerta.detalhe,
+        });
       }
     }
 
@@ -982,3 +1106,170 @@ exports.markContactMessageSent = onRequest(
     }
   }
 );
+
+/**
+ * Sync Opportunity Vendido → Firebase (set/clear sold*).
+ * Ads offline só quando a assinatura é o webhook PROD.
+ * GOOGLE_ADS_API_CONFIG.enabled permanece false até o corte do CSV.
+ */
+exports.syncOpportunitySold = onRequest(
+  {
+    region: "us-central1",
+    secrets: [
+      ESPO_SOLD_WEBHOOK_SECRET,
+      ESPO_WEBHOOK_AUTH,
+      CONTACT_SMTP_CONFIG,
+      ESPOCRM_API_CONFIG,
+      GOOGLE_ADS_API_CONFIG,
+    ],
+    cors: false,
+    timeoutSeconds: 120,
+    memory: "512MiB",
+  },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "method_not_allowed" });
+      return;
+    }
+
+    const rawBody =
+      typeof req.rawBody === "string"
+        ? req.rawBody
+        : Buffer.isBuffer(req.rawBody)
+          ? req.rawBody.toString("utf8")
+          : null;
+
+    let espoWebhookAuths = [];
+    try {
+      const parsed = soldSync.parseEspoWebhookAuth(ESPO_WEBHOOK_AUTH.value() || "{}");
+      espoWebhookAuths = parsed.auths;
+    } catch {
+      /* secret ainda não configurado — só shared secret */
+    }
+
+    const auth = soldSync.authorizeRequest({
+      req,
+      rawBody: rawBody != null ? rawBody : JSON.stringify(req.body ?? {}),
+      sharedSecret: ESPO_SOLD_WEBHOOK_SECRET.value(),
+      espoWebhookAuths,
+    });
+    if (!auth.ok) {
+      logger.warn("[syncOpportunitySold] unauthorized", {
+        hasRawBody: rawBody != null,
+        hasSignature: Boolean(req.get("Signature")),
+        hasXSignature: Boolean(req.get("X-Signature")),
+        authCount: espoWebhookAuths.length,
+      });
+      res.status(401).json({ ok: false, error: "unauthorized" });
+      return;
+    }
+
+    const items = soldSync.expandRequestItems(req.body);
+    if (!items.length) {
+      res.status(400).json({ ok: false, error: "empty_payload" });
+      return;
+    }
+
+    const smtpConfigRaw = CONTACT_SMTP_CONFIG.value();
+    const espoApiConfigRaw = ESPOCRM_API_CONFIG.value();
+    let adsConfigRaw = "";
+    try {
+      adsConfigRaw = GOOGLE_ADS_API_CONFIG.value() || "";
+    } catch {
+      adsConfigRaw = "";
+    }
+    const allowAds = auth.environment === "prod";
+    const itemResults = [];
+
+    for (const item of items) {
+      let payload = soldSync.normalizePayload(item);
+      try {
+        payload = await soldSync.enrichPayloadFromEspo(payload, espoApiConfigRaw);
+      } catch (e) {
+        logger.warn(`[syncOpportunitySold] enrich Espo falhou: ${e.message}`);
+      }
+
+      if (!payload.action && payload.opportunityId) {
+        if (payload.stage === "Vendido") payload.action = "set";
+        else if (payload.stage) payload.action = "clear";
+      }
+
+      if (payload.action !== "set" && payload.action !== "clear") {
+        itemResults.push({
+          opportunityId: payload.opportunityId,
+          ok: false,
+          httpStatus: 400,
+          error: "invalid_action",
+        });
+        continue;
+      }
+
+      const validationError =
+        payload.action === "set"
+          ? soldSync.validateSetPayload(payload)
+          : soldSync.validateClearPayload(payload);
+      if (validationError) {
+        await soldSync.notifySoldSyncError({
+          smtpConfigRaw,
+          reason: "validation_error",
+          payload,
+          results: [{ error: validationError }],
+        });
+        itemResults.push({
+          opportunityId: payload.opportunityId,
+          ok: false,
+          httpStatus: 400,
+          error: validationError,
+        });
+        continue;
+      }
+
+      try {
+        const result = await soldSync.handleSoldSync(payload, {
+          smtpConfigRaw,
+          adsConfigRaw,
+          allowAds,
+        });
+        itemResults.push({
+          opportunityId: payload.opportunityId,
+          action: payload.action,
+          httpStatus: result.httpStatus,
+          ...result.body,
+        });
+      } catch (error) {
+        logger.error("[syncOpportunitySold] item error:", error);
+        await soldSync.notifySoldSyncError({
+          smtpConfigRaw,
+          reason: "internal_error",
+          payload,
+          results: [{ error: error.message || String(error) }],
+        });
+        itemResults.push({
+          opportunityId: payload.opportunityId,
+          ok: false,
+          httpStatus: 500,
+          error: "internal",
+          message: error.message || String(error),
+        });
+      }
+    }
+
+    const anyOk = itemResults.some((r) => r.ok === true);
+    const status = anyOk
+      ? 200
+      : itemResults.some((r) => r.httpStatus === 500)
+        ? 500
+        : itemResults.every((r) => r.httpStatus === 404)
+          ? 404
+          : 400;
+
+    res.status(status).json({
+      ok: anyOk,
+      authVia: auth.via,
+      adsEnvironment: auth.environment || null,
+      count: itemResults.length,
+      results: itemResults,
+    });
+  }
+);
+

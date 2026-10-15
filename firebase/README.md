@@ -62,6 +62,20 @@ firebase deploy --only functions,database
 - Escolhe a URL de EspoCRM/e-mail pelo campo `environment` do próprio registro (`production` → secrets `_PROD`; `development`/`staging` → `_DEV`). Octadesk é sempre `OCTADESK_URL` (sem ambiente de teste).
 - `cf_retry_count` sobe **só em falha** de entrega (Espo/Octadesk). Limite de 5 falhas (`MAX_CF_ATTEMPTS_TOTAL`) — depois marca `status: "failed_permanently"`.
 
+## Sync Vendido → Firebase (`syncOpportunitySold`)
+
+HTTP POST (Fase 1+): Espo Workflow chama a CF quando a Opportunity entra/sai de `Vendido`.  
+Contrato: [`docs/ESPO_VENDIDO_FIREBASE_SYNC.md`](../docs/ESPO_VENDIDO_FIREBASE_SYNC.md) · smoke: [`docs/SMOKE_SYNC_OPPORTUNITY_SOLD.md`](../docs/SMOKE_SYNC_OPPORTUNITY_SOLD.md).
+
+Offline Ads (pós-`set`, flag off até smoke): [`docs/ADS_OFFLINE_VENDIDO_FIREBASE.md`](../docs/ADS_OFFLINE_VENDIDO_FIREBASE.md).
+
+```bash
+firebase functions:secrets:set ESPO_SOLD_WEBHOOK_SECRET
+# Offline Ads — JSON com enabled:false (obrigatório antes do redeploy que referencia o secret)
+firebase functions:secrets:set GOOGLE_ADS_API_CONFIG
+firebase deploy --only database,functions:syncOpportunitySold
+```
+
 ## Como testar
 
 1. Console do Realtime Database: <https://console.firebase.google.com/project/imediato-seguros-site-novo/database/imediato-seguros-site-novo-default-rtdb/data>

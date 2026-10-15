@@ -41,13 +41,41 @@ const MOMENTO_META = {
     momento_descricao: `${SITE_MARKER} — Submissão Completa - Erro`,
     momento_emoji: "❌",
   },
+  // Cotação Suhai: um alerta por etapa cumprida. O `detalhe` da etapa
+  // (protocolo, plano, número da proposta) vai no fim da descrição, que o
+  // Cloud Run renderiza como chega.
+  suhai_progress: {
+    momento_envio: "update",
+    momento_descricao: `${SITE_MARKER} — Cotação Suhai - Etapa concluída`,
+    momento_emoji: "🛡️",
+  },
+  suhai_cotacao: {
+    momento_envio: "update",
+    momento_descricao: `${SITE_MARKER} — Cotação Suhai - Preço apresentado`,
+    momento_emoji: "🛡️💰",
+  },
+  suhai_plano: {
+    momento_envio: "update",
+    momento_descricao: `${SITE_MARKER} — Cotação Suhai - Plano escolhido`,
+    momento_emoji: "🛡️✅",
+  },
+  suhai_proposta: {
+    momento_envio: "update",
+    momento_descricao: `${SITE_MARKER} — Cotação Suhai - Proposta transmitida`,
+    momento_emoji: "🛡️📄",
+  },
+  suhai_erro: {
+    momento_envio: "update_error",
+    momento_descricao: `${SITE_MARKER} — Cotação Suhai - Erro`,
+    momento_emoji: "❌",
+  },
 };
 
 /**
  * Monta o payload idêntico ao `sendAdminEmailNotification` do modal legado.
  * Sem DDD/celular → `null` (caller não deve enviar).
  */
-function buildEmailPayload(leadData, { momento, erro = null } = {}) {
+function buildEmailPayload(leadData, { momento, erro = null, detalhe = null } = {}) {
   const phoneE164 = leadData.phoneE164 || "";
   const ddd = phoneE164.slice(3, 5);
   const celular = phoneE164.slice(5);
@@ -67,8 +95,10 @@ function buildEmailPayload(leadData, { momento, erro = null } = {}) {
     cep: leadData.cep || "",
     placa: leadData.placa || "",
     gclid: utm.gclid || "",
-    momento,
-    momento_descricao: meta.momento_descricao,
+    // O Cloud Run legado só conhece initial/update e os erros; o tipo da
+    // etapa Suhai segue na descrição.
+    momento: meta.momento_envio || momento,
+    momento_descricao: detalhe ? `${meta.momento_descricao} — ${detalhe}` : meta.momento_descricao,
     momento_emoji: meta.momento_emoji,
     erro: erro || null,
   };

@@ -10,7 +10,8 @@
  * - NUNCA `amount: 0` (validação de currency);
  * - NUNCA `leadId` em atualização de Opportunity;
  * - duplicata não é erro: vira atualização do lead existente
- *   (dedupe por e-mail real e por telefone/cCelular).
+ *   (dedupe por e-mail real e por telefone/cCelular; e, no POST, o
+ *   409 do duplicate check do Espo — ex.: mesmo CPF).
  *
  * Divergência deliberada do proxy legado (decisão do cliente,
  * 2026-08-04): o dedupe vale só para o **Lead**. A Opportunity é
@@ -77,6 +78,7 @@ async function espoRequest(config, method, path, body) {
     const text = await response.text().catch(() => "");
     const error = new Error(`${method} ${path} HTTP ${response.status}: ${text.slice(0, 300)}`);
     error.status = response.status;
+    error.body = text;
     throw error;
   }
   const text = await response.text().catch(() => "");
@@ -182,7 +184,7 @@ function buildLeadFields(leadData, { isCreate = false, capturedAt } = {}) {
 }
 
 /**
- * Deriva `cCanalCaptura` (Enum no Espo: formulario|whatsapp|telefone).
+ * Deriva `cCanalCaptura` (Enum no Espo: formulario|whatsapp|telefone|cotacao_suhai).
  * Só deve ir em PUTs best-effort até o campo existir no Entity Manager —
  * incluir na criação do Lead/Opp quebraria o POST se o atributo ainda
  * não estiver cadastrado.
@@ -192,6 +194,7 @@ function canalCapturaFields(leadData) {
   const modal = leadData.modalChannel;
   let value = null;
   if (channel === "lead_form") value = "formulario";
+  else if (channel === "suhai_form") value = "cotacao_suhai";
   else if (channel === "contact_modal") {
     if (modal === "phone") value = "telefone";
     else value = "whatsapp";
@@ -263,6 +266,37 @@ async function findExistingLead(config, leadData) {
   return null;
 }
 
+/** Id do primeiro registro que o Espo devolve no corpo de um POST 409 (duplicate check). */
+function duplicateIdFrom(error) {
+  if (!error || error.status !== 409 || !error.body) return null;
+  try {
+    const list = JSON.parse(error.body);
+    return (Array.isArray(list) && list[0] && list[0].id) || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cria o Lead. O duplicate check do Espo (`duplicateCheckFieldList`:
+ * emailAddress, cCpftext, cCelular) é mais amplo que `findExistingLead` —
+ * o mesmo CPF com outro celular/e-mail responde 409 com o registro
+ * existente; nesse caso o Lead é adotado e atualizado, como no dedupe.
+ */
+async function createLead(config, leadData, capturedAt) {
+  try {
+    const created = await espoRequest(config, "POST", "Lead", buildLeadFields(leadData, { isCreate: true, capturedAt }));
+    if (!created || !created.id) throw new Error("POST Lead sem id na resposta");
+    return created.id;
+  } catch (error) {
+    const duplicateId = duplicateIdFrom(error);
+    if (!duplicateId) throw error;
+    const fields = buildLeadFields(leadData, { isCreate: false });
+    if (Object.keys(fields).length > 0) await espoRequest(config, "PUT", `Lead/${duplicateId}`, fields);
+    return duplicateId;
+  }
+}
+
 /**
  * Tenta PUT; em 404/403 (ID apagado no CRM / sem permissão) devolve
  * `stale:true` para o caller recriar. Outros erros propagam.
@@ -300,9 +334,7 @@ async function deliverStage(config, leadData, { espoLeadId, espoOpportunityId, c
   }
 
   if (!leadId) {
-    const created = await espoRequest(config, "POST", "Lead", buildLeadFields(leadData, { isCreate: true, capturedAt }));
-    if (!created || !created.id) throw new Error("POST Lead sem id na resposta");
-    leadId = created.id;
+    leadId = await createLead(config, leadData, capturedAt);
   } else {
     const fields = buildLeadFields(leadData, { isCreate: false });
     const put = await putOrDetectStale(config, `Lead/${leadId}`, fields);
@@ -311,9 +343,7 @@ async function deliverStage(config, leadData, { espoLeadId, espoOpportunityId, c
       leadId = await findExistingLead(config, leadData);
       opportunityId = null;
       if (!leadId) {
-        const created = await espoRequest(config, "POST", "Lead", buildLeadFields(leadData, { isCreate: true, capturedAt }));
-        if (!created || !created.id) throw new Error("POST Lead (recover) sem id na resposta");
-        leadId = created.id;
+        leadId = await createLead(config, leadData, capturedAt);
       } else if (Object.keys(fields).length > 0) {
         await espoRequest(config, "PUT", `Lead/${leadId}`, fields);
       }
@@ -413,6 +443,28 @@ async function createManualCalcTask(config, espoLeadId, leadData, leadId) {
   }
 }
 
+/**
+ * POST /api/v1/Task genérica vinculada ao Lead (cotação Suhai: cotação
+ * manual, emissão da apólice, proposta pendente). `dias` = prazo a partir
+ * de hoje, às 18h.
+ */
+async function createTask(config, espoLeadId, { name, description, dias = 1 }, leadId) {
+  const prazo = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  try {
+    await espoRequest(config, "POST", "Task", {
+      name,
+      status: "Not Started",
+      dateEnd: `${prazo} 18:00:00`,
+      parentType: "Lead",
+      parentId: espoLeadId,
+      ...(config.taskAssignedUserId ? { assignedUserId: config.taskAssignedUserId } : {}),
+      description,
+    });
+  } catch (error) {
+    throw new Error(`Task (lead ${leadId}): ${error.message}`);
+  }
+}
+
 module.exports = {
   SITE_WEBPAGE,
   deliverStage,
@@ -420,6 +472,7 @@ module.exports = {
   postNote,
   appendDescription,
   createManualCalcTask,
+  createTask,
   canalCapturaFields,
   attributionPackageFields,
   attributionLeadExtendedFields,
