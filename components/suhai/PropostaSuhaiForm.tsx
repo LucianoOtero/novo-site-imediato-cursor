@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Field } from "@/components/lead/fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { trackEvent } from "@/lib/analytics";
 import { COMBUSTIVEL, COR_VEICULO } from "@/lib/suhai/dominio";
 import type { Oferta, PropostaResultado } from "@/lib/suhai/types";
 import { formatCep, onlyDigits } from "@/lib/validators";
@@ -134,6 +135,7 @@ export function PropostaSuhaiForm({
         return;
       }
       setResultado(corpo as PropostaResultado);
+      trackEvent("suhai_proposal_sent", { form_id: "cotacao_suhai" });
     } catch {
       setErroGeral("Falha de conexão. Tente novamente.");
     } finally {

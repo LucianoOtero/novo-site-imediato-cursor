@@ -166,6 +166,8 @@ type AnalyticsEventMap = {
     last_step: 1 | 2 | 3 | 4;
     reason: "pagehide" | "hidden" | "unmount";
   };
+  /** Proposta transmitida à Suhai. Igual nos dois hosts do experimento. */
+  suhai_proposal_sent: { form_id: "cotacao_suhai" };
 };
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;

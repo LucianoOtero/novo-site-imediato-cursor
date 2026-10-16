@@ -7,11 +7,14 @@ export const NOTA_PRECO =
 export const PASSOS: CardSuhai[] = [
   { titulo: "Peça sua cotação", texto: "Preencha seus dados e receba a cotação do seu seguro, grátis e sem compromisso" },
   { titulo: "Escolha suas coberturas", texto: "Selecione as coberturas que fazem sentido para você" },
-  { titulo: "Finalize e aprove sua apólice", texto: "Receba sua apólice digital e comece a aproveitar sua proteção" },
+  {
+    titulo: "Envie a proposta e receba a apólice",
+    texto: "A equipe da Imediato Seguros acompanha a emissão da apólice digital e envia o boleto da 1ª parcela",
+  },
 ];
 
 const PARCELAMENTO =
-  "Até 12 vezes no boleto ou no cartão, direto para a Suhai. No cartão, a parcela do mês entra na fatura, com opção de até 3 vezes sem juros.";
+  "Nesta página a proposta segue no boleto, em até 12 parcelas conforme o plano, pagas direto para a Suhai. Depois do envio, a equipe da Imediato Seguros manda o boleto da 1ª parcela.";
 
 export const COBERTURAS: CardSuhai[] = [
   {
@@ -100,12 +103,12 @@ export const MOTIVOS_CARRO: CardSuhai[] = [
     texto: "O que está contratado fica claro. Não há taxa escondida.",
   },
   {
-    titulo: "Contratação online",
-    texto: "A cotação começa no celular ou no computador, sem papelada.",
+    titulo: "Cotação e proposta online",
+    texto: "O preço e a proposta saem no celular ou no computador, sem papelada.",
   },
   {
-    titulo: "Atendimento humano 24h",
-    texto: "Na emergência, o contato é com gente, a qualquer hora.",
+    titulo: "Assistência 24h",
+    texto: "Na emergência, a assistência da Suhai atende a qualquer hora.",
   },
 ];
 
@@ -123,8 +126,8 @@ export const MOTIVOS_MOTO: CardSuhai[] = [
     texto: "O valor cabe no bolso e a cobertura é explicada sem letra miúda.",
   },
   {
-    titulo: "Contratação digital",
-    texto: "O processo é rápido e sem papelada, de onde você estiver.",
+    titulo: "Cotação digital",
+    texto: "O preço e a proposta saem rápido e sem papelada, de onde você estiver.",
   },
   {
     titulo: "Quem entende de moto",
@@ -146,8 +149,8 @@ export const MOTIVOS_CAMINHAO: CardSuhai[] = [
     texto: "Plano acessível e transparente, sem comer o valor da viagem.",
   },
   {
-    titulo: "Contratação sem papelada",
-    texto: "Tudo digital, com gente para orientar cada passo.",
+    titulo: "Proposta sem papelada",
+    texto: "Cotação e proposta online, com a equipe da Imediato Seguros para orientar cada passo.",
   },
   {
     titulo: "Assistência nas estradas",
@@ -165,7 +168,7 @@ export const PERGUNTAS_HOME: PerguntaSuhai[] = [
   {
     question: "Como funciona a contratação do seguro Suhai?",
     answer:
-      "A cotação é gratuita e sem compromisso. Você informa o veículo e alguns dados e recebe uma proposta com o valor e as coberturas do seu perfil.",
+      "A cotação é gratuita e sem compromisso. Você informa o veículo e alguns dados e vê o valor e as coberturas do seu perfil. Se enviar a proposta, a equipe da Imediato Seguros, corretora parceira da Suhai, acompanha a emissão da apólice e manda o boleto.",
   },
   {
     question: "Quais veículos a Suhai aceita?",
@@ -180,7 +183,7 @@ export const PERGUNTAS_HOME: PerguntaSuhai[] = [
   {
     question: "Quanto tempo leva para aprovar o seguro?",
     answer:
-      "A aprovação costuma sair em até 24 horas, depois do envio dos dados e documentos. Com tudo validado, a apólice digital é emitida.",
+      "Segundo a Suhai, a aprovação costuma sair em até 24 horas, depois do envio dos dados e documentos. Com tudo validado, a apólice digital é emitida.",
   },
   {
     question: "Como funciona o sinistro?",

@@ -1,20 +1,18 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { PRODUTOS_SUHAI } from "@/components/suhai/marca-suhai-produtos";
 import { company } from "@/lib/company";
+import { SITE_PRINCIPAL } from "@/lib/suhai-host";
+import { seguradoraSuhai as suhai } from "@/lib/suhai/seguradora";
 import { useWhatsappHref } from "@/lib/use-whatsapp-href";
 
-const SUHAI = "https://suhaiseguradora.com";
 const AJUDA = "Olá! Preciso de ajuda com o seguro Suhai.";
 
-const MENU = [
-  { href: `${SUHAI}/empresa/`, rotulo: "Institucional" },
-  { href: `${SUHAI}/seguro-carro/`, rotulo: "Seguros" },
-  { href: `${SUHAI}/aviso-de-sinistro/`, rotulo: "Área do Cliente" },
-  { href: `${SUHAI}/blog/`, rotulo: "Blog" },
-] as const;
+const ROTULO_MENU = { moto: "Seguro Moto", carro: "Seguro Carro", caminhao: "Seguro Caminhão" } as const;
 
 function fora(href: string, children: ReactNode, className?: string) {
   return (
@@ -39,11 +37,22 @@ export function MarcaSuhaiCasca({ children }: { children: ReactNode }) {
       `}</style>
 
       <header className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 md:px-6">
-        <a href="#cotacao" className="shrink-0">
-          <Image src="/marca-suhai/logo-dark.svg" alt="Suhai Seguradora" width={110} height={48} priority />
-        </a>
+        <div className="flex shrink-0 items-center gap-3">
+          <Link href="/" className="shrink-0">
+            <Image src="/marca-suhai/logo-dark.svg" alt={suhai.tradeName} width={110} height={48} priority />
+          </Link>
+          <p className="border-l border-[#1D2D0F]/25 pl-3 text-xs leading-tight text-[#2B261C]/80">
+            Cotação com a
+            <strong className="block text-sm text-[#1D2D0F]">{company.tradeName}</strong>
+            corretora parceira
+          </p>
+        </div>
         <nav aria-label="Navegação principal" className="hidden items-center gap-6 text-sm lg:flex">
-          {MENU.map((item) => fora(item.href, item.rotulo))}
+          {PRODUTOS_SUHAI.map((produto) => (
+            <Link key={produto.slug} href={produto.href} className="hover:underline">
+              {ROTULO_MENU[produto.slug]}
+            </Link>
+          ))}
         </nav>
         <div className="flex max-w-full flex-wrap items-center gap-2 sm:gap-3">
           <a
@@ -71,45 +80,49 @@ export function MarcaSuhaiCasca({ children }: { children: ReactNode }) {
             <h2 className="font-display text-2xl font-bold text-[#B0F867]">Fale conosco, estamos aqui pra ajudar você</h2>
             <div className="mt-6 space-y-4 text-sm">
               <p>
-                <span className="block font-semibold">WhatsApp</span>
+                <span className="block font-semibold">{company.tradeName}: cotação e proposta</span>
                 <a className="underline" href={ajuda} target="_blank" rel="noopener noreferrer">
-                  {company.contact.whatsappDisplay}
+                  WhatsApp {company.contact.whatsappDisplay}
                 </a>
+                <span className="block text-white/70">{company.business.hoursDisplay}</span>
               </p>
+            </div>
+            <h3 className="mt-8 font-semibold text-[#B0F867]">Canais da {suhai.tradeName}</h3>
+            <div className="mt-4 space-y-4 text-sm">
               <p>
                 <span className="block font-semibold">Central de Atendimento</span>
-                <a className="underline" href="tel:08007721214">
-                  0800-772-1214
+                <a className="underline" href={`tel:${suhai.central.tel}`}>
+                  {suhai.central.display}
                 </a>
-                <span className="block text-white/70">De segunda a sexta, das 8h às 19h</span>
+                <span className="block text-white/70">{suhai.horario}</span>
               </p>
               <p>
                 <span className="block font-semibold">Aviso de roubo ou furto</span>
-                3003-0335 (SP e RJ) · 0800-784-2410 (demais regiões) · 24h
+                {suhai.rouboFurto} · 24h
               </p>
               <p>
                 <span className="block font-semibold">Atendimento ao segurado</span>
                 Colisão e danos, ou boleto, apólice e assunto administrativo
-                <span className="block text-white/70">3003-0335 (SP e RJ) · 0800-784-2410 (demais regiões)</span>
-                <span className="block text-white/70">De segunda a sexta, das 8h às 19h</span>
+                <span className="block text-white/70">{suhai.rouboFurto}</span>
+                <span className="block text-white/70">{suhai.horario}</span>
               </p>
               <p>
                 <span className="block font-semibold">Assistência 24h</span>
                 Troca de pneu, guincho e auxílio mecânico
                 <span className="block">
-                  <a className="underline" href="tel:08003278424">
-                    0800-327-8424
+                  <a className="underline" href={`tel:${suhai.assistencia.tel}`}>
+                    {suhai.assistencia.display}
                   </a>
                 </span>
               </p>
               <p>
                 <span className="block font-semibold">Ouvidoria</span>
-                <a className="underline" href="tel:08007721214">
-                  0800-772-1214
+                <a className="underline" href={`tel:${suhai.ouvidoria.tel}`}>
+                  {suhai.ouvidoria.display}
                 </a>
                 {" · "}
-                <a className="underline" href="mailto:ouvidoria@suhaiseguradora.com">
-                  ouvidoria@suhaiseguradora.com
+                <a className="underline" href={`mailto:${suhai.ouvidoria.email}`}>
+                  {suhai.ouvidoria.email}
                 </a>
               </p>
             </div>
@@ -117,10 +130,27 @@ export function MarcaSuhaiCasca({ children }: { children: ReactNode }) {
           <div className="text-sm">
             <p className="font-semibold">No site da Suhai</p>
             <ul className="mt-3 space-y-2">
-              <li>{fora(`${SUHAI}/aviso-de-sinistro/`, "Abrir sinistro", "underline")}</li>
-              <li>{fora(`${SUHAI}/perguntas-frequentes/`, "Perguntas frequentes", "underline")}</li>
+              <li>{fora(`${suhai.site}/aviso-de-sinistro/`, "Abrir sinistro", "underline")}</li>
+              <li>{fora(`${suhai.site}/perguntas-frequentes/`, "Perguntas frequentes", "underline")}</li>
             </ul>
-            <p className="mt-8 text-white/60">© 2026 Suhai Seguradora</p>
+            <div className="mt-8 space-y-3 text-white/75">
+              <p>
+                Site operado por {company.legalName}, CNPJ {company.cnpj}, corretora de seguros registrada na SUSEP sob
+                o nº {company.susep}, parceira da {suhai.tradeName}.
+              </p>
+              <p>
+                O seguro é emitido pela {suhai.legalName}, CNPJ {suhai.cnpj}, código SUSEP {suhai.susep}. A marca Suhai
+                pertence à {suhai.tradeName}.
+              </p>
+              <p>
+                {fora(`${SITE_PRINCIPAL}${company.legalUrls.privacyPolicy}`, "Política de privacidade", "underline")}
+                {" · "}
+                {fora(`${SITE_PRINCIPAL}${company.legalUrls.terms}`, "Termos de uso", "underline")}
+              </p>
+            </div>
+            <p className="mt-8 text-white/60">
+              © {new Date().getFullYear()} {company.tradeName}
+            </p>
           </div>
         </div>
       </footer>

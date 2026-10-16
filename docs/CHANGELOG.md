@@ -18,8 +18,15 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 ### Added
 - `/cotacao-suhai`: "guincho até 500 km" e "Sem assistência" passam a ter preço. A Suhai só devolve o nível de 200 km na primeira cotação; o nível clicado é cotado na hora, com protocolo próprio, e as ofertas dos níveis ficam juntas no RTDB e na Note do CRM (cada oferta com o número da sua cotação). O plano escolhido leva o protocolo do seu nível para `cNumeroCotacao` e para a proposta ([`FLUXO_SUHAI_CRM_WHATSAPP.md`](FLUXO_SUHAI_CRM_WHATSAPP.md) §7.5).
 - Gateway Suhai `suhai-v0.2.0`: `contrato.planoAssistencia` (0, 1 ou 2) na cotação.
+- Evento `suhai_proposal_sent` quando a proposta é transmitida, igual nas duas páginas do experimento.
+- `suhai.segurosimediato.com.br` (landing no visual da Suhai) ganha `PageAnalytics`: grava gclid e UTM no primeiro acesso e mede rolagem e tempo, como no www.
+
+### Changed
+- Landing no visual da Suhai: cabeçalho e rodapé identificam a Imediato Seguros como operadora e corretora parceira, com CNPJ e SUSEP da Imediato e da Suhai Seguradora; o menu leva às subpáginas em vez do site da Suhai; títulos com "Imediato Seguros", canonical no próprio subdomínio, `noindex` mantido. Números de mercado da Suhai passam a "segundo a Suhai", e "Contratação 100% online" vira "Cotação e proposta online" ([`suhai-integracao/09-ARQUITETURA.md`](suhai-integracao/09-ARQUITETURA.md) §8).
+- Middleware do host Suhai: a regra foi para `lib/suhai-host.ts`, com teste (`npm run test:suhai-host`). O redirect para `/` mantém a query, e `/opengraph-image` passa direto.
 
 ### Fixed
+- `/cotacao-suhai` e landing Suhai: o cartão de pagamento dizia que a cotação só mostrava o preço e oferecia cartão. Agora diz que a proposta segue no boleto, em até 12 parcelas, com a equipe mandando o boleto da 1ª parcela.
 - `deliverLead` (publicada em 2026-10-16): as etapas gravadas durante a execução do `initial` (~25 s) criavam uma Oportunidade cada, e o `initial` atrasado devolvia `cEtapaFunil` para "Telefone informado". A criação no Espo agora é reservada por transação no RTDB e as outras execuções esperam os IDs; etapa já superada não grava `cEtapaFunil`.
 - `/cotacao-suhai`: a caixa de aceite da proposta dizia "em homologação" também em produção, e o aceite e a tela de proposta enviada citavam o Portal do Cotador, que é ferramenta interna. Os dois textos agora falam com o cliente.
 
