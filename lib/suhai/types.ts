@@ -91,6 +91,11 @@ export const cotacaoInputSchema = z.object({
     classeBonus: z.number().int().min(0).max(10).default(0),
     /** Apólice anterior, obrigatória em renovação Suhai. */
     apoliceAnterior: z.string().optional(),
+    /**
+     * Sem ele a Suhai devolve só o guincho de 200 km. Cada nível pedido gera
+     * uma cotação (protocolo) própria — a Suhai não altera o protocolo.
+     */
+    planoAssistencia: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
   }),
 });
 
@@ -99,6 +104,8 @@ export type CotacaoPayload = z.output<typeof cotacaoInputSchema>;
 
 /** Uma oferta devolvida pela Suhai, já classificada em plano e assistência. */
 export type Oferta = {
+  /** Cada nível de assistência vem de uma cotação própria. */
+  protocolo: string;
   cdCobertura: number;
   planoId: PlanoId;
   assistencia: 0 | 1 | 2;

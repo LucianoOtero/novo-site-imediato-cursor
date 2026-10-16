@@ -49,6 +49,7 @@ export function gerarCotacaoSimulada(payload: CotacaoPayload): CotacaoResultado 
   const agravoUso = payload.uso.utilizacao === "particular" ? 1 : 1.24;
   const agravoGaragem = payload.uso.garagem.residencia ? 1 : 1.12;
 
+  const protocolo = `SIM-${semente.toString(36).toUpperCase().slice(0, 8)}`;
   const ofertas: Oferta[] = [];
   for (const plano of PLANOS) {
     for (const assistencia of [0, 1, 2] as const) {
@@ -58,6 +59,7 @@ export function gerarCotacaoSimulada(payload: CotacaoPayload): CotacaoResultado 
       const premioTotal = Math.round(premio * 100) / 100;
 
       ofertas.push({
+        protocolo,
         cdCobertura: codigo,
         planoId: plano.id,
         assistencia,
@@ -71,7 +73,7 @@ export function gerarCotacaoSimulada(payload: CotacaoPayload): CotacaoResultado 
   }
 
   return {
-    protocolo: `SIM-${semente.toString(36).toUpperCase().slice(0, 8)}`,
+    protocolo,
     ofertas,
     veiculo: {
       marca: payload.veiculo.marca,

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { postLead } from "@/lib/leads/post-lead";
-import { TIPO_UTILIZACAO, UTILIZACAO_DUT } from "@/lib/suhai/dominio";
+import { TIPO_UTILIZACAO, UTILIZACAO_DUT, type PlanoAssistencia } from "@/lib/suhai/dominio";
 import type { CotacaoResultado, Oferta } from "@/lib/suhai/types";
 
 const selectClasses =
@@ -43,7 +43,7 @@ export function CotacaoSuhaiExperiencia({
   function escolher(oferta: Oferta) {
     setEscolhida(oferta);
     if (!resultado || resultado.simulado || !contexto.leadId) return;
-    const chave = `${resultado.protocolo}:${oferta.cdCobertura}`;
+    const chave = `${oferta.protocolo}:${oferta.cdCobertura}`;
     if (planoEnviadoRef.current === chave) return;
     planoEnviadoRef.current = chave;
     void postLead({
@@ -57,15 +57,30 @@ export function CotacaoSuhaiExperiencia({
     }).catch((error) => console.error("[CotacaoSuhaiExperiencia] Falha ao registrar o plano (não bloqueante):", error));
   }
 
+  // Só uma cotação nova rola até o preço; somar outro nível de assistência não.
+  const protocoloBase = resultado?.protocolo;
   useEffect(() => {
-    if (!resultado) return;
+    if (!protocoloBase) return;
     document.getElementById("preco-suhai")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [resultado]);
+  }, [protocoloBase]);
 
   const usos = Object.entries(UTILIZACAO_DUT).filter(([, definicao]) =>
     (definicao.categorias as readonly string[]).includes(categoria),
   );
   const usoAtual = UTILIZACAO_DUT[cotadas.utilizacao as keyof typeof UTILIZACAO_DUT];
+
+  async function pedirAssistencia(nivel: PlanoAssistencia) {
+    const base = resultado?.protocolo;
+    const extra = await formRef.current?.cotarAssistencia(cotadas, nivel);
+    if (!extra) return;
+    // Um recálculo no meio do caminho troca a cotação base; o nível pedido
+    // antes dele tem outras premissas e é descartado.
+    setResultado((atual) =>
+      atual && atual.protocolo === base
+        ? { ...atual, ofertas: [...atual.ofertas.filter((oferta) => oferta.assistencia !== nivel), ...extra.ofertas] }
+        : atual,
+    );
+  }
 
   async function recalcular(proximas: PremissasSuhai) {
     setPremissas(proximas);
@@ -186,14 +201,19 @@ export function CotacaoSuhaiExperiencia({
             )}
 
             <div className="mt-8">
-              <OfertasSuhai resultado={resultado} onEscolher={escolher} />
+              <OfertasSuhai
+                key={resultado.protocolo}
+                resultado={resultado}
+                onEscolher={escolher}
+                onPedirAssistencia={pedirAssistencia}
+              />
               {escolhida && resultado.simulado && (
                 <p role="status" className="mt-4 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">
                   Plano selecionado. A transmissão da proposta só abre com uma cotação real da Suhai.
                 </p>
               )}
               {escolhida && !resultado.simulado && (
-                <PropostaSuhaiForm protocolo={resultado.protocolo} oferta={escolhida} contexto={contexto} />
+                <PropostaSuhaiForm protocolo={escolhida.protocolo} oferta={escolhida} contexto={contexto} />
               )}
             </div>
           </Container>

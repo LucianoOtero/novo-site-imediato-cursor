@@ -57,14 +57,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(resultado);
   } catch (error) {
     console.error("[api/suhai/cotacao] falha ao cotar", error);
-    await registrarCotacaoSuhai(
-      leadId,
-      parsed.data,
-      resumirCotacao(parsed.data, {
-        erro: error instanceof Error ? error.message : String(error),
-        codigoSuhai: error instanceof GatewayError ? error.codigoSuhai : null,
-      }),
-    );
+    // Falha num nível extra de assistência não desfaz a cotação já
+    // apresentada: o CRM não vira "cálculo manual" por isso.
+    if (parsed.data.contrato.planoAssistencia === undefined) {
+      await registrarCotacaoSuhai(
+        leadId,
+        parsed.data,
+        resumirCotacao(parsed.data, {
+          erro: error instanceof Error ? error.message : String(error),
+          codigoSuhai: error instanceof GatewayError ? error.codigoSuhai : null,
+        }),
+      );
+    }
 
     // Recusa da própria Suhai (ex.: modelo fora da tabela) é informação útil
     // ao cliente; falha de transporte vira mensagem genérica.

@@ -8,7 +8,7 @@ import { ProgressBar } from "@/components/lead/ProgressBar";
 import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO } from "@/lib/suhai/dominio";
+import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO, type PlanoAssistencia } from "@/lib/suhai/dominio";
 import { trackEvent } from "@/lib/analytics";
 import { getAttributionUtm } from "@/lib/leads/attribution";
 import { postLead } from "@/lib/leads/post-lead";
@@ -120,6 +120,7 @@ const INICIAL: Estado = {
 
 export type CotacaoSuhaiHandle = {
   recalcular: (premissas: PremissasSuhai) => Promise<void>;
+  cotarAssistencia: (premissas: PremissasSuhai, nivel: PlanoAssistencia) => Promise<CotacaoResultado>;
 };
 
 type Props = {
@@ -450,51 +451,69 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     return proximos;
   }
 
+  function pedirCotacao(atual: Estado, usadas: PremissasSuhai, planoAssistencia?: PlanoAssistencia) {
+    const pessoa = {
+      cpf: onlyDigits(atual.cpf),
+      nome: atual.nome.trim(),
+      dataNascimento: atual.dataNascimento,
+      sexo: Number(atual.sexo),
+      estadoCivil: Number(atual.estadoCivil),
+    };
+    return fetch("/api/suhai/cotacao", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        leadId: leadIdRef.current,
+        proponente: pessoa,
+        condutorPrincipal: pessoa,
+        veiculo: {
+          categoria: atual.categoria,
+          marca: atual.marca,
+          modelo: atual.modelo,
+          anoModelo: Number(atual.anoModelo),
+          anoFabricacao: atual.anoFabricacao ? Number(atual.anoFabricacao) : undefined,
+          codFipe: atual.codFipe || undefined,
+          zeroKm: atual.semPlaca,
+          placa: atual.semPlaca ? undefined : atual.placa.replace(/[^A-Za-z0-9]/g, "").toUpperCase(),
+        },
+        uso: {
+          utilizacao: usadas.utilizacao,
+          tipoUtilizacao: usadas.utilizacao === "particular" ? Number(usadas.tipoUtilizacao) : undefined,
+          cepPernoite: onlyDigits(atual.cepPernoite),
+          garagem: {
+            residencia: usadas.garagemResidencia,
+            trabalho: usadas.garagemTrabalho,
+            escola: usadas.garagemEscola,
+          },
+        },
+        contrato: {
+          tipoContratacao: TIPO_CONTRATACAO.novo,
+          classeBonus: Number(usadas.classeBonus),
+          planoAssistencia,
+        },
+      }),
+    });
+  }
+
+  /** Outro nível de assistência, com os mesmos dados da cotação apresentada. */
+  async function cotarAssistencia(usadas: PremissasSuhai, nivel: PlanoAssistencia): Promise<CotacaoResultado> {
+    let resposta: Response;
+    try {
+      resposta = await pedirCotacao(estadoRef.current, usadas, nivel);
+    } catch {
+      throw new Error("Falha de conexão. Tente novamente.");
+    }
+    const corpo = await resposta.json().catch(() => null);
+    if (!resposta.ok) throw new Error(corpo?.mensagem ?? "Não foi possível calcular agora.");
+    return corpo as CotacaoResultado;
+  }
+
   async function enviar(atual: Estado, usadas: PremissasSuhai) {
     setCarregando(true);
     setErroGeral(null);
     try {
-      const pessoa = {
-        cpf: onlyDigits(atual.cpf),
-        nome: atual.nome.trim(),
-        dataNascimento: atual.dataNascimento,
-        sexo: Number(atual.sexo),
-        estadoCivil: Number(atual.estadoCivil),
-      };
       await contatoInicialRef.current;
-      const resposta = await fetch("/api/suhai/cotacao", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          leadId: leadIdRef.current,
-          proponente: pessoa,
-          condutorPrincipal: pessoa,
-          veiculo: {
-            categoria: atual.categoria,
-            marca: atual.marca,
-            modelo: atual.modelo,
-            anoModelo: Number(atual.anoModelo),
-            anoFabricacao: atual.anoFabricacao ? Number(atual.anoFabricacao) : undefined,
-            codFipe: atual.codFipe || undefined,
-            zeroKm: atual.semPlaca,
-            placa: atual.semPlaca ? undefined : atual.placa.replace(/[^A-Za-z0-9]/g, "").toUpperCase(),
-          },
-          uso: {
-            utilizacao: usadas.utilizacao,
-            tipoUtilizacao: usadas.utilizacao === "particular" ? Number(usadas.tipoUtilizacao) : undefined,
-            cepPernoite: onlyDigits(atual.cepPernoite),
-            garagem: {
-              residencia: usadas.garagemResidencia,
-              trabalho: usadas.garagemTrabalho,
-              escola: usadas.garagemEscola,
-            },
-          },
-          contrato: {
-            tipoContratacao: TIPO_CONTRATACAO.novo,
-            classeBonus: Number(usadas.classeBonus),
-          },
-        }),
-      });
+      const resposta = await pedirCotacao(atual, usadas);
       const corpo = await resposta.json();
       if (!resposta.ok) {
         setErros(corpo.campos ?? {});
@@ -522,6 +541,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
   useImperativeHandle(ref, () => ({
     recalcular: (usadas) => enviar(estadoRef.current, usadas),
+    cotarAssistencia,
   }));
 
   async function avancar() {

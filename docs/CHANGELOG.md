@@ -13,6 +13,17 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Não publicado — 2026-10-16 (Suhai: níveis de assistência e corrida no CRM)
+
+### Added
+- `/cotacao-suhai`: "guincho até 500 km" e "Sem assistência" passam a ter preço. A Suhai só devolve o nível de 200 km na primeira cotação; o nível clicado é cotado na hora, com protocolo próprio, e as ofertas dos níveis ficam juntas no RTDB e na Note do CRM (cada oferta com o número da sua cotação). O plano escolhido leva o protocolo do seu nível para `cNumeroCotacao` e para a proposta ([`FLUXO_SUHAI_CRM_WHATSAPP.md`](FLUXO_SUHAI_CRM_WHATSAPP.md) §7.5).
+- Gateway Suhai `suhai-v0.2.0`: `contrato.planoAssistencia` (0, 1 ou 2) na cotação.
+
+### Fixed
+- `deliverLead` (publicada em 2026-10-16): as etapas gravadas durante a execução do `initial` (~25 s) criavam uma Oportunidade cada, e o `initial` atrasado devolvia `cEtapaFunil` para "Telefone informado". A criação no Espo agora é reservada por transação no RTDB e as outras execuções esperam os IDs; etapa já superada não grava `cEtapaFunil`.
+
+---
+
 ## Não publicado — 2026-10-15 (cotação Suhai no CRM, WhatsApp e e-mail)
 
 ### Added

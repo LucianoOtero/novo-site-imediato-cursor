@@ -107,6 +107,13 @@ test("cotação sem cdCobertura para receber todas as coberturas", () => {
   assert.match(montarEnvelopeCotacao(payload, credenciais), /<suh:cdCobertura\/>/);
 });
 
+test("cotação de outro nível de assistência envia o planoAssistencia", () => {
+  const xml = montarEnvelopeCotacao({ ...payload, contrato: { ...payload.contrato, planoAssistencia: 2 } }, credenciais);
+
+  assert.match(xml, /<suh:planoAssistencia>2<\/suh:planoAssistencia>/);
+  assert.match(montarEnvelopeCotacao(payload, credenciais), /<suh:planoAssistencia\/>/);
+});
+
 test("veículo 0 km usa a placa convencional YYY9999", () => {
   const xml = montarEnvelopeCotacao(
     { ...payload, veiculo: { ...payload.veiculo, zeroKm: true, placa: undefined } },

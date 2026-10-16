@@ -109,7 +109,7 @@ function flagKey(stage, leadData) {
   }
   if (stage === "suhai_plan_selected") {
     const plano = leadData.suhaiPlano || {};
-    return `suhai_plan_${plano.cdCobertura || ""}_${cotacaoDe(leadData).protocolo || ""}`;
+    return `suhai_plan_${plano.cdCobertura || ""}_${plano.protocolo || cotacaoDe(leadData).protocolo || ""}`;
   }
   if (stage === "suhai_proposal") {
     const proposta = propostaDe(leadData);
@@ -164,9 +164,10 @@ function camposNovos(stage, leadData) {
   const plano = leadData.suhaiPlano;
   const campos = {};
 
-  if (cotacaoReal(cotacao)) campos.cNumeroCotacao = cotacao.protocolo;
+  const etapaDoPlano = (stage === "suhai_plan_selected" || stage === "suhai_proposal") && plano;
+  if (cotacaoReal(cotacao)) campos.cNumeroCotacao = etapaDoPlano ? protocoloDoPlano(plano, cotacao) : cotacao.protocolo;
 
-  if ((stage === "suhai_plan_selected" || stage === "suhai_proposal") && plano) {
+  if (etapaDoPlano) {
     campos.cPlanoEscolhido = `${rotuloPlano(plano)} (cd ${plano.cdCobertura})`.slice(0, 120);
     if (plano.premioTotal > 0) {
       campos.cPremioTotal = Math.round(plano.premioTotal * 100) / 100;
@@ -184,7 +185,7 @@ function camposNovos(stage, leadData) {
   return Object.keys(campos).length > 0 ? campos : null;
 }
 
-function linhaOferta(oferta) {
+function linhaOferta(oferta, protocoloDaNota) {
   const partes = [`• ${rotuloPlano(oferta)}: ${moeda(oferta.premioTotal)} no ano`];
   if (oferta.premioMensalEstimado) {
     partes.push(`(≈ ${moeda(oferta.premioMensalEstimado)}/mês em até ${oferta.parcelamentoMaximo || "?"}x)`);
@@ -192,7 +193,14 @@ function linhaOferta(oferta) {
   if (oferta.franquia) partes.push(`— franquia ${moeda(oferta.franquia)}`);
   if (oferta.importanciaSegurada) partes.push(`— IS ${moeda(oferta.importanciaSegurada)}`);
   partes.push(`[cd ${oferta.cdCobertura}]`);
+  // Outro nível de assistência é outra cotação na Suhai.
+  if (oferta.protocolo && oferta.protocolo !== protocoloDaNota) partes.push(`— cotação nº ${oferta.protocolo}`);
   return partes.join(" ");
+}
+
+/** Protocolo da cotação do nível de assistência do plano escolhido. */
+function protocoloDoPlano(plano, cotacao) {
+  return (plano && plano.protocolo) || cotacao.protocolo;
 }
 
 function linhaPremissas(premissas) {
@@ -232,7 +240,7 @@ function buildNote(stage, leadData) {
     const premissas = linhaPremissas(cotacao.premissas);
     if (premissas) linhas.push(premissas);
     linhas.push("Valores apresentados:");
-    for (const oferta of cotacao.ofertas || []) linhas.push(linhaOferta(oferta));
+    for (const oferta of cotacao.ofertas || []) linhas.push(linhaOferta(oferta, cotacao.protocolo));
     linhas.push(
       `Se o cliente parar aqui: ligar e retomar a cotação nº ${cotacao.protocolo} no Portal do Cotador Suhai.`
     );
@@ -243,7 +251,7 @@ function buildNote(stage, leadData) {
     return (
       `${prefixoAmbiente(cotacao.ambiente)}✅ CLIENTE ESCOLHEU O PLANO SUHAI — ${rotuloPlano(plano)} [cd ${plano.cdCobertura}]: ` +
       `${moeda(plano.premioTotal)} no ano${plano.franquia ? `, franquia ${moeda(plano.franquia)}` : ""}. ` +
-      `Cotação nº ${cotacao.protocolo || "?"}.`
+      `Cotação nº ${protocoloDoPlano(plano, cotacao) || "?"}.`
     );
   }
 
@@ -368,7 +376,7 @@ function emailMomento(stage, leadData) {
   if (stage === "suhai_plan_selected" && plano) {
     return {
       momento: "suhai_plano",
-      detalhe: `${prefixoAmbiente(cotacao.ambiente)}Plano Suhai escolhido — ${rotuloPlano(plano)} ${moeda(plano.premioTotal)} (cotação nº ${cotacao.protocolo || "?"})`,
+      detalhe: `${prefixoAmbiente(cotacao.ambiente)}Plano Suhai escolhido — ${rotuloPlano(plano)} ${moeda(plano.premioTotal)} (cotação nº ${protocoloDoPlano(plano, cotacao) || "?"})`,
     };
   }
   if (stage === "suhai_proposal") {

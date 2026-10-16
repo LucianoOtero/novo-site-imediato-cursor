@@ -12,10 +12,10 @@ import type { CotacaoResultado, Oferta } from "@/lib/suhai/types";
 /**
  * OfertasSuhai — tela de preços do fluxo `/cotacao-suhai`.
  *
- * A cotação devolve até 15 combinações (5 combos x 3 níveis de
- * assistência). Aqui elas viram três planos nomeados, e a assistência é um
- * seletor que troca o preço sem nova chamada à Suhai — todas as variações
- * já vieram no mesmo retorno.
+ * Cada cotação Suhai devolve os combos de um nível de assistência (sem
+ * informar, o de 200 km). Aqui eles viram três planos nomeados, e a
+ * assistência é um seletor: o nível que ainda não veio é cotado no clique,
+ * com protocolo próprio.
  */
 
 const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -25,11 +25,15 @@ const NIVEIS: PlanoAssistencia[] = [1, 2, 0];
 export function OfertasSuhai({
   resultado,
   onEscolher,
+  onPedirAssistencia,
 }: {
   resultado: CotacaoResultado;
   onEscolher?: (oferta: Oferta) => void;
+  onPedirAssistencia?: (nivel: PlanoAssistencia) => Promise<void>;
 }) {
   const [assistencia, setAssistencia] = useState<PlanoAssistencia>(1);
+  const [carregando, setCarregando] = useState<PlanoAssistencia | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
   const porPlano = useMemo(() => {
     const mapa = new Map<string, Oferta>();
@@ -38,6 +42,24 @@ export function OfertasSuhai({
     }
     return mapa;
   }, [resultado.ofertas, assistencia]);
+
+  const protocolo = porPlano.values().next().value?.protocolo ?? resultado.protocolo;
+
+  async function trocarAssistencia(nivel: PlanoAssistencia) {
+    if (carregando !== null) return;
+    setAssistencia(nivel);
+    setErro(null);
+    const jaCotado = resultado.ofertas.some((oferta) => oferta.assistencia === nivel);
+    if (jaCotado || !onPedirAssistencia) return;
+    setCarregando(nivel);
+    try {
+      await onPedirAssistencia(nivel);
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : "Não foi possível calcular agora.");
+    } finally {
+      setCarregando(null);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -52,7 +74,7 @@ export function OfertasSuhai({
           {resultado.veiculo.marca} {resultado.veiculo.modelo} {resultado.veiculo.anoModelo}
         </h2>
         <p className="mt-1 text-sm text-neutral-500">
-          Protocolo {resultado.protocolo}
+          Protocolo {protocolo}
           {resultado.veiculo.valorFipe ? ` · valor de referência ${moeda.format(resultado.veiculo.valorFipe)}` : ""}
         </p>
       </div>
@@ -64,7 +86,8 @@ export function OfertasSuhai({
             <button
               key={nivel}
               type="button"
-              onClick={() => setAssistencia(nivel)}
+              onClick={() => void trocarAssistencia(nivel)}
+              disabled={carregando !== null}
               aria-pressed={assistencia === nivel}
               className={cn(
                 "rounded-lg border px-4 py-2 text-sm transition-colors",
@@ -79,6 +102,24 @@ export function OfertasSuhai({
           ))}
         </div>
       </fieldset>
+
+      {carregando === assistencia && (
+        <p role="status" className="text-sm text-neutral-600">
+          Calculando o preço com {ROTULO_ASSISTENCIA[assistencia].toLowerCase()}…
+        </p>
+      )}
+      {erro && carregando === null && porPlano.size === 0 && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
+          {erro}
+          <button
+            type="button"
+            className="font-medium underline underline-offset-2"
+            onClick={() => void trocarAssistencia(assistencia)}
+          >
+            Tentar de novo
+          </button>
+        </div>
+      )}
 
       <ul className="grid gap-4 md:grid-cols-3">
         {PLANOS.map((plano) => {

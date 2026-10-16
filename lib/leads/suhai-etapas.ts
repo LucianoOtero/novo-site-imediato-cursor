@@ -36,6 +36,7 @@ export function suhaiAmbiente(): "homologacao" | "producao" {
 
 export function resumirOfertas(resultado: CotacaoResultado): SuhaiOfertaResumo[] {
   return resultado.ofertas.map((oferta) => ({
+    protocolo: oferta.protocolo,
     cdCobertura: oferta.cdCobertura,
     plano: encontrarPlano(oferta.planoId)?.nome ?? oferta.planoId,
     assistencia: oferta.assistencia,
@@ -180,7 +181,34 @@ export async function reservarConsultaPerfil(leadId: string | undefined): Promis
 }
 
 export function registrarCotacaoSuhai(leadId: string | undefined, payload: CotacaoPayload, cotacao: SuhaiCotacaoResumo) {
-  return gravar(leadId, "suhai_quote", () => ({ ...dadosDaCotacao(payload), suhaiCotacao: cotacao }));
+  return gravar(leadId, "suhai_quote", (dados) => ({
+    ...dadosDaCotacao(payload),
+    suhaiCotacao: somarNiveisAssistencia(dados.suhaiCotacao as SuhaiCotacaoResumo | undefined, cotacao),
+  }));
+}
+
+/**
+ * Cada nível de assistência é uma cotação à parte na Suhai. Com o mesmo
+ * veículo e as mesmas premissas, as ofertas do nível novo somam-se às já
+ * gravadas — o plano escolhido depois pode ser de qualquer nível.
+ */
+export function somarNiveisAssistencia(
+  anterior: SuhaiCotacaoResumo | undefined,
+  nova: SuhaiCotacaoResumo,
+): SuhaiCotacaoResumo {
+  if (anterior?.status !== "sucesso" || nova.status !== "sucesso" || anterior.veiculo !== nova.veiculo) return nova;
+  const mesmasPremissas = Object.entries(nova.premissas ?? {}).every(
+    ([campo, valor]) => (anterior.premissas as Record<string, unknown> | undefined)?.[campo] === valor,
+  );
+  if (!mesmasPremissas) return nova;
+  const niveisNovos = new Set((nova.ofertas ?? []).map((oferta) => oferta.assistencia));
+  return {
+    ...nova,
+    ofertas: [
+      ...(anterior.ofertas ?? []).filter((oferta) => !niveisNovos.has(oferta.assistencia)),
+      ...(nova.ofertas ?? []),
+    ],
+  };
 }
 
 /** Os valores do plano vêm da cotação já gravada, não do browser. */
