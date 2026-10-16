@@ -89,6 +89,8 @@ export const apiLeadSchema = leadSchema.extend({
 export type SuhaiStage = "suhai_quote" | "suhai_plan_selected" | "suhai_proposal";
 
 export type SuhaiOfertaResumo = {
+  /** Protocolo da cotação do nível de assistência desta oferta. */
+  protocolo?: string;
   cdCobertura: number;
   plano: string;
   assistencia: number;

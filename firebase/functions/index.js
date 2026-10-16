@@ -94,6 +94,7 @@ const emailNotif = require("./email-notification");
 const contactEmail = require("./contact-email");
 const soldSync = require("./sold-sync");
 const suhai = require("./suhai");
+const espoReserva = require("./espo-reserva");
 
 const DATABASE_URL = "https://imediato-seguros-site-novo-default-rtdb.firebaseio.com";
 
@@ -350,6 +351,12 @@ function buildFunnelFields(stage, leadData) {
   return null;
 }
 
+function semEtapaSeSuperada(campos, superada) {
+  if (!campos || !superada) return campos;
+  const { cEtapaFunil: _ignorada, ...resto } = campos;
+  return Object.keys(resto).length > 0 ? resto : null;
+}
+
 /**
  * Retorna `{delivered, attempts, responseData}` — `responseData` (JSON
  * já parseado) é usado para extrair os IDs do EspoCRM e para detectar
@@ -517,13 +524,26 @@ exports.deliverLead = onValueWritten(
       // ——— EspoCRM via API direta (espocrm.js) ———
       // Mesmo contrato de retry/flags do caminho proxy; os IDs do CRM
       // continuam sendo gravados de volta no registro.
+      let espoLeadIdAtual = leadData.espocrmLeadId || workingRecord.espocrmLeadId;
+      let espoOppIdAtual = leadData.espocrmOpportunityId || workingRecord.espocrmOpportunityId;
+      let reservado = false;
+      if (!espoLeadIdAtual || !espoOppIdAtual) {
+        const reserva = await espoReserva.obterIdsOuReservar(snapshot.ref);
+        espoLeadIdAtual = espoLeadIdAtual || reserva.leadId;
+        espoOppIdAtual = espoOppIdAtual || reserva.opportunityId;
+        reservado = reserva.reservado;
+        if (reserva.esperaEsgotada) {
+          logger.warn(`[deliverLead/espocrm-direto] Lead ${leadId}: IDs do Espo não apareceram a tempo — seguindo sem reserva.`);
+        }
+      }
+
       let delivered = false;
       let attempt = 0;
       for (attempt = 0; attempt <= RETRY_DELAYS_MS.length && !delivered; attempt += 1) {
         try {
           const ids = await espo.deliverStage(espoApiConfig, leadData, {
-            espoLeadId: leadData.espocrmLeadId || workingRecord.espocrmLeadId,
-            espoOpportunityId: leadData.espocrmOpportunityId || workingRecord.espocrmOpportunityId,
+            espoLeadId: espoLeadIdAtual,
+            espoOpportunityId: espoOppIdAtual,
             capturedAt: workingRecord.timestamp,
           });
           if (ids.leadId) updates.espocrmLeadId = ids.leadId;
@@ -535,6 +555,16 @@ exports.deliverLead = onValueWritten(
         } catch (error) {
           logger.warn(`[deliverLead/espocrm-direto] Lead ${leadId}: tentativa ${attempt + 1} falhou.`, error);
           if (attempt < RETRY_DELAYS_MS.length) await sleep(RETRY_DELAYS_MS[attempt]);
+        }
+      }
+      if (reservado) {
+        try {
+          await espoReserva.concluirReserva(snapshot.ref, {
+            leadId: updates.espocrmLeadId,
+            opportunityId: updates.espocrmOpportunityId,
+          });
+        } catch (error) {
+          logger.warn(`[deliverLead/espocrm-direto] Lead ${leadId}: falha ao gravar os IDs do Espo antecipadamente.`, error);
         }
       }
       updates.espocrm_sent = delivered;
@@ -682,13 +712,23 @@ exports.deliverLead = onValueWritten(
     const espoOppIdForApi =
       updates.espocrmOpportunityId || workingRecord.espocrmOpportunityId || leadData.espocrmOpportunityId;
 
+    // Etapa superada: o site já gravou uma etapa mais nova enquanto esta
+    // rodava (o "initial" leva ~25 s). Ela não pode devolver `cEtapaFunil`
+    // para trás; o resto (Note, campos, e-mails) segue normal.
+    let superada = false;
+    try {
+      superada = await espoReserva.etapaSuperada(snapshot.ref, leadData);
+    } catch (error) {
+      logger.warn(`[deliverLead] Lead ${leadId}: não foi possível reler a etapa atual.`, error);
+    }
+
     // Campos do painel "Cotação do Site" + `cWebpage` (origem) no Lead E
     // na Opportunity (2026-07-28) — via API direta. `cWebpage` vai SEMPRE
     // que a API estiver pronta e houver IDs (não depende do funil ter
     // campos neste estágio). Funil continua no mesmo PUT quando existir.
     // Mesmo contrato best-effort/dedupe das Notes (`espo_fields_{stage}_sent`);
     // o PUT é idempotente.
-    const funnelFields = buildFunnelFields(stage, leadData);
+    const funnelFields = semEtapaSeSuperada(buildFunnelFields(stage, leadData), superada);
     // Flag por ocorrência (`stageKey`): os dois `progress` do formulário e
     // os estágios Suhai que se repetem (recálculo, troca de plano) gravam
     // cada um o seu `cEtapaFunil`.
@@ -812,7 +852,7 @@ exports.deliverLead = onValueWritten(
         if (espoOppIdForApi) await espo.putFields(espoApiConfig, "Opportunity", espoOppIdForApi, fields, leadId);
       };
 
-      const etapaNova = suhai.etapaFunilNova(stage, leadData);
+      const etapaNova = superada ? null : suhai.etapaFunilNova(stage, leadData);
       const etapaFlag = `espo_suhai_etapa_${stageKey}_sent`;
       if (etapaNova && workingRecord[etapaFlag] !== true) {
         try {

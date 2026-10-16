@@ -83,7 +83,10 @@ export function montarEnvelopeCotacao(payload, credenciais = config.credenciais)
     vlr_DanosMorais: "10000.00",
     cdWorksite: null,
     fator_FipeAjuste: null,
-    planoAssistencia: null,
+    // Sem `planoAssistencia` a Suhai devolve só as coberturas com guincho de
+    // 200 km. Cada outro nível é uma cotação nova, com protocolo próprio:
+    // reenviar o protocolo com `planoAssistencia` a Suhai recusa (422).
+    planoAssistencia: contrato.planoAssistencia ?? null,
     planoPerdaParcial: 1,
     ddd_cel: payload.contato?.ddd ?? null,
     num_cel: payload.contato?.celular ?? null,

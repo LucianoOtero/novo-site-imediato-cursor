@@ -65,6 +65,7 @@ export function normalizarCotacao(bruta: CotacaoBruta, payload: CotacaoPayload):
       parcelado?.valorParcela ?? (parcelado?.quantidade ? premioTotal / parcelado.quantidade : premioTotal);
 
     ofertas.push({
+      protocolo: bruta.protocolo,
       cdCobertura: cobertura.id,
       planoId: classificacao.plano.id,
       assistencia: classificacao.assistencia,

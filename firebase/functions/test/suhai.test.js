@@ -121,6 +121,20 @@ test("plano escolhido grava plano, prêmio e franquia", () => {
   assert.equal(suhai.emailMomento("suhai_plan_selected", dados).momento, "suhai_plano");
 });
 
+test("plano de outro nível de assistência usa o protocolo da cotação daquele nível", () => {
+  const plano500 = { protocolo: "532159", cdCobertura: 1029, plano: "Completo", assistencia: 2, premioTotal: 1339.38, premioMensalEstimado: 130, franquia: 3500, importanciaSegurada: 50000, parcelamentoMaximo: 12 };
+  const somada = { ...cotacao, ofertas: [...ofertas.map((o) => ({ ...o, protocolo: "531928" })), plano500] };
+  const dados = { ...base, suhaiCotacao: somada, suhaiPlano: plano500 };
+
+  assert.equal(suhai.camposNovos("suhai_plan_selected", dados).cNumeroCotacao, "532159");
+  assert.match(suhai.buildNote("suhai_plan_selected", dados), /Cotação nº 532159\.$/);
+  assert.match(suhai.emailMomento("suhai_plan_selected", dados).detalhe, /cotação nº 532159/);
+
+  const nota = suhai.buildNote("suhai_quote", { ...base, suhaiCotacao: somada });
+  assert.match(nota, /\[cd 1029\] — cotação nº 532159/);
+  assert.doesNotMatch(nota, /\[cd 1009\] — cotação/);
+});
+
 test("proposta transmitida grava número, pagamento, Task de emissão e WhatsApp", () => {
   const dados = { ...base, suhaiCotacao: cotacao, suhaiPlano: ofertas[1], suhaiProposta: proposta };
   const campos = suhai.camposNovos("suhai_proposal", dados);

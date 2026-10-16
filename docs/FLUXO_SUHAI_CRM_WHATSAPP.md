@@ -141,9 +141,9 @@ Limitação conhecida: o template do Cloud Run legado escreve "Modal WhatsApp" /
 | `environment` no RTDB | `staging` / `development` | `production` |
 | EspoCRM | **DEV** (bloco `dev` do `ESPOCRM_API_CONFIG`) | PROD |
 | Octadesk | **sempre produção** — usar o celular de teste | produção |
-| Gateway Suhai | `SUHAI_GATEWAY_URL` (homologação) | idem, até a virada para produção |
+| Gateway Suhai | tag `homologacao` do Cloud Run | tráfego principal, Suhai em produção desde 2026-10-16 |
 
-Rodar local com cotação real: `$env:SUHAI_GATEWAY_URL="https://suhai-gateway-64754519959.southamerica-east1.run.app"; npm run dev` (o `.env.local` tem `NEXT_PUBLIC_APP_ENV=staging`, então o CRM é o DEV).
+Rodar local com cotação real: `$env:SUHAI_GATEWAY_URL="https://suhai-gateway-64754519959.southamerica-east1.run.app"; npm run dev` (o `.env.local` tem `NEXT_PUBLIC_APP_ENV=staging`, então o CRM é o DEV). Para uma URL com tag (`https://<tag>---suhai-gateway-…`), o token gerado pela conta de serviço do Firebase recebe 401; use `SUHAI_GATEWAY_TOKEN` com `gcloud auth print-identity-token` (vale 1 h).
 
 ---
 
@@ -192,6 +192,23 @@ Teste em `www.segurosimediato.com.br/cotacao-suhai` com o celular da Imediato e 
 | Proposta | Recusada pela Suhai (placa travada): "Proposta com erro" + Task de pendência |
 
 Achados: a consulta de placa levou de 45 a 78 s (tabela FIPE pública consultada modelo a modelo, em sequência; corrigido em `lib/suhai/fipe-publica.ts` com a lista de modelos por ano da v2, chamadas em paralelo e cache de 7 dias); o perfil por CPF não preenche em produção: `/api/suhai/perfil` só precisa de `CPF_VALIDATE_PROXY_URL` (ausente no Vercel), mas os proxies de CPF respondem 500 enquanto a credencial da PH3A estiver inválida (ver `suhai-integracao/08-CHAMADO-ACESSO.md`); o usuário `api` do Espo PROD não exclui registros nem grava os campos restaurados, então a limpeza foi feita pela sessão de administrador. Apagar o registro do RTDB no meio de um teste faz o próximo envio do mesmo celular (mesmo `leadId`, por deduplicação) cair no Lead encontrado pelo e-mail.
+
+### 7.4 Produção com a Suhai em produção (2026-10-16, Fase 2)
+
+Gateway virado para o ambiente de produção da Suhai (revisão `00019`, tabela 1, tag `producao`). Cotação real pelo site com a mesma placa, CEP e CPF, sem proposta: RTDB com `environment: "production"`, Espo PROD sem o prefixo `[HOMOLOGAÇÃO]`, e-mails e Octadesk (`primeira_etapa` e `suhai_cotacao_pronta`). Registros do teste excluídos e Lead adotado restaurado do backup.
+
+Achados, corrigidos na seção 7.5:
+
+- **Oportunidades duplicadas e funil voltando para trás.** Cada gravação em `leads_backup/{id}` dispara o `deliverLead`. O `initial` leva ~25 s e só gravava os IDs do Espo no fim; as etapas gravadas nesse intervalo criavam uma Oportunidade cada, e o `initial` atrasado devolvia `cEtapaFunil` para "Telefone informado".
+- **"500 km" e "Sem assistência" sem preço.** Sem `planoAssistencia`, a Suhai devolve só as coberturas de 200 km. Reenviar o protocolo com `planoAssistencia` é recusado (422 "Nullable object must have a value"); uma cotação nova por nível funciona (~1 s) e tem protocolo próprio.
+
+### 7.5 Correções (2026-10-16)
+
+- **Reserva da criação no Espo** (`firebase/functions/espo-reserva.js`): a execução que vai criar Lead/Oportunidade grava `espo_criacao_em` por transação e grava os IDs assim que o Espo responde; as outras esperam os IDs (até 30 s). Reserva com mais de 60 s é de execução que caiu e pode ser tomada.
+- **Etapa superada**: antes de gravar `cEtapaFunil`, a CF relê `data`; se o site já gravou outra etapa, Note, campos e e-mails seguem, mas a etapa não. A comparação ignora a ordem das chaves (o snapshot do evento vem na ordem gravada pelo site; a releitura, em ordem alfabética).
+- **Níveis de assistência sob demanda**: a primeira cotação continua só com 200 km. Ao clicar em "500 km" ou "Sem assistência", o site cota aquele nível (`contrato.planoAssistencia` 2 ou 0), mostra os planos e junta as ofertas em `suhaiCotacao.ofertas`, cada uma com o seu `protocolo`. Voltar a um nível já cotado não gera nova consulta. Falha num nível extra mostra "Tentar de novo" e não vira "cálculo manual" no CRM. O plano escolhido leva o protocolo do seu nível para `cNumeroCotacao`, para a Note e para a proposta.
+
+Validação local (2026-10-16, gateway em homologação, Espo DEV, celular `11 97668-7668`): cotações 532162 (200 km), 532163 (500 km) e 532164 (sem assistência) no mesmo lead; uma só Oportunidade, funil em "Cotação Suhai apresentada" e depois "Plano escolhido" com `cNumeroCotacao` 532163 e "Essencial — assistência 500 km (cd 1023)". Cada nível consultado gera uma Note e um e-mail próprios; o WhatsApp de cotação pronta sai uma vez.
 
 Testes unitários das regras da CF: `npm run test:functions` (`firebase/functions/test/`).
 
