@@ -146,8 +146,8 @@ export function PropostaSuhaiForm({
       <div role="status" className="mt-6 rounded-xl border border-brand-200 bg-white p-5">
         <h3 className="font-display text-xl font-bold text-neutral-900">Proposta enviada</h3>
         <p className="mt-2 text-sm text-neutral-700">
-          Número da proposta <strong>{resultado.numeroProposta}</strong>, protocolo {resultado.protocolo}. O pagamento
-          desta etapa é boleto. A equipe acompanha a pendência e a emissão no Portal do Cotador.
+          Número da proposta <strong>{resultado.numeroProposta}</strong>, protocolo {resultado.protocolo}. O pagamento é
+          por boleto: nossa equipe acompanha a emissão da apólice e envia o boleto da 1ª parcela.
         </p>
       </div>
     );
@@ -249,7 +249,7 @@ export function PropostaSuhaiForm({
 
       <label className="flex items-start gap-2 text-sm text-neutral-700 sm:col-span-2">
         <input type="checkbox" className="mt-1 size-4" checked={aceite} onChange={(event) => setAceite(event.target.checked)} />
-        Confirmo o envio desta proposta em homologação, com pagamento por boleto. A emissão continua com a equipe no Portal do Cotador.
+        Confirmo o envio desta proposta à Suhai, com pagamento por boleto. Nossa equipe acompanha a emissão da apólice e me envia o boleto.
       </label>
       {erros.aceite && <p className="text-sm text-alert sm:col-span-2">{erros.aceite}</p>}
       {erroGeral && (

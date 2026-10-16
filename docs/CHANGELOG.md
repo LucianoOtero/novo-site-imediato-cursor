@@ -21,6 +21,7 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ### Fixed
 - `deliverLead` (publicada em 2026-10-16): as etapas gravadas durante a execução do `initial` (~25 s) criavam uma Oportunidade cada, e o `initial` atrasado devolvia `cEtapaFunil` para "Telefone informado". A criação no Espo agora é reservada por transação no RTDB e as outras execuções esperam os IDs; etapa já superada não grava `cEtapaFunil`.
+- `/cotacao-suhai`: a caixa de aceite da proposta dizia "em homologação" também em produção, e o aceite e a tela de proposta enviada citavam o Portal do Cotador, que é ferramenta interna. Os dois textos agora falam com o cliente.
 
 ---
 
