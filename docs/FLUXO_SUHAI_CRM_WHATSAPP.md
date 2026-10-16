@@ -225,7 +225,7 @@ Teste em `www.segurosimediato.com.br/cotacao-suhai` com veículo próprio (Nissa
 | WhatsApp | `primeira_etapa`, `suhai_cotacao_pronta` e `suhai_proposta_enviada` |
 | E-mail da equipe | Um por etapa (8), sem o prefixo `[HOMOLOGAÇÃO]` |
 
-`deliverLead` entregou as 8 etapas sem falha. Achado: a caixa de aceite da proposta ainda diz "Confirmo o envio desta proposta em homologação" (`components/suhai/PropostaSuhaiForm.tsx`).
+`deliverLead` entregou as 8 etapas sem falha. Achado: a caixa de aceite da proposta dizia "Confirmo o envio desta proposta em homologação" (`components/suhai/PropostaSuhaiForm.tsx`); o texto foi corrigido em seguida. A proposta de teste é cancelada à mão no Portal do Cotador: o gateway não tem operação de cancelamento.
 
 Testes unitários das regras da CF: `npm run test:functions` (`firebase/functions/test/`).
 
