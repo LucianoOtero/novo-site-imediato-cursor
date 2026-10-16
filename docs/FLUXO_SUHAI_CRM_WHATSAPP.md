@@ -210,6 +210,23 @@ Achados, corrigidos na seção 7.5:
 
 Validação local (2026-10-16, gateway em homologação, Espo DEV, celular `11 97668-7668`): cotações 532162 (200 km), 532163 (500 km) e 532164 (sem assistência) no mesmo lead; uma só Oportunidade, funil em "Cotação Suhai apresentada" e depois "Plano escolhido" com `cNumeroCotacao` 532163 e "Essencial — assistência 500 km (cd 1023)". Cada nível consultado gera uma Note e um e-mail próprios; o WhatsApp de cotação pronta sai uma vez.
 
+### 7.6 Produção com proposta real (2026-10-16, Fase 3)
+
+Antes do teste, os Leads e Oportunidades do celular e do e-mail de teste foram excluídos do Espo PROD pela sessão de administrador, com backup local (não versionado). Ficaram de fora as Oportunidades de clientes que têm o celular da corretora em `cCelular`: a busca por celular no Espo PROD devolve clientes reais e não pode ser usada como critério de exclusão.
+
+Teste em `www.segurosimediato.com.br/cotacao-suhai` com veículo próprio (Nissan March SV 1.6 2016) e os dados reais do proponente. Lead `ld_cb889ecb2f88`:
+
+| Etapa | Resultado |
+|---|---|
+| Celular, placa e CEP | Lead e Oportunidade criados uma vez. O `initial` terminou depois dos dois `progress` (corrida real) e não duplicou a Oportunidade nem voltou o funil |
+| Cotação | 200 km nº 225513936; "Sem assistência" nº 225513983 e "500 km" nº 225514006 cotados ao clicar. 9 ofertas no RTDB, uma Note por nível |
+| Plano | Completo — assistência 500 km (cd 1029), R$ 2.386,35 no ano, franquia R$ 6.140,00; `cNumeroCotacao` 225514006 |
+| Proposta | Transmitida, nº 12350578, boleto em 12x, vencimento dia 10. `cEtapaFunil` "Proposta transmitida", `cNumeroProposta`, `cPagamento` e Task "Emitir apólice Suhai e enviar boleto" atribuída ao responsável de tarefas |
+| WhatsApp | `primeira_etapa`, `suhai_cotacao_pronta` e `suhai_proposta_enviada` |
+| E-mail da equipe | Um por etapa (8), sem o prefixo `[HOMOLOGAÇÃO]` |
+
+`deliverLead` entregou as 8 etapas sem falha. Achado: a caixa de aceite da proposta ainda diz "Confirmo o envio desta proposta em homologação" (`components/suhai/PropostaSuhaiForm.tsx`).
+
 Testes unitários das regras da CF: `npm run test:functions` (`firebase/functions/test/`).
 
 ---
