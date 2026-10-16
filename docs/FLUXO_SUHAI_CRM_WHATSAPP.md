@@ -180,6 +180,19 @@ No primeiro envio, o Espo DEV respondeu 409 porque o CPF de homologação já es
 
 Teste com um lead sintético no RTDB (`environment: "production"`, celular fictício `11 90000-0001`, sem CPF e sem e-mail, para não cair em Lead real por duplicidade), percorrendo cotação, plano e proposta. O Espo PROD recebeu Lead e Oportunidade com os seis campos, "Cotação Suhai" e "Proposta transmitida", além de 3 Notes e da Task de emissão (atribuída ao responsável de tarefas de produção). Nenhum WhatsApp foi enviado: não houve `initial`, e os templates Suhai ainda não têm ID. Os e-mails da equipe saíram com `[HOMOLOGAÇÃO]`. Todos os registros foram excluídos em seguida (RTDB e Espo).
 
+### 7.3 Produção pelo site (2026-10-15, noite, Fase 1)
+
+Teste em `www.segurosimediato.com.br/cotacao-suhai` com o celular da Imediato e o CPF de homologação, placa DBO7B72. A CF entregou as 9 etapas sem falha (Espo e Octadesk), com `environment: "production"`:
+
+| Etapa | Resultado |
+|---|---|
+| Versão "Golf 2.0" | Suhai 503 "Código FIPE informado está incorreto": Note, Task de cotação manual, WhatsApp `calculo_manual` e e-mail de erro |
+| Versão "Golf 1.6 Black & Silver" | Cotação 532147; WhatsApp de cotação pronta; Lead e Oportunidade (Suhai) com os campos novos |
+| Plano Completo | `cPlanoEscolhido`, `cPremioTotal` R$ 1.261,12, `cFranquia` R$ 10.100,00 |
+| Proposta | Recusada pela Suhai (placa travada): "Proposta com erro" + Task de pendência |
+
+Achados: a consulta de placa levou de 45 a 78 s (tabela FIPE pública consultada modelo a modelo, em sequência; corrigido em `lib/suhai/fipe-publica.ts` com a lista de modelos por ano da v2, chamadas em paralelo e cache de 7 dias); o perfil por CPF não preenche em produção: `/api/suhai/perfil` só precisa de `CPF_VALIDATE_PROXY_URL` (ausente no Vercel), mas os proxies de CPF respondem 500 enquanto a credencial da PH3A estiver inválida (ver `suhai-integracao/08-CHAMADO-ACESSO.md`); o usuário `api` do Espo PROD não exclui registros nem grava os campos restaurados, então a limpeza foi feita pela sessão de administrador. Apagar o registro do RTDB no meio de um teste faz o próximo envio do mesmo celular (mesmo `leadId`, por deduplicação) cair no Lead encontrado pelo e-mail.
+
 Testes unitários das regras da CF: `npm run test:functions` (`firebase/functions/test/`).
 
 ---
