@@ -13,19 +13,25 @@ import { PRODUTOS_SUHAI } from "@/components/suhai/marca-suhai-produtos";
 
 const PILARES = [
   { titulo: "Seguro Essencial", texto: "Contrate apenas o que você precisa, com valor que cabe no seu bolso" },
-  { titulo: "Preço Acessível", texto: "Seguro de verdade, com preços até 60% mais acessíveis que a média do mercado" },
+  {
+    titulo: "Preço Acessível",
+    texto: "Seguro de verdade. Segundo a Suhai, com preços até 60% mais acessíveis que a média do mercado",
+  },
   {
     titulo: "Alta aceitação",
     texto: "Do mais antigo ao mais novo, de híbridos e elétricos a modificados e de leilão, da moto ao caminhão: a Suhai protege seu veículo.",
   },
-  { titulo: "Atendimento Acolhedor", texto: "Conte com o suporte do nosso time, 24 horas por dia, 7 dias por semana" },
+  {
+    titulo: "Atendimento Acolhedor",
+    texto: "Assistência da Suhai 24 horas por dia, 7 dias por semana, e a equipe da Imediato Seguros na cotação e na proposta",
+  },
   {
     titulo: "É seguro de verdade, não é proteção veicular",
     texto: "A Suhai é uma seguradora regulamentada pela SUSEP, o que significa garantia, confiança e tranquilidade quando você mais precisa",
   },
   {
-    titulo: "Contratação 100% online",
-    texto: "Resolva tudo pelo celular ou pelo computador, de forma rápida e segura, sem papelada",
+    titulo: "Cotação e proposta online",
+    texto: "Preço e proposta pelo celular ou pelo computador, sem papelada. A Imediato Seguros acompanha a emissão da apólice e envia o boleto",
   },
 ] as const;
 
@@ -122,15 +128,16 @@ export function MarcaSuhaiLanding() {
           A Suhai Seguradora nasceu com um objetivo claro: tornar o seguro mais justo e acessível
         </h2>
         <p className="mt-4 max-w-3xl text-[#2B261C]/80">
-          Desde 2013, evoluímos nossas soluções para proteger motos, carros e caminhões, com planos simples,
+          Desde 2013, a Suhai desenvolve soluções para proteger motos, carros e caminhões, com planos simples,
           acessíveis e alinhados à realidade de quem usa o veículo todos os dias.
         </p>
         <p className="mt-3 max-w-3xl text-[#2B261C]/80">
           Da moto ao caminhão, do 0km ao usado, a Suhai cuida do que é seu em todas as fases.
         </p>
         <p className="mt-3 max-w-3xl text-[#2B261C]/80">
-          Desde 2013, mais de 1,5 milhão de clientes. A Suhai é regulada pela SUSEP e publica preços até 60% mais
-          acessíveis que a média do mercado.
+          Segundo a Suhai, são mais de 1,5 milhão de clientes desde 2013 e preços até 60% mais acessíveis que a média
+          do mercado. A seguradora é regulada pela SUSEP. Nesta página, a cotação e a proposta são feitas com a
+          Imediato Seguros, corretora parceira.
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {PILARES.map((pilar, indice) => (

@@ -132,19 +132,19 @@ curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 
 ---
 
-## 8. Dois previews de UAT (2026-10-01)
+## 8. As duas páginas do experimento (2026-10-16)
 
-A produção (`main` → `novo.segurosimediato.com.br`) não recebeu estas páginas. São dois deploys de Preview do projeto Vercel `imediato-seguros`, cada um com o alias público do branch.
+As duas estão em produção, no projeto Vercel `imediato-seguros`, e as duas são `noindex`, fora do menu e do sitemap.
 
-| Papel | Branch | Endereço |
-|---|---|---|
-| Landing no visual da Suhai | `uat-marca-suhai` (`0ac3001`) | https://imediato-seguros-git-uat-marca-suhai-lucianooteros-projects.vercel.app/marca-suhai |
-| Cotação no visual da Imediato | `uat-suhai` (`8a54876`) | https://imediato-seguros-git-uat-suhai-lucianooteros-projects.vercel.app/cotacao-suhai |
+| Papel | Endereço |
+|---|---|
+| Cotação no visual da Imediato | https://www.segurosimediato.com.br/cotacao-suhai |
+| Landing no visual da Suhai | https://suhai.segurosimediato.com.br/ |
 
-A landing tem home e três subpáginas (`/marca-suhai/moto`, `/carro`, `/caminhao`). Todas são `noindex` e ficam fora do menu e do sitemap. O formulário é o mesmo componente da cotação. Os cards de produto usam o véu de foto registrado em [`../SUHAI_CARDS_IMAGEM.md`](../SUHAI_CARDS_IMAGEM.md).
+O formulário é o mesmo componente nas duas (`CotacaoSuhaiExperiencia`). Muda a casca: a cotação usa o layout `(marketing)` da Imediato; a landing usa `(marca-suhai)`, com as cores da Suhai sobrescritas por CSS em `MarcaSuhaiCasca`. Os cards de produto usam o véu de foto registrado em [`../SUHAI_CARDS_IMAGEM.md`](../SUHAI_CARDS_IMAGEM.md).
 
-No host futuro `suhai.segurosimediato.com.br`, o `middleware.ts` mostra a landing em `/` e deixa passar só as três subpáginas. O DNS desse host não foi apontado.
+O host `suhai.segurosimediato.com.br` é um CNAME no Cloudflare (DNS only) para a Vercel. O `middleware.ts` usa `lib/suhai-host.ts`: em `/` mostra a landing, deixa passar as três subpáginas (`/marca-suhai/moto`, `/carro`, `/caminhao`), APIs e arquivos, e manda qualquer outro caminho para `/` mantendo a query (gclid e UTM). Outros hosts não passam pela regra. Teste: `npm run test:suhai-host`.
 
-Em 01/10/2026 as subpáginas passaram a abrir com o formulário na hero, no mesmo formato da home da landing: foto e título à esquerda, cotação à direita. No celular, o título fica em cima e o formulário logo abaixo. Essa alteração está no workspace do branch `uat-marca-suhai` e ainda não foi enviada ao preview, que continua no commit `0ac3001`.
+A landing se identifica como operada pela Imediato: cabeçalho "Cotação com a Imediato Seguros, corretora parceira", rodapé com razão social, CNPJ e SUSEP da Imediato e da Suhai Seguradora (CNPJ 16.825.255/0001-23, SUSEP 04952, em `lib/suhai/seguradora.ts`), e links de privacidade e termos para o www. Números de mercado da Suhai aparecem como "segundo a Suhai". O título das páginas leva "Imediato Seguros".
 
-O código emite `suhai_quote_start`, `suhai_quote_price` e `suhai_quote_abandon`. As tags do GTM não foram publicadas. `SUHAI_GATEWAY_URL` não foi definido em Production, e o experimento de Ads não foi aberto.
+As duas páginas têm `PageAnalytics`, que grava gclid e UTM no primeiro acesso. O código emite `suhai_quote_start`, `suhai_quote_price`, `suhai_quote_abandon` e `suhai_proposal_sent`. O experimento de Ads só será configurado depois de 26/10/2026.
