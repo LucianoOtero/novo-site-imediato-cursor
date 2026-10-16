@@ -27,6 +27,7 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 - `deliverLead` (publicada em 2026-10-15): flags de campos do funil por ocorrência; o segundo `progress` do LeadForm passa a atualizar `cEtapaFunil`.
 
 ### Fixed
+- `/cotacao-suhai`: a consulta de placa levava de 45 a 78 s em produção (tabela FIPE pública consultada modelo a modelo, em série). Agora a lista de modelos do ano vem de uma chamada à v2, as demais chamadas correm em paralelo e as respostas ficam 7 dias no cache do Vercel; o formulário reaproveita a consulta em andamento para a mesma placa ([`FLUXO_SUHAI_CRM_WHATSAPP.md`](FLUXO_SUHAI_CRM_WHATSAPP.md) §7.3).
 - `deliverLead`: o `POST Lead` que recebe 409 da checagem de duplicidade do Espo (por exemplo, mesmo CPF com outro celular) agora adota e atualiza o Lead indicado, em vez de falhar até esgotar as tentativas. Vale para todos os canais e foi publicado em 2026-10-15.
 
 ---

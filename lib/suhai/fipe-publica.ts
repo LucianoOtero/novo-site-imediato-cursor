@@ -6,8 +6,14 @@
  */
 
 const BASE = "https://parallelum.com.br/fipe/api/v1";
+const BASE_V2 = "https://fipe.parallelum.com.br/api/v2";
+/** A tabela muda no máximo uma vez por mês; o cache também poupa o limite da API gratuita. */
+const CACHE_SEGUNDOS = 60 * 60 * 24 * 7;
+/** Um nome como "GOLF" casa com dezenas de modelos; em série, a consulta passava de um minuto. */
+const SIMULTANEAS = 10;
 
 type Item = { codigo: string; nome: string };
+type ItemV2 = { code: string; name: string };
 type Preco = { CodigoFipe?: string; codigoFipe?: string };
 
 export type CandidatoFipe = { nome: string; codFipe: string };
@@ -54,12 +60,47 @@ function nomeContem(nome: string, token: string): boolean {
 
 async function obterJson<T>(url: string): Promise<T | undefined> {
   try {
-    const resposta = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const resposta = await fetch(url, { signal: AbortSignal.timeout(8000), next: { revalidate: CACHE_SEGUNDOS } });
     if (!resposta.ok) return undefined;
     return (await resposta.json()) as T;
   } catch {
     return undefined;
   }
+}
+
+async function mapearComLimite<E, R>(itens: E[], limite: number, mapear: (item: E) => Promise<R>): Promise<R[]> {
+  const resultados: R[] = new Array(itens.length);
+  let proximo = 0;
+  async function trabalhar() {
+    while (proximo < itens.length) {
+      const indice = proximo++;
+      resultados[indice] = await mapear(itens[indice]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limite, itens.length) }, trabalhar));
+  return resultados;
+}
+
+/**
+ * Código do ano (um por combustível) de cada modelo da marca que existe no
+ * ano informado, pela v2, que lista os modelos por ano numa chamada só. A v2
+ * tem limite diário por IP: qualquer falha devolve `undefined` e a busca
+ * volta a consultar os anos modelo a modelo na v1 (mesmos códigos e nomes).
+ */
+async function anosDosModelos(tipo: "carro" | "moto", marcaCodigo: string, ano: string): Promise<Map<string, string> | undefined> {
+  const veiculos = tipo === "moto" ? "motorcycles" : "cars";
+  const anos = await obterJson<ItemV2[]>(`${BASE_V2}/${veiculos}/brands/${marcaCodigo}/years`);
+  const doAno = (anos ?? []).filter((entrada) => entrada.code.startsWith(`${ano}-`));
+  if (doAno.length === 0) return undefined;
+  const listas = await Promise.all(
+    doAno.map((entrada) => obterJson<ItemV2[]>(`${BASE_V2}/${veiculos}/brands/${marcaCodigo}/years/${entrada.code}/models`)),
+  );
+  if (listas.some((lista) => !lista)) return undefined;
+  const anoPorModelo = new Map<string, string>();
+  listas.forEach((lista, indice) => {
+    for (const modelo of lista ?? []) if (!anoPorModelo.has(modelo.code)) anoPorModelo.set(modelo.code, doAno[indice].code);
+  });
+  return anoPorModelo;
 }
 
 /**
@@ -86,22 +127,25 @@ export async function candidatosFipePublicos(parametros: {
   });
   if (!marcaItem) return [];
 
-  const modelos = await obterJson<{ modelos: Item[] }>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos`);
+  const [modelos, anoPorModelo] = await Promise.all([
+    obterJson<{ modelos: Item[] }>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos`),
+    anosDosModelos(parametros.tipo, marcaItem.codigo, ano),
+  ]);
   const exigidos = tokensExigidos(modelo);
   const compativeis = (modelos?.modelos ?? []).filter((item) => exigidos.every((token) => nomeContem(item.nome, token)));
 
-  const candidatos: CandidatoFipe[] = [];
-  for (const item of compativeis) {
-    const anos = await obterJson<Item[]>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos`);
-    const anoItem = anos?.find((entrada) => entrada.codigo.startsWith(ano) || entrada.nome.startsWith(ano));
-    if (!anoItem) continue;
-    const preco = await obterJson<Preco>(
-      `${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos/${anoItem.codigo}`,
-    );
+  const candidatos = await mapearComLimite(compativeis, SIMULTANEAS, async (item): Promise<CandidatoFipe | undefined> => {
+    let anoCodigo = anoPorModelo?.get(String(item.codigo));
+    if (!anoPorModelo) {
+      const anos = await obterJson<Item[]>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos`);
+      anoCodigo = anos?.find((entrada) => entrada.codigo.startsWith(ano) || entrada.nome.startsWith(ano))?.codigo;
+    }
+    if (!anoCodigo) return undefined;
+    const preco = await obterJson<Preco>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos/${anoCodigo}`);
     const codFipe = preco?.CodigoFipe || preco?.codigoFipe;
-    if (codFipe) candidatos.push({ nome: item.nome, codFipe });
-  }
-  return candidatos;
+    return codFipe ? { nome: item.nome, codFipe } : undefined;
+  });
+  return candidatos.filter((candidato): candidato is CandidatoFipe => candidato !== undefined);
 }
 
 export async function codigoFipePublico(parametros: {

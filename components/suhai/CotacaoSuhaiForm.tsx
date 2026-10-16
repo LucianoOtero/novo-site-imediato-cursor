@@ -155,6 +155,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   const leadIdRef = useRef<string | undefined>(undefined);
   const contatoInicialRef = useRef<Promise<void> | null>(null);
   const telefoneEnviadoRef = useRef("");
+  const consultaPlacaRef = useRef<{ placa: string; resultado: ReturnType<typeof consultarPlaca> } | null>(null);
 
   /**
    * Campos do lead já conhecidos — cada `progress` reenvia tudo, como o
@@ -323,9 +324,21 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     }
   }
 
-  async function preencherPorPlaca(placaInformada?: string) {
+  /** Blur e "Continuar" pedem a mesma placa: reaproveita a consulta (falha libera nova tentativa). */
+  function preencherPorPlaca(placaInformada?: string): ReturnType<typeof consultarPlaca> {
     const placa = (placaInformada ?? estadoRef.current.placa).replace(/[^A-Za-z0-9]/g, "");
-    if (!isValidPlacaFormat(placa)) return null;
+    if (!isValidPlacaFormat(placa)) return Promise.resolve(null);
+    const anterior = consultaPlacaRef.current;
+    if (anterior?.placa === placa) return anterior.resultado;
+    const resultado = consultarPlaca(placa).then((patch) => {
+      if (!patch && consultaPlacaRef.current?.resultado === resultado) consultaPlacaRef.current = null;
+      return patch;
+    });
+    consultaPlacaRef.current = { placa, resultado };
+    return resultado;
+  }
+
+  async function consultarPlaca(placa: string) {
     setErroGeral(null);
     try {
       const resposta = await fetch("/api/suhai/veiculo", {
