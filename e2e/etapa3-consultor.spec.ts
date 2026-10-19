@@ -159,15 +159,18 @@ test("saída pelo consultor com CPF pela metade não trava", async ({ page }) =>
   expect(consultor?.cpf).toBe("529982");
 });
 
-test("escolha do consultor só sai depois do 'progress' anterior responder", async ({ page }) => {
+test("escolha do consultor é o último POST: depois do 'progress' e do 'complete'", async ({ page }) => {
   const linhaDoTempo: string[] = [];
   const posts = await prepararPagina(page, { atrasoProgressoMs: 2_500, linhaDoTempo });
   await irParaEtapa3(page, posts);
 
   await page.getByRole("button", { name: SAIDA_CONSULTOR }).click();
   await expect.poll(() => linhaDoTempo.includes("chegou:consultant_requested"), { timeout: 15_000 }).toBe(true);
+  const chegadaConsultor = linhaDoTempo.indexOf("chegou:consultant_requested");
   expect(linhaDoTempo.indexOf("respondeu:progress")).toBeGreaterThan(-1);
-  expect(linhaDoTempo.indexOf("respondeu:progress")).toBeLessThan(linhaDoTempo.indexOf("chegou:consultant_requested"));
+  expect(linhaDoTempo.indexOf("respondeu:progress")).toBeLessThan(chegadaConsultor);
+  expect(linhaDoTempo.indexOf("respondeu:complete")).toBeGreaterThan(-1);
+  expect(linhaDoTempo.indexOf("respondeu:complete")).toBeLessThan(chegadaConsultor);
 });
 
 test("CPF inválido abre o diálogo; 'Corrigir' foca o CPF e o botão do consultor sai", async ({ page }) => {
@@ -203,6 +206,28 @@ test("dados completos seguem para a etapa 4", async ({ page }) => {
 
   await expect(page.getByText("Como você quer receber sua cotação?")).toBeVisible({ timeout: 30_000 });
   await expect.poll(() => posts.filter((p) => p.stage === "progress").length).toBe(2);
+});
+
+test("consultor na etapa 4 também sai depois do 'complete'", async ({ page }) => {
+  const linhaDoTempo: string[] = [];
+  const posts = await prepararPagina(page, { linhaDoTempo });
+  await irParaEtapa3(page, posts);
+
+  await page.locator("#placa").fill("DBO7B72");
+  await page.locator("#placa").blur();
+  await page.locator("#cep").fill("01310-100");
+  await page.locator("#cpf").fill(CPF_VALIDO);
+  await page.getByRole("button", { name: CTA_CALCULAR }).click();
+  await page
+    .getByRole("button", { name: /Prefiro receber o cálculo completo depois|Falar com um consultor/ })
+    .click({ timeout: 30_000 });
+  await page.waitForURL(/\/obrigado/, { timeout: 30_000 });
+
+  await expect.poll(() => linhaDoTempo.includes("chegou:consultant_requested"), { timeout: 15_000 }).toBe(true);
+  expect(linhaDoTempo.indexOf("respondeu:complete")).toBeGreaterThan(-1);
+  expect(linhaDoTempo.indexOf("respondeu:complete")).toBeLessThan(linhaDoTempo.indexOf("chegou:consultant_requested"));
+  const escolhas = await eventosDataLayer(page, "form_quote_choice");
+  expect(escolhas).toEqual([expect.objectContaining({ choice: "consultor", step: 4 })]);
 });
 
 test("'Voltar' da etapa 3 mantém nome e e-mail", async ({ page }) => {

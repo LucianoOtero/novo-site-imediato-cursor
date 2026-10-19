@@ -608,8 +608,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * As tags Ads da etapa 4 (`form_quote_choice`) foram pausadas no GTM
    * v44; o push de `form_quote_choice` continua (GA4/funil).
    */
-  function queueLeadPost(payload: Record<string, unknown>): Promise<Response> {
-    const request = leadPostQueueRef.current.then(() => postLead(payload));
+  function queueLeadPost(payload: Record<string, unknown>, options?: { keepalive?: boolean }): Promise<Response> {
+    const request = leadPostQueueRef.current.then(() => postLead(payload, options));
     leadPostQueueRef.current = request.catch(() => undefined);
     return request;
   }
@@ -1031,7 +1031,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    *
    * Registra a escolha como `consultant_requested` (mesmo efeito do
    * consultor no passo 4: "Cálculo manual pendente" no EspoCRM e a
-   * mensagem `calculo_completo_depois` no Octadesk) e vai para o envio
+   * mensagem `calculo_completo_depois` no Octadesk) depois do envio
    * final, sem passar pelo RPA.
    */
   async function handleExitToConsultant() {
@@ -1039,12 +1039,28 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     finalSubmitInFlightRef.current = true;
     const payload = buildPayloadFromRawValues(getValues());
 
-    // No passo 4 a escolha do consultor já foi registrada por
-    // `handleChooseConsultant` antes de o diálogo abrir.
+    // No passo 4 o evento de GA4 já saiu em `handleChooseConsultant`,
+    // antes de o diálogo abrir.
     if (step !== 4) {
       markLeadFormFunnelComplete();
       trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form", step: 3 });
-      void queueLeadPost({
+    }
+
+    await submitPayload(payload, true);
+    registerConsultantChoice(payload);
+  }
+
+  /**
+   * POST `consultant_requested` — sempre DEPOIS da resposta do `complete`.
+   * A Cloud Function descarta o `cEtapaFunil` de uma execução cujo `data`
+   * já foi regravado por outro POST; se o `complete` chegasse depois, o
+   * Espo ficaria com "Receber depois" e a etapa anterior ("Dados
+   * pessoais"). `keepalive` porque a navegação para /obrigado já
+   * aconteceu quando este POST sai.
+   */
+  function registerConsultantChoice(payload: LeadInput) {
+    void queueLeadPost(
+      {
         ...payload,
         stage: "consultant_requested",
         captureChannel: "lead_form",
@@ -1052,21 +1068,21 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         skipStrictValidation: true,
         leadId: initialLeadIdRef.current ?? undefined,
         utm: getAttributionUtm(),
-      }).catch((error) => console.error("[LeadForm] Falha ao registrar escolha do consultor (não bloqueante):", error));
-    }
-
-    await submitPayload(payload, true);
+      },
+      { keepalive: true }
+    ).catch((error) => console.error("[LeadForm] Falha ao registrar escolha do consultor (não bloqueante):", error));
   }
 
   /**
    * Passo 4, opção "Prefiro receber o cálculo completo depois" —
    * reaproveita **exatamente** o envio final que já existia antes deste
    * passo (mesmo `handleSubmit(onSubmit)`, mesma guarda
-   * `finalSubmitInFlightRef`). Antes do envio, registra o evento
+   * `finalSubmitInFlightRef`). Depois do envio, registra o evento
    * `consultant_requested` (best-effort, projeto 2026-07-20) — a Cloud
    * Function posta a escolha no Stream do lead no EspoCRM e envia a
    * mensagem "cálculo completo depois" no Octadesk (quando os templates
-   * estiverem ativos).
+   * estiverem ativos). Dado inválido abre o diálogo, e a saída pelo
+   * consultor de lá passa por `handleExitToConsultant`.
    */
   function handleChooseConsultant() {
     if (finalSubmitInFlightRef.current) return;
@@ -1074,20 +1090,17 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     markLeadFormFunnelComplete();
     trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form", step: 4 });
 
-    void queueLeadPost({
-      ...buildPayloadFromRawValues(getValues()),
-      stage: "consultant_requested",
-      captureChannel: "lead_form",
-      rpaChoice: "consultor",
-      leadId: initialLeadIdRef.current ?? undefined,
-      utm: getAttributionUtm(),
-    }).catch((error) => console.error("[LeadForm] Falha ao registrar escolha do consultor (não bloqueante):", error));
-
     finalSubmitInFlightRef.current = true;
-    void handleSubmit(onSubmit, (formErrors) => {
-      finalSubmitInFlightRef.current = false;
-      onInvalidFinalStep(formErrors);
-    })();
+    void handleSubmit(
+      async (data) => {
+        await onSubmit(data);
+        registerConsultantChoice(data);
+      },
+      (formErrors) => {
+        finalSubmitInFlightRef.current = false;
+        onInvalidFinalStep(formErrors);
+      }
+    )();
   }
 
   /**
