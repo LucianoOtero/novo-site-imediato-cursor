@@ -153,6 +153,10 @@ test("saída pelo consultor com CPF pela metade não trava", async ({ page }) =>
   await page.getByRole("button", { name: SAIDA_CONSULTOR }).click();
   await page.waitForURL(/\/obrigado/, { timeout: 30_000 });
   expect(posts.some((p) => p.stage === "complete" && p.skipStrictValidation === true)).toBe(true);
+  await expect.poll(() => posts.some((p) => p.stage === "consultant_requested")).toBe(true);
+  const consultor = posts.find((p) => p.stage === "consultant_requested");
+  expect(consultor?.skipStrictValidation).toBe(true);
+  expect(consultor?.cpf).toBe("529982");
 });
 
 test("escolha do consultor só sai depois do 'progress' anterior responder", async ({ page }) => {

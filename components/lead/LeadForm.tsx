@@ -268,8 +268,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * Fila dos POSTs de evento (`progress`, `consultant_requested`,
    * `rpa_result` e o `complete` de "Aguardar o cálculo"). Cada POST espera
    * até 4 s pelo token do Turnstile e o `/api/lead` grava `data/stage` por
-   * último-que-chega: sem a fila, um `progress` atrasado sobrescreve a
-   * escolha feita logo depois (achado no UAT de 2026-10-19).
+   * último-que-chega: sem a fila, um `progress` atrasado sobrescreveria a
+   * escolha feita logo depois.
    */
   const leadPostQueueRef = useRef<Promise<unknown>>(Promise.resolve());
   /** Garante que o evento `rpa_result` (projeto 2026-07-20) é enviado uma única vez por cálculo. */
@@ -1049,6 +1049,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         stage: "consultant_requested",
         captureChannel: "lead_form",
         rpaChoice: "consultor",
+        skipStrictValidation: true,
         leadId: initialLeadIdRef.current ?? undefined,
         utm: getAttributionUtm(),
       }).catch((error) => console.error("[LeadForm] Falha ao registrar escolha do consultor (não bloqueante):", error));
