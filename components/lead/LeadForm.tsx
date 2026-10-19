@@ -264,6 +264,14 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const rpa = useRpaCalculation();
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
+  /**
+   * Fila dos POSTs de evento (`progress`, `consultant_requested`,
+   * `rpa_result` e o `complete` de "Aguardar o cálculo"). Cada POST espera
+   * até 4 s pelo token do Turnstile e o `/api/lead` grava `data/stage` por
+   * último-que-chega: sem a fila, um `progress` atrasado sobrescreve a
+   * escolha feita logo depois (achado no UAT de 2026-10-19).
+   */
+  const leadPostQueueRef = useRef<Promise<unknown>>(Promise.resolve());
   /** Garante que o evento `rpa_result` (projeto 2026-07-20) é enviado uma única vez por cálculo. */
   const rpaResultReportedRef = useRef(false);
   const hasStartedRef = useRef(false);
@@ -400,7 +408,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       franquiaAlternativo: rpa.result.alternativo?.valorFranquia,
     };
 
-    void postLead({
+    void queueLeadPost({
       ...buildPayloadFromRawValues(getValues()),
       stage: "rpa_result",
       captureChannel: "lead_form",
@@ -600,6 +608,12 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * As tags Ads da etapa 4 (`form_quote_choice`) foram pausadas no GTM
    * v44; o push de `form_quote_choice` continua (GA4/funil).
    */
+  function queueLeadPost(payload: Record<string, unknown>): Promise<Response> {
+    const request = leadPostQueueRef.current.then(() => postLead(payload));
+    leadPostQueueRef.current = request.catch(() => undefined);
+    return request;
+  }
+
   async function sendInitialContact() {
     if (initialCallInFlightRef.current) return;
     initialCallInFlightRef.current = true;
@@ -636,7 +650,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   async function sendProgressUpdate() {
     try {
       const values = getValues();
-      await postLead({
+      await queueLeadPost({
         ...buildPayloadFromRawValues(values),
         stage: "progress",
         captureChannel: "lead_form",
@@ -1030,7 +1044,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     if (step !== 4) {
       markLeadFormFunnelComplete();
       trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form", step: 3 });
-      void postLead({
+      void queueLeadPost({
         ...payload,
         stage: "consultant_requested",
         captureChannel: "lead_form",
@@ -1059,7 +1073,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     markLeadFormFunnelComplete();
     trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form", step: 4 });
 
-    void postLead({
+    void queueLeadPost({
       ...buildPayloadFromRawValues(getValues()),
       stage: "consultant_requested",
       captureChannel: "lead_form",
@@ -1107,7 +1121,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       // `rpaChoice: "aguardar"` (projeto 2026-07-20): registra no lead a
       // escolha de acompanhar o cálculo agora — a Cloud Function posta a
       // escolha no Stream do lead no EspoCRM.
-      const response = await postLead({
+      const response = await queueLeadPost({
         ...payload,
         stage: "complete",
         captureChannel: "lead_form",

@@ -18,7 +18,10 @@ const CPF_VALIDO = "529.982.247-25";
 
 type LeadPost = Record<string, unknown> & { stage?: string };
 
-async function prepararPagina(page: Page): Promise<LeadPost[]> {
+async function prepararPagina(
+  page: Page,
+  opcoes: { atrasoProgressoMs?: number; linhaDoTempo?: string[] } = {}
+): Promise<LeadPost[]> {
   const posts: LeadPost[] = [];
   const okJson = (route: Route, body: Record<string, unknown> = { ok: true }) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
@@ -26,7 +29,12 @@ async function prepararPagina(page: Page): Promise<LeadPost[]> {
   await page.route("**/api/lead", async (route) => {
     const body = (route.request().postDataJSON() ?? {}) as LeadPost;
     posts.push(body);
+    opcoes.linhaDoTempo?.push(`chegou:${body.stage}`);
+    if (body.stage === "progress" && opcoes.atrasoProgressoMs) {
+      await new Promise((resolve) => setTimeout(resolve, opcoes.atrasoProgressoMs));
+    }
     await okJson(route, { leadId: "e2e-etapa3" });
+    opcoes.linhaDoTempo?.push(`respondeu:${body.stage}`);
   });
   await page.route("https://challenges.cloudflare.com/**", (route) => route.abort());
   await page.route("**/api/validate/phone", (route) => okJson(route));
@@ -145,6 +153,17 @@ test("saída pelo consultor com CPF pela metade não trava", async ({ page }) =>
   await page.getByRole("button", { name: SAIDA_CONSULTOR }).click();
   await page.waitForURL(/\/obrigado/, { timeout: 30_000 });
   expect(posts.some((p) => p.stage === "complete" && p.skipStrictValidation === true)).toBe(true);
+});
+
+test("escolha do consultor só sai depois do 'progress' anterior responder", async ({ page }) => {
+  const linhaDoTempo: string[] = [];
+  const posts = await prepararPagina(page, { atrasoProgressoMs: 2_500, linhaDoTempo });
+  await irParaEtapa3(page, posts);
+
+  await page.getByRole("button", { name: SAIDA_CONSULTOR }).click();
+  await expect.poll(() => linhaDoTempo.includes("chegou:consultant_requested"), { timeout: 15_000 }).toBe(true);
+  expect(linhaDoTempo.indexOf("respondeu:progress")).toBeGreaterThan(-1);
+  expect(linhaDoTempo.indexOf("respondeu:progress")).toBeLessThan(linhaDoTempo.indexOf("chegou:consultant_requested"));
 });
 
 test("CPF inválido abre o diálogo; 'Corrigir' foca o CPF e o botão do consultor sai", async ({ page }) => {
