@@ -263,7 +263,7 @@ export const lenientPlaca = z
 export const LEAD_FORM_STEPS: Record<1 | 2 | 3 | 4, (keyof LeadInput)[]> = {
   1: ["ddd", "celular"],
   2: ["nome", "email"],
-  3: ["cpf", "cep", "placa"],
+  3: ["placa", "cep", "cpf"],
   4: [],
 };
 

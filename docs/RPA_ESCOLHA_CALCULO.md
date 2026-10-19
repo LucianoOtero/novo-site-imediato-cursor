@@ -31,7 +31,7 @@ Tudo em código novo, só neste repositório (Vercel), consumindo os mesmos endp
 - **`lib/rpa-calculation.ts`** — mapa das 16 fases (títulos/subtítulos sem emoji), cálculo de percentual, tipos `RpaPlano`/`RpaFinalResult`, `parseRpaFinalResult()` (3 estruturas de fallback), `isRpaErrorStatus()`/`isRpaSuccessStatus()` (versão simplificada, sem a tabela interna de códigos 1000–9999 do legado — nenhuma dessas mensagens específicas chega a ser mostrada ao usuário).
 - **`lib/leads/use-rpa-calculation.ts`** — hook com a máquina de estados (`idle`/`starting`/`progress`/`success`/`error`), polling (2s/10min) e timer (3+2min).
 - **`components/lead/RpaChoiceStep.tsx`** — passo 4: texto explicando o tempo estimado (2 a 10 minutos) e as 2 opções ao final (recomendada + alternativa), 2 botões (`Aguardar o cálculo` / `Falar com um consultor depois`), disclaimer sobre a contratação (feita pelo consultor após a proposta da seguradora, sujeita à aprovação da seguradora).
-- **`components/lead/RpaResultCard.tsx`** — 1 cartão de plano (Recomendado/Alternativo).
+- **`components/quote/OfertaCard.tsx`** + **`lib/quote/oferta.ts`** — cartão único de oferta (desde 2026-10-19, substitui o antigo `RpaResultCard`), no visual da tela de preços da Suhai. `fromRpaPlano()` converte o plano Recomendado/Alternativo; cada cartão tem "Quero este plano" (WhatsApp, `location` `rpa_resultado_recomendado`/`rpa_resultado_alternativo`).
 - **`components/lead/RpaCalculationScreen.tsx`** — 3 sub-telas (calculando / sucesso com os 2 cartões / erro com a mensagem de cálculo manual), cada uma com botão de WhatsApp (`skipModal`, mesmo padrão de `ObrigadoContent`) — **sem redirect automático**, decisão do cliente: o usuário permanece na tela de resultado.
 
 ## Fluxo

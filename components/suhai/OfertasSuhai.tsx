@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, ShieldCheck } from "lucide-react";
 
+import { OfertaCard } from "@/components/quote/OfertaCard";
 import { Button } from "@/components/ui/button";
+import { fromSuhaiOferta } from "@/lib/quote/oferta";
 import { cn } from "@/lib/utils";
 import { ROTULO_ASSISTENCIA, type PlanoAssistencia } from "@/lib/suhai/dominio";
 import { PLANOS } from "@/lib/suhai/planos";
@@ -127,57 +128,20 @@ export function OfertasSuhai({
           if (!oferta) return null;
 
           return (
-            <li
+            <OfertaCard
               key={plano.id}
-              className={cn(
-                "flex flex-col rounded-xl border bg-white p-5 shadow-sm",
-                plano.destaque ? "border-brand-500 ring-1 ring-brand-500" : "border-neutral-200",
-              )}
-            >
-              {plano.destaque && (
-                <span className="mb-3 inline-flex w-fit items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
-                  <ShieldCheck className="size-3.5" aria-hidden="true" />
-                  Mais escolhido
-                </span>
-              )}
-
-              <h3 className="font-display text-lg font-bold text-neutral-900">{plano.nome}</h3>
-              <p className="mt-1 text-sm text-neutral-500">{plano.resumo}</p>
-
-              <p className="mt-4">
-                <span className="text-3xl font-bold text-neutral-900">
-                  {moeda.format(oferta.premioMensalEstimado)}
-                </span>
-                <span className="text-sm text-neutral-500"> /mês</span>
-              </p>
-              <p className="text-xs text-neutral-500">
-                {moeda.format(oferta.premioTotal)} no ano · até {oferta.parcelamentoMaximo}x
-              </p>
-
-              <ul className="mt-4 flex flex-col gap-2 text-sm text-neutral-700">
-                {plano.coberturas.map((cobertura) => (
-                  <li key={cobertura} className="flex items-start gap-2">
-                    <Check className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden="true" />
-                    {cobertura}
-                  </li>
-                ))}
-                {oferta.franquia !== null && (
-                  <li className="flex items-start gap-2 text-neutral-500">
-                    <Check className="mt-0.5 size-4 shrink-0 text-neutral-300" aria-hidden="true" />
-                    Franquia de {moeda.format(oferta.franquia)}
-                  </li>
-                )}
-              </ul>
-
-              <Button
-                className="mt-5"
-                fullWidth
-                variant={plano.destaque ? "primary" : "secondary"}
-                onClick={() => onEscolher?.(oferta)}
-              >
-                Contratar {plano.nome}
-              </Button>
-            </li>
+              as="li"
+              oferta={fromSuhaiOferta(plano, oferta)}
+              acao={
+                <Button
+                  fullWidth
+                  variant={plano.destaque ? "primary" : "secondary"}
+                  onClick={() => onEscolher?.(oferta)}
+                >
+                  Contratar {plano.nome}
+                </Button>
+              }
+            />
           );
         })}
       </ul>

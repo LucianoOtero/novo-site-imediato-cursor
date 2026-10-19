@@ -1,9 +1,12 @@
 import { Loader2, PhoneCall } from "lucide-react";
 
 import { WhatsAppButton } from "@/components/cta/WhatsAppButton";
-import { RpaResultCard } from "@/components/lead/RpaResultCard";
+import { OfertaCard } from "@/components/quote/OfertaCard";
 import { RPA_SUCCESS_NOTICE, RPA_TOTAL_PHASES, type RpaFinalResult } from "@/lib/rpa-calculation";
 import type { RpaCalculationPhase } from "@/lib/leads/use-rpa-calculation";
+import { fromRpaPlano } from "@/lib/quote/oferta";
+
+const RPA_VARIANTS = ["recomendado", "alternativo"] as const;
 
 /**
  * RpaCalculationScreen — tela de cálculo do RPA (projeto 2026-07-16,
@@ -16,8 +19,9 @@ import type { RpaCalculationPhase } from "@/lib/leads/use-rpa-calculation";
  * do legado), da mecânica de `ProgressModalRPA` do site legado
  * (`webflow_injection_limpo.js` — só consultado como referência, nunca
  * alterado): barra de progresso em 16 fases, timer visual com extensão,
- * e ao final os 2 cartões de resultado (`Recomendado`/`Alternativo`) ou
- * a mensagem de "cálculo manual necessário".
+ * e ao final os cartões de resultado (`OfertaCard`, recomendado e
+ * alternativo, cada um com "Quero este plano" no WhatsApp) ou a mensagem
+ * de "cálculo manual necessário".
  *
  * **Sem redirect automático** (decisão do cliente, 2026-07-16): ao
  * concluir (sucesso ou erro), o usuário permanece nesta tela — só sai
@@ -50,6 +54,7 @@ export function RpaCalculationScreen({
   ramo,
 }: RpaCalculationScreenProps) {
   if (phase === "success") {
+    const totalOpcoes = RPA_VARIANTS.filter((variant) => result[variant]).length;
     return (
       // `@container` (redesign 2026-07-20): as colunas dos cartões passam a
       // depender do ESPAÇO REAL disponível (container query), não do viewport
@@ -58,14 +63,38 @@ export function RpaCalculationScreen({
       <div className="@container flex flex-col gap-5">
         <div className="flex flex-col items-center gap-2 text-center">
           <h2 className="font-display text-xl font-bold text-balance text-neutral-900">
-            Encontramos 2 opções para você
+            {totalOpcoes === 0
+              ? "Seu cálculo foi concluído"
+              : totalOpcoes === 1
+                ? "Encontramos uma opção para você"
+                : "Encontramos 2 opções para você"}
           </h2>
           <p className="text-sm text-neutral-500">{RPA_SUCCESS_NOTICE}</p>
         </div>
 
         <div className="grid gap-3 @lg:grid-cols-2">
-          <RpaResultCard variant="recomendado" plano={result.recomendado} />
-          <RpaResultCard variant="alternativo" plano={result.alternativo} />
+          {RPA_VARIANTS.map((variant) => {
+            const plano = result[variant];
+            if (!plano) return null;
+            const oferta = fromRpaPlano(variant, plano);
+            return (
+              <OfertaCard
+                key={variant}
+                oferta={oferta}
+                acao={
+                  <WhatsAppButton
+                    location={`rpa_resultado_${variant}`}
+                    ramo={ramo}
+                    skipModal
+                    fullWidth
+                    variant={oferta.destaque ? "primary" : "secondary"}
+                  >
+                    Quero este plano
+                  </WhatsAppButton>
+                }
+              />
+            );
+          })}
         </div>
 
         <WhatsAppButton location="rpa_resultado" ramo={ramo} skipModal fullWidth>

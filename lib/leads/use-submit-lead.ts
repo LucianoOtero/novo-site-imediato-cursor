@@ -23,9 +23,9 @@ import type { LeadInput } from "@/lib/validators";
  * `stage: "complete"` (padrão), que cria o lead direto.
  *
  * `skipStrictValidation` (projeto 2026-07-14): `true` quando o usuário
- * escolheu "Prosseguir assim mesmo" com CPF/CEP inválidos no diálogo do
- * `LeadForm` — repassado a `/api/lead` (ver `lib/leads/types.ts`) para
- * não rejeitar de novo o mesmo valor.
+ * saiu pelo consultor no `LeadForm` com CPF/CEP vazios ou inválidos —
+ * repassado a `/api/lead` (ver `lib/leads/types.ts`) para não rejeitar
+ * de novo o mesmo valor.
  *
  * Simplificação 2026-07-16 ("etapa de decisão RPA no formulário"): o
  * disparo automático/cosmético do RPA que existia aqui (sem mostrar
