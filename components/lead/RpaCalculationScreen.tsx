@@ -4,7 +4,7 @@ import { WhatsAppButton } from "@/components/cta/WhatsAppButton";
 import { OfertaCard } from "@/components/quote/OfertaCard";
 import { RPA_SUCCESS_NOTICE, RPA_TOTAL_PHASES, type RpaFinalResult } from "@/lib/rpa-calculation";
 import type { RpaCalculationPhase } from "@/lib/leads/use-rpa-calculation";
-import { fromRpaPlano } from "@/lib/quote/oferta";
+import { fromRpaPlano, rpaPlanoTemPreco } from "@/lib/quote/oferta";
 
 const RPA_VARIANTS = ["recomendado", "alternativo"] as const;
 
@@ -54,7 +54,8 @@ export function RpaCalculationScreen({
   ramo,
 }: RpaCalculationScreenProps) {
   if (phase === "success") {
-    const totalOpcoes = RPA_VARIANTS.filter((variant) => result[variant]).length;
+    const variantesComPreco = RPA_VARIANTS.filter((variant) => rpaPlanoTemPreco(result[variant]));
+    const totalOpcoes = variantesComPreco.length;
     return (
       // `@container` (redesign 2026-07-20): as colunas dos cartões passam a
       // depender do ESPAÇO REAL disponível (container query), não do viewport
@@ -72,11 +73,9 @@ export function RpaCalculationScreen({
           <p className="text-sm text-neutral-500">{RPA_SUCCESS_NOTICE}</p>
         </div>
 
-        <div className="grid gap-3 @lg:grid-cols-2">
-          {RPA_VARIANTS.map((variant) => {
-            const plano = result[variant];
-            if (!plano) return null;
-            const oferta = fromRpaPlano(variant, plano);
+        <div className={totalOpcoes > 1 ? "grid gap-3 @lg:grid-cols-2" : "grid gap-3"}>
+          {variantesComPreco.map((variant) => {
+            const oferta = fromRpaPlano(variant, result[variant]!);
             return (
               <OfertaCard
                 key={variant}

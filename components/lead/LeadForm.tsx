@@ -199,6 +199,11 @@ const STEP_CTAS: Record<1 | 2 | 3, string> = {
 };
 /** Saída da etapa 3 para quem prefere não informar placa, CEP ou CPF. */
 const CONSULTANT_EXIT_LABEL = "Prefiro que um consultor entre em contato";
+const STEP_3_HINTS_BY_RAMO: Record<string, { placa: string; cep: string }> = {
+  moto: { placa: "Identifica sua moto na tabela FIPE.", cep: "Onde a moto dorme. Muda o preço do seguro." },
+  caminhao: { placa: "Identifica seu caminhão na tabela FIPE.", cep: "Onde o caminhão dorme. Muda o preço do seguro." },
+};
+const STEP_3_HINTS_DEFAULT = { placa: "Identifica seu carro na tabela FIPE.", cep: "Onde o carro dorme. Muda o preço do seguro." };
 /** Transparência do uso do celular (etapa 1) — WhatsApp/CRM reais. */
 const PHONE_MICROCOPY =
   "Usamos o número para enviar o resultado por WhatsApp e seguir sua cotação.";
@@ -549,6 +554,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     return todosPreenchidos && veiculoIdentificado && semErros ? null : "dados_incompletos";
   })();
   const rpaEnabled = rpaDisabledReason === null;
+  const step3Hints = STEP_3_HINTS_BY_RAMO[ramo] ?? STEP_3_HINTS_DEFAULT;
 
   /**
    * Check de campo válido (itens de conversão, 2026-07-20): tocado +
@@ -1414,7 +1420,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               label="Placa"
               htmlFor="placa"
               error={errors.placa?.message}
-              hint="Identifica seu carro na tabela FIPE."
+              hint={step3Hints.placa}
               tone={tone}
               valid={isFieldValid("placa")}
             >
@@ -1447,7 +1453,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               label="CEP"
               htmlFor="cep"
               error={errors.cep?.message}
-              hint="Onde o carro dorme. Muda o preço do seguro."
+              hint={step3Hints.cep}
               tone={tone}
               valid={isFieldValid("cep")}
             >

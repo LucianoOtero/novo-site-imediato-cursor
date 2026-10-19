@@ -230,6 +230,45 @@ test("consultor na etapa 4 também sai depois do 'complete'", async ({ page }) =
   expect(escolhas).toEqual([expect.objectContaining({ choice: "consultor", step: 4 })]);
 });
 
+test("plano do RPA com 'N/A' não vira cartão", async ({ page }) => {
+  const posts = await prepararPagina(page);
+  const json = (body: unknown) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  await page.route("**/api/rpa/start", (route) => route.fulfill(json({ success: true, session_id: "e2e-rpa" })));
+  await page.route("**/api/rpa/progress/**", (route) =>
+    route.fulfill(
+      json({
+        progress: {
+          status: "success",
+          etapa_atual: 16,
+          fase_atual: 16,
+          mensagem: "Concluído",
+          resultados_finais: {
+            dados: {
+              dados_finais: {
+                plano_recomendado: { valor: "R$ 2.929,61", parcelamento: "anual", valor_franquia: "R$ 2.143,00" },
+                plano_alternativo: { valor: "N/A", parcelamento: "N/A", valor_franquia: "N/A" },
+              },
+            },
+          },
+        },
+      })
+    )
+  );
+  await irParaEtapa3(page, posts);
+
+  await page.locator("#placa").fill("DBO7B72");
+  await page.locator("#placa").blur();
+  await page.locator("#cep").fill("01310-100");
+  await page.locator("#cpf").fill(CPF_VALIDO);
+  await page.getByRole("button", { name: CTA_CALCULAR }).click();
+  await page.getByRole("button", { name: "Quero calcular agora" }).click({ timeout: 30_000 });
+
+  await expect(page.getByRole("heading", { name: "Encontramos uma opção para você" })).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator("[data-oferta-id]")).toHaveCount(1);
+  await expect(page.locator('[data-oferta-id="rpa-recomendado"]')).toBeVisible();
+  await expect(page.getByText("N/A")).toHaveCount(0);
+});
+
 test("'Voltar' da etapa 3 mantém nome e e-mail", async ({ page }) => {
   const posts = await prepararPagina(page);
   await irParaEtapa3(page, posts);

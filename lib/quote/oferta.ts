@@ -89,10 +89,18 @@ const COBERTURAS_RPA: { key: keyof RpaPlano; texto: string }[] = [
   { key: "carroReserva", texto: "Carro reserva" },
 ];
 
+/** O RPA preenche com "N/A" os campos de um plano que a seguradora não cotou. */
+const SEM_VALOR_RPA = /^(n\/?a|n\/?d|-+)$/i;
+
 function texto(valor: unknown): string | undefined {
   if (typeof valor !== "string") return undefined;
   const limpo = valor.trim();
-  return limpo || undefined;
+  return limpo && !SEM_VALOR_RPA.test(limpo) ? limpo : undefined;
+}
+
+/** Plano com preço de verdade — sem isso o cartão não aparece nem conta como opção. */
+export function rpaPlanoTemPreco(plano: RpaPlano | undefined): plano is RpaPlano {
+  return /\d/.test(texto(plano?.valor) ?? "");
 }
 
 export function fromRpaPlano(variant: "recomendado" | "alternativo", plano: RpaPlano): OfertaExibicao {
