@@ -20,10 +20,10 @@ A coluna "Confirmado?" reflete exatamente o estado registrado na especificação
 
 | Dado | Valor atual observado | Fonte atual | Confirmado? | Responsável | Onde será usado |
 |---|---|---|---|---|---|
-| Razão social exata | **Imediato Corretora de Seguros Ltda.** | cliente | ✅ Confirmado | Sócio/Jurídico | company.legalName, Schema, footer |
+| Razão social exata | **Imediato Corretora de Seguros Ltda.** | cliente | ✅ Confirmado (2026-10-19) | Sócio/Jurídico | company.legalName, Schema, footer |
 | Nome fantasia | Imediato Seguros | cliente | ✅ Confirmado (2026-07-03) | Sócio | company.tradeName |
-| CNPJ | 45.998.165/0001-32 | cliente | ✅ Confirmado (2026-07-03) | Jurídico | company.cnpj, Organization schema |
-| SUSEP | 252174522 | cliente | ✅ Confirmado (2026-07-03) | Jurídico | company.susep, footer |
+| CNPJ | ~~45.998.165/0001-32~~ → **33.216.054/0001-48** | cliente | ✅ **CORRIGIDO** (2026-10-19, ver nota) | Jurídico | company.cnpj, Organization schema |
+| SUSEP | 252174522 | cliente | ✅ Confirmado (2026-10-19) | Jurídico | company.susep, footer |
 | Endereço completo | Rua Barão de Itapetininga 125, 6º andar, Centro, SP, 01042-001 | cliente | ✅ Confirmado (2026-07-03) | Adm | address, LocalBusiness, /contato |
 | Telefone principal | (11) 3230-1422 | cliente | ✅ Confirmado (2026-07-03) | Comercial | contact.phone, CallButton |
 | Telefone de emergência | (11) 95328-8466 | cliente | ✅ Confirmado (2026-07-03) | Comercial | contact.emergencyPhone |
@@ -71,6 +71,10 @@ A auditoria real de assets (Issue P-10, ver `BRAND_ASSETS.md`) havia encontrado 
 ### Atualização (2026-07-31) — 18 → 21 seguradoras parceiras
 
 O cliente confirmou a nova lista de **21 seguradoras parceiras**: saem **Darwin, Liberty e Usebens**; entram **Aliro** (grafia oficial da marca — o pedido citava "Alliro"), **BP Seguradora, Ituran, Mitsui Sumitomo, Suhai e Yelum** (nova marca da antiga Liberty Seguros no Brasil). Valor aplicado em `lib/company.ts` (`insurersCount: 21`), catálogo/ordem em `lib/seguradoras.ts` (ordem de exibição por reputação de mercado definida com o cliente) e textos hardcoded em `lib/ramos.ts`/`components/lead/RpaChoiceStep.tsx`. Logos novos documentados em `BRAND_ASSETS.md`. **Pendência registrada:** templates de WhatsApp no Octadesk aprovados na Meta ainda citam "18 seguradoras" (ver `GUIA_OCTADESK_TEMPLATES.md`).
+
+### Correção (2026-10-19) — CNPJ vinculado ao SUSEP
+
+O cliente confirmou os dados atuais: **IMEDIATO CORRETORA DE SEGUROS LTDA**, CNPJ **33.216.054/0001-48**, SUSEP **252174522**. O CNPJ 45.998.165/0001-32, publicado desde 2026-07-03, foi substituído em `lib/company.ts` (rodapé, `/a-imediato`, `/termos`, `/politica-de-privacidade` e schema Organization). O novo CNPJ é o mesmo que consta na certidão SUSEP e nos documentos da integração Suhai, e o ajuste entra antes do experimento de 26/10 para manter site e registro SUSEP coerentes na revisão de anúncios do Google.
 
 ### Atualização (2026-09-30) — Sompo sai, AXA entra (contagem permanece 21)
 

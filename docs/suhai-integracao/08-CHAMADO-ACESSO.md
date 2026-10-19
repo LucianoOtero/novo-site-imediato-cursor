@@ -22,7 +22,7 @@ Notas de apuração:
 
 ## 2. Dados da corretora
 
-A solicitação é feita pela pessoa jurídica abaixo, **não** pela Imediato Corretora de Seguros Ltda. (45.998.165/0001-32) que consta em `lib/company.ts` e no rodapé do site.
+A solicitação é feita pela pessoa jurídica abaixo. Desde 2026-10-19, `lib/company.ts` e o rodapé do site usam este mesmo CNPJ (antes publicavam 45.998.165/0001-32).
 
 | Campo | Valor |
 |---|---|

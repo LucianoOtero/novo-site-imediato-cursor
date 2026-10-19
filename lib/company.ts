@@ -78,10 +78,10 @@ export type CompanyConfig = {
 };
 
 export const company: CompanyConfig = {
-  legalName: "Imediato Corretora de Seguros Ltda.", // CONFIRMADO
+  legalName: "Imediato Corretora de Seguros Ltda.", // CONFIRMADO (2026-10-19)
   tradeName: "Imediato Seguros", // CONFIRMADO (2026-07-03)
-  cnpj: "45.998.165/0001-32", // CONFIRMADO (2026-07-03)
-  susep: "252174522", // CONFIRMADO (2026-07-03)
+  cnpj: "33.216.054/0001-48", // CONFIRMADO (2026-10-19) — CNPJ vinculado ao SUSEP 252174522
+  susep: "252174522", // CONFIRMADO (2026-10-19)
   address: {
     street: "Rua Barão de Itapetininga",
     number: "125",
