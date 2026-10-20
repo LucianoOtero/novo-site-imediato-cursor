@@ -70,3 +70,20 @@ igual ao `main`.
 - Conferir no GTM se a tag GA4 de `form_quote_choice` repassa o parâmetro `step` (3 ou 4).
 - PR para `main` com aprovação, smoke em Production (um lead pela saída do consultor e um pelo cálculo, telefone de
   teste, Espo produção e Octadesk) e atualização de CHANGELOG/VERSIONING/status.
+
+## Cuidado: `syncOpportunitySold` já publicada a partir deste branch (2026-10-20)
+
+A correção do custo do RTDB legado (commit `58963cc`, ver CHANGELOG "Não publicado — 2026-10-20") foi publicada na
+Cloud Function `syncOpportunitySold` direto deste branch, antes do merge. Até o PR entrar no `main`:
+
+- **Não** rodar `firebase deploy --only functions` (todas) nem `--only functions:syncOpportunitySold` a partir do
+  `main` ou de qualquer branch sem o commit `58963cc`. Isso volta o scan de `leads_backup` do legado (~17 MB por
+  webhook, ≈ R$ 270 por dia útil). Publicar só `functions:deliverLead` a partir do `main` é seguro.
+- No PR, conferir que `firebase/functions/sold-sync.js` chega ao `main` com `GCLID_INDEX_PATH`. Depois do merge,
+  publicar funções a partir do `main` volta a ser seguro.
+- O `.indexOn` `data/GCLID_FLD` das regras do banco legado (`leads-imediato-seguros`) existe só nas regras publicadas
+  e na cópia local não versionada `firebase/database.rules.legado.json`. **Não** sobrescrever as regras do legado com
+  uma cópia anterior: sem o índice, a query volta a baixar o nó inteiro. Backup das regras anteriores e do código
+  publicado antes em `C:\Users\Luciano\wt\_deployed-fn`.
+- Depois de qualquer publicação de funções, conferir no Monitoring `firebasedatabase.googleapis.com/network/sent_bytes_count`
+  do projeto `leads-imediato-seguros`: o normal agora é perto de zero.

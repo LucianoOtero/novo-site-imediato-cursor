@@ -13,6 +13,20 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Não publicado — 2026-10-20 (custo do RTDB legado no `syncOpportunitySold`)
+
+> **Cuidado até o merge:** a função já está publicada a partir do branch `uat-funil-etapa3` (commit `58963cc`). Não publicar `syncOpportunitySold` (nem todas as funções) a partir do `main` antes do merge, e não sobrescrever as regras do banco legado sem o índice `data/GCLID_FLD`. Detalhes em [`UAT_ETAPA3_CARTAO_asof-2026-10-19.md`](UAT_ETAPA3_CARTAO_asof-2026-10-19.md) ("Cuidado: `syncOpportunitySold`…").
+
+### Fixed
+- `syncOpportunitySold` (publicada em 2026-10-20): o lookup por gclid baixava `leads_backup` inteiro do RTDB legado (~17 MB) a cada webhook do Espo. Desde 2026-09-08 isso gerou ~300 GB/semana de banda de saída, ~92% da conta "Pagamento do Firebase" (R$ 5.233 de R$ 5.660 em 1–20/10). No legado o gclid (`data/GCLID_FLD`) é o único vínculo; agora é query indexada, com `.indexOn` nas regras do banco legado. Site novo segue com o scan ([`ESPO_VENDIDO_FIREBASE_SYNC.md`](ESPO_VENDIDO_FIREBASE_SYNC.md) §4).
+- `syncOpportunitySold`: o e-mail de alerta usava os timeouts padrão do nodemailer (2 min) e segurava a função até o limite de 120 s (~35% das chamadas em 504). Timeouts de 10/10/20 s. O SMTP segue recusando conexões do GCP desde 2026-09-25; os alertas continuam gravados em `sold_sync_errors`.
+
+### Ops (GCP, 2026-10-20)
+- Orçamento "Alerta mensal - Pagamento do Firebase" (R$ 1.000/mês; avisos em 50/90/100% e previsão 100%).
+- Cloud SQL `rpa-logs-db-dev` (projeto `leads-imediato-seguros-dev`) de `db-n1-standard-1` para `db-f1-micro`.
+
+---
+
 ## Não publicado — 2026-10-16 (Suhai: níveis de assistência e corrida no CRM)
 
 ### Added
