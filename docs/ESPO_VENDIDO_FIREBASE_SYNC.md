@@ -72,6 +72,8 @@ Em cada RTDB, localizar nó(s) `leads_backup/{id}`:
 1. `espocrmOpportunityId` === Opp.`id`
 2. Senão: `espocrmLeadId` === Opp.`cLeadId` (quando `cLeadId` presente)
 3. Senão: gclid em `utm.gclid` / `data.GCLID_FLD` / `gclid` / raiz === Opp.`cGclid`
+   - **Legado (`leads-imediato-seguros`)**: query indexada em `data/GCLID_FLD` (`.indexOn` nas regras do banco desde 2026-10-20). No legado nenhum registro tem IDs do Espo, então o gclid é o único vínculo. O scan anterior baixava `leads_backup` inteiro (~17 MB) a cada webhook e gerou ~300 GB/semana de banda de saída (≈ R$ 270 por dia útil) entre 2026-09-08 e 2026-10-20.
+   - **Site novo**: scan de `leads_backup` (sem índice de gclid; quase todos os registros já casam pelos IDs).
 
 Atualizar **todos** os nós que casarem no passo que venceu (ex.: várias jornadas com o mesmo Opp id).
 
