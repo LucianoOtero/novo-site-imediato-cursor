@@ -24,6 +24,9 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 ### Ops (GCP, 2026-10-20)
 - Orçamento "Alerta mensal - Pagamento do Firebase" (R$ 1.000/mês; avisos em 50/90/100% e previsão 100%).
 - Cloud SQL `rpa-logs-db-dev` (projeto `leads-imediato-seguros-dev`) de `db-n1-standard-1` para `db-f1-micro`.
+- RTDB legado (`leads-imediato-seguros`): `leads_backup` com `.read`/`.write` `false`. Estava aberto para leitura e gravação sem login (12.558 leads com dados pessoais). O site antigo está fora do ar e a última gravação de navegador foi em 2026-10-02; `syncOpportunitySold` e as funções Gen1 do legado usam credencial de administrador e não passam pelas regras. Volta: aplicar `rules-legado-antes-fechar-20261020-1352.json` (em `C:\Users\Luciano\wt\_deployed-fn`).
+- Cloud SQL `rpa-logs-db` (projeto `leads-imediato-seguros`) parado (`activationPolicy` `NEVER`), com backup sob demanda de 2026-10-20. Só `add-flyingdonkeys` apontava para ele (última chamada 2026-09-29); os logs do MySQL e de auditoria só mostram atividade interna do Cloud SQL. Volta: `activationPolicy` `ALWAYS` (2 a 5 min). Apagar só depois de 30 dias sem efeito, como decisão separada. `rpa-logs-db-prod` segue ligado: atende os serviços legados que ainda recebem chamadas.
+- Conferido depois das duas mudanças (até 17:35 UTC): `syncOpportunitySold` 19 chamadas, todas 200, sem aviso nem permissão negada; nenhum erro nos serviços Cloud Run e funções do legado; `placa-validate-prod` e `send-email-notification-prod` seguem respondendo 200; cálculo com RPA no staging (telefone de teste) concluído em ~3,5 min, com oportunidade em "Cálculo concluído" no Espo DEV (apagada depois).
 
 ---
 
