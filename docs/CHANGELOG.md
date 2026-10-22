@@ -13,6 +13,16 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Não publicado — 2026-10-22 (SafetyMails reativado)
+
+### Fixed
+- Validação de e-mail (`lib/validation/email-safetymails.ts`): a API do SafetyMails voltou; o proxy passa a enviar `Referer`/`Origin` do domínio cadastrado e a ler o campo `Status`. Soft-warn só quando `Status === "INVALIDO"` (`VALIDO`/`INCERTO` e falha de rede seguem sem aviso).
+
+### Ops
+- Credenciais `SAFETY_TICKET` / `SAFETY_API_KEY` atualizadas no Vercel staging/preview após reativação da assinatura; produção só depois do UAT no staging.
+
+---
+
 ## Não publicado — 2026-10-20 (custo do RTDB legado no `syncOpportunitySold`)
 
 > **Cuidado até o merge:** a função já está publicada a partir do branch `uat-funil-etapa3` (commit `58963cc`). Não publicar `syncOpportunitySold` (nem todas as funções) a partir do `main` antes do merge, e não sobrescrever as regras do banco legado sem o índice `data/GCLID_FLD`. Detalhes em [`UAT_ETAPA3_CARTAO_asof-2026-10-19.md`](UAT_ETAPA3_CARTAO_asof-2026-10-19.md) ("Cuidado: `syncOpportunitySold`…").

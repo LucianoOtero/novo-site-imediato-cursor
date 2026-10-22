@@ -55,10 +55,11 @@ Os nomes de URL exatos dos endpoints (`window.LOG_ENDPOINT_URL`, etc.) apontam p
 - **O que é:** `window.LOG_ENDPOINT_URL` + função `novo_log(nível, categoria, ...)`, com throttling (`logRateLimited`) e detecção de ambiente (dev/prod pelo hostname).
 - **Paridade sugerida:** pode ser substituído pela combinação Sentry (já usado hoje, ver `LEGACY_JS_AUDIT.md`) + logs de servidor (seção 51 da spec), sem necessidade de manter um microsserviço de log dedicado — **decisão de arquitetura, não desta auditoria**.
 
-### 8. SafetyMails (validação/anti-fraude de e-mail) — ✅ REPLICADO COM PROXY SERVER-SIDE (2026-07-13)
+### 8. SafetyMails (validação/anti-fraude de e-mail) — ✅ REPLICADO COM PROXY SERVER-SIDE (2026-07-13; reativado 2026-10-22)
 - **O que é:** serviço terceirizado (`safetymails.com`), configurado via `SAFETYMAILS_OPTIN_BASE`, `SAFETYMAILS_BASE_DOMAIN`, autenticado com `SAFETY_TICKET` e `SAFETY_API_KEY`.
 - **Achado de segurança do legado (corrigido no site novo):** no legado, essas chaves ficam **expostas no JavaScript client-side** (`config_env.js`), visíveis a qualquer visitante. No site novo, a mesma credencial é usada, mas a chamada roda **server-side** (`app/api/validate/email/route.ts` → `lib/validation/email-safetymails.ts`) — a chave nunca chega ao navegador.
-- **Achado funcional (2026-07-13):** testadas diretamente as 2 variantes conhecidas (GET+base64 do formulário principal; POST+HMAC do FooterCode) com credenciais reais de DEV e PROD — **nenhuma respondeu** (uma retorna "Função descontinuada", a outra tem erro de DNS). Problema já documentado como não resolvido no próprio site legado (`INVESTIGACAO_ERRO_403_SAFETYMAILS.md`). Implementado mesmo assim, best-effort: nunca bloqueia o usuário se a chamada falhar (mesmo comportamento de "falha aberta" do legado). Ver `docs/VALIDACAO_TEMPO_REAL_E_CAPTURA_2_FASES.md`.
+- **Achado funcional (2026-07-13):** na época, GET+base64 e POST+HMAC não respondiam (função descontinuada / DNS). Documentado no legado (`INVESTIGACAO_ERRO_403_SAFETYMAILS.md`).
+- **Reativação (2026-10-22):** assinatura e DNS do ticket voltaram. A API exige `Referer`/`Origin` de domínio cadastrado (`https://imediatoseguros.com.br/`) e responde com `Status` (`VALIDO` | `INCERTO` | `INVALIDO`). O proxy envia esses headers, lê `Status` (fallback `StatusEmail`) e **só marca inválido quando `Status === "INVALIDO"`** — `INCERTO` e `VALIDO` passam sem aviso; falha de rede/HTTP não-OK continua em falha aberta. Soft-warn no blur do formulário; nunca bloqueia o envio. Ver `docs/VALIDACAO_TEMPO_REAL_E_CAPTURA_2_FASES.md`.
 
 ### 9. APILayer (validação de telefone) — ✅ REPLICADO COM PROXY SERVER-SIDE (2026-07-13)
 - **O que é:** `APILAYER_BASE_URL` + `APILAYER_KEY`, também exposta no client-side no legado.
