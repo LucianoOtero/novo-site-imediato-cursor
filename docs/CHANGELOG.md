@@ -13,6 +13,16 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Não publicado — 2026-10-22 (SafetyMails reativado)
+
+### Fixed
+- Validação de e-mail (`lib/validation/email-safetymails.ts`): a API do SafetyMails voltou; o proxy passa a enviar `Referer`/`Origin` do domínio cadastrado e a ler o campo `Status`. Soft-warn só quando `Status === "INVALIDO"` (`VALIDO`/`INCERTO` e falha de rede seguem sem aviso).
+
+### Ops
+- Credenciais `SAFETY_TICKET` / `SAFETY_API_KEY` atualizadas no Vercel (preview e produção) após reativação da assinatura.
+
+---
+
 ## Não publicado — 2026-10-16 (Suhai: níveis de assistência e corrida no CRM)
 
 ### Added
