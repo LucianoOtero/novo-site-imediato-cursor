@@ -4,31 +4,45 @@ import { env } from "@/lib/env";
 
 /**
  * lib/validation/email-safetymails.ts — validação de e-mail via
- * SafetyMails (projeto 2026-07-13, réplica de `validarEmailSafetyMails`
- * em `FooterCodeSiteDefinitivoCompleto.js` do site legado — variante
+ * SafetyMails (réplica de `validarEmailSafetyMails` em
+ * `FooterCodeSiteDefinitivoCompleto.js` do site legado — variante
  * autenticada por HMAC, distinta da variante GET+base64 usada em
  * `webflow_injection_limpo.js`).
  *
- * ⚠️ Achado (2026-07-13): testei as 2 variantes conhecidas com as
- * credenciais reais do site legado (DEV e PROD) e nenhuma respondeu:
- * - GET + base64 (`optin.safetymails.com/.../{base64(email)}`): HTTP 400
- *   `{"MsgErro":"Função descontinuada - Procure o Suporte"}`.
- * - POST + HMAC (`https://{ticket}.safetymails.com/api/{sha1(ticket)}`):
- *   erro de DNS (`ENOTFOUND`), com o ticket de DEV e também o de PRODUÇÃO
- *   (confirmado lendo `VERIFICACAO_SAFETYMAILS_PROD_ATUALIZADO_20251123.md`
- *   no projeto legado).
- * Esse problema já está documentado como não resolvido no próprio
- * projeto legado (`INVESTIGACAO_ERRO_403_SAFETYMAILS.md`) — não é
- * específico deste site. Implementado aqui mesmo assim (decisão do
- * cliente, 2026-07-13): tenta a chamada real, mas **nunca bloqueia** o
- * usuário se ela falhar — mesmo comportamento de "falha aberta" do
- * `validateEmail` legado (`catch` silencioso → e-mail considerado válido).
+ * Achado 2026-10-22: assinatura/DNS do ticket voltaram a responder.
+ * A API exige `Referer`/`Origin` de um domínio cadastrado
+ * (`https://imediatoseguros.com.br/`) e devolve o campo `Status`
+ * (`VALIDO` | `INCERTO` | `INVALIDO`) — não mais `StatusEmail`.
+ * Sem Referer a API responde 403 "Origem diferente".
+ *
+ * Regra de negócio (2026-10-22): avisar só quando `Status === "INVALIDO"`.
+ * `VALIDO` e `INCERTO` passam sem aviso (ex.: caixas catch-all / caixas
+ * ausentes no MX costumam vir como INCERTO).
  *
  * Diferente do legado (que chama isso direto do navegador, expondo
  * `SAFETY_API_KEY`), esta função só roda server-side — ver
  * `app/api/validate/email/route.ts`.
+ *
+ * Filosofia: tenta a chamada real, mas **nunca bloqueia** o usuário se
+ * ela falhar (HTTP não-OK / rede) — "falha aberta", igual ao
+ * `validateEmail` legado (`catch` silencioso → e-mail considerado válido).
  */
 export type EmailApiResult = { ok: boolean };
+
+const SAFETY_ORIGIN = "https://imediatoseguros.com.br";
+const SAFETY_REFERER = "https://imediatoseguros.com.br/";
+
+function isInvalidStatus(data: Record<string, unknown>): boolean {
+  // API atual (2026-10): campo `Status`.
+  if (typeof data.Status === "string") {
+    return data.Status === "INVALIDO";
+  }
+  // Fallback legado: `StatusEmail` (só VALIDO era aceito).
+  if (typeof data.StatusEmail === "string") {
+    return data.StatusEmail !== "VALIDO";
+  }
+  return false;
+}
 
 export async function validateEmailViaSafetyMails(email: string): Promise<EmailApiResult> {
   if (!env.safetyTicket || !env.safetyApiKey) {
@@ -46,8 +60,13 @@ export async function validateEmailViaSafetyMails(email: string): Promise<EmailA
 
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Sf-Hmac": hmac },
-      body: form,
+      headers: {
+        "Sf-Hmac": hmac,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Origin: SAFETY_ORIGIN,
+        Referer: SAFETY_REFERER,
+      },
+      body: form.toString(),
     });
 
     if (!response.ok) {
@@ -55,8 +74,8 @@ export async function validateEmailViaSafetyMails(email: string): Promise<EmailA
       return { ok: true };
     }
 
-    const data = await response.json();
-    if (data && data.StatusEmail && data.StatusEmail !== "VALIDO") {
+    const data = (await response.json()) as Record<string, unknown>;
+    if (data && isInvalidStatus(data)) {
       return { ok: false };
     }
     return { ok: true };

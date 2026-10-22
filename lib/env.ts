@@ -351,9 +351,10 @@ export const env = {
   apilayerKey: parsed.APILAYER_KEY,
   apilayerBaseUrl: parsed.APILAYER_BASE_URL || "https://apilayer.net",
   /** SafetyMails (validação de e-mail em tempo real) — ver lib/validation/email-safetymails.ts. Best-effort: falha externa nunca bloqueia (mesmo comportamento do legado). */
-  safetyTicket: parsed.SAFETY_TICKET,
-  safetyApiKey: parsed.SAFETY_API_KEY,
-  safetymailsBaseDomain: parsed.SAFETYMAILS_BASE_DOMAIN || "safetymails.com",
+  // trim: evita ticket/key com CRLF residual ao setar via CLI no Windows.
+  safetyTicket: parsed.SAFETY_TICKET?.trim(),
+  safetyApiKey: parsed.SAFETY_API_KEY?.trim(),
+  safetymailsBaseDomain: (parsed.SAFETYMAILS_BASE_DOMAIN || "safetymails.com").trim(),
   /** ViaCEP (validação de CEP em tempo real) — API pública, sem chave. Ver lib/validation/cep-viacep.ts. */
   viacepBaseUrl: parsed.VIACEP_BASE_URL || "https://viacep.com.br",
   /**

@@ -36,7 +36,8 @@ flowchart TD
 - `validatePlaca`/`validarPlacaApi`: formato local (antigo `ABC1234` ou Mercosul `ABC1D23`, regex `validarPlacaFormato`, duplicada idêntica nos 2 scripts) + `POST` no proxy Cloud Run "Placa Fipe" (`window.PLACA_VALIDATE_URL`, `{placa}` no corpo) — resposta traz marca/modelo/ano reais do veículo, usados para auto-preenchimento (`extractVehicleFromPlacaFipe`).
 - `validateCelular`: formato local + validação opcional via APILayer.
 - `validateEmail`: formato local (regex `/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i`, idêntica em `FooterCodeSiteDefinitivoCompleto.js` e `webflow_injection_limpo.js`) + SafetyMails.
-  - **Achado 2026-07-14, importante**: no formulário principal (`webflow_injection_limpo.js`), a resposta do SafetyMails **participa da validação bloqueante** (`ok: false` se `StatusEmail !== 'VALIDO'`, contribuindo para o `SweetAlert` de "Corrigir/Prosseguir" no submit final). Já no `FooterCodeSiteDefinitivoCompleto.js` (modal/footer), o e-mail no submit final usa **só** `validarEmailLocal` — SafetyMails ali é chamado só no `change` do campo, como aviso, **nunca bloqueia**. O site novo replica o comportamento do footer/modal (SafetyMails só como aviso best-effort, nunca bloqueia) nos dois pontos de captura (`LeadForm`/`ContactLeadModal`) — decisão deliberada de manter uma única filosofia "nunca bloqueia por falha de API externa", já que o SafetyMails está confirmado fora do ar (ver "Achado 2026-07-13" abaixo).
+  - **Achado 2026-07-14, importante**: no formulário principal (`webflow_injection_limpo.js`), a resposta do SafetyMails **participa da validação bloqueante** (`ok: false` se `StatusEmail !== 'VALIDO'`, contribuindo para o `SweetAlert` de "Corrigir/Prosseguir" no submit final). Já no `FooterCodeSiteDefinitivoCompleto.js` (modal/footer), o e-mail no submit final usa **só** `validarEmailLocal` — SafetyMails ali é chamado só no `change` do campo, como aviso, **nunca bloqueia**. O site novo replica o comportamento do footer/modal (SafetyMails só como aviso best-effort, nunca bloqueia) nos dois pontos de captura (`LeadForm`/`ContactLeadModal`) — decisão deliberada de manter uma única filosofia "nunca bloqueia por falha de API externa".
+  - **Regra 2026-10-22**: com a API de volta, o aviso soft só dispara quando `Status === "INVALIDO"`. `VALIDO` e `INCERTO` passam sem aviso (caixas catch-all / ausentes no MX costumam vir como `INCERTO`).
 - No submit final, se algum campo tiver erro: `SweetAlert` com **"Corrigir"** (foca o campo, bloqueia envio) vs. **"Prosseguir assim mesmo"** (envia o lead sem cotação automatizada).
 
 ---
@@ -67,7 +68,13 @@ Todas as rotas reaproveitam `checkRateLimit`/`hashIp` de `lib/leads/security.ts`
 
 **Achado 2026-07-13 (testado com credenciais reais):**
 - **APILayer**: funciona — resposta real confirmada (`valid: true`, `carrier`, `line_type`).
-- **SafetyMails**: as 2 variantes conhecidas (GET+base64 do formulário principal; POST+HMAC do FooterCode) **não respondem** — uma retorna HTTP 400 `"Função descontinuada - Procure o Suporte"`, a outra tem erro de DNS (`ENOTFOUND {ticket}.safetymails.com`), testado com o ticket de DEV e também o de PRODUÇÃO. Esse problema já está documentado como não resolvido no próprio projeto legado (`INVESTIGACAO_ERRO_403_SAFETYMAILS.md`, `ANALISE_COMPARATIVA_SAFETYMAILS.md`) — não é específico do site novo. Implementado mesmo assim (decisão do cliente, 2026-07-13): a chamada é tentada de verdade, mas **nunca bloqueia** o usuário se falhar (mesma filosofia de "falha aberta" do `validateEmail` legado).
+- **SafetyMails (na época)**: GET+base64 e POST+HMAC não respondiam (função descontinuada / DNS). Documentado no legado (`INVESTIGACAO_ERRO_403_SAFETYMAILS.md`, `ANALISE_COMPARATIVA_SAFETYMAILS.md`).
+
+**Atualização 2026-10-22 (SafetyMails reativado):**
+- Assinatura e DNS do ticket OK; origens `imediatoseguros` / `www` cadastradas.
+- Proxy envia `Referer` + `Origin` = `https://imediatoseguros.com.br/` (sem isso a API responde 403 "Origem diferente").
+- Campo da resposta: `Status` (`VALIDO` | `INCERTO` | `INVALIDO`); fallback a `StatusEmail` se existir.
+- Soft-warn só se `Status === "INVALIDO"`; `INCERTO`/`VALIDO`/falha de rede/HTTP não-OK → `ok: true` (falha aberta).
 
 ### Fase C — Captura em 2 fases no backend (`/api/lead`)
 - `LeadRecord.stage: "initial" | "complete"` + `espocrmLeadId`/`espocrmOpportunityId` (`lib/leads/types.ts`).
@@ -121,7 +128,7 @@ Todas as rotas reaproveitam `checkRateLimit`/`hashIp` de `lib/leads/security.ts`
 Todas server-only (`lib/env.ts`), nunca expostas via `publicEnv`.
 
 ## Riscos e pontos abertos
-- SafetyMails parece genuinamente fora do ar (achado documentado, não específico deste site) — a implementação está pronta para funcionar automaticamente se o vendor resolver o problema (ou se novas credenciais forem obtidas), sem precisar de outro deploy.
+- SafetyMails (2026-10-22): API ativa de novo; se o vendor voltar a exigir outro header/campo, o proxy cai em falha aberta até ajuste. Credenciais no Vercel (staging primeiro; produção após UAT).
 - Credenciais compartilhadas com o site legado — qualquer rate-limit por excesso de uso afeta os dois sites.
 - ViaCEP/Placa Fipe: sem cache — cada `onBlur` gera uma chamada real. Aceitável no volume esperado; se necessário, um cache simples por valor normalizado pode ser adicionado depois.
 - `/tmp` na Vercel (armazenamento local do `LeadStore`) não é compartilhado entre instâncias — a atualização por `leadId` tem um fallback por `dedupeKey` (telefone+ramo) para mitigar, mas na pior hipótese (nenhum dos dois encontrado) o comportamento degrada graciosamente para "criar um novo lead completo", nunca falha.
