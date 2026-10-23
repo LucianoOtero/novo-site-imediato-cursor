@@ -32,7 +32,7 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 - Validação de e-mail (`lib/validation/email-safetymails.ts`): a API do SafetyMails voltou; o proxy passa a enviar `Referer`/`Origin` do domínio cadastrado e a ler o campo `Status`. Soft-warn só quando `Status === "INVALIDO"` (`VALIDO`/`INCERTO` e falha de rede seguem sem aviso).
 
 ### Ops
-- Credenciais `SAFETY_TICKET` / `SAFETY_API_KEY` atualizadas no Vercel staging/preview após reativação da assinatura; produção só depois do UAT no staging.
+- Credenciais `SAFETY_TICKET` / `SAFETY_API_KEY` atualizadas no Vercel (preview e produção) após reativação da assinatura.
 
 ---
 
