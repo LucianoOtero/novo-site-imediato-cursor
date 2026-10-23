@@ -20,6 +20,7 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ### Ops
 - RPA (`imediatoseguros-rpa-playwright`, [PR #3](https://github.com/LucianoOtero/imediatoseguros-rpa-playwright/pull/3)): hotfix em produção em 23/10 — login do Tô Segurado verificado, erro 9005 no lugar do sucesso com R$ 100,00. Causa: senha da conta da corretora recusada desde 21/10. Nova conta `rpa@imediatoseguros.com.br` (Zoho + Tô Segurado) no `parametros.json` do servidor em 23/10 (~12h15); preço real de volta em produção e nos casos 1 e 6 repetidos no preview `bfcaa54`.
+- GTM: `scripts/google-ops/gtm-apply-quote-choice-step.mjs` põe o parâmetro `step` na tag `[NovoSite] GA4 - form_quote_choice`. Aplicado no Default Workspace em 23/10; publicação junto com o site.
 
 ### Docs
 - [`UAT_ETAPA3_CARTAO_asof-2026-10-19.md`](UAT_ETAPA3_CARTAO_asof-2026-10-19.md): rodada de 2026-10-23 no preview `e691d0f`. Matriz completa, SafetyMails e smoke OK no site; o RPA devolveu "R$ 100,00" como preço dos planos (parser de reserva no repositório do RPA) e falha na Tela 9 com e-mail que tem "+". Aceite pendente.

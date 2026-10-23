@@ -148,9 +148,13 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
 - Safari do iPhone: casos 1 e 2 no preview.
 - **Aceite:** pendente. O achado 1 está resolvido (RPA com preço real desde 23/10, ~12h15).
 
-## Antes de Production (depois de 26/10)
+## Antes de Production (domingo, 25/10)
 
-- Conferir no GTM se a tag GA4 de `form_quote_choice` repassa o parâmetro `step` (3 ou 4).
+- ~~Conferir no GTM se a tag GA4 de `form_quote_choice` repassa o parâmetro `step`~~ — não repassava (versão Live
+  51 manda só `choice` e `ramo`). Em 23/10 o parâmetro `step` (`{{[NovoSite] DLV - step}}`) entrou na tag no
+  Default Workspace, sem publicar; a dimensão GA4 "Form Step" (`step`, evento) já existia. Publicar junto com o
+  site: `node gtm-apply-quote-choice-step.mjs --publish` em `scripts/google-ops` (aborta se houver outras mudanças
+  pendentes no workspace).
 - PR para `main` com aprovação, smoke em Production (um lead pela saída do consultor e um pelo cálculo, telefone de
   teste, Espo produção e Octadesk) e atualização de CHANGELOG/VERSIONING/status.
 
