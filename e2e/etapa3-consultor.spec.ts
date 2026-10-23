@@ -230,30 +230,25 @@ test("consultor na etapa 4 também sai depois do 'complete'", async ({ page }) =
   expect(escolhas).toEqual([expect.objectContaining({ choice: "consultor", step: 4 })]);
 });
 
-test("plano do RPA com 'N/A' não vira cartão", async ({ page }) => {
-  const posts = await prepararPagina(page);
+type PlanoRpaMock = { valor: string; parcelamento?: string; valor_franquia?: string };
+
+function progressoRpaSucesso(recomendado: PlanoRpaMock, alternativo: PlanoRpaMock) {
+  return {
+    status: "success",
+    etapa_atual: 16,
+    fase_atual: 16,
+    mensagem: "Concluído",
+    resultados_finais: {
+      dados: { dados_finais: { plano_recomendado: recomendado, plano_alternativo: alternativo } },
+    },
+  };
+}
+
+/** Etapas 3 e 4 até "Quero calcular agora", com o RPA respondendo `progress` em toda consulta. */
+async function calcularComRpa(page: Page, posts: LeadPost[], progress: Record<string, unknown>) {
   const json = (body: unknown) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   await page.route("**/api/rpa/start", (route) => route.fulfill(json({ success: true, session_id: "e2e-rpa" })));
-  await page.route("**/api/rpa/progress/**", (route) =>
-    route.fulfill(
-      json({
-        progress: {
-          status: "success",
-          etapa_atual: 16,
-          fase_atual: 16,
-          mensagem: "Concluído",
-          resultados_finais: {
-            dados: {
-              dados_finais: {
-                plano_recomendado: { valor: "R$ 2.929,61", parcelamento: "anual", valor_franquia: "R$ 2.143,00" },
-                plano_alternativo: { valor: "N/A", parcelamento: "N/A", valor_franquia: "N/A" },
-              },
-            },
-          },
-        },
-      })
-    )
-  );
+  await page.route("**/api/rpa/progress/**", (route) => route.fulfill(json({ progress })));
   await irParaEtapa3(page, posts);
 
   await page.locator("#placa").fill("DBO7B72");
@@ -262,11 +257,119 @@ test("plano do RPA com 'N/A' não vira cartão", async ({ page }) => {
   await page.locator("#cpf").fill(CPF_VALIDO);
   await page.getByRole("button", { name: CTA_CALCULAR }).click();
   await page.getByRole("button", { name: "Quero calcular agora" }).click({ timeout: 30_000 });
+}
+
+async function rpaResultadoEnviado(posts: LeadPost[]) {
+  await expect.poll(() => posts.some((p) => p.stage === "rpa_result"), { timeout: 15_000 }).toBe(true);
+  const enviados = posts.filter((p) => p.stage === "rpa_result");
+  expect(enviados).toHaveLength(1);
+  return enviados[0].rpaResultado as Record<string, unknown>;
+}
+
+async function esperarCalculoManual(page: Page, posts: LeadPost[]) {
+  await expect(page.getByRole("heading", { name: "Vamos calcular manualmente para você" })).toBeVisible({
+    timeout: 60_000,
+  });
+  await expect(page.locator("[data-oferta-id]")).toHaveCount(0);
+  await expect(page.getByText("100,00")).toHaveCount(0);
+  const rpaResultado = await rpaResultadoEnviado(posts);
+  // Sem valor no payload: a Cloud Function cria a tarefa de cálculo manual e manda `calculo_manual` no Octadesk.
+  expect(rpaResultado.status).toBe("falha");
+  expect(rpaResultado.valorRecomendado ?? null).toBeNull();
+  expect(rpaResultado.valorAlternativo ?? null).toBeNull();
+}
+
+test("plano do RPA com 'N/A' não vira cartão", async ({ page }) => {
+  const posts = await prepararPagina(page);
+  await calcularComRpa(
+    page,
+    posts,
+    progressoRpaSucesso(
+      { valor: "R$ 2.929,61", parcelamento: "anual", valor_franquia: "R$ 2.143,00" },
+      { valor: "N/A", parcelamento: "N/A", valor_franquia: "N/A" }
+    )
+  );
 
   await expect(page.getByRole("heading", { name: "Encontramos uma opção para você" })).toBeVisible({ timeout: 60_000 });
   await expect(page.locator("[data-oferta-id]")).toHaveCount(1);
   await expect(page.locator('[data-oferta-id="rpa-recomendado"]')).toBeVisible();
   await expect(page.getByText("N/A")).toHaveCount(0);
+  const rpaResultado = await rpaResultadoEnviado(posts);
+  expect(rpaResultado.status).toBe("sucesso");
+  expect(rpaResultado.valorRecomendado).toBe("R$ 2.929,61");
+});
+
+test("preço genérico R$ 100,00 nos dois planos vai para o cálculo manual", async ({ page }) => {
+  const posts = await prepararPagina(page);
+  // Formato exato que o RPA devolveu em produção de 21 a 23/10/2026 (conta do Tô Segurado sem login).
+  await calcularComRpa(
+    page,
+    posts,
+    progressoRpaSucesso(
+      { valor: "R$100,00", parcelamento: "anual", valor_franquia: "R$\u00a05.268,32" },
+      { valor: "R$100,00", parcelamento: "anual", valor_franquia: "R$\u00a04.994,19" }
+    )
+  );
+  await esperarCalculoManual(page, posts);
+});
+
+test("um plano com R$ 100,00 invalida o resultado inteiro", async ({ page }) => {
+  const posts = await prepararPagina(page);
+  await calcularComRpa(
+    page,
+    posts,
+    progressoRpaSucesso(
+      { valor: "R$ 100,00", parcelamento: "anual", valor_franquia: "R$ 5.268,32" },
+      { valor: "R$ 4.100,00", parcelamento: "anual", valor_franquia: "R$ 4.994,19" }
+    )
+  );
+  await esperarCalculoManual(page, posts);
+});
+
+test("preços abaixo de R$ 300,00 vão para o cálculo manual", async ({ page }) => {
+  const posts = await prepararPagina(page);
+  await calcularComRpa(
+    page,
+    posts,
+    progressoRpaSucesso(
+      { valor: "R$ 250,00", parcelamento: "anual", valor_franquia: "R$ 5.268,32" },
+      { valor: "R$ 120,50", parcelamento: "anual", valor_franquia: "R$ 4.994,19" }
+    )
+  );
+  await esperarCalculoManual(page, posts);
+});
+
+test("erro 9005 do RPA (login do Tô Segurado recusado) vai para o cálculo manual", async ({ page }) => {
+  const posts = await prepararPagina(page);
+  // Formato observado no smoke de produção de 23/10/2026 depois do hotfix do RPA.
+  await calcularComRpa(page, posts, {
+    status: "error",
+    etapa_atual: 15,
+    mensagem: "RPA error",
+    resultados_finais: { rpa_finalizado: true, dados: { status: "error", dados_finais: [] } },
+  });
+  await esperarCalculoManual(page, posts);
+});
+
+test("dois preços reais viram dois cartões e o resultado vai como sucesso", async ({ page }) => {
+  const posts = await prepararPagina(page);
+  await calcularComRpa(
+    page,
+    posts,
+    progressoRpaSucesso(
+      { valor: "R$ 3.896,07", parcelamento: "anual", valor_franquia: "R$ 5.268,32" },
+      { valor: "R$4.100,00", parcelamento: "anual", valor_franquia: "R$ 4.994,19" }
+    )
+  );
+
+  await expect(page.getByRole("heading", { name: "Encontramos 2 opções para você" })).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator("[data-oferta-id]")).toHaveCount(2);
+  await expect(page.locator('[data-oferta-id="rpa-recomendado"]')).toContainText("3.896,07");
+  await expect(page.locator('[data-oferta-id="rpa-alternativo"]')).toContainText("4.100,00");
+  const rpaResultado = await rpaResultadoEnviado(posts);
+  expect(rpaResultado.status).toBe("sucesso");
+  expect(rpaResultado.valorRecomendado).toBe("R$ 3.896,07");
+  expect(rpaResultado.valorAlternativo).toBe("R$4.100,00");
 });
 
 test("'Voltar' da etapa 3 mantém nome e e-mail", async ({ page }) => {

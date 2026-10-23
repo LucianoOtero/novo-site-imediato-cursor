@@ -7,7 +7,7 @@
  * `components/quote/OfertaCard.tsx`.
  */
 
-import type { RpaPlano } from "@/lib/rpa-calculation";
+import type { RpaFinalResult, RpaPlano } from "@/lib/rpa-calculation";
 import type { DefinicaoPlano } from "@/lib/suhai/planos";
 import type { Oferta } from "@/lib/suhai/types";
 
@@ -98,9 +98,45 @@ function texto(valor: unknown): string | undefined {
   return limpo && !SEM_VALOR_RPA.test(limpo) ? limpo : undefined;
 }
 
+/**
+ * Sem o login da corretora, o Tô Segurado mostra "R$ 100,00" no lugar do
+ * prêmio anual — e o RPA já devolveu isso como sucesso (21–23/10/2026).
+ */
+const PRECO_GENERICO_CENTAVOS = 10000;
+const PRECO_MINIMO_PLAUSIVEL_CENTAVOS = 30000;
+
+/** "R$ 3.896,07" / "R$100,00" → centavos; `null` quando não é um preço. */
+export function rpaPrecoEmCentavos(valor: string | undefined): number | null {
+  const match = texto(valor)
+    ?.replace(/\u00a0/g, " ")
+    .match(/^(?:R\$)?\s*(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?$/);
+  if (!match) return null;
+  return Number(match[1].replace(/\./g, "")) * 100 + Number((match[2] ?? "0").padEnd(2, "0"));
+}
+
+function rpaPrecoGenerico(valor: string | undefined): boolean {
+  return rpaPrecoEmCentavos(valor) === PRECO_GENERICO_CENTAVOS;
+}
+
+/** Prêmio anual que pode ir para o cliente: nem o genérico, nem abaixo de R$ 300,00. */
+export function rpaPrecoPlausivel(valor: string | undefined): boolean {
+  const centavos = rpaPrecoEmCentavos(valor);
+  return centavos !== null && centavos !== PRECO_GENERICO_CENTAVOS && centavos >= PRECO_MINIMO_PLAUSIVEL_CENTAVOS;
+}
+
 /** Plano com preço de verdade — sem isso o cartão não aparece nem conta como opção. */
 export function rpaPlanoTemPreco(plano: RpaPlano | undefined): plano is RpaPlano {
-  return /\d/.test(texto(plano?.valor) ?? "");
+  return rpaPrecoPlausivel(plano?.valor);
+}
+
+/**
+ * Resultado que pode ser exibido como "cálculo concluído". Um único plano com o
+ * preço genérico invalida o resultado inteiro: a tela do Tô Segurado estava sem login.
+ */
+export function rpaResultadoConfiavel(result: RpaFinalResult | undefined): boolean {
+  const planos = [result?.recomendado, result?.alternativo];
+  if (planos.some((plano) => rpaPrecoGenerico(plano?.valor))) return false;
+  return planos.some((plano) => rpaPlanoTemPreco(plano));
 }
 
 export function fromRpaPlano(variant: "recomendado" | "alternativo", plano: RpaPlano): OfertaExibicao {

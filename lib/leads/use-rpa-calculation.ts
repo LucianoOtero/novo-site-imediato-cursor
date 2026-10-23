@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { rpaResultadoConfiavel } from "@/lib/quote/oferta";
 import { fetchRpaProgress, startRpaSession, type RpaProgress } from "@/lib/rpa";
 import {
   isRpaErrorStatus,
@@ -130,6 +131,11 @@ export function useRpaCalculation() {
       const { title, subtitle } = rpaPhaseLabel(currentStep);
       const hasFinalData = Boolean(progress.dados_extra || progress.resultados_finais || progress.timeline);
       const result = hasFinalData ? parseRpaFinalResult(progress) : undefined;
+
+      if (success && !rpaResultadoConfiavel(result)) {
+        finishWithError(RPA_MANUAL_QUOTE_MESSAGE);
+        return;
+      }
 
       setState((prev) => ({
         ...prev,
