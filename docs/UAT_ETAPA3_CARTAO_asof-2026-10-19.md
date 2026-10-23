@@ -65,6 +65,61 @@ Capturas (fora do repositório): `C:\Users\Luciano\wt\_shots-etapa3\uat\` — `c
 `check:hardcode` acusa só arquivos que este branch não alterou (`lib/suhai-host.ts`, `lib/contact/*`, `lib/env.ts`),
 igual ao `main`.
 
+## Rodada de 2026-10-23 (antes do aceite)
+
+Preview no HEAD `e691d0f` (deploy `dpl_9HxmM56`, Ready), com o SafetyMails reativado. Mesma matriz, mesma
+identidade de teste, mesma conferência (tela + `dataLayer`, RTDB, Espo DEV) e limpeza entre os casos e ao final.
+Capturas em `C:\Users\Luciano\wt\_shots-etapa3\uat\2026-10-23\`.
+
+Verificação local: `typecheck` OK, `lint` sem erros (2 avisos antigos), `build` OK, `e2e/etapa3-consultor.spec.ts`
+10/10, teste unitário do `sold-sync` OK. `check:hardcode` acusa 8 trechos em arquivos idênticos ao `main`.
+
+| # | Resultado | Espo DEV |
+|---|---|---|
+| 1 | **Fluxo OK, preço errado.** 2 cartões, coberturas, "Quero este plano" abre `wa.me` da corretora, 390 px sem rolagem lateral. O preço veio **R$ 100,00 /ano** nos dois planos (19/10: R$ 2.574,04 e R$ 2.689,48, mesmas franquias). O próprio RPA devolveu `valor: "R$100,00"` (ver "Achados") | "Aguardando cálculo" → "Cálculo concluído", "Aguardar cálculo" |
+| 2 | OK — `/obrigado`, `form_quote_choice` step 3 consultor + `generate_lead`, sem `form_abandon` | "Cálculo manual pendente", "Receber depois", 3 Notes |
+| 3 | OK — "CPF inválido" inline, `/obrigado` | idem, 3 Notes |
+| 4 | OK — "Informe a placa/o CEP/o CPF para calcular", foco em cada campo na ordem | — |
+| 5 | OK — diálogo "CPF parece inválido", "Corrigir" foca o CPF, saída pelo diálogo vai a `/obrigado` | "Cálculo manual pendente", "Receber depois", 3 Notes |
+| 6 | OK — "Não encontramos essa placa", etapa 4 com cálculo desabilitado e aviso âmbar, consultor (`form_quote_choice` step 4) | "Cálculo manual pendente", "Receber depois", 3 Notes (na repetição; ver "Achados") |
+| 7 | Caminhão OK — aviso próprio e cálculo desligado → consultor. Moto (EJP8H57, KASINSKI MIRAGE 250) — cálculo liberado; o RPA terminou em "RPA error" e a tela foi para o cálculo manual | caminhão e moto "Cálculo manual pendente" (moto com 4 Notes) |
+| 8 | OK — coberto por dois erros reais do RPA nesta rodada (FXG1E20 e moto): "Vamos calcular manualmente para você" + WhatsApp, `rpa_wait_end` `error`, `octa_calculo_manual_sent` | "Cálculo manual pendente", "Aguardar cálculo", 4 Notes |
+| 9 | OK — nome, e-mail, placa e CEP mantidos | — |
+| 10 | OK — 3 cartões, "Mais escolhido" no Completo; seletor 200 km / 500 km / sem assistência troca os preços (R$ 100,59 / 106,59 / 92,59 no Essencial) | — |
+
+SafetyMails no blur do e-mail (etapa 2): `teste@dominio-que-nao-existe.invalid` mostra o aviso e deixa avançar;
+`adm@` e `contato@imediatoseguros.com.br` e os e-mails dos casos não mostram aviso.
+
+Smoke: home, páginas de ramo, `/cotacao`, `/cotacao-suhai`, `/marca-suhai`, `/obrigado`, `/contato` e `/sobre` com 200 e
+sem erro de cliente; 404 para rota inexistente; banner de staging e `noindex`; rodapé "CNPJ 33.216.054/0001-48 ·
+SUSEP 252174522"; WhatsApp flutuante para a corretora.
+
+### Achados
+
+1. **Preço do RPA (bloqueia o caminho "Calcular agora").** O backend do RPA devolveu `R$100,00` como valor dos dois
+   planos. No repositório `imediatoseguros-rpa-playwright`, `executar_rpa_imediato_playwright.py` (~linha 5700), o
+   parser de reserva atribui ao preço qualquer "R$ 100,00" encontrado no texto da tabela (valores de teste fixos no
+   código); o caminho principal de captura não pegou o preço desta vez. O site só exibe o que recebe. O mesmo RPA
+   atende o site em produção.
+2. **E-mail com "+" quebra o RPA na Tela 9** ("Preenchimento dos dados pessoais"). Duas tentativas com
+   `lrotero+uat01@gmail.com` falharam ali; com e-mail sem "+" o cálculo passou. O site trata como erro (cálculo
+   manual). Limitação do RPA, já existente.
+3. **E-mail de teste da rodada de 19/10.** `lroterouatN@gmail.com` não existe; com o SafetyMails ativo ele recebe o
+   aviso (correto). Esta rodada usou `lrotero+uatNN@gmail.com` e, nos casos com RPA, e-mail sem "+".
+4. **`leadId` reaproveitado (FileLeadStore).** Na primeira execução do caso 6 o servidor reaproveitou o `leadId` do
+   caso 1 (mesmo telefone, mesma instância) e o Espo ficou com "Aguardar cálculo" e 4 Notes. Repetido com o mesmo
+   roteiro, deu "Receber depois" e 3 Notes. É a observação "Store de leads por instância" abaixo; para cliente real,
+   vale para quem volta em menos de 24 h. Na cotação Suhai o mesmo efeito fez `/api/suhai/perfil` responder 403
+   (consulta do perfil já usada pelo `leadId`); o formulário pediu nascimento, sexo e estado civil e o preço saiu.
+
+### Pendente com o Luciano
+
+- Octadesk no celular de teste: mensagens desta rodada entre 09h20 e 09h50 (horário de Brasília) — inicial, "cálculo
+  completo depois" (casos 2, 3, 5, 6 e caminhão), "cálculo pronto" (caso 1) e "cálculo manual" (erros do RPA).
+- Safari do iPhone: casos 1 e 2 no preview.
+- **Aceite:** pendente. Decidir se a Fase A vai a Production com o achado 1 aberto (o caminho do consultor não
+  depende do RPA) ou se espera a correção do RPA.
+
 ## Antes de Production (depois de 26/10)
 
 - Conferir no GTM se a tag GA4 de `form_quote_choice` repassa o parâmetro `step` (3 ou 4).
