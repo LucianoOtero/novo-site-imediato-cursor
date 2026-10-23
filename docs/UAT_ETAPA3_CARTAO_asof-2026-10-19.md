@@ -119,7 +119,7 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
 
    | # | Resultado | Espo DEV |
    |---|---|---|
-   | 1 | OK — RPA real (FXG1E20), 2 cartões com **R$ 1.918,69** e **R$ 2.477,78 /ano**, franquias R$ 4.154,00 e R$ 6.561,82, coberturas, "Quero este plano" → `wa.me` da corretora; `rpa_wait_end` `success` | "Cálculo concluído", "Aguardar cálculo", 2 Notes |
+   | 1 | OK — RPA real (FXG1E20), 2 cartões com **R$ 1.918,69** e **R$ 2.477,78 /ano**, franquias R$ 4.154,00 e R$ 6.561,82, coberturas, "Quero este plano" → `wa.me` da corretora; `rpa_wait_end` `success`; Octadesk "cálculo pronto" recebido (12h29) | "Cálculo concluído", "Aguardar cálculo", 2 Notes |
    | 6 | OK — "Não encontramos essa placa", etapa 4 com "Quero calcular agora" desabilitado e aviso; consultor → `/obrigado`, `form_quote_choice` step 4, último POST `consultant_requested` | "Cálculo manual pendente", "Receber depois", 3 Notes |
 
    **Moto na cópia isolada do RPA (23/10, ~13h40–14h10):** TKH6F60 (YAMAHA XTZ 250 LANDER 2024), 3 execuções. O
@@ -142,7 +142,7 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
 
 - ~~Octadesk no celular de teste~~ — **OK** (Luciano, 23/10): mensagens recebidas. A do caso 1 ("cálculo pronto")
   levou o R$ 100,00 do achado 1; com a correção do site, esse resultado passa a gerar "cálculo manual".
-- Octadesk da repetição do caso 1 (23/10, ~12h29): conferir se o "cálculo pronto" chegou com R$ 1.918,69.
+- ~~Octadesk da repetição do caso 1~~ — **OK** (Luciano, 23/10): "cálculo pronto" recebido às 12h29.
 - ~~Moto no RPA com a conta nova~~ — feito (TKH6F60): login OK, Tô Segurado sem resultado para o modelo → cálculo
   manual. Uma moto com cotação automática confirmaria o caminho de preço real para moto.
 - Safari do iPhone: casos 1 e 2 no preview.
