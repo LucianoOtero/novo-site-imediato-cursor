@@ -19,7 +19,7 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 - Cálculo pelo RPA (`lib/quote/oferta.ts`, `lib/leads/use-rpa-calculation.ts`): sucesso sem preço plausível — "R$ 100,00" em qualquer plano (o Tô Segurado sem login da corretora) ou nenhum prêmio ≥ R$ 300,00 — vai para "Vamos calcular manualmente"; o `rpa_result` sai como `falha`, sem valores (Espo "Cálculo manual pendente", Octadesk `calculo_manual`). E2E com 6 cenários em `e2e/etapa3-consultor.spec.ts`.
 
 ### Ops
-- RPA (`imediatoseguros-rpa-playwright`, [PR #3](https://github.com/LucianoOtero/imediatoseguros-rpa-playwright/pull/3)): hotfix em produção em 23/10 — login do Tô Segurado verificado, erro 9005 no lugar do sucesso com R$ 100,00. Causa: senha da conta da corretora recusada desde 21/10; nova conta `rpa@imediatoseguros.com.br` pendente.
+- RPA (`imediatoseguros-rpa-playwright`, [PR #3](https://github.com/LucianoOtero/imediatoseguros-rpa-playwright/pull/3)): hotfix em produção em 23/10 — login do Tô Segurado verificado, erro 9005 no lugar do sucesso com R$ 100,00. Causa: senha da conta da corretora recusada desde 21/10. Nova conta `rpa@imediatoseguros.com.br` (Zoho + Tô Segurado) no `parametros.json` do servidor em 23/10 (~12h15); preço real de volta em produção e nos casos 1 e 6 repetidos no preview `bfcaa54`.
 
 ### Docs
 - [`UAT_ETAPA3_CARTAO_asof-2026-10-19.md`](UAT_ETAPA3_CARTAO_asof-2026-10-19.md): rodada de 2026-10-23 no preview `e691d0f`. Matriz completa, SafetyMails e smoke OK no site; o RPA devolveu "R$ 100,00" como preço dos planos (parser de reserva no repositório do RPA) e falha na Tela 9 com e-mail que tem "+". Aceite pendente.

@@ -110,9 +110,17 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
    - **Site (`cfe9867`):** sucesso do RPA sem preço plausível (R$ 100,00 em qualquer plano, ou nenhum ≥ R$ 300,00)
      vai para "Vamos calcular manualmente" e o `rpa_result` sai como `falha`, sem valores. 6 cenários no
      `e2e/etapa3-consultor.spec.ts` (15/15 passam; sem a correção, o do R$ 100,00 falha).
-   - **Falta:** nova conta `rpa@imediatoseguros.com.br` (Zoho + Tô Segurado, com o Luciano) no `parametros.json` do
-     servidor; então teste positivo real no RPA e repetição dos casos 1 e 6 no preview. Até lá, toda cotação pelo
-     RPA (site legado e preview) vai para o cálculo manual.
+   - **Resolvido em 23/10 (~12h15):** nova conta `rpa@imediatoseguros.com.br` (caixa no Zoho e conta no Tô
+     Segurado) no `parametros.json` do servidor, com backup `parametros.json.backup_CRED_20261023_1514`. Login pela
+     API OK; cotação real na cópia isolada e smoke em produção com preço real (FXG1E20: R$ 1.918,69 e R$ 2.477,78
+     /ano). Casos 1 e 6 repetidos no preview (`bfcaa54`), ver abaixo.
+
+   **Repetição em 23/10 (preview `bfcaa54`):**
+
+   | # | Resultado | Espo DEV |
+   |---|---|---|
+   | 1 | OK — RPA real (FXG1E20), 2 cartões com **R$ 1.918,69** e **R$ 2.477,78 /ano**, franquias R$ 4.154,00 e R$ 6.561,82, coberturas, "Quero este plano" → `wa.me` da corretora; `rpa_wait_end` `success` | "Cálculo concluído", "Aguardar cálculo", 2 Notes |
+   | 6 | OK — "Não encontramos essa placa", etapa 4 com "Quero calcular agora" desabilitado e aviso; consultor → `/obrigado`, `form_quote_choice` step 4, último POST `consultant_requested` | "Cálculo manual pendente", "Receber depois", 3 Notes |
 2. **E-mail com "+" quebra o RPA na Tela 9** ("Preenchimento dos dados pessoais"). Duas tentativas com
    `lrotero+uat01@gmail.com` falharam ali; com e-mail sem "+" o cálculo passou. O site trata como erro (cálculo
    manual). Limitação do RPA, já existente.
@@ -128,9 +136,10 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
 
 - ~~Octadesk no celular de teste~~ — **OK** (Luciano, 23/10): mensagens recebidas. A do caso 1 ("cálculo pronto")
   levou o R$ 100,00 do achado 1; com a correção do site, esse resultado passa a gerar "cálculo manual".
+- Octadesk da repetição do caso 1 (23/10, ~12h29): conferir se o "cálculo pronto" chegou com R$ 1.918,69.
+- Moto no RPA com a conta nova: aguardando a placa (CRLV no celular).
 - Safari do iPhone: casos 1 e 2 no preview.
-- **Aceite:** pendente. Decidir se a Fase A vai a Production com o achado 1 aberto (o caminho do consultor não
-  depende do RPA) ou se espera a correção do RPA.
+- **Aceite:** pendente. O achado 1 está resolvido (RPA com preço real desde 23/10, ~12h15).
 
 ## Antes de Production (depois de 26/10)
 
