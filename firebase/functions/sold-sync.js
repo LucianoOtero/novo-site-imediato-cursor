@@ -22,6 +22,14 @@ const LEGACY_DATABASE_URL =
 const LEGACY_APP_NAME = "leads-imediato-seguros";
 /** Best-effort legado; Espo webhookTimeout default=10s — manter curto. */
 const LEGACY_TIMEOUT_MS = 8000;
+/**
+ * Caminho do gclid com `.indexOn` nas regras do banco. Sem entrada aqui, o
+ * lookup por gclid baixa `leads_backup` inteiro (no legado, ~17 MB por
+ * chamada, cobrado como banda de saída do RTDB).
+ */
+const GCLID_INDEX_PATH = {
+  [LEGACY_PROJECT]: "data/GCLID_FLD",
+};
 
 /** Destinatários de alerta (validation_error, database_error, actionable no_firebase_match, …). */
 const ERROR_EMAIL_TO = [
@@ -541,10 +549,10 @@ function recordMatches(rec, { opportunityId, cLeadId, cGclid }) {
 }
 
 /**
- * Preferência: query indexada por OppId, depois LeadId; gclid via scan
- * (volume baixo — ver docs).
+ * Preferência: query indexada por OppId, depois LeadId; gclid por query
+ * indexada quando `gclidIndexPath` vem, senão via scan.
  */
-async function findMatchingLeadIds(db, keys) {
+async function findMatchingLeadIds(db, keys, { gclidIndexPath = null } = {}) {
   const { opportunityId, cLeadId, cGclid } = keys;
   const found = new Map(); // leadId -> method
 
@@ -572,7 +580,9 @@ async function findMatchingLeadIds(db, keys) {
     await byChild("espocrmLeadId", cLeadId, "espocrmLeadId");
   }
 
-  if (found.size === 0 && cGclid) {
+  if (found.size === 0 && cGclid && gclidIndexPath) {
+    await byChild(gclidIndexPath, String(cGclid), "gclid");
+  } else if (found.size === 0 && cGclid) {
     const snap = await db.ref("leads_backup").get();
     if (snap.exists()) {
       snap.forEach((child) => {
@@ -621,11 +631,15 @@ function withTimeout(promise, ms, label) {
 }
 
 async function applyToDatabase(db, projectId, payload, action) {
-  const matches = await findMatchingLeadIds(db, {
-    opportunityId: payload.opportunityId,
-    cLeadId: payload.cLeadId,
-    cGclid: payload.cGclid,
-  });
+  const matches = await findMatchingLeadIds(
+    db,
+    {
+      opportunityId: payload.opportunityId,
+      cLeadId: payload.cLeadId,
+      cGclid: payload.cGclid,
+    },
+    { gclidIndexPath: GCLID_INDEX_PATH[projectId] || null }
+  );
 
   if (matches.size === 0) {
     return { projectId, updated: [], noop: [], matchCount: 0, reconciled: [] };
@@ -836,6 +850,10 @@ async function notifySoldSyncError({
           port: Number(cfg.port || 465),
           secure: Number(cfg.port || 465) === 465,
           auth: { user: cfg.user, pass: cfg.pass },
+          // Padrão do nodemailer é 2 min de conexão; a CF tem timeout de 120 s.
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 20000,
         });
         await transporter.sendMail({
           from: cfg.from || cfg.user,
@@ -1119,6 +1137,7 @@ module.exports = {
   SOLD_FIELDS,
   SITE_NOVO_PROJECT,
   LEGACY_PROJECT,
+  GCLID_INDEX_PATH,
   ERROR_EMAIL_TO,
   normalizePayload,
   expandRequestItems,

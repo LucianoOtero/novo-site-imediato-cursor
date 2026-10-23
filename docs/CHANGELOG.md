@@ -13,6 +13,20 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Não publicado — 2026-10-23 (rodada de UAT antes do aceite)
+
+### Fixed
+- Cálculo pelo RPA (`lib/quote/oferta.ts`, `lib/leads/use-rpa-calculation.ts`): sucesso sem preço plausível — "R$ 100,00" em qualquer plano (o Tô Segurado sem login da corretora) ou nenhum prêmio ≥ R$ 300,00 — vai para "Vamos calcular manualmente"; o `rpa_result` sai como `falha`, sem valores (Espo "Cálculo manual pendente", Octadesk `calculo_manual`). E2E com 6 cenários em `e2e/etapa3-consultor.spec.ts`.
+
+### Ops
+- RPA (`imediatoseguros-rpa-playwright`, [PR #3](https://github.com/LucianoOtero/imediatoseguros-rpa-playwright/pull/3)): hotfix em produção em 23/10 — login do Tô Segurado verificado, erro 9005 no lugar do sucesso com R$ 100,00. Causa: senha da conta da corretora recusada desde 21/10. Nova conta `rpa@imediatoseguros.com.br` (Zoho + Tô Segurado) no `parametros.json` do servidor em 23/10 (~12h15); preço real de volta em produção e nos casos 1 e 6 repetidos no preview `bfcaa54`.
+- GTM: `scripts/google-ops/gtm-apply-quote-choice-step.mjs` põe o parâmetro `step` na tag `[NovoSite] GA4 - form_quote_choice`. Aplicado no Default Workspace em 23/10; publicação junto com o site.
+
+### Docs
+- [`UAT_ETAPA3_CARTAO_asof-2026-10-19.md`](UAT_ETAPA3_CARTAO_asof-2026-10-19.md): rodada de 2026-10-23 no preview `e691d0f`. Matriz completa, SafetyMails e smoke OK no site; o RPA devolveu "R$ 100,00" como preço dos planos (parser de reserva no repositório do RPA) e falha na Tela 9 com e-mail que tem "+". Aceite pendente.
+
+---
+
 ## Não publicado — 2026-10-22 (SafetyMails reativado)
 
 ### Fixed
@@ -20,6 +34,23 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ### Ops
 - Credenciais `SAFETY_TICKET` / `SAFETY_API_KEY` atualizadas no Vercel (preview e produção) após reativação da assinatura.
+
+---
+
+## Não publicado — 2026-10-20 (custo do RTDB legado no `syncOpportunitySold`)
+
+> **Cuidado até o merge:** a função já está publicada a partir do branch `uat-funil-etapa3` (commit `58963cc`). Não publicar `syncOpportunitySold` (nem todas as funções) a partir do `main` antes do merge, e não sobrescrever as regras do banco legado sem o índice `data/GCLID_FLD`. Detalhes em [`UAT_ETAPA3_CARTAO_asof-2026-10-19.md`](UAT_ETAPA3_CARTAO_asof-2026-10-19.md) ("Cuidado: `syncOpportunitySold`…").
+
+### Fixed
+- `syncOpportunitySold` (publicada em 2026-10-20): o lookup por gclid baixava `leads_backup` inteiro do RTDB legado (~17 MB) a cada webhook do Espo. Desde 2026-09-08 isso gerou ~300 GB/semana de banda de saída, ~92% da conta "Pagamento do Firebase" (R$ 5.233 de R$ 5.660 em 1–20/10). No legado o gclid (`data/GCLID_FLD`) é o único vínculo; agora é query indexada, com `.indexOn` nas regras do banco legado. Site novo segue com o scan ([`ESPO_VENDIDO_FIREBASE_SYNC.md`](ESPO_VENDIDO_FIREBASE_SYNC.md) §4).
+- `syncOpportunitySold`: o e-mail de alerta usava os timeouts padrão do nodemailer (2 min) e segurava a função até o limite de 120 s (~35% das chamadas em 504). Timeouts de 10/10/20 s. O SMTP segue recusando conexões do GCP desde 2026-09-25; os alertas continuam gravados em `sold_sync_errors`.
+
+### Ops (GCP, 2026-10-20)
+- Orçamento "Alerta mensal - Pagamento do Firebase" (R$ 1.000/mês; avisos em 50/90/100% e previsão 100%).
+- Cloud SQL `rpa-logs-db-dev` (projeto `leads-imediato-seguros-dev`) de `db-n1-standard-1` para `db-f1-micro`.
+- RTDB legado (`leads-imediato-seguros`): `leads_backup` com `.read`/`.write` `false`. Estava aberto para leitura e gravação sem login (12.558 leads com dados pessoais). O site antigo está fora do ar e a última gravação de navegador foi em 2026-10-02; `syncOpportunitySold` e as funções Gen1 do legado usam credencial de administrador e não passam pelas regras. Volta: aplicar `rules-legado-antes-fechar-20261020-1352.json` (em `C:\Users\Luciano\wt\_deployed-fn`).
+- Cloud SQL `rpa-logs-db` (projeto `leads-imediato-seguros`) parado (`activationPolicy` `NEVER`), com backup sob demanda de 2026-10-20. Só `add-flyingdonkeys` apontava para ele (última chamada 2026-09-29); os logs do MySQL e de auditoria só mostram atividade interna do Cloud SQL. Volta: `activationPolicy` `ALWAYS` (2 a 5 min). Apagar só depois de 30 dias sem efeito, como decisão separada. `rpa-logs-db-prod` segue ligado: atende os serviços legados que ainda recebem chamadas.
+- Conferido depois das duas mudanças (até 17:35 UTC): `syncOpportunitySold` 19 chamadas, todas 200, sem aviso nem permissão negada; nenhum erro nos serviços Cloud Run e funções do legado; `placa-validate-prod` e `send-email-notification-prod` seguem respondendo 200; cálculo com RPA no staging (telefone de teste) concluído em ~3,5 min, com oportunidade em "Cálculo concluído" no Espo DEV (apagada depois).
 
 ---
 

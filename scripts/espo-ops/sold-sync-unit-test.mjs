@@ -294,6 +294,79 @@ assert(
   "match by leadId when oppId stale"
 );
 
+// --- Lookup por gclid: indexado no legado, scan no site novo ---
+{
+  const registros = {
+    L1: { data: { GCLID_FLD: "gLegado" } },
+    L2: { data: { GCLID_FLD: "outro" } },
+    N1: { data: { utm: { gclid: "gNovo" } } },
+  };
+  function bancoFalso() {
+    const chamadas = [];
+    const snapDe = (entradas) => ({
+      exists: () => entradas.length > 0,
+      forEach: (fn) => entradas.forEach(([key, val]) => fn({ key, val: () => val })),
+    });
+    const db = {
+      ref(caminho) {
+        return {
+          get: async () => {
+            chamadas.push({ caminho, filtro: null });
+            return snapDe(Object.entries(registros));
+          },
+          orderByChild(campo) {
+            return {
+              equalTo(valor) {
+                return {
+                  get: async () => {
+                    chamadas.push({ caminho, filtro: campo });
+                    const partes = campo.split("/");
+                    const entradas = Object.entries(registros).filter(
+                      ([, rec]) => partes.reduce((o, p) => (o == null ? o : o[p]), rec) === valor
+                    );
+                    return snapDe(entradas);
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+    };
+    return { db, chamadas };
+  }
+
+  const legado = bancoFalso();
+  const achadosLegado = await sold.findMatchingLeadIds(
+    legado.db,
+    { opportunityId: "opp1", cLeadId: "lead1", cGclid: "gLegado" },
+    { gclidIndexPath: sold.GCLID_INDEX_PATH[sold.LEGACY_PROJECT] }
+  );
+  assert(
+    achadosLegado.size === 1 && achadosLegado.get("L1") === "gclid",
+    "legado: gclid indexado acha o lead"
+  );
+  assert(
+    legado.chamadas.every((c) => c.filtro !== null),
+    "legado: nunca baixa leads_backup inteiro"
+  );
+  assert(
+    legado.chamadas.some((c) => c.filtro === "data/GCLID_FLD"),
+    "legado: consulta por data/GCLID_FLD"
+  );
+
+  const novo = bancoFalso();
+  const achadosNovo = await sold.findMatchingLeadIds(novo.db, {
+    opportunityId: "opp1",
+    cLeadId: "lead1",
+    cGclid: "gNovo",
+  });
+  assert(
+    achadosNovo.size === 1 && achadosNovo.get("N1") === "gclid",
+    "site novo: scan por gclid inalterado"
+  );
+}
+
 // --- E-mail leigo ---
 {
   const amt = sold.explainSoldSyncErrorPlain({

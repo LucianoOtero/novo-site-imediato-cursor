@@ -170,10 +170,9 @@ async function fillStep(page: Page, id: string, value: string | undefined) {
 }
 
 async function capturarValor(page: Page, label: "Recomendado" | "Alternativo"): Promise<string | null> {
-  // Cabeçalho do cartão: <div ...><span>...{label}</span><span class="font-display ...">{valor}</span></div>
-  const header = page.locator("div.flex.items-center.justify-between", { hasText: label }).first();
-  if ((await header.count()) === 0) return null;
-  const valorSpan = header.locator("span.font-display").first();
+  // `OfertaCard`: <div data-oferta-id="rpa-recomendado"> ... <span data-oferta-preco>{valor}</span>
+  const variant = label === "Recomendado" ? "recomendado" : "alternativo";
+  const valorSpan = page.locator(`[data-oferta-id="rpa-${variant}"] [data-oferta-preco]`).first();
   if ((await valorSpan.count()) === 0) return null;
   const txt = (await valorSpan.textContent())?.trim() ?? "";
   return txt || null;
@@ -259,27 +258,29 @@ for (const caso of manifest.casos) {
     // Passo 1 — DDD + Celular
     await fillStep(page, "ddd", ff.ddd);
     await fillStep(page, "celular", ff.celular);
-    await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Receber cotação" }).click();
 
     // Passo 2 — Nome + E-mail
     await expect(page.locator("#nome")).toBeVisible();
     await fillStep(page, "nome", ff.nome);
     await fillStep(page, "email", ff.email);
-    await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Falta pouco" }).click();
 
-    // Passo 3 — CPF + CEP + Placa
-    await expect(page.locator("#cpf")).toBeVisible();
-    await fillStep(page, "cpf", ff.cpf);
-    await fillStep(page, "cep", ff.cep);
+    // Passo 3 — Placa + CEP + CPF
+    await expect(page.locator("#placa")).toBeVisible();
     await fillStep(page, "placa", ff.placa);
     await page.locator("#placa").blur();
+    await fillStep(page, "cep", ff.cep);
+    await fillStep(page, "cpf", ff.cpf);
     // Aguarda o onBlur da placa (stub) preencher veiculoMarca/Modelo/Ano
     // antes de prosseguir — esses campos entram no payload do RPA.
     await page.waitForTimeout(1000);
-    await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Calcular meu seguro" }).click();
 
-    // Se o diálogo "Corrigir/Prosseguir" aparecer, o site nao chega ao RPA.
-    const dialogProsseguir = page.getByRole("button", { name: "Prosseguir assim mesmo" });
+    // Se o diálogo "Corrigir / consultor" aparecer, o site nao chega ao RPA.
+    const dialogProsseguir = page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Prefiro que um consultor entre em contato" });
     if (await dialogProsseguir.isVisible().catch(() => false)) {
       registrar("bloqueado_site", { detalhe: "Diálogo Corrigir/Prosseguir — não chegou ao passo 4" });
       return;
@@ -300,7 +301,7 @@ for (const caso of manifest.casos) {
     await btnAguardar.click();
 
     // Aguarda desfecho: sucesso (2 cartões) ou cálculo manual.
-    const sucesso = page.getByRole("heading", { name: "Encontramos 2 opções para você" });
+    const sucesso = page.getByRole("heading", { name: /Encontramos (2 opções|uma opção) para você/ });
     const manual = page.getByRole("heading", { name: "Vamos calcular manualmente para você" });
 
     const deadline = Date.now() + 11 * 60 * 1000; // 11 min (polling do site vai até 10)
