@@ -96,11 +96,23 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
 
 ### Achados
 
-1. **Preço do RPA (bloqueia o caminho "Calcular agora").** O backend do RPA devolveu `R$100,00` como valor dos dois
-   planos. No repositório `imediatoseguros-rpa-playwright`, `executar_rpa_imediato_playwright.py` (~linha 5700), o
-   parser de reserva atribui ao preço qualquer "R$ 100,00" encontrado no texto da tabela (valores de teste fixos no
-   código); o caminho principal de captura não pegou o preço desta vez. O site só exibe o que recebe. O mesmo RPA
-   atende o site em produção.
+1. **Preço do RPA (bloqueia o caminho "Calcular agora") — causa achada, contido em 23/10.** O backend do RPA
+   devolveu `R$100,00` como valor dos dois planos.
+   - **Causa:** desde 21/10/2026 ~10h30 (Brasília) o Tô Segurado recusa a senha da conta da corretora ("Email e/ou
+     senha incorreta", visto na cópia isolada do RPA no servidor). Sem login, a Tela 15 mostra R$ 100,00 borrado no
+     lugar do prêmio; o RPA capturava esse valor (primeira linha monetária do cartão) e terminava como sucesso. Em
+     produção foram 19 sessões de 21 a 23/10, nenhuma com preço real (antes de 21/10, todas reais). A hipótese
+     anterior (parser de reserva com valores fixos) não era a origem.
+   - **RPA (hotfix em produção em 23/10, 11h01 e 11h18):** login verificado; senha recusada, modal que não fecha ou
+     preço genérico viram o erro 9005 (cálculo manual) em vez de sucesso; o 9004 deixou de ser tratado como sucesso;
+     valores fixos removidos. [PR #3 do RPA](https://github.com/LucianoOtero/imediatoseguros-rpa-playwright/pull/3),
+     19 testes (`tests_py/`), teste negativo real e smoke em produção com `status: error`.
+   - **Site (`cfe9867`):** sucesso do RPA sem preço plausível (R$ 100,00 em qualquer plano, ou nenhum ≥ R$ 300,00)
+     vai para "Vamos calcular manualmente" e o `rpa_result` sai como `falha`, sem valores. 6 cenários no
+     `e2e/etapa3-consultor.spec.ts` (15/15 passam; sem a correção, o do R$ 100,00 falha).
+   - **Falta:** nova conta `rpa@imediatoseguros.com.br` (Zoho + Tô Segurado, com o Luciano) no `parametros.json` do
+     servidor; então teste positivo real no RPA e repetição dos casos 1 e 6 no preview. Até lá, toda cotação pelo
+     RPA (site legado e preview) vai para o cálculo manual.
 2. **E-mail com "+" quebra o RPA na Tela 9** ("Preenchimento dos dados pessoais"). Duas tentativas com
    `lrotero+uat01@gmail.com` falharam ali; com e-mail sem "+" o cálculo passou. O site trata como erro (cálculo
    manual). Limitação do RPA, já existente.
@@ -114,8 +126,8 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
 
 ### Pendente com o Luciano
 
-- Octadesk no celular de teste: mensagens desta rodada entre 09h20 e 09h50 (horário de Brasília) — inicial, "cálculo
-  completo depois" (casos 2, 3, 5, 6 e caminhão), "cálculo pronto" (caso 1) e "cálculo manual" (erros do RPA).
+- ~~Octadesk no celular de teste~~ — **OK** (Luciano, 23/10): mensagens recebidas. A do caso 1 ("cálculo pronto")
+  levou o R$ 100,00 do achado 1; com a correção do site, esse resultado passa a gerar "cálculo manual".
 - Safari do iPhone: casos 1 e 2 no preview.
 - **Aceite:** pendente. Decidir se a Fase A vai a Production com o achado 1 aberto (o caminho do consultor não
   depende do RPA) ou se espera a correção do RPA.
