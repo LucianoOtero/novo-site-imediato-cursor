@@ -13,6 +13,26 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## [0.2.56] — em UAT (funil v2, Lote 1: telefone em campo único, dedupe durável, Opp reaproveitada)
+
+Em teste em `uat.segurosimediato.com.br` (branch `uat-funil-etapa3`). Resultado em [`UAT_LOTE1_FUNIL_V2.md`](UAT_LOTE1_FUNIL_V2.md). Data e deployment de produção entram aqui no merge.
+
+### Changed
+- Telefone em campo único `(11) 98765-4321` nos quatro formulários (`/cotacao`, modal do WhatsApp, modal do rodapé e proposta Suhai), com `inputmode="tel"`, máscara, colagem com `+55` e autofill sem máscara.
+
+### Added
+- Dedupe durável no site: índice `lead_dedupe/{env}/{sha256(telefoneE164:ramo)}` no RTDB por 24 h; o `leadId` fica na sessão (`imediato_lead:{ramo}:{telefone}`) e o `POST /api/leads` aceita `X-Idempotency-Key` (hash do corpo).
+- `deliverLead`: reaproveita a Opportunity aberta do mesmo telefone e ramo criada em até `oppReuseDays` dias (`opp_dedupe/{env}/{hash}`), com a nota "🔁 Nova jornada do site em DD/MM". Opp em Vendido/Perdido ou mais antiga gera uma nova. Desligado por padrão; no secret `ESPOCRM_API_CONFIG` v6 só o bloco `dev` tem `oppReuseDays: 7`.
+
+### Fixed
+- `LeadForm`: passos 2/3 enviados antes da resposta do contato inicial levavam a um segundo lead. O `initial` entrou na fila de POSTs e o `leadId` é resolvido na hora do envio (`e2e/lead-sessao.spec.ts`).
+- Cache de idempotência de 10 min (era 24 h): o corpo do `initial` se repete entre jornadas do mesmo telefone.
+
+### Docs
+- `docs/suhai-integracao/`: APIs de boleto descontinuadas pela Suhai (24/10); a cobrança só existe depois da apólice emitida.
+
+---
+
 ## [0.2.55] — 2026-10-25 (Fase A: etapa 3 nova, cartão único de oferta, DDD → celular)
 
 Publicado em Production em 25/10 (~08h50) pelo [PR #8](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/8) (merge `bb8287f`, deployment `dpl_EvMWtzBsFyZDtoz3z6DDXBQSi3K4`), depois do aceite do UAT em `uat.segurosimediato.com.br`. Inclui as seções "2026-10-23" abaixo e a etapa 3 com placa, CEP e CPF obrigatórios e o cartão único de oferta ([`UAT_ETAPA3_CARTAO_asof-2026-10-19.md`](UAT_ETAPA3_CARTAO_asof-2026-10-19.md)).
