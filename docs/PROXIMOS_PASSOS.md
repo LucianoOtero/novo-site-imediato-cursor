@@ -19,8 +19,8 @@ O 0.2.55 está em produção. O projeto seguinte tem 6 lotes, cada um com UAT pr
 | Lote | Conteúdo | Situação |
 |---|---|---|
 | 0 | Conferir a atribuição Ads → Espo em produção | **Concluído** em 25/10 ([`FASE5_ROLLOUT_PRODUCAO.md`](FASE5_ROLLOUT_PRODUCAO.md)) |
-| 1 | Telefone em campo único + deduplicação durável (reaproveita a Opp aberta do mesmo celular e ramo por 7 dias) | Em andamento |
-| 2 | Venda ao Google Ads na hora, desligando o CSV noturno do Espo ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md)) | Pendente |
+| 1 | Telefone em campo único + deduplicação durável (reaproveita a Opp aberta do mesmo celular e ramo por 7 dias) | **UAT** desde 25/10. Código na branch `uat-funil-etapa3`; `deliverLead` publicada com `ESPOCRM_API_CONFIG` v6 (`oppReuseDays: 7` só no `dev`; rollback = v5 + deploy). Espo DEV e staging limpos. Produção: ligar `oppReuseDays` no `prod` só depois do smoke |
+| 2 | Venda ao Google Ads na hora, desligando o CSV noturno do Espo ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md)) | Sombra 1/5 ok (lote de 23/10: 4/4). `loginCustomerId` e corte aguardam o "pode" |
 | 3 | Velocidade no celular (linha de base, limpeza do GTM, GTM atrasado em teste) | Pendente |
 | 4 | Cálculo Suhai junto com o RPA, em modo simulado e só no UAT | Pendente |
 | 5 | SEO orgânico com Semrush: monitoramento, conteúdo das páginas de ramo, guias | Pendente |
