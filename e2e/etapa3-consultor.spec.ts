@@ -98,7 +98,8 @@ test("etapa 3 mostra placa, CEP e CPF nessa ordem, sem 'Opcional'", async ({ pag
   const ids = await page.locator("form input[id]").evaluateAll((els) => els.map((el) => el.id));
   expect(ids.filter((id) => ["placa", "cep", "cpf"].includes(id))).toEqual(["placa", "cep", "cpf"]);
   await expect(page.getByText("Opcional", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("Para calcular seu seguro agora, precisamos destes 3 dados.")).toBeVisible();
+  await expect(page.getByText("Para calcular seu seguro agora É FUNDAMENTAL preencher os 3 dados abaixo.")).toBeVisible();
+  await expect(page.getByText("Prefere não informar esses dados agora?")).toBeVisible();
   await expect(page.getByRole("button", { name: CTA_CALCULAR })).toBeVisible();
   await expect(page.getByRole("button", { name: SAIDA_CONSULTOR })).toBeVisible();
 });

@@ -188,7 +188,7 @@ const STEP_LABELS: Record<1 | 2 | 3, string> = {
 const STEP_SUBTITLES: Record<StepNumber, string> = {
   1: "A melhor cotação para o seu seguro virá em seguida",
   2: "Nome e e-mail ajudam as seguradoras a montar seu perfil.",
-  3: "Para calcular seu seguro agora, precisamos destes 3 dados.",
+  3: "Para calcular seu seguro agora É FUNDAMENTAL preencher os 3 dados abaixo.",
   4: "Como você quer receber sua cotação?",
 };
 /** CTAs por passo de coleta (benefício > “Continuar”). */
@@ -199,6 +199,7 @@ const STEP_CTAS: Record<1 | 2 | 3, string> = {
 };
 /** Saída da etapa 3 para quem prefere não informar placa, CEP ou CPF. */
 const CONSULTANT_EXIT_LABEL = "Prefiro que um consultor entre em contato";
+const CONSULTANT_EXIT_PROMPT = "Prefere não informar esses dados agora?";
 const STEP_3_HINTS_BY_RAMO: Record<string, { placa: string; cep: string }> = {
   moto: { placa: "Identifica sua moto na tabela FIPE.", cep: "Onde a moto dorme. Muda o preço do seguro." },
   caminhao: { placa: "Identifica seu caminhão na tabela FIPE.", cep: "Onde o caminhão dorme. Muda o preço do seguro." },
@@ -1548,15 +1549,19 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       </div>
 
       {step === 3 && (
-        <Button
-          type="button"
-          variant="ghost"
-          fullWidth
-          onClick={() => void handleExitToConsultant()}
-          disabled={isBusy}
-        >
-          {CONSULTANT_EXIT_LABEL}
-        </Button>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-center text-xs text-neutral-500">{CONSULTANT_EXIT_PROMPT}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            fullWidth
+            className="h-auto min-h-12 border border-neutral-300 bg-neutral-100 py-2.5 text-center whitespace-normal text-neutral-800 hover:bg-neutral-200"
+            onClick={() => void handleExitToConsultant()}
+            disabled={isBusy}
+          >
+            {CONSULTANT_EXIT_LABEL}
+          </Button>
+        </div>
       )}
 
       {/* Trust microcopy (versão visual v2, 2026-07-19) — sinais de confiança
