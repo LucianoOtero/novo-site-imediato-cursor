@@ -81,7 +81,12 @@ type FileShape = {
 /** `/tmp` é o único diretório gravável no runtime serverless da Vercel (`process.env.VERCEL` é definido automaticamente lá). */
 const DATA_DIR = process.env.VERCEL ? path.join(os.tmpdir(), "imediato-leads") : path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "leads.json");
-const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+/**
+ * Curto de propósito: a chave é o SHA-256 do corpo (lib/leads/post-lead.ts),
+ * igual para o mesmo telefone em jornadas diferentes. Cobre clique duplo e
+ * reenvio do navegador sem responder, horas depois, com um lead antigo.
+ */
+const IDEMPOTENCY_TTL_MS = 10 * 60 * 1000;
 /** Janela de dedupe por telefone+ramo (seção 44.2). */
 export const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
