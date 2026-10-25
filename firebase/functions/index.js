@@ -95,6 +95,7 @@ const contactEmail = require("./contact-email");
 const soldSync = require("./sold-sync");
 const suhai = require("./suhai");
 const espoReserva = require("./espo-reserva");
+const oppDedupe = require("./opp-dedupe");
 
 const DATABASE_URL = "https://imediato-seguros-site-novo-default-rtdb.firebaseio.com";
 
@@ -537,6 +538,28 @@ exports.deliverLead = onValueWritten(
         }
       }
 
+      // Opportunity aberta da jornada recente (opp-dedupe.js). Só a execução
+      // que reservou a criação consulta o índice; falha na consulta cai no
+      // comportamento antigo (Opportunity nova).
+      const oppIndice = oppDedupe.indiceRef(snapshot.ref.root, workingRecord.environment, leadData);
+      let oppReaproveitada = null;
+      if (!espoOppIdAtual && reservado) {
+        try {
+          oppReaproveitada = await oppDedupe.oppAbertaRecente(oppIndice, {
+            dias: oppDedupe.diasDeReuso(espoApiConfig),
+            buscarOpportunity: (id) => espo.getEntity(espoApiConfig, "Opportunity", id),
+          });
+        } catch (error) {
+          logger.warn(`[deliverLead/opp-dedupe] Lead ${leadId}: consulta da Opportunity recente falhou — criando nova.`, error);
+        }
+        if (oppReaproveitada) {
+          espoOppIdAtual = oppReaproveitada.opportunityId;
+          logger.info(
+            `[deliverLead/opp-dedupe] Lead ${leadId}: reaproveitando a Opportunity ${espoOppIdAtual} (etapa ${oppReaproveitada.stage}).`,
+          );
+        }
+      }
+
       let delivered = false;
       let attempt = 0;
       for (attempt = 0; attempt <= RETRY_DELAYS_MS.length && !delivered; attempt += 1) {
@@ -572,6 +595,24 @@ exports.deliverLead = onValueWritten(
       updates.espocrm_last_error = delivered
         ? null
         : `Falha (API direta) após ${attempt} tentativa(s) — falhas acumuladas ${cfAttempts}`;
+
+      if (delivered && updates.espocrmOpportunityId) {
+        try {
+          await oppDedupe.registrar(oppIndice, updates.espocrmOpportunityId);
+        } catch (error) {
+          logger.warn(`[deliverLead/opp-dedupe] Lead ${leadId}: falha ao gravar opp_dedupe (best-effort).`, error);
+        }
+        const reaproveitou = oppReaproveitada && updates.espocrmOpportunityId === oppReaproveitada.opportunityId;
+        if (reaproveitou && workingRecord.espo_note_nova_jornada_sent !== true) {
+          updates.espo_opp_reaproveitada = true;
+          try {
+            await espo.postNote(espoApiConfig, updates.espocrmOpportunityId, oppDedupe.notaNovaJornada(), leadId, "Opportunity");
+            updates.espo_note_nova_jornada_sent = true;
+          } catch (error) {
+            logger.warn(`[deliverLead/opp-dedupe] Lead ${leadId}: nota de nova jornada falhou (best-effort).`, error);
+          }
+        }
+      }
 
       if (delivered && stage === "initial") {
         await maybeSendAdminEmail({

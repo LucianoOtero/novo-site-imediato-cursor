@@ -18,7 +18,9 @@
  * **uma por jornada de conversão** — reaproveitada apenas via
  * `espocrmOpportunityId` do registro RTDB corrente; sem busca por
  * `cLeadId` no CRM. Cada retorno do prospect vira um negócio novo no
- * pipeline (as Opportunities antigas ficam intocadas).
+ * pipeline (as Opportunities antigas ficam intocadas) — exceto quando
+ * `oppReuseDays` está ligado: aí `index.js` passa a Opportunity aberta
+ * da jornada recente como `espoOpportunityId` (ver opp-dedupe.js).
  *
  * Extensões além do proxy (inventário de campos de 2026-07-28):
  * - conjunto COMPLETO de UTM (o proxy só envia cGclid/cUtmSource/
@@ -395,10 +397,15 @@ async function putFields(config, entityType, entityId, fields, leadId) {
   }
 }
 
-/** POST /api/v1/Note — post no Stream do lead (best-effort; 1 tentativa). */
-async function postNote(config, espoLeadId, text, leadId) {
+/** GET de um registro; lança com `status` (404/403 = apagado ou sem permissão). */
+function getEntity(config, entityType, entityId) {
+  return espoRequest(config, "GET", `${entityType}/${entityId}`);
+}
+
+/** POST /api/v1/Note — post no Stream do lead (ou de outra entidade) (best-effort; 1 tentativa). */
+async function postNote(config, parentId, text, leadId, parentType = "Lead") {
   try {
-    await espoRequest(config, "POST", "Note", { type: "Post", parentType: "Lead", parentId: espoLeadId, post: text });
+    await espoRequest(config, "POST", "Note", { type: "Post", parentType, parentId, post: text });
   } catch (error) {
     throw new Error(`Note (lead ${leadId}): ${error.message}`);
   }
@@ -468,6 +475,7 @@ async function createTask(config, espoLeadId, { name, description, dias = 1 }, l
 module.exports = {
   SITE_WEBPAGE,
   deliverStage,
+  getEntity,
   putFields,
   postNote,
   appendDescription,

@@ -438,6 +438,16 @@ Decisão do cliente: prospect recorrente (nova jornada, dias/meses depois) ganha
 - **Teste dev** (`dev.flyingdonkeys.com.br`, gravação direta no RTDB `environment=development`): 2 jornadas mesmo telefone → 1 Lead + **2 Opportunities**; `complete` manteve a Opp da jornada; ID stale forjado → Opp nova (não recuperou a antiga). Purge OK (Espo dev com a chave do bloco `dev` aceita DELETE, diferente do prod).
 - **Ressalvas**: janela de dedupe de 24h do `/api/lead` ≈ mesma jornada; pipeline passa a ter múltiplas Opps por prospect — relatórios não devem assumir `cLeadId` único; fechamento das Opps antigas paradas fica a cargo do processo/automação no CRM. Site legado segue no proxy antigo (atualiza a Opp existente) — comportamentos coexistem na mesma base.
 
+### Opportunity aberta reaproveitada em 7 dias (projeto funil v2, 2026-10-25)
+
+Decisão do cliente: quem volta em até 7 dias com o mesmo telefone e ramo continua na Opportunity anterior, se ela ainda estiver aberta (etapa diferente de `Vendido` e `Perdido`). Implementado em [`firebase/functions/opp-dedupe.js`](../firebase/functions/opp-dedupe.js), chamado por `deliverLead` só na execução que reservou a criação dos IDs:
+
+- **Índice**: RTDB `opp_dedupe/{environment}/{sha256(phoneE164:ramo)}` = `{opportunityId, at}`, regravado a cada entrega bem-sucedida (a janela conta da jornada mais recente). É gravado mesmo com o reaproveitamento desligado, para já haver histórico quando for ligado.
+- **Reaproveitamento**: GET da Opp no Espo; aberta → vira o `espoOpportunityId` da jornada (PUT com os dados novos, sem mexer na etapa/probabilidade) + nota "🔁 Nova jornada do site em DD/MM" no Stream da Opp. Flags no registro RTDB: `espo_opp_reaproveitada`, `espo_note_nova_jornada_sent`. Fechada, apagada (404/403) ou erro na consulta → Opp nova, como antes.
+- **Chave**: `oppReuseDays` no bloco `dev`/`prod` de `ESPOCRM_API_CONFIG`. Ausente ou 0 = desligado. Liga primeiro no `dev` (UAT); `prod` só depois do aceite. Como o secret é lido no deploy, ligar ou desligar em produção exige nova versão do secret + deploy do `deliverLead`.
+- **Rollback**: `oppReuseDays` 0 (ou remover) no bloco `prod` + deploy. As Opps já reaproveitadas continuam válidas.
+- **Site** (mesmo lote): o dedupe de 24 h do `/api/lead` deixou de depender do arquivo em `/tmp` — índice `lead_dedupe/{env}/{hash}` no RTDB, ver `TECHNICAL_SPEC.md` §44.2.
+
 ---
 
 ## Migração para `novo.segurosimediato.com.br` (2026-08-06/07) — CONCLUÍDA
