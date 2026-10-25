@@ -44,3 +44,20 @@ test("contato inicial reaproveita o leadId da sessão depois de recarregar", asy
   expect(segundo.postDataJSON().leadId).toBe("ld_sessao_1");
   expect(segundo.headers()["x-idempotency-key"]).not.toBe(primeiro.headers()["x-idempotency-key"]);
 });
+
+test("passo 2 preenchido antes da resposta do contato inicial leva o leadId", async ({ page }) => {
+  await prepararRotas(page);
+  await page.route("**/api/lead", async (route) => {
+    if (route.request().postDataJSON()?.stage === "initial") await new Promise((resolve) => setTimeout(resolve, 2500));
+    await route.fulfill({ status: 201, contentType: "application/json", body: '{"leadId":"ld_sessao_1"}' });
+  });
+
+  await enviarTelefone(page);
+  await page.locator("#nome").fill("Teste Automatizado");
+  await page.locator("#email").fill("teste.automatizado@example.com");
+  const progresso = page.waitForRequest(
+    (request) => request.url().endsWith("/api/lead") && request.postDataJSON()?.stage === "progress"
+  );
+  await page.getByRole("button", { name: "Falta pouco" }).click();
+  expect((await progresso).postDataJSON().leadId).toBe("ld_sessao_1");
+});

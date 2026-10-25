@@ -629,8 +629,21 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * As tags Ads da etapa 4 (`form_quote_choice`) foram pausadas no GTM
    * v44; o push de `form_quote_choice` continua (GA4/funil).
    */
+  /**
+   * Fila única de POSTs do formulário. O `leadId` é resolvido na hora em
+   * que o envio sai (não quando é enfileirado): passos 2/3 preenchidos
+   * por autofill antes da resposta do "initial" sairiam sem `leadId` e,
+   * no servidor, virariam um segundo lead com Opportunity própria.
+   */
   function queueLeadPost(payload: Record<string, unknown>, options?: { keepalive?: boolean }): Promise<Response> {
-    const request = leadPostQueueRef.current.then(() => postLead(payload, options));
+    const request = leadPostQueueRef.current.then(async () => {
+      const response = await postLead({ ...payload, leadId: payload.leadId ?? initialLeadIdRef.current ?? undefined }, options);
+      if (!initialLeadIdRef.current) {
+        const data = (await response.clone().json().catch(() => null)) as { leadId?: string } | null;
+        if (data?.leadId) initialLeadIdRef.current = data.leadId;
+      }
+      return response;
+    });
     leadPostQueueRef.current = request.catch(() => undefined);
     return request;
   }
@@ -644,7 +657,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
     try {
       const values = getValues();
-      const response = await postLead({
+      await queueLeadPost({
         ramo,
         ddd: values.ddd,
         celular: values.celular,
@@ -652,8 +665,6 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         captureChannel: "lead_form",
         utm: getAttributionUtm(),
       });
-      const data = (await response.json().catch(() => null)) as { leadId?: string } | null;
-      if (data?.leadId) initialLeadIdRef.current = data.leadId;
     } catch (error) {
       console.error("[LeadForm] Falha no contato inicial (não bloqueante):", error);
     }
@@ -960,6 +971,8 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     setStatus("submitting");
     try {
       const payload: LeadInput = { ...data, ramo, utm: getAttributionUtm() };
+      // Espera limitada: um "initial" preso na rede não pode segurar o envio final.
+      await Promise.race([leadPostQueueRef.current, new Promise((resolve) => setTimeout(resolve, 8000))]);
       await onSuccess?.(payload, initialLeadIdRef.current ?? undefined, skipStrictValidation);
       markLeadFormFunnelComplete();
       trackEvent("generate_lead", { ramo, method: "form" });
