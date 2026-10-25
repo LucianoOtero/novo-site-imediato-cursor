@@ -150,6 +150,11 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
 
 ## Antes de Production (domingo, 25/10)
 
+- **UAT sem login (25/10):** `https://uat.segurosimediato.com.br` (CNAME na Cloudflare, DNS only) aponta para o
+  branch `uat-funil-etapa3` no projeto Vercel `imediato-seguros`. Para abrir sem login, a proteção de previews foi
+  desligada (`ssoProtection` era `{"deploymentType":"all_except_custom_domains"}`, agora `null`): todos os previews
+  do projeto estão públicos. Depois do UAT, religar com esse mesmo valor.
+
 - ~~Conferir no GTM se a tag GA4 de `form_quote_choice` repassa o parâmetro `step`~~ — não repassava (versão Live
   51 manda só `choice` e `ramo`). Em 23/10 o parâmetro `step` (`{{[NovoSite] DLV - step}}`) entrou na tag no
   Default Workspace, sem publicar; a dimensão GA4 "Form Step" (`step`, evento) já existia. Publicar junto com o
