@@ -300,6 +300,20 @@ O script saiu com código 1 porque marca como grave toda Opportunity antiga que 
 
 Decisão de `enabled: true` e de desligar os cinco jobs: domingo 04/10, se houver aceite. Até lá o CSV segue como canal.
 
+### Sombra do projeto funil v2 (Lote 2, a partir de 2026-10-25)
+
+Os scripts `ads-offline-shadow-csv.mjs` e `ads-offline-diagnostics.mjs` passaram para o repositório. A sombra ganhou `--since=AAAA-MM-DD` e `--janela-csv` (compara só as datas que o próprio lote cobre), o que elimina os 1.551 falsos `missing_in_csv` de 30/09. Uso diário:
+
+```bash
+node scripts/google-ops/ads-offline-shadow-csv.mjs --file=conversoes-google-latest.txt --from-espo --janela-csv
+```
+
+Critério para o corte: 5 lotes seguidos sem divergência grave.
+
+| Rodada | Lote (data das vendas) | Linhas | Projetadas | Casadas | Graves |
+|---|---|---|---|---|---|
+| 1 — 2026-10-25 | 2026-10-23 | 4 | 4 | 4 | 0 |
+
 ---
 
 ## 9. Correção de 2026-09-21 (upload ainda desligado)
