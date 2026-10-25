@@ -13,7 +13,9 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
-## Não publicado — 2026-10-25 (etapa 3: texto e saída pelo consultor)
+## [0.2.55] — 2026-10-25 (Fase A: etapa 3 nova, cartão único de oferta, DDD → celular)
+
+Publicado em Production em 25/10 (~08h50) pelo [PR #8](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/8) (merge `bb8287f`, deployment `dpl_EvMWtzBsFyZDtoz3z6DDXBQSi3K4`), depois do aceite do UAT em `uat.segurosimediato.com.br`. Inclui as seções "2026-10-23" abaixo e a etapa 3 com placa, CEP e CPF obrigatórios e o cartão único de oferta ([`UAT_ETAPA3_CARTAO_asof-2026-10-19.md`](UAT_ETAPA3_CARTAO_asof-2026-10-19.md)).
 
 ### Changed
 - Etapa 3 (`components/lead/LeadForm.tsx`): subtítulo "Para calcular seu seguro agora É FUNDAMENTAL preencher os 3 dados abaixo."; a saída "Prefiro que um consultor entre em contato" vira botão cinza delimitado (fundo `neutral-100`, borda `neutral-300`), com "Prefere não informar esses dados agora?" acima em fonte menor.
@@ -22,9 +24,14 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 ### Fixed
 - Etapa 1: telefone completo (10/11 dígitos, com ou sem +55) colado ou preenchido automaticamente no DDD ou no celular é separado em DDD + número (`splitFullPhone` em `lib/validators.ts`). Antes o celular truncava "11987654321" para "11987-6543". E2E em `e2e/telefone-ddd.spec.ts` (7 cenários).
 
+### Ops (25/10)
+- GTM: versão 52 "form_quote_choice + step" publicada (parâmetro `step` na tag `[NovoSite] GA4 - form_quote_choice`). O token OAuth de `scripts/google-ops` tinha expirado; refeito com `npm run auth -- --with-ads --with-analytics --with-gsc`.
+- Smoke em Production com o telefone de teste: saída pelo consultor na etapa 3 (Espo produção com nota e tarefa, Octadesk inicial e `calculo_completo_depois`) e cálculo pelo RPA com preço real (FXG1E20, R$ 1.843,62; Octadesk `calculo_pronto`). Rollback: promover `dpl_8prDBvewZke38JJ9ucd4UPQApWnU` (`f4c8527`).
+- Cloud Functions não foram publicadas. `sold-sync.js` chegou ao `main` com `GCLID_INDEX_PATH`; publicar funções a partir do `main` volta a ser seguro.
+
 ---
 
-## Não publicado — 2026-10-23 (rodada de UAT antes do aceite)
+## Incluído em 0.2.55 — 2026-10-23 (rodada de UAT antes do aceite)
 
 ### Fixed
 - Cálculo pelo RPA (`lib/quote/oferta.ts`, `lib/leads/use-rpa-calculation.ts`): sucesso sem preço plausível — "R$ 100,00" em qualquer plano (o Tô Segurado sem login da corretora) ou nenhum prêmio ≥ R$ 300,00 — vai para "Vamos calcular manualmente"; o `rpa_result` sai como `falha`, sem valores (Espo "Cálculo manual pendente", Octadesk `calculo_manual`). E2E com 6 cenários em `e2e/etapa3-consultor.spec.ts`.

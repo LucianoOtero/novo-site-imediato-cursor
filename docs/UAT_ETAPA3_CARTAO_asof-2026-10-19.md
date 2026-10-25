@@ -3,7 +3,7 @@
 Branch `uat-funil-etapa3`, preview Vercel `imediato-seguros-git-uat-funil-etapa3-lucianooteros-projects.vercel.app`
 (`VERCEL_ENV=preview` → staging: StagingBanner, robots `disallow`, RTDB `environment=staging`, Espo **DEV**).
 Identidade de teste: LUCIANO TESTE, telefone de teste, CPF sintético válido (dígitos verificadores corretos).
-Production intocada; liberação só depois de 26/10 com este aceite.
+Publicado em Production em 25/10 (0.2.55), depois do aceite — ver "Production (25/10)".
 
 ## Resultado
 
@@ -145,8 +145,9 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
 - ~~Octadesk da repetição do caso 1~~ — **OK** (Luciano, 23/10): "cálculo pronto" recebido às 12h29.
 - ~~Moto no RPA com a conta nova~~ — feito (TKH6F60): login OK, Tô Segurado sem resultado para o modelo → cálculo
   manual. Uma moto com cotação automática confirmaria o caminho de preço real para moto.
-- Safari do iPhone: casos 1 e 2 no preview.
-- **Aceite:** pendente. O achado 1 está resolvido (RPA com preço real desde 23/10, ~12h15).
+- ~~Safari do iPhone: casos 1 e 2~~ — **OK** (Luciano, 25/10, em `uat.segurosimediato.com.br`): cálculo com preço
+  real e "cálculo pronto"; saída pelo consultor com nota, tarefa e "cálculo completo depois" no Espo DEV.
+- **Aceite:** dado pelo Luciano em 25/10 (~08h40), já com o pulo do DDD para o celular (`3d2c287`).
 
 ## Antes de Production (domingo, 25/10)
 
@@ -162,6 +163,21 @@ SUSEP 252174522"; WhatsApp flutuante para a corretora.
   pendentes no workspace).
 - PR para `main` com aprovação, smoke em Production (um lead pela saída do consultor e um pelo cálculo, telefone de
   teste, Espo produção e Octadesk) e atualização de CHANGELOG/VERSIONING/status.
+
+## Production (25/10)
+
+- [PR #8](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/8) com merge às 08h50 (`bb8287f`);
+  deployment `dpl_EvMWtzBsFyZDtoz3z6DDXBQSi3K4` em `www.segurosimediato.com.br`. Rollback: promover
+  `dpl_8prDBvewZke38JJ9ucd4UPQApWnU` (`f4c8527`, 22/10).
+- GTM versão 52 publicada ("form_quote_choice + step").
+- Smoke com o telefone de teste e CPF sintético (RTDB `ld_d0ccfd513e28`, `environment=production`):
+  - saída pelo consultor na etapa 3 → `/obrigado`; Espo produção com nota e tarefa; Octadesk inicial e
+    `calculo_completo_depois` enviados;
+  - cálculo pelo RPA (FXG1E20) com preço real, R$ 1.843,62 no plano recomendado; Octadesk `calculo_pronto` enviado.
+    O segundo envio reaproveitou o registro e a Opportunity do primeiro (mesmo telefone na janela de deduplicação).
+- Cloud Functions não publicadas. Depois do merge, publicar funções a partir do `main` volta a ser seguro.
+- Pendente: religar `ssoProtection` e decidir sobre o domínio `uat.`; apagar no Espo de produção o Lead e a
+  Opportunity de teste do smoke.
 
 ## Cuidado: `syncOpportunitySold` já publicada a partir deste branch (2026-10-20)
 
