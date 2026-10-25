@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Lock } from "lucide-react";
@@ -36,6 +36,7 @@ import {
   formatPlaca,
   leadSchema,
   onlyDigits,
+  splitFullPhone,
   type LeadInput,
 } from "@/lib/validators";
 import { trackEvent } from "@/lib/analytics";
@@ -114,6 +115,13 @@ import { cn } from "@/lib/utils";
  * de forma independente do celular, mesmo antes do usuário preencher o
  * celular). Dá feedback imediato ("DDD inválido") ao saltar do campo,
  * em vez de esperar o clique em "Continuar".
+ *
+ * DDD → celular (2026-10-25): ao digitar o 2º dígito do DDD, o foco
+ * pula para o celular; Backspace com o celular vazio volta ao DDD.
+ * Telefone completo (10/11 dígitos, com ou sem +55) colado ou
+ * preenchido automaticamente em qualquer um dos dois campos é separado
+ * em DDD + número — antes o celular truncava "11987654321" para
+ * "11987-6543". Sem `maxLength` no DDD para a colagem chegar inteira.
  *
  * Ficha do veículo (passo 3, projeto 2026-07-16, a pedido do cliente):
  * `handlePlacaBlur` também preenche os campos granulares
@@ -585,6 +593,24 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const email = register("email");
   const cpf = register("cpf");
   const placa = register("placa");
+
+  /**
+   * Só conta como digitação o que vem do teclado — preenchimento
+   * automático e colagem chegam sem `inputType` ou com
+   * `insertReplacementText`/`insertFromPaste`, e não devem mover o foco.
+   */
+  function isTyping(event: ChangeEvent<HTMLInputElement>): boolean {
+    const inputType = (event.nativeEvent as Partial<InputEvent>).inputType ?? "";
+    return inputType === "insertText" || inputType === "insertCompositionText";
+  }
+
+  function focusDddAtEnd() {
+    setFocus("ddd");
+    const input = document.getElementById("ddd");
+    if (input instanceof HTMLInputElement) {
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  }
 
   function markStarted() {
     if (!hasStarted) {
@@ -1321,14 +1347,24 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                   inputMode="numeric"
                   autoComplete="tel-area-code"
                   placeholder="11"
-                  maxLength={2}
                   aria-invalid={!!errors.ddd}
                   aria-describedby={errors.ddd ? "ddd-error" : "phone-microcopy"}
                   data-clarity-mask="true"
                   {...ddd}
                   onChange={(event) => {
+                    const full = splitFullPhone(event.target.value);
+                    if (full) {
+                      event.target.value = full.ddd;
+                      void ddd.onChange(event);
+                      setValue("celular", full.celular, { shouldDirty: true, shouldTouch: true });
+                      setFocus("celular");
+                      return;
+                    }
                     event.target.value = formatDdd(event.target.value);
                     void ddd.onChange(event);
+                    if (event.target.value.length === 2 && isTyping(event)) {
+                      setFocus("celular");
+                    }
                   }}
                   onBlur={(event) => {
                     void ddd.onBlur(event);
@@ -1355,8 +1391,21 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                   data-clarity-mask="true"
                   {...celular}
                   onChange={(event) => {
-                    event.target.value = formatCelular(event.target.value);
+                    const full = isTyping(event) ? null : splitFullPhone(event.target.value);
+                    if (full) {
+                      setValue("ddd", full.ddd, { shouldDirty: true, shouldTouch: true });
+                      void trigger("ddd");
+                      event.target.value = full.celular;
+                    } else {
+                      event.target.value = formatCelular(event.target.value);
+                    }
                     void celular.onChange(event);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Backspace" && event.currentTarget.value === "") {
+                      event.preventDefault();
+                      focusDddAtEnd();
+                    }
                   }}
                   onBlur={(event) => {
                     void celular.onBlur(event);

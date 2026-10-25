@@ -326,6 +326,21 @@ export function formatDdd(value: string): string {
 }
 
 /**
+ * Separa DDD e número quando chega o telefone inteiro num campo só
+ * (preenchimento automático `tel-national` ou colagem de
+ * "(11) 98765-4321"/"+55 11 98765-4321"). Retorna `null` se não houver
+ * 10 ou 11 dígitos depois de tirar o +55.
+ */
+export function splitFullPhone(value: string): { ddd: string; celular: string } | null {
+  let digits = onlyDigits(value);
+  if ((digits.length === 12 || digits.length === 13) && digits.startsWith("55")) {
+    digits = digits.slice(2);
+  }
+  if (digits.length !== 10 && digits.length !== 11) return null;
+  return { ddd: digits.slice(0, 2), celular: formatCelular(digits.slice(2)) };
+}
+
+/**
  * Captura UTM/gclid/ValueTrack da URL atual (somente query — sem
  * persistência). Para submits e WhatsApp use `getAttributionUtm` em
  * `lib/leads/attribution.ts` (merge com storage 1st-party, Fase 1).

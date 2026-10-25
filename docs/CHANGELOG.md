@@ -17,6 +17,10 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ### Changed
 - Etapa 3 (`components/lead/LeadForm.tsx`): subtítulo "Para calcular seu seguro agora É FUNDAMENTAL preencher os 3 dados abaixo."; a saída "Prefiro que um consultor entre em contato" vira botão cinza delimitado (fundo `neutral-100`, borda `neutral-300`), com "Prefere não informar esses dados agora?" acima em fonte menor.
+- Etapa 1 (`components/lead/LeadForm.tsx`): ao digitar o 2º dígito do DDD, o foco pula para o celular; Backspace com o celular vazio volta ao DDD. Preenchimento automático e colagem não pulam.
+
+### Fixed
+- Etapa 1: telefone completo (10/11 dígitos, com ou sem +55) colado ou preenchido automaticamente no DDD ou no celular é separado em DDD + número (`splitFullPhone` em `lib/validators.ts`). Antes o celular truncava "11987654321" para "11987-6543". E2E em `e2e/telefone-ddd.spec.ts` (7 cenários).
 
 ---
 
