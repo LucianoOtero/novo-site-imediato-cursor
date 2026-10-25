@@ -401,24 +401,26 @@ for (const caso of casos) {
     // Passo 1
     await fill(page, "ddd", identidade.ddd);
     await fill(page, "celular", identidade.celular);
-    await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Receber cotação" }).click();
 
     // Passo 2 — timeout maior: validação de telefone pode demorar após vários casos.
     await expect(page.locator("#nome")).toBeVisible({ timeout: 45_000 });
     await fill(page, "nome", identidade.nome);
     await fill(page, "email", caso.email);
-    await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Falta pouco" }).click();
 
     // Passo 3
-    await expect(page.locator("#cpf")).toBeVisible();
-    await fill(page, "cpf", identidade.cpf);
-    await fill(page, "cep", identidade.cep);
+    await expect(page.locator("#placa")).toBeVisible();
     await fill(page, "placa", caso.placa);
     await page.locator("#placa").blur();
+    await fill(page, "cep", identidade.cep);
+    await fill(page, "cpf", identidade.cpf);
     await page.waitForTimeout(8000); // Placa Fipe pode levar ~5–6s no cold start
-    await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Calcular meu seguro" }).click();
 
-    const dialogProsseguir = page.getByRole("button", { name: "Prosseguir assim mesmo" });
+    const dialogProsseguir = page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Prefiro que um consultor entre em contato" });
     if (await dialogProsseguir.isVisible().catch(() => false)) {
       await dialogProsseguir.click();
     }

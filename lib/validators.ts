@@ -263,7 +263,7 @@ export const lenientPlaca = z
 export const LEAD_FORM_STEPS: Record<1 | 2 | 3 | 4, (keyof LeadInput)[]> = {
   1: ["ddd", "celular"],
   2: ["nome", "email"],
-  3: ["cpf", "cep", "placa"],
+  3: ["placa", "cep", "cpf"],
   4: [],
 };
 
@@ -323,6 +323,21 @@ export function formatPlacaMascara(value: string): string {
 
 export function formatDdd(value: string): string {
   return onlyDigits(value).slice(0, 2);
+}
+
+/**
+ * Separa DDD e número quando chega o telefone inteiro num campo só
+ * (preenchimento automático `tel-national` ou colagem de
+ * "(11) 98765-4321"/"+55 11 98765-4321"). Retorna `null` se não houver
+ * 10 ou 11 dígitos depois de tirar o +55.
+ */
+export function splitFullPhone(value: string): { ddd: string; celular: string } | null {
+  let digits = onlyDigits(value);
+  if ((digits.length === 12 || digits.length === 13) && digits.startsWith("55")) {
+    digits = digits.slice(2);
+  }
+  if (digits.length !== 10 && digits.length !== 11) return null;
+  return { ddd: digits.slice(0, 2), celular: formatCelular(digits.slice(2)) };
 }
 
 /**

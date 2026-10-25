@@ -104,7 +104,7 @@ Arquivos: `LeadForm.tsx`, `RpaChoiceStep.tsx`, `RpaCalculationScreen.tsx`, `lib/
 
 **Prefiro consultor / cálculo depois**
 
-1. `consultant_requested` (+ fluxo de `complete` / `/obrigado` conforme variante).
+1. `complete` → `/obrigado`; só depois da resposta do `complete`, `consultant_requested` (último POST, `keepalive`). A Cloud Function descarta o `cEtapaFunil` de uma execução cujo `data` já foi regravado, então a escolha precisa ser a última gravação (achado do UAT de 2026-10-19). Na etapa 3 o `consultant_requested` também leva `skipStrictValidation`.
 2. Espo: Note + Task “Efetuar cálculo manual”.
 3. Octadesk: `calculo_completo_depois`.
 

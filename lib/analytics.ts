@@ -63,6 +63,8 @@ type AnalyticsEventMap = {
     ramo: RamoSlug;
     choice: "aguardar" | "consultor";
     method: "form";
+    /** Etapa da escolha: 3 = saída "Prefiro que um consultor entre em contato"; 4 = `RpaChoiceStep`. */
+    step: 3 | 4;
   };
   /**
    * Conversão Ads do formulário (decisão do cliente, 2026-08-04):

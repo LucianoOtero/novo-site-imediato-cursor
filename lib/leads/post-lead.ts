@@ -122,11 +122,15 @@ export async function getTurnstileToken(): Promise<string | undefined> {
  * ContactLeadModal e useSubmitLead — headers e formato idênticos aos
  * originais; o tratamento de erro/resposta continua em cada chamador.
  */
-export async function postLead(payload: Record<string, unknown>): Promise<Response> {
+export async function postLead(
+  payload: Record<string, unknown>,
+  options: { keepalive?: boolean } = {}
+): Promise<Response> {
   const turnstileToken = await getTurnstileToken();
   return fetch("/api/lead", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
     body: JSON.stringify(turnstileToken ? { ...payload, turnstileToken } : payload),
+    keepalive: options.keepalive,
   });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Lock } from "lucide-react";
@@ -36,6 +36,7 @@ import {
   formatPlaca,
   leadSchema,
   onlyDigits,
+  splitFullPhone,
   type LeadInput,
 } from "@/lib/validators";
 import { trackEvent } from "@/lib/analytics";
@@ -76,10 +77,16 @@ import { cn } from "@/lib/utils";
  * mensagem via Octadesk). O `leadId` devolvido é passado a `onSuccess`
  * para que o envio final atualize esse mesmo lead. No envio final, se o
  * CPF ou o CEP não passarem o checksum/formato, abre um diálogo
- * "Corrigir" (foca o campo) vs. "Prosseguir assim mesmo" (envia como
- * está, sem bloquear a conversão, sinalizando `skipStrictValidation` —
- * ver `lib/leads/types.ts` — para o servidor não rejeitar de novo o
- * mesmo valor) — mesma lógica do `SweetAlert` do formulário legado.
+ * "Corrigir" (foca o campo) vs. "Prefiro que um consultor entre em
+ * contato" (envia como está, sinalizando `skipStrictValidation` — ver
+ * `lib/leads/types.ts` — para o servidor não rejeitar de novo o mesmo
+ * valor).
+ *
+ * Etapa 3 (2026-10-19, leitura do funil em www): placa, CEP e CPF, nessa
+ * ordem, são obrigatórios para "Calcular meu seguro". Quem não quiser
+ * informar usa o botão "Prefiro que um consultor entre em contato"
+ * (`handleExitToConsultant`). O `leadSchema` continua com os três
+ * opcionais, para essa saída enviar com campos vazios.
  *
  * Passos reorganizados em 2026-07-14 (decisão do cliente): passo 2
  * passa a coletar Nome + E-mail (com validação em tempo real via
@@ -108,6 +115,13 @@ import { cn } from "@/lib/utils";
  * de forma independente do celular, mesmo antes do usuário preencher o
  * celular). Dá feedback imediato ("DDD inválido") ao saltar do campo,
  * em vez de esperar o clique em "Continuar".
+ *
+ * DDD → celular (2026-10-25): ao digitar o 2º dígito do DDD, o foco
+ * pula para o celular; Backspace com o celular vazio volta ao DDD.
+ * Telefone completo (10/11 dígitos, com ou sem +55) colado ou
+ * preenchido automaticamente em qualquer um dos dois campos é separado
+ * em DDD + número — antes o celular truncava "11987654321" para
+ * "11987-6543". Sem `maxLength` no DDD para a colagem chegar inteira.
  *
  * Ficha do veículo (passo 3, projeto 2026-07-16, a pedido do cliente):
  * `handlePlacaBlur` também preenche os campos granulares
@@ -138,9 +152,8 @@ import { cn } from "@/lib/utils";
  * como o passo 3 deixou de ser o passo final, o diálogo "Corrigir ou
  * Prosseguir" (que antes só aparecia no envio final) passa a abrir já
  * em `goNext()`, no momento de sair do passo 3 — mesmo diálogo, só
- * antecipado um passo. "Prosseguir assim mesmo" continua pulando direto
- * para o envio final (sem passar pelo passo 4/RPA), mesma lógica de
- * sempre.
+ * antecipado um passo. A saída pelo consultor pula direto para o envio
+ * final, sem passar pelo passo 4/RPA.
  */
 export interface LeadFormProps {
   ramo: string;
@@ -149,7 +162,7 @@ export interface LeadFormProps {
   /**
    * `leadId`: presente quando um contato inicial (passo 1) já criou o
    * lead — ver nota acima. `skipStrictValidation`: `true` quando o
-   * usuário escolheu "Prosseguir assim mesmo" com CPF/CEP inválidos —
+   * usuário saiu pelo consultor com dados vazios ou inválidos —
    * ver `lib/leads/types.ts`.
    */
   onSuccess?: (
@@ -183,15 +196,23 @@ const STEP_LABELS: Record<1 | 2 | 3, string> = {
 const STEP_SUBTITLES: Record<StepNumber, string> = {
   1: "A melhor cotação para o seu seguro virá em seguida",
   2: "Nome e e-mail ajudam as seguradoras a montar seu perfil.",
-  3: "CEP muda bastante o preço. Placa e CPF agilizam o cálculo.",
+  3: "Para calcular seu seguro agora É FUNDAMENTAL preencher os 3 dados abaixo.",
   4: "Como você quer receber sua cotação?",
 };
 /** CTAs por passo de coleta (benefício > “Continuar”). */
 const STEP_CTAS: Record<1 | 2 | 3, string> = {
   1: "Receber cotação",
   2: "Falta pouco",
-  3: "Ver meu preço",
+  3: "Calcular meu seguro",
 };
+/** Saída da etapa 3 para quem prefere não informar placa, CEP ou CPF. */
+const CONSULTANT_EXIT_LABEL = "Prefiro que um consultor entre em contato";
+const CONSULTANT_EXIT_PROMPT = "Prefere não informar esses dados agora?";
+const STEP_3_HINTS_BY_RAMO: Record<string, { placa: string; cep: string }> = {
+  moto: { placa: "Identifica sua moto na tabela FIPE.", cep: "Onde a moto dorme. Muda o preço do seguro." },
+  caminhao: { placa: "Identifica seu caminhão na tabela FIPE.", cep: "Onde o caminhão dorme. Muda o preço do seguro." },
+};
+const STEP_3_HINTS_DEFAULT = { placa: "Identifica seu carro na tabela FIPE.", cep: "Onde o carro dorme. Muda o preço do seguro." };
 /** Transparência do uso do celular (etapa 1) — WhatsApp/CRM reais. */
 const PHONE_MICROCOPY =
   "Usamos o número para enviar o resultado por WhatsApp e seguir sua cotação.";
@@ -213,11 +234,17 @@ const FROST_CARD_CLASS =
   "border-white/50 bg-white/95 supports-[backdrop-filter]:bg-white/85 backdrop-blur-md shadow-2xl";
 
 /** Ordem de exibição/foco no passo 3 — mesma ordem dos campos na tela. */
-const STEP_3_FIELDS = ["cpf", "cep", "placa"] as const;
+const STEP_3_FIELDS = ["placa", "cep", "cpf"] as const;
 const STEP_3_FIELD_LABELS: Record<(typeof STEP_3_FIELDS)[number], string> = {
-  cpf: "CPF",
-  cep: "CEP",
   placa: "Placa",
+  cep: "CEP",
+  cpf: "CPF",
+};
+/** Erro de campo vazio ao tentar calcular — os três são obrigatórios só para o cálculo. */
+const STEP_3_REQUIRED_MESSAGES: Record<(typeof STEP_3_FIELDS)[number], string> = {
+  placa: "Informe a placa para calcular",
+  cep: "Informe o CEP para calcular",
+  cpf: "Informe o CPF para calcular",
 };
 
 /**
@@ -251,6 +278,14 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const rpa = useRpaCalculation();
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
+  /**
+   * Fila dos POSTs de evento (`progress`, `consultant_requested`,
+   * `rpa_result` e o `complete` de "Aguardar o cálculo"). Cada POST espera
+   * até 4 s pelo token do Turnstile e o `/api/lead` grava `data/stage` por
+   * último-que-chega: sem a fila, um `progress` atrasado sobrescreveria a
+   * escolha feita logo depois.
+   */
+  const leadPostQueueRef = useRef<Promise<unknown>>(Promise.resolve());
   /** Garante que o evento `rpa_result` (projeto 2026-07-20) é enviado uma única vez por cálculo. */
   const rpaResultReportedRef = useRef(false);
   const hasStartedRef = useRef(false);
@@ -387,7 +422,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       franquiaAlternativo: rpa.result.alternativo?.valorFranquia,
     };
 
-    void postLead({
+    void queueLeadPost({
       ...buildPayloadFromRawValues(getValues()),
       stage: "rpa_result",
       captureChannel: "lead_form",
@@ -528,6 +563,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     return todosPreenchidos && veiculoIdentificado && semErros ? null : "dados_incompletos";
   })();
   const rpaEnabled = rpaDisabledReason === null;
+  const step3Hints = STEP_3_HINTS_BY_RAMO[ramo] ?? STEP_3_HINTS_DEFAULT;
 
   /**
    * Check de campo válido (itens de conversão, 2026-07-20): tocado +
@@ -558,6 +594,24 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   const cpf = register("cpf");
   const placa = register("placa");
 
+  /**
+   * Só conta como digitação o que vem do teclado — preenchimento
+   * automático e colagem chegam sem `inputType` ou com
+   * `insertReplacementText`/`insertFromPaste`, e não devem mover o foco.
+   */
+  function isTyping(event: ChangeEvent<HTMLInputElement>): boolean {
+    const inputType = (event.nativeEvent as Partial<InputEvent>).inputType ?? "";
+    return inputType === "insertText" || inputType === "insertCompositionText";
+  }
+
+  function focusDddAtEnd() {
+    setFocus("ddd");
+    const input = document.getElementById("ddd");
+    if (input instanceof HTMLInputElement) {
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  }
+
   function markStarted() {
     if (!hasStarted) {
       setHasStarted(true);
@@ -587,6 +641,12 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * As tags Ads da etapa 4 (`form_quote_choice`) foram pausadas no GTM
    * v44; o push de `form_quote_choice` continua (GA4/funil).
    */
+  function queueLeadPost(payload: Record<string, unknown>, options?: { keepalive?: boolean }): Promise<Response> {
+    const request = leadPostQueueRef.current.then(() => postLead(payload, options));
+    leadPostQueueRef.current = request.catch(() => undefined);
+    return request;
+  }
+
   async function sendInitialContact() {
     if (initialCallInFlightRef.current) return;
     initialCallInFlightRef.current = true;
@@ -623,7 +683,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   async function sendProgressUpdate() {
     try {
       const values = getValues();
-      await postLead({
+      await queueLeadPost({
         ...buildPayloadFromRawValues(values),
         stage: "progress",
         captureChannel: "lead_form",
@@ -741,7 +801,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       if (result.ok === false) {
         setError("cep", {
           type: "manual",
-          message: "Não encontramos esse CEP — revise ou prossiga assim mesmo",
+          message: "Não encontramos esse CEP — confira o número",
         });
       }
     } catch {
@@ -791,7 +851,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       if (result.ok === false) {
         setError("placa", {
           type: "manual",
-          message: "Não encontramos essa placa — revise ou prossiga assim mesmo",
+          message: "Não encontramos essa placa — confira as letras e os números",
         });
         return;
       }
@@ -809,6 +869,16 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   }
 
   async function goNext() {
+    if (step === 3) {
+      const values = getValues();
+      const firstEmpty = STEP_3_FIELDS.find((field) => !values[field]?.trim());
+      if (firstEmpty) {
+        setError(firstEmpty, { type: "required", message: STEP_3_REQUIRED_MESSAGES[firstEmpty] });
+        setFocus(firstEmpty);
+        return;
+      }
+    }
+
     setStatus("validating");
 
     // Valida campo a campo (em vez de `trigger(fields)` de uma vez) para
@@ -959,7 +1029,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   /**
    * Normaliza os valores brutos do formulário (`getValues()`, ainda sem
    * passar pelo `zodResolver`) para o formato final `LeadInput` — mesma
-   * lógica de máscara/trim já usada por `handleProsseguirAssimMesmo`,
+   * lógica de máscara/trim já usada por `handleExitToConsultant`,
    * extraída para reaproveitar também em `handleChooseWaitForRpa`
    * (passo 4), que precisa do payload completo sem esperar o
    * `handleSubmit` do RHF (o passo 4 não passa pelo submit nativo do
@@ -985,54 +1055,85 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   }
 
   /**
-   * "Prosseguir assim mesmo" — envia CPF/CEP como o usuário digitou
-   * (sem checksum/formato), sinalizando `skipStrictValidation: true`
-   * para o servidor não rejeitar de novo o mesmo valor que o usuário já
-   * confirmou querer enviar (achado 2026-07-14 — sem esse sinal, o
-   * `apiLeadSchema` do servidor reaplicaria a mesma validação estrita e
-   * este botão falharia silenciosamente). Ver lib/leads/types.ts.
+   * "Prefiro que um consultor entre em contato" (etapa 3 e diálogo de
+   * dado inválido, 2026-10-19) — envia o que o usuário digitou, mesmo
+   * vazio ou incompleto, com `skipStrictValidation: true` para o servidor
+   * não rejeitar de novo um CPF/CEP que o usuário decidiu não corrigir
+   * (sem esse sinal, o `apiLeadSchema` reaplicaria a validação estrita e
+   * o envio falharia silenciosamente). Ver lib/leads/types.ts.
    *
-   * Pula direto para o envio final (mesmo destino de sempre — passo 4/
-   * RPA nunca aparece nesse caso) — dado inválido já significa
-   * "especialista entra em contato", sem cotação automatizada, mesma
-   * lógica do formulário legado.
+   * Registra a escolha como `consultant_requested` (mesmo efeito do
+   * consultor no passo 4: "Cálculo manual pendente" no EspoCRM e a
+   * mensagem `calculo_completo_depois` no Octadesk) depois do envio
+   * final, sem passar pelo RPA.
    */
-  async function handleProsseguirAssimMesmo() {
-    setShowCorrectOrProceed(false);
+  async function handleExitToConsultant() {
+    if (finalSubmitInFlightRef.current) return;
+    finalSubmitInFlightRef.current = true;
     const payload = buildPayloadFromRawValues(getValues());
+
+    // No passo 4 o evento de GA4 já saiu em `handleChooseConsultant`,
+    // antes de o diálogo abrir.
+    if (step !== 4) {
+      markLeadFormFunnelComplete();
+      trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form", step: 3 });
+    }
+
     await submitPayload(payload, true);
+    registerConsultantChoice(payload);
+  }
+
+  /**
+   * POST `consultant_requested` — sempre DEPOIS da resposta do `complete`.
+   * A Cloud Function descarta o `cEtapaFunil` de uma execução cujo `data`
+   * já foi regravado por outro POST; se o `complete` chegasse depois, o
+   * Espo ficaria com "Receber depois" e a etapa anterior ("Dados
+   * pessoais"). `keepalive` porque a navegação para /obrigado já
+   * aconteceu quando este POST sai.
+   */
+  function registerConsultantChoice(payload: LeadInput) {
+    void queueLeadPost(
+      {
+        ...payload,
+        stage: "consultant_requested",
+        captureChannel: "lead_form",
+        rpaChoice: "consultor",
+        skipStrictValidation: true,
+        leadId: initialLeadIdRef.current ?? undefined,
+        utm: getAttributionUtm(),
+      },
+      { keepalive: true }
+    ).catch((error) => console.error("[LeadForm] Falha ao registrar escolha do consultor (não bloqueante):", error));
   }
 
   /**
    * Passo 4, opção "Prefiro receber o cálculo completo depois" —
    * reaproveita **exatamente** o envio final que já existia antes deste
    * passo (mesmo `handleSubmit(onSubmit)`, mesma guarda
-   * `finalSubmitInFlightRef`). Antes do envio, registra o evento
+   * `finalSubmitInFlightRef`). Depois do envio, registra o evento
    * `consultant_requested` (best-effort, projeto 2026-07-20) — a Cloud
    * Function posta a escolha no Stream do lead no EspoCRM e envia a
    * mensagem "cálculo completo depois" no Octadesk (quando os templates
-   * estiverem ativos).
+   * estiverem ativos). Dado inválido abre o diálogo, e a saída pelo
+   * consultor de lá passa por `handleExitToConsultant`.
    */
   function handleChooseConsultant() {
     if (finalSubmitInFlightRef.current) return;
 
     markLeadFormFunnelComplete();
-    trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form" });
-
-    void postLead({
-      ...buildPayloadFromRawValues(getValues()),
-      stage: "consultant_requested",
-      captureChannel: "lead_form",
-      rpaChoice: "consultor",
-      leadId: initialLeadIdRef.current ?? undefined,
-      utm: getAttributionUtm(),
-    }).catch((error) => console.error("[LeadForm] Falha ao registrar escolha do consultor (não bloqueante):", error));
+    trackEvent("form_quote_choice", { ramo, choice: "consultor", method: "form", step: 4 });
 
     finalSubmitInFlightRef.current = true;
-    void handleSubmit(onSubmit, (formErrors) => {
-      finalSubmitInFlightRef.current = false;
-      onInvalidFinalStep(formErrors);
-    })();
+    void handleSubmit(
+      async (data) => {
+        await onSubmit(data);
+        registerConsultantChoice(data);
+      },
+      (formErrors) => {
+        finalSubmitInFlightRef.current = false;
+        onInvalidFinalStep(formErrors);
+      }
+    )();
   }
 
   /**
@@ -1052,7 +1153,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     if (!rpaEnabled) return;
     if (finalSubmitInFlightRef.current) return;
     markLeadFormFunnelComplete();
-    trackEvent("form_quote_choice", { ramo, choice: "aguardar", method: "form" });
+    trackEvent("form_quote_choice", { ramo, choice: "aguardar", method: "form", step: 4 });
     finalSubmitInFlightRef.current = true;
     setStatus("submitting");
 
@@ -1067,7 +1168,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       // `rpaChoice: "aguardar"` (projeto 2026-07-20): registra no lead a
       // escolha de acompanhar o cálculo agora — a Cloud Function posta a
       // escolha no Stream do lead no EspoCRM.
-      const response = await postLead({
+      const response = await queueLeadPost({
         ...payload,
         stage: "complete",
         captureChannel: "lead_form",
@@ -1246,14 +1347,24 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                   inputMode="numeric"
                   autoComplete="tel-area-code"
                   placeholder="11"
-                  maxLength={2}
                   aria-invalid={!!errors.ddd}
                   aria-describedby={errors.ddd ? "ddd-error" : "phone-microcopy"}
                   data-clarity-mask="true"
                   {...ddd}
                   onChange={(event) => {
+                    const full = splitFullPhone(event.target.value);
+                    if (full) {
+                      event.target.value = full.ddd;
+                      void ddd.onChange(event);
+                      setValue("celular", full.celular, { shouldDirty: true, shouldTouch: true });
+                      setFocus("celular");
+                      return;
+                    }
                     event.target.value = formatDdd(event.target.value);
                     void ddd.onChange(event);
+                    if (event.target.value.length === 2 && isTyping(event)) {
+                      setFocus("celular");
+                    }
                   }}
                   onBlur={(event) => {
                     void ddd.onBlur(event);
@@ -1280,8 +1391,21 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
                   data-clarity-mask="true"
                   {...celular}
                   onChange={(event) => {
-                    event.target.value = formatCelular(event.target.value);
+                    const full = isTyping(event) ? null : splitFullPhone(event.target.value);
+                    if (full) {
+                      setValue("ddd", full.ddd, { shouldDirty: true, shouldTouch: true });
+                      void trigger("ddd");
+                      event.target.value = full.celular;
+                    } else {
+                      event.target.value = formatCelular(event.target.value);
+                    }
                     void celular.onChange(event);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Backspace" && event.currentTarget.value === "") {
+                      event.preventDefault();
+                      focusDddAtEnd();
+                    }
                   }}
                   onBlur={(event) => {
                     void celular.onBlur(event);
@@ -1342,40 +1466,44 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
         {step === 3 && (
           <>
-            <p className="text-sm text-neutral-500">
-              CPF, CEP e placa são opcionais — ou deixe que coletamos no contato.
-            </p>
             <Field
-              label="CPF"
-              htmlFor="cpf"
-              error={errors.cpf?.message}
-              hint="Opcional"
+              label="Placa"
+              htmlFor="placa"
+              error={errors.placa?.message}
+              hint={step3Hints.placa}
               tone={tone}
-              valid={isFieldValid("cpf")}
+              valid={isFieldValid("placa")}
             >
               <Input
-                id="cpf"
-                inputMode="numeric"
+                id="placa"
                 autoComplete="off"
-                placeholder="000.000.000-00"
-                aria-invalid={!!errors.cpf}
+                placeholder="ABC1D23"
+                aria-invalid={!!errors.placa}
+                aria-describedby={errors.placa ? "placa-error" : undefined}
                 data-clarity-mask="true"
-                {...cpf}
-                onBlur={(event) => {
-                  void cpf.onBlur(event);
-                  void trigger("cpf");
-                }}
+                {...placa}
                 onChange={(event) => {
-                  event.target.value = formatCpf(event.target.value);
-                  void cpf.onChange(event);
+                  event.target.value = formatPlaca(event.target.value);
+                  void placa.onChange(event);
+                }}
+                onBlur={(event) => {
+                  void placa.onBlur(event);
+                  void handlePlacaBlur();
                 }}
               />
             </Field>
+            <VehicleInfoDisplay
+              marca={watchedVeiculoMarca}
+              modelo={watchedVeiculoModelo}
+              anoFabricacao={watchedVeiculoAnoFabricacao}
+              anoModelo={watchedVeiculoAnoModelo}
+              tone={tone}
+            />
             <Field
               label="CEP"
               htmlFor="cep"
               error={errors.cep?.message}
-              hint="Opcional"
+              hint={step3Hints.cep}
               tone={tone}
               valid={isFieldValid("cep")}
             >
@@ -1399,37 +1527,32 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               />
             </Field>
             <Field
-              label="Placa"
-              htmlFor="placa"
-              error={errors.placa?.message}
-              hint="Opcional"
+              label="CPF"
+              htmlFor="cpf"
+              error={errors.cpf?.message}
+              hint="Busca seu bônus e o perfil do condutor."
               tone={tone}
-              valid={isFieldValid("placa")}
+              valid={isFieldValid("cpf")}
             >
               <Input
-                id="placa"
+                id="cpf"
+                inputMode="numeric"
                 autoComplete="off"
-                placeholder="ABC1D23"
-                aria-invalid={!!errors.placa}
+                placeholder="000.000.000-00"
+                aria-invalid={!!errors.cpf}
+                aria-describedby={errors.cpf ? "cpf-error" : undefined}
                 data-clarity-mask="true"
-                {...placa}
-                onChange={(event) => {
-                  event.target.value = formatPlaca(event.target.value);
-                  void placa.onChange(event);
-                }}
+                {...cpf}
                 onBlur={(event) => {
-                  void placa.onBlur(event);
-                  void handlePlacaBlur();
+                  void cpf.onBlur(event);
+                  void trigger("cpf");
+                }}
+                onChange={(event) => {
+                  event.target.value = formatCpf(event.target.value);
+                  void cpf.onChange(event);
                 }}
               />
             </Field>
-            <VehicleInfoDisplay
-              marca={watchedVeiculoMarca}
-              modelo={watchedVeiculoModelo}
-              anoFabricacao={watchedVeiculoAnoFabricacao}
-              anoModelo={watchedVeiculoAnoModelo}
-              tone={tone}
-            />
           </>
         )}
 
@@ -1474,6 +1597,22 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         )}
       </div>
 
+      {step === 3 && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-center text-xs text-neutral-500">{CONSULTANT_EXIT_PROMPT}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            fullWidth
+            className="h-auto min-h-12 border border-neutral-300 bg-neutral-100 py-2.5 text-center whitespace-normal text-neutral-800 hover:bg-neutral-200"
+            onClick={() => void handleExitToConsultant()}
+            disabled={isBusy}
+          >
+            {CONSULTANT_EXIT_LABEL}
+          </Button>
+        </div>
+      )}
+
       {/* Trust microcopy (versão visual v2, 2026-07-19) — sinais de confiança
           junto ao formulário, padrão de LP financeira de alta conversão.
           SUSEP vem de lib/company (fonte única, nunca hardcoded). */}
@@ -1497,21 +1636,24 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
               <AlertDialogDescription>
                 {isPlural ? `Os dados informados (${fieldsText})` : `O ${fieldsText} informado`} não
                 parece
-                {isPlural ? "m" : ""} válido{isPlural ? "s" : ""}. Você pode corrigir agora ou
-                prosseguir assim mesmo — nesse caso, um especialista entra em contato para confirmar
-                seus dados (sem cotação automatizada).
+                {isPlural ? "m" : ""} válido{isPlural ? "s" : ""}. Corrija para calcular agora, ou
+                peça que um consultor entre em contato para confirmar seus dados e calcular para
+                você.
               </AlertDialogDescription>
-              <div className="mt-5 flex gap-3">
-                <Button type="button" variant="ghost" fullWidth onClick={handleCorrigir}>
+              <div className="mt-5 flex flex-col gap-3">
+                <Button type="button" variant="primary" fullWidth onClick={handleCorrigir}>
                   Corrigir
                 </Button>
                 <Button
                   type="button"
-                  variant="primary"
+                  variant="ghost"
                   fullWidth
-                  onClick={handleProsseguirAssimMesmo}
+                  onClick={() => {
+                    setShowCorrectOrProceed(false);
+                    void handleExitToConsultant();
+                  }}
                 >
-                  Prosseguir assim mesmo
+                  {CONSULTANT_EXIT_LABEL}
                 </Button>
               </div>
             </AlertDialogContent>
