@@ -1,6 +1,6 @@
 # Atribuição Google Ads → site novo → EspoCRM → venda
 
-**Status:** Fases 0–4 **verdes** (2026-08-29). Fase 5 (prod) — runbook preparado; execução pendente.  
+**Status:** Fases 0–4 **verdes** (2026-08-29). Fase 5 (prod) **concluída**, conferida em 2026-10-25: campos presentes no Espo PROD e pacote completo em 215 das 216 Opportunities com clique Ads desde 18/10 ([`FASE5_ROLLOUT_PRODUCAO.md`](FASE5_ROLLOUT_PRODUCAO.md)).  
 **Escopo:** somente site novo (`novo.segurosimediato.com.br` + Firebase `imediato-seguros-site-novo` + CF `deliverLead`) e EspoCRM.  
 **Fora de escopo:** site legado/Webflow, Octadesk (sem enriquecimento adicional de params Ads), segundo projeto Firebase.
 

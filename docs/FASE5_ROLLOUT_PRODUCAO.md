@@ -1,7 +1,12 @@
 # Fase 5 — Rollout produção (checklist + aceite)
 
 **Data alvo:** 2026-08-30  
-**Status:** preparação documental/scripts pronta (2026-08-29); execução D0/D1 **pendente de autorização**.  
+**Status:** **concluída** — conferida em 2026-10-25 sem smoke sintético:
+- Inventário `fase0-attribution-fields.mjs --prefer=prod`: os 23 campos existem em Lead e Opportunity (criados em 15/10).
+- Leitura das Opportunities de produção criadas desde 18/10: 215 das 216 do site novo com clique Ads trazem o pacote completo (`cUtmSource`/`Medium`/`Campaign`/`CampaignName`/`Content`/`Id`, `cAdgroupId`, `cCreative`, `cMatchType`, `cDevice`, `cNetwork`).
+- `cCanalCaptura` preenchido nas 229 (208 `formulario`, 21 `whatsapp`).
+
+A preparação documental/scripts abaixo é de 2026-08-29.  
 **Pré-requisito:** Fases 0–4 verdes.  
 **Plano canônico:** [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) §2 Fase 5 + §9.
 
