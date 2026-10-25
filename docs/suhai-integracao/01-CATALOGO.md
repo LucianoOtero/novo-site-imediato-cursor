@@ -22,8 +22,8 @@ Inventário de tudo publicado no espaço SUHAPI relevante a vendas + pagamento +
 | Consultar Status da Proposta | Status + pareceres | [438861937](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/438861937) |
 | Gerar Documento (PDF) da Proposta | PDF proposta | [439320637](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/439320637) |
 | Cancelar Proposta | Cancelamento com justificativa ≥30 chars | [439517311](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/439517311) |
-| Gerar Boleto 1ª parcela (PDF) | PDF boleto | [439156994](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/439156994) |
-| Consultar Dados do Boleto 1ª parcela | Dados do boleto | [439517233](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/439517233) |
+| ~~Gerar Boleto 1ª parcela (PDF)~~ | **Descontinuada** (Suhai, 24/10/2026: cobrança só após a apólice) | [439156994](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/439156994) |
+| ~~Consultar Dados do Boleto 1ª parcela~~ | **Descontinuada** (idem) | [439517233](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/439517233) |
 | Pesquisar Proposta | Busca propostas | [488276120](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/488276120) |
 | Consultar Dados da Proposta | Detalhe da proposta | [488276561](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/488276561) |
 | Consultar Pendências de Emissão | Pendências + links vistoria/rastreador | [615841800](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/615841800) |
@@ -114,7 +114,7 @@ sequenceDiagram
   App->>MC: TransmitirProposta (protocolo + dados)
   MC-->>App: numero proposta
   alt Boleto
-    App->>MC: GerarBoleto / ConsultarDadosBoleto
+    Note over App,MC: Sem API de boleto (descontinuada); cobrança só após a apólice
   else Cartão tp_pagamento 11 ou 14
     opt Tokenizar
       App->>Pay: gerartoken (AES)

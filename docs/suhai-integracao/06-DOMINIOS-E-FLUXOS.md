@@ -98,6 +98,8 @@ Se Particular → preencher também `tipoUtilizacao` (1/2/3).
 
 \*Recusas reavaliáveis: doc descreve caminho via novo cálculo/fator FIPE ou nova condição — tratar como fluxo especial de UX.
 
+A coluna "Emite boleto 1ª?" vem da doc antiga e está superada: a Suhai só emite cobrança depois da apólice (status 13), e as APIs de boleto foram descontinuadas (Fábio Edo, 24/10/2026).
+
 ---
 
 ## 5. Fluxo regulamentar resumido (venda nova)
@@ -107,7 +109,7 @@ Se Particular → preencher também `tipoUtilizacao` (1/2/3).
 3. Cliente escolhe cobertura / assistência / parcelamento  
 4. **Transmitir Proposta** (dados cadastrais, veículo, vigência, pagamento)  
 5. Se cartão → **API Pagamento** (AES/token)  
-6. Se boleto → gerar/consultar boleto quando status permitir (**12**)  
+6. Se boleto → nada a chamar: a cobrança só sai depois da apólice emitida (APIs de boleto descontinuadas em 2026)  
 7. Tratar **pendências** (vistoria / rastreador) via `ConsultarPendencias`  
 8. Acompanhar até **Emitida (13)**; opcional PDF proposta  
 9. Pós: REST apólice/parcelas se necessário  

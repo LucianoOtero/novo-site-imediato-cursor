@@ -162,7 +162,7 @@ Entrada: `login`, `senha`, e **pelo menos um** de `protocolo` / `proposta`.
 Retorno: status textual, `data_atualizacao_status`, campos de **Recusa Reavaliável** (AUT/MAN: fator FIPE sugerido, parecer, autor).
 
 Tabela completa de status (1–17+): [`06-DOMINIOS-E-FLUXOS.md`](./06-DOMINIOS-E-FLUXOS.md).  
-Destaque operacional: status **12 Pendências para Emissão** é o que **permite emitir boleto 1ª parcela**.
+~~Destaque operacional: status **12 Pendências para Emissão** é o que **permite emitir boleto 1ª parcela**.~~ Superado: a cobrança só sai depois da apólice emitida (ver seção 6).
 
 ---
 
@@ -186,11 +186,11 @@ Operação SOAP `CancelarProposta`.
 
 ---
 
-## 6. Gerar Boleto 1ª parcela (PDF) / 7. Consultar Dados do Boleto
+## 6. Gerar Boleto 1ª parcela (PDF) / 7. Consultar Dados do Boleto — DESCONTINUADAS
 
 **Páginas:** [439156994](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/439156994) · [439517233](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/439517233)
 
-Disponibilidade condicionada ao **status** da proposta (ver status 12). Retornam PDF e/ou campos do boleto (linha digitável, vencimento, etc. — detalhar na página oficial no momento da implementação).
+**Não implementar.** Fábio Edo (Suhai), e-mail de 24/10/2026: cumprindo determinação da SUSEP, a Suhai só emite cobrança **depois da emissão da apólice**. Não há mais boleto nem cobrança antes da apólice, e as APIs com essa finalidade foram descontinuadas. A proposta continua sendo transmitida com `tp_pagamento` 2 (boleto); o boleto chega depois da apólice. Como ele chega ao cliente (Suhai direto ou corretora pelo portal/pós-venda) foi perguntado à Suhai.
 
 ---
 
