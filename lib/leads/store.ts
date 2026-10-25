@@ -1,9 +1,10 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { env } from "@/lib/env";
+import { appEnvironment, env, firebaseBackupEnabled } from "@/lib/env";
+import { getLeadBackupDatabase } from "@/lib/leads/firebase-admin";
 import type { LeadRecord } from "@/lib/leads/types";
 
 /**
@@ -44,6 +45,13 @@ import type { LeadRecord } from "@/lib/leads/types";
  * novos nem é compartilhado entre instâncias) — dedupe/idempotência
  * usando este store ficam menos confiáveis em produção até o Postgres
  * real ser provisionado.
+ *
+ * Deduplicação durável (projeto funil v2, 2026-10-25): com o Firebase
+ * configurado, `leadStore` passa a ser o `RtdbLeadStore` — `findById` lê
+ * `leads_backup/{id}` (o mesmo registro que a Cloud Function processa) e
+ * `findRecentByDedupeKey` lê o índice `lead_dedupe/{env}/{dedupeKey}`,
+ * compartilhado por todas as instâncias. O arquivo local continua como
+ * reserva quando o RTDB falha e para a idempotência.
  */
 export interface LeadStore {
   /** Busca um lead não-duplicado pela chave de dedupe, dentro da janela informada. */
@@ -74,6 +82,12 @@ type FileShape = {
 const DATA_DIR = process.env.VERCEL ? path.join(os.tmpdir(), "imediato-leads") : path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "leads.json");
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+/** Janela de dedupe por telefone+ramo (seção 44.2). */
+export const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export function buildDedupeKey(phoneE164: string, ramo: string): string {
+  return createHash("sha256").update(`${phoneE164}:${ramo}`).digest("hex");
+}
 
 class FileLeadStore implements LeadStore {
   private async readFile(): Promise<FileShape> {
@@ -144,6 +158,120 @@ class FileLeadStore implements LeadStore {
   }
 }
 
+type RtdbLeadData = Partial<Omit<LeadRecord, "id" | "status" | "dedupeKey" | "createdAt" | "updatedAt">>;
+
+type RtdbLeadRecord = {
+  timestamp?: string;
+  environment?: string;
+  data?: RtdbLeadData;
+  espocrm_sent?: boolean;
+  octadesk_sent?: boolean;
+  espocrm_attempts?: number;
+  octadesk_attempts?: number;
+  espocrmLeadId?: string;
+  espocrmOpportunityId?: string;
+};
+
+type DedupeIndexEntry = { leadId: string; at: string };
+
+/** Converte `leads_backup/{id}` no `LeadRecord` que `/api/lead` mescla com os dados novos. */
+export function leadFromBackup(id: string, record: RtdbLeadRecord | null): LeadRecord | null {
+  const data = record?.data;
+  if (!data?.phoneE164 || record?.environment !== appEnvironment) return null;
+  const ramo = data.ramo ?? "";
+  const createdAt = record.timestamp ?? new Date().toISOString();
+  return {
+    ...data,
+    id,
+    stage: data.stage ?? "complete",
+    ramo,
+    phoneE164: data.phoneE164,
+    status: "received",
+    dedupeKey: buildDedupeKey(data.phoneE164, ramo),
+    createdAt,
+    updatedAt: createdAt,
+    espocrmStatus: record.espocrm_sent ? "sent" : "pending",
+    espocrmAttempts: record.espocrm_attempts ?? 0,
+    octadeskStatus: record.octadesk_sent ? "sent" : "pending",
+    octadeskAttempts: record.octadesk_attempts ?? 0,
+    espocrmLeadId: record.espocrmLeadId,
+    espocrmOpportunityId: record.espocrmOpportunityId,
+  };
+}
+
+/**
+ * Leads no Firebase RTDB (projeto funil v2). O registro em si é gravado
+ * por `saveLeadBackupToFirebase`; aqui só se lê esse registro e se mantém
+ * o índice de dedupe. `save` cria o índice por `transaction()`: se outra
+ * instância já gravou um lead para o mesmo telefone+ramo dentro da
+ * janela, o índice existente é mantido. Qualquer falha do RTDB cai para
+ * o arquivo local — o envio do lead nunca depende deste índice.
+ */
+class RtdbLeadStore implements LeadStore {
+  constructor(private readonly fallback: LeadStore) {}
+
+  private dedupeRef(dedupeKey: string) {
+    const database = getLeadBackupDatabase();
+    return database ? database.ref(`lead_dedupe/${appEnvironment}/${dedupeKey}`) : null;
+  }
+
+  async findRecentByDedupeKey(dedupeKey: string, windowMs: number): Promise<LeadRecord | null> {
+    try {
+      const ref = this.dedupeRef(dedupeKey);
+      if (!ref) return this.fallback.findRecentByDedupeKey(dedupeKey, windowMs);
+      const entry = (await ref.get()).val() as DedupeIndexEntry | null;
+      if (!entry?.leadId || Date.now() - Date.parse(entry.at) > windowMs) return null;
+      return await this.findById(entry.leadId);
+    } catch (error) {
+      console.warn("[lib/leads/store] Falha ao ler lead_dedupe no RTDB — usando o arquivo local:", error);
+      return this.fallback.findRecentByDedupeKey(dedupeKey, windowMs);
+    }
+  }
+
+  async findById(id: string): Promise<LeadRecord | null> {
+    try {
+      const database = getLeadBackupDatabase();
+      if (!database) return this.fallback.findById(id);
+      const record = (await database.ref(`leads_backup/${id}`).get()).val() as RtdbLeadRecord | null;
+      return leadFromBackup(id, record) ?? (await this.fallback.findById(id));
+    } catch (error) {
+      console.warn(`[lib/leads/store] Falha ao ler leads_backup/${id} no RTDB — usando o arquivo local:`, error);
+      return this.fallback.findById(id);
+    }
+  }
+
+  async save(record: LeadRecord): Promise<void> {
+    await this.fallback.save(record);
+    try {
+      const ref = this.dedupeRef(record.dedupeKey);
+      if (!ref) return;
+      const result = await ref.transaction((current: DedupeIndexEntry | null) => {
+        if (current?.leadId && current.leadId !== record.id && Date.now() - Date.parse(current.at) <= DEDUPE_WINDOW_MS) {
+          return undefined;
+        }
+        return { leadId: record.id, at: record.createdAt };
+      });
+      if (!result.committed) {
+        console.warn(`[lib/leads/store] lead_dedupe já apontava para outro lead dentro da janela — ${record.id} não substituiu o índice.`);
+      }
+    } catch (error) {
+      console.warn(`[lib/leads/store] Falha ao gravar lead_dedupe para ${record.id} (não bloqueante):`, error);
+    }
+  }
+
+  update(id: string, patch: Partial<LeadRecord>): Promise<void> {
+    return this.fallback.update(id, patch);
+  }
+
+  getIdempotentResponse(key: string): Promise<{ status: number; body: unknown } | null> {
+    return this.fallback.getIdempotentResponse(key);
+  }
+
+  saveIdempotentResponse(key: string, status: number, body: unknown): Promise<void> {
+    return this.fallback.saveIdempotentResponse(key, status, body);
+  }
+}
+
 /**
  * `env.databaseUrl` continua sendo o valor placeholder do `.env.example`
  * (`postgres://usuario:senha@host:5432/banco_placeholder`) até um banco
@@ -154,7 +282,7 @@ class FileLeadStore implements LeadStore {
 const PLACEHOLDER_DATABASE_URL = "postgres://usuario:senha@host:5432/banco_placeholder";
 export const isUsingRealDatabase = Boolean(env.databaseUrl) && env.databaseUrl !== PLACEHOLDER_DATABASE_URL;
 
-if (!isUsingRealDatabase && typeof window === "undefined") {
+if (!isUsingRealDatabase && !firebaseBackupEnabled && typeof window === "undefined") {
   console.warn(
     `[lib/leads/store] DATABASE_URL não configurada (ou é o placeholder) — usando armazenamento em arquivo local best-effort (${DATA_FILE}). Ver nota de produção em lib/leads/store.ts.`
   );
@@ -162,7 +290,7 @@ if (!isUsingRealDatabase && typeof window === "undefined") {
 
 // TODO(Issue 24 ou dedicada de infra): quando houver Postgres real,
 // substituir por `new PostgresLeadStore(env.databaseUrl)` aqui.
-export const leadStore: LeadStore = new FileLeadStore();
+export const leadStore: LeadStore = new RtdbLeadStore(new FileLeadStore());
 
 export function generateLeadId(): string {
   return `ld_${randomUUID().replace(/-/g, "").slice(0, 12)}`;

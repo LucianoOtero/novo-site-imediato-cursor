@@ -1,8 +1,7 @@
-import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { saveLeadBackupToFirebase } from "@/lib/leads/firebase-backup";
-import { generateLeadId, leadStore } from "@/lib/leads/store";
+import { buildDedupeKey, DEDUPE_WINDOW_MS, generateLeadId, leadStore } from "@/lib/leads/store";
 import { registrarPlanoSuhai } from "@/lib/leads/suhai-etapas";
 import { checkRateLimit, getClientIp, hashIp, verifyTurnstile } from "@/lib/leads/security";
 import { apiLeadSchema, apiLeadSchemaLenient } from "@/lib/leads/types";
@@ -48,14 +47,8 @@ import { estadoCivilPorIdade, normalizarDataNascimentoBR } from "@/lib/perfil-rp
  */
 export const runtime = "nodejs";
 
-const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000;
-
 function toE164(ddd: string, celular: string): string {
   return `+55${ddd}${celular}`;
-}
-
-function buildDedupeKey(phoneE164: string, ramo: string): string {
-  return createHash("sha256").update(`${phoneE164}:${ramo}`).digest("hex");
 }
 
 /**
@@ -241,33 +234,32 @@ export async function POST(request: NextRequest) {
   // instância serverless diferente, ver nota de "best-effort" em
   // lib/leads/store.ts) para atualizar em vez de criar um lead duplicado.
   let existingInitial: LeadRecord | null = null;
+  let duplicate = false;
   if (stage === "complete") {
     const byId = data.leadId ? await leadStore.findById(data.leadId) : null;
     const byDedupe = byId ? null : await leadStore.findRecentByDedupeKey(dedupeKey, DEDUPE_WINDOW_MS);
     const candidate = byId ?? byDedupe;
     // "progress"/"consultant_requested" (2026-07-20) também são estados
-    // pré-complete: sem eles aqui, um lead que passou pelos novos eventos
-    // cairia no caminho de "duplicado" e a atualização final com os dados
-    // completos nunca aconteceria (achado no teste local desta rodada).
+    // pré-complete. Um candidato já "complete" (ou com o cálculo concluído)
+    // é o prospect voltando dentro da janela: desde o índice compartilhado
+    // do RTDB (projeto funil v2) isso vale entre instâncias, então os dados
+    // novos são mesclados no mesmo registro em vez de descartados. A
+    // resposta continua `duplicate: true` e roda a PH3A, porque o RPA do
+    // usuário recorrente precisa do `perfilRpa` (projeto 2026-07-17).
     const updatableStages = ["initial", "progress", "consultant_requested"];
-    if (candidate && updatableStages.includes(candidate.stage)) {
+    if (candidate) {
       existingInitial = candidate;
-    } else if (candidate) {
-      // Já existe um lead "complete" com o mesmo telefone+ramo. Ainda assim,
-      // se o usuário escolheu "Aguardar o cálculo", o RPA precisa do
-      // `perfilRpa` (estado civil por idade via PH3A) — por isso rodamos a
-      // PH3A também neste caminho de duplicado, senão o cálculo do usuário
-      // recorrente ficaria sem o bloco demográfico (projeto 2026-07-17).
-      await leadStore.update(candidate.id, { utm: data.utm ?? candidate.utm });
-      const ph3aDup = await enrichLeadWithPh3a({ ...candidate, cpf: data.cpf ?? candidate.cpf });
-      const perfilRpa = toPerfilRpa(ph3aDup);
-      return respond(idempotencyKey, 200, { duplicate: true, leadId: candidate.id, redirect: "/obrigado", perfilRpa });
+      duplicate = !updatableStages.includes(candidate.stage);
     }
   } else {
     // stage === "initial": se já existe um registro (mesmo telefone+ramo,
     // inicial ou completo), não dispara o contato inicial de novo — só
     // devolve o `leadId` existente (idempotente, mesma janela de dedupe).
-    const existing = await leadStore.findRecentByDedupeKey(dedupeKey, DEDUPE_WINDOW_MS);
+    // O `leadId` guardado na sessão do navegador vale primeiro, desde que
+    // seja do mesmo telefone+ramo.
+    const byId = data.leadId ? await leadStore.findById(data.leadId) : null;
+    const existing =
+      byId && byId.dedupeKey === dedupeKey ? byId : await leadStore.findRecentByDedupeKey(dedupeKey, DEDUPE_WINDOW_MS);
     if (existing) {
       return respond(idempotencyKey, 200, { leadId: existing.id });
     }
@@ -383,5 +375,8 @@ export async function POST(request: NextRequest) {
   // sem o bloco e o backend estima, como antes).
   const perfilRpa = toPerfilRpa(ph3a);
 
+  if (duplicate) {
+    return respond(idempotencyKey, 200, { duplicate: true, leadId: lead.id, redirect: "/obrigado", perfilRpa });
+  }
   return respond(idempotencyKey, 201, { leadId: lead.id, redirect: "/obrigado", perfilRpa });
 }
