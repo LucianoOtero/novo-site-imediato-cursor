@@ -13,6 +13,7 @@ const MODAL_COMPLETE_KEY = "imediato_funnel_modal_complete";
 
 /** Whitelist fechada (Fase 1 UX) — só nomes de campo, nunca valores. */
 export const LEAD_FOCUS_FIELD_WHITELIST = [
+  "telefone",
   "ddd",
   "celular",
   "nome",

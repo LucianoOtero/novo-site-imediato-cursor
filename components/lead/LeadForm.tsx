@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Lock } from "lucide-react";
@@ -9,6 +9,7 @@ import type { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TelefoneInput } from "@/components/ui/telefone-input";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -29,14 +30,12 @@ import { publicEnv } from "@/lib/env";
 import { company } from "@/lib/company";
 import {
   LEAD_FORM_STEPS,
-  formatCelular,
   formatCep,
   formatCpf,
-  formatDdd,
   formatPlaca,
+  formatTelefone,
   leadSchema,
   onlyDigits,
-  splitFullPhone,
   type LeadInput,
 } from "@/lib/validators";
 import { trackEvent } from "@/lib/analytics";
@@ -110,18 +109,12 @@ import { cn } from "@/lib/utils";
  * legado), e continua também sendo chamado em `goNext()` como reforço
  * (ex.: usuário confirma com Enter, sem disparar o `blur` antes).
  *
- * DDD (passo 1, correção 2026-07-14): `onBlur` chama `trigger("ddd")` —
- * réplica de `$DDD.on('blur.siPhone', ...)` do legado (que checa o DDD
- * de forma independente do celular, mesmo antes do usuário preencher o
- * celular). Dá feedback imediato ("DDD inválido") ao saltar do campo,
- * em vez de esperar o clique em "Continuar".
- *
- * DDD → celular (2026-10-25): ao digitar o 2º dígito do DDD, o foco
- * pula para o celular; Backspace com o celular vazio volta ao DDD.
- * Telefone completo (10/11 dígitos, com ou sem +55) colado ou
- * preenchido automaticamente em qualquer um dos dois campos é separado
- * em DDD + número — antes o celular truncava "11987654321" para
- * "11987-6543". Sem `maxLength` no DDD para a colagem chegar inteira.
+ * Telefone em campo único (2026-10-25, projeto funil v2): o passo 1 tem
+ * um só campo `(11) 98765-4321` (`TelefoneInput`), que preenche por
+ * baixo os campos `ddd` e `celular` do formulário. Schema, validação,
+ * APILayer e payloads continuam com os dois separados. Colagem e
+ * preenchimento automático com +55 também são aceitos. O erro de DDD ou
+ * de celular aparece embaixo do campo único.
  *
  * Ficha do veículo (passo 3, projeto 2026-07-16, a pedido do cliente):
  * `handlePlacaBlur` também preenche os campos granulares
@@ -275,6 +268,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    * (ampulheta) em vez do aviso de dados incompletos.
    */
   const [pendingValidations, setPendingValidations] = useState(0);
+  const telefoneInputRef = useRef<HTMLInputElement>(null);
   const rpa = useRpaCalculation();
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
@@ -586,30 +580,24 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     return Boolean(touchedFields[field] && value && value.trim().length > 0 && !errors[field]);
   }
 
-  const ddd = register("ddd");
-  const celular = register("celular");
+  register("ddd");
+  register("celular");
   const cep = register("cep");
   const nome = register("nome");
   const email = register("email");
   const cpf = register("cpf");
   const placa = register("placa");
 
-  /**
-   * Só conta como digitação o que vem do teclado — preenchimento
-   * automático e colagem chegam sem `inputType` ou com
-   * `insertReplacementText`/`insertFromPaste`, e não devem mover o foco.
-   */
-  function isTyping(event: ChangeEvent<HTMLInputElement>): boolean {
-    const inputType = (event.nativeEvent as Partial<InputEvent>).inputType ?? "";
-    return inputType === "insertText" || inputType === "insertCompositionText";
-  }
+  const telefone = formatTelefone(onlyDigits(watchedDdd ?? "") + onlyDigits(watchedCelular ?? ""));
+  const telefoneError = errors.ddd?.message ?? errors.celular?.message;
 
-  function focusDddAtEnd() {
-    setFocus("ddd");
-    const input = document.getElementById("ddd");
-    if (input instanceof HTMLInputElement) {
-      input.setSelectionRange(input.value.length, input.value.length);
+  /** `ddd`/`celular` não têm input próprio; o foco vai para o campo único. */
+  function focusField(field: keyof LeadInput) {
+    if (field === "ddd" || field === "celular") {
+      telefoneInputRef.current?.focus();
+      return;
     }
+    setFocus(field);
   }
 
   function markStarted() {
@@ -906,7 +894,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
         setShowCorrectOrProceed(true);
         return;
       }
-      setFocus(firstInvalid);
+      focusField(firstInvalid);
       return;
     }
 
@@ -1334,86 +1322,31 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
       >
         {step === 1 && (
           <>
-            <div className="grid grid-cols-[5rem_1fr] gap-3">
-              <Field
-                label="DDD"
-                htmlFor="ddd"
-                error={errors.ddd?.message}
-                tone={tone}
-                valid={isFieldValid("ddd")}
-              >
-                <Input
-                  id="ddd"
-                  inputMode="numeric"
-                  autoComplete="tel-area-code"
-                  placeholder="11"
-                  aria-invalid={!!errors.ddd}
-                  aria-describedby={errors.ddd ? "ddd-error" : "phone-microcopy"}
-                  data-clarity-mask="true"
-                  {...ddd}
-                  onChange={(event) => {
-                    const full = splitFullPhone(event.target.value);
-                    if (full) {
-                      event.target.value = full.ddd;
-                      void ddd.onChange(event);
-                      setValue("celular", full.celular, { shouldDirty: true, shouldTouch: true });
-                      setFocus("celular");
-                      return;
-                    }
-                    event.target.value = formatDdd(event.target.value);
-                    void ddd.onChange(event);
-                    if (event.target.value.length === 2 && isTyping(event)) {
-                      setFocus("celular");
-                    }
-                  }}
-                  onBlur={(event) => {
-                    void ddd.onBlur(event);
-                    void trigger("ddd");
-                  }}
-                />
-              </Field>
-              <Field
-                label="Celular"
-                htmlFor="celular"
-                error={errors.celular?.message}
-                tone={tone}
-                valid={isFieldValid("celular")}
-              >
-                <Input
-                  id="celular"
-                  inputMode="numeric"
-                  autoComplete="tel-national"
-                  placeholder="98765-4321"
-                  aria-invalid={!!errors.celular}
-                  aria-describedby={
-                    errors.celular ? "celular-error" : "phone-microcopy"
-                  }
-                  data-clarity-mask="true"
-                  {...celular}
-                  onChange={(event) => {
-                    const full = isTyping(event) ? null : splitFullPhone(event.target.value);
-                    if (full) {
-                      setValue("ddd", full.ddd, { shouldDirty: true, shouldTouch: true });
-                      void trigger("ddd");
-                      event.target.value = full.celular;
-                    } else {
-                      event.target.value = formatCelular(event.target.value);
-                    }
-                    void celular.onChange(event);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Backspace" && event.currentTarget.value === "") {
-                      event.preventDefault();
-                      focusDddAtEnd();
-                    }
-                  }}
-                  onBlur={(event) => {
-                    void celular.onBlur(event);
-                    void checkCelularApi();
-                  }}
-                />
-              </Field>
-            </div>
+            <Field
+              label="Celular com DDD"
+              htmlFor="telefone"
+              error={telefoneError}
+              tone={tone}
+              valid={isFieldValid("ddd") && isFieldValid("celular")}
+            >
+              <TelefoneInput
+                ref={telefoneInputRef}
+                id="telefone"
+                name="telefone"
+                value={telefone}
+                aria-invalid={!!telefoneError}
+                aria-describedby={telefoneError ? "telefone-error" : "phone-microcopy"}
+                data-clarity-mask="true"
+                onTelefoneChange={(next) => {
+                  const options = { shouldDirty: true, shouldTouch: true, shouldValidate: Boolean(telefoneError) };
+                  setValue("ddd", next.ddd, options);
+                  setValue("celular", next.celular, options);
+                }}
+                onBlur={() => {
+                  if (telefone) void checkCelularApi();
+                }}
+              />
+            </Field>
             <p id="phone-microcopy" className="text-xs leading-snug text-neutral-500">
               {PHONE_MICROCOPY}
             </p>

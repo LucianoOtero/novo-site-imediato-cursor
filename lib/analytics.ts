@@ -88,7 +88,7 @@ type AnalyticsEventMap = {
     ramo?: RamoSlug;
     had_initial_contact: boolean;
     /** Nome do campo em foco (whitelist) — nunca o valor. */
-    focus_field?: "ddd" | "celular" | "nome" | "email" | "cpf" | "cep" | "placa" | "other";
+    focus_field?: "telefone" | "ddd" | "celular" | "nome" | "email" | "cpf" | "cep" | "placa" | "other";
     had_filled_field: boolean;
   };
   /** Início da espera percebida na tela RPA (Fase 1 UX). */

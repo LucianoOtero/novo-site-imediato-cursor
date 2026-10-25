@@ -8,6 +8,7 @@ import { ProgressBar } from "@/components/lead/ProgressBar";
 import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TelefoneInput } from "@/components/ui/telefone-input";
 import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO, type PlanoAssistencia } from "@/lib/suhai/dominio";
 import { trackEvent } from "@/lib/analytics";
 import { getAttributionUtm } from "@/lib/leads/attribution";
@@ -17,11 +18,10 @@ import type { ContextoProposta } from "@/components/suhai/PropostaSuhaiForm";
 import type { CotacaoResultado } from "@/lib/suhai/types";
 import { cn } from "@/lib/utils";
 import {
-  formatCelular,
   formatCep,
   formatCpf,
-  formatDdd,
   formatPlacaMascara,
+  formatTelefone,
   isValidCpf,
   isValidPlacaFormat,
   onlyDigits,
@@ -611,37 +611,20 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       >
         {etapa === 1 && (
           <>
-            <div className="grid grid-cols-[5rem_1fr] gap-3">
-              <Field label="DDD" htmlFor="suhai-ddd" error={erros.ddd}>
-                <Input
-                  id="suhai-ddd"
-                  inputMode="numeric"
-                  autoComplete="tel-area-code"
-                  placeholder="11"
-                  maxLength={2}
-                  data-clarity-mask="true"
-                  value={estado.ddd}
-                  aria-invalid={Boolean(erros.ddd)}
-                  onChange={(event) => definir("ddd", formatDdd(event.target.value))}
-                />
-              </Field>
-              <Field label="Celular" htmlFor="suhai-celular" error={erros.celular}>
-                <Input
-                  id="suhai-celular"
-                  inputMode="numeric"
-                  autoComplete="tel-national"
-                  placeholder="98765-4321"
-                  data-clarity-mask="true"
-                  value={estado.celular}
-                  aria-invalid={Boolean(erros.celular)}
-                  onChange={(event) => {
-                    definir("celular", formatCelular(event.target.value));
-                    setErros((anterior) => ({ ...anterior, celular: "" }));
-                  }}
-                  onBlur={() => void validarCelularApi(estadoRef.current)}
-                />
-              </Field>
-            </div>
+            <Field label="Celular com DDD" htmlFor="suhai-telefone" error={erros.ddd || erros.celular}>
+              <TelefoneInput
+                id="suhai-telefone"
+                name="telefone"
+                data-clarity-mask="true"
+                value={formatTelefone(onlyDigits(estado.ddd) + onlyDigits(estado.celular))}
+                aria-invalid={Boolean(erros.ddd || erros.celular)}
+                onTelefoneChange={(next) => {
+                  setEstado((anterior) => ({ ...anterior, ddd: next.ddd, celular: next.celular }));
+                  setErros((anterior) => ({ ...anterior, ddd: "", celular: "" }));
+                }}
+                onBlur={() => void validarCelularApi(estadoRef.current)}
+              />
+            </Field>
             <p className="text-xs leading-snug text-neutral-500">
               Usamos o número para enviar o resultado por WhatsApp e seguir sua cotação.
             </p>

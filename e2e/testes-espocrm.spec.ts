@@ -399,8 +399,7 @@ for (const caso of casos) {
     if ((await chip.count()) > 0) await chip.first().click();
 
     // Passo 1
-    await fill(page, "ddd", identidade.ddd);
-    await fill(page, "celular", identidade.celular);
+    await fill(page, "telefone", `${identidade.ddd}${identidade.celular}`);
     await page.getByRole("button", { name: "Receber cotação" }).click();
 
     // Passo 2 — timeout maior: validação de telefone pode demorar após vários casos.

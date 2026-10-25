@@ -9,6 +9,7 @@ import type { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TelefoneInput } from "@/components/ui/telefone-input";
 import { Field } from "@/components/lead/fields";
 import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { useContactModal } from "@/components/cta/ContactModalContext";
@@ -24,12 +25,12 @@ import {
 import { postLead } from "@/lib/leads/post-lead";
 import { getAttributionUtm } from "@/lib/leads/attribution";
 import {
-  formatCelular,
   formatCep,
   formatCpf,
-  formatDdd,
   formatPlaca,
+  formatTelefone,
   leadSchema,
+  onlyDigits,
   type LeadInput,
 } from "@/lib/validators";
 
@@ -65,10 +66,8 @@ import {
  * usado no envio final (`stage: "complete"`) para **atualizar** esse
  * mesmo lead (dados completos), em vez de criar um duplicado.
  *
- * DDD (correção 2026-07-14): `onBlur` chama `trigger("ddd")` — réplica
- * de `$DDD.on('blur.siPhone', ...)` do legado, que valida o DDD de
- * forma independente do celular (feedback imediato ao saltar do
- * campo, sem esperar o blur do celular ou o clique em enviar).
+ * Telefone em campo único (2026-10-25): `TelefoneInput` preenche por
+ * baixo `ddd` e `celular`; o blur do campo valida os dois juntos.
  *
  * Validação em tempo real (CPF/CEP/placa/e-mail): reaproveita a
  * infraestrutura já existente do React Hook Form (`trigger()`/
@@ -174,6 +173,11 @@ export function ContactLeadModal() {
   const watchedVeiculoModelo = watch("veiculoModelo");
   const watchedVeiculoAnoFabricacao = watch("veiculoAnoFabricacao");
   const watchedVeiculoAnoModelo = watch("veiculoAnoModelo");
+
+  register("ddd");
+  register("celular");
+  const telefone = formatTelefone(onlyDigits(watch("ddd") ?? "") + onlyDigits(watch("celular") ?? ""));
+  const telefoneError = errors.ddd?.message ?? errors.celular?.message;
 
   /**
    * `ContactLeadModal` é renderizado uma única vez, sempre montado (só
@@ -541,47 +545,23 @@ export function ContactLeadModal() {
 
           <form onSubmit={handleFinalSubmit} className="flex flex-col gap-3 overflow-y-auto px-5 py-4">
             {/* Etapa 1 — sempre visível (projeto 2026-07-13, réplica do modal legado) */}
-            <div className="grid grid-cols-[4.5rem_1fr] gap-3">
-              <Field label="DDD" htmlFor="modal-ddd" error={errors.ddd?.message}>
-                <Input
-                  id="modal-ddd"
-                  inputMode="numeric"
-                  autoComplete="tel-area-code"
-                  placeholder="11"
-                  maxLength={2}
-                  aria-invalid={!!errors.ddd}
-                  data-clarity-mask="true"
-                  {...register("ddd")}
-                  onChange={(event) => {
-                    event.target.value = formatDdd(event.target.value);
-                    void register("ddd").onChange(event);
-                  }}
-                  onBlur={(event) => {
-                    void register("ddd").onBlur(event);
-                    void trigger("ddd");
-                  }}
-                />
-              </Field>
-              <Field label="Celular" htmlFor="modal-celular" error={errors.celular?.message}>
-                <Input
-                  id="modal-celular"
-                  inputMode="numeric"
-                  autoComplete="tel-national"
-                  placeholder="98765-4321"
-                  aria-invalid={!!errors.celular}
-                  data-clarity-mask="true"
-                  {...register("celular")}
-                  onChange={(event) => {
-                    event.target.value = formatCelular(event.target.value);
-                    void register("celular").onChange(event);
-                  }}
-                  onBlur={(event) => {
-                    void register("celular").onBlur(event);
-                    void handlePhoneBlur();
-                  }}
-                />
-              </Field>
-            </div>
+            <Field label="Celular com DDD" htmlFor="modal-telefone" error={telefoneError}>
+              <TelefoneInput
+                id="modal-telefone"
+                name="telefone"
+                value={telefone}
+                aria-invalid={!!telefoneError}
+                data-clarity-mask="true"
+                onTelefoneChange={(next) => {
+                  const options = { shouldDirty: true, shouldTouch: true, shouldValidate: Boolean(telefoneError) };
+                  setValue("ddd", next.ddd, options);
+                  setValue("celular", next.celular, options);
+                }}
+                onBlur={() => {
+                  if (telefone) void handlePhoneBlur();
+                }}
+              />
+            </Field>
 
             {/* Etapa 2 — aparece só depois do telefone validado (projeto 2026-07-13) */}
             {step2Visible && (

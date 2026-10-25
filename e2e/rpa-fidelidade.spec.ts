@@ -256,8 +256,7 @@ for (const caso of manifest.casos) {
     }
 
     // Passo 1 — DDD + Celular
-    await fillStep(page, "ddd", ff.ddd);
-    await fillStep(page, "celular", ff.celular);
+    await fillStep(page, "telefone", ff.ddd && ff.celular ? `${ff.ddd}${ff.celular}` : undefined);
     await page.getByRole("button", { name: "Receber cotação" }).click();
 
     // Passo 2 — Nome + E-mail
