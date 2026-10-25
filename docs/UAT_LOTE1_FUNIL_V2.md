@@ -131,6 +131,11 @@ Feita pela API (`espo-review.mjs`):
 - **Opp `6ade403323badd70a`:** nota "🔁 Nova jornada do site em 25/10" (F2 reaproveitou a Opp aberta de E2), `cEtapaFunil` "Cotação Suhai apresentada".
 - **Octadesk:** os 6 registros têm a mensagem inicial confirmada pela API do Octadesk (`octadesk_sent=true`) e os modelos da lista acima. A chegada no aparelho não foi conferida.
 
+## UAT em aparelho real
+
+- **Endereço sem login (25/10, 14:56):** `https://uat.segurosimediato.com.br` serve a branch `uat-funil-etapa3`, deployment com o commit `c96899f` ou posterior.
+- **Proteção desligada:** para abrir sem login, a proteção de previews do projeto Vercel `imediato-seguros` foi desligada: `ssoProtection` era `{"deploymentType":"all_except_custom_domains"}` e agora é `null`. Todos os previews do projeto ficam públicos. **Depois do UAT, religar com esse mesmo valor.**
+
 ## Aceite
 
 - [ ] Luciano: Bloco A em aparelho real (iPhone e Android) e no formulário de proposta Suhai.
