@@ -13,6 +13,13 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Não publicado — 2026-10-25 (etapa 3: texto e saída pelo consultor)
+
+### Changed
+- Etapa 3 (`components/lead/LeadForm.tsx`): subtítulo "Para calcular seu seguro agora É FUNDAMENTAL preencher os 3 dados abaixo."; a saída "Prefiro que um consultor entre em contato" vira botão cinza delimitado (fundo `neutral-100`, borda `neutral-300`), com "Prefere não informar esses dados agora?" acima em fonte menor.
+
+---
+
 ## Não publicado — 2026-10-23 (rodada de UAT antes do aceite)
 
 ### Fixed
