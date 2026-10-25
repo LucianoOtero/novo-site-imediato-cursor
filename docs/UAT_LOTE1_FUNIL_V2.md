@@ -113,9 +113,27 @@ Só o Luciano pode conferir:
 
 Domingo, sem tráfego de leads. A vigilância continua nas próximas 24 h. O primeiro lead real de produção deve ter `espocrm_sent` e `octadesk_sent` e gravar `opp_dedupe/production`, sem reaproveitamento.
 
+## Revisão do Espo DEV (agente, a pedido do Luciano, 17:55 UTC)
+
+Feita pela API (`espo-review.mjs`):
+
+- **Criados desde 17:40 UTC:** exatamente **1 Lead** (`6ade3f9f42f78c524`) e **4 Oportunidades**. É o esperado:
+  - jornada 1 + C1 a C4 + D1 → `6ade3f9f7c23d570a`;
+  - C5 Moto → `6ade3fde85b5e2d14`;
+  - E1 → `6ade40172f4b4bf4d`;
+  - E2 + F2 → `6ade403323badd70a`.
+- **Stream do Lead:**
+  - criação;
+  - 4 notas "Prospect prefere receber o cálculo completo depois" (B1, D1, E1 e E2);
+  - 4 Oportunidades relacionadas;
+  - nota da cotação Suhai simulada.
+- **Opp `6ade3f9f7c23d570a`:** nota "🔁 Nova jornada do site em 25/10" (D1), placa da jornada D1, etapa "Perdido" vinda do E1.
+- **Opp `6ade403323badd70a`:** nota "🔁 Nova jornada do site em 25/10" (F2 reaproveitou a Opp aberta de E2), `cEtapaFunil` "Cotação Suhai apresentada".
+- **Octadesk:** os 6 registros têm a mensagem inicial confirmada pela API do Octadesk (`octadesk_sent=true`) e os modelos da lista acima. A chegada no aparelho não foi conferida.
+
 ## Aceite
 
 - [ ] Luciano: Bloco A em aparelho real (iPhone e Android) e no formulário de proposta Suhai.
-- [ ] Luciano: mensagens do Octadesk conforme a lista acima.
-- [ ] Luciano: conferência visual no Espo DEV (Lead `6ade3f9f42f78c524` e Opps acima).
-- [ ] Limpeza do Espo DEV e do staging depois do aceite (`purge-phone test`, `clean-staging-test`).
+- [x] Mensagens do Octadesk aceitas pela API (flags da `deliverLead`).
+- [x] Espo DEV revisado pelo agente (acima).
+- [ ] Limpeza do Espo DEV e do staging (`purge-phone test`, `clean-staging-test`).
