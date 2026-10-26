@@ -56,7 +56,7 @@ Quando o status vira Emitida, a rotina chama `/posvenda/apolice-da-proposta` (pl
 | Chamada pela tag | Passa da restrição de IP, mas a Suhai responde 500 "serviço indisponível, tente mais tarde" em pesquisa, consulta e comissão. A homologação SOAP respondeu normalmente no mesmo horário (9061210, status 12) |
 | Testes | Gateway 35/35 (`posvenda.test.js` com os exemplos do portal); funções 61/61 (emissão com boleto, no cartão, sem apólice, e rodada com a pós-venda fora) |
 
-Falta repetir a pesquisa pela placa DBO7B72 quando a Digibee de homologação voltar. Se o 500 persistir num dia útil, abrir chamado com a Suhai (a chave pode não estar ativa no pipeline de pós-venda).
+Segunda-feira, 26/10: a Digibee de homologação voltou. Pesquisa por placa (DBO7B72) e por emissão (2025-01-01 a 2026-10-25) e comissão de 30 dias respondem 200, vazias; comissão de 45 dias responde 400 no gateway; `apolice-da-proposta` da 9061210 responde `encontrada: false`. A apólice de exemplo do portal (1003106306367) responde "restrição de segurança" por ser de outro corretor. Falta uma apólice da corretora em homologação para testar consulta, parcelas e a Note da emissão com dados reais.
 
 ## Pendências antes do rollout
 
