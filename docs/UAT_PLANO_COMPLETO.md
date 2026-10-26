@@ -173,7 +173,7 @@ Rodada de 26/10, pela tag `homologacao`: a Digibee voltou (o 500 de domingo sumi
 
 ## 8. Ordem de merge e deploy
 
-Princípio: uma mudança de produção por vez, com smoke logo depois; cada deploy da `deliverLead` leva uma mudança só.
+Princípio: uma mudança de produção por vez, com smoke logo depois; cada deploy da `deliverLead` leva uma mudança só. Ordem aprovada pelo Luciano em 26/10; cada passo continua precisando do "pode" na hora.
 
 | Ordem | Fase | Passo | Smoke | Rollback |
 |---|---|---|---|---|
@@ -194,10 +194,10 @@ Durante a viagem (29/10 a 02/11), nenhum deploy: só observação de R14 e do al
 
 - Fase B (Suhai junto com o RPA): plano em [FASE_B_SUHAI_PARALELO.md](FASE_B_SUHAI_PARALELO.md), ainda sem código.
 - Cartão de crédito: aguarda a resposta do Fábio.
-- Template de WhatsApp com o link de vistoria ou rastreador: texto em F1; submissão no Octadesk com "pode".
+- Templates de WhatsApp da pendência (vistoria ou rastreador) e da proposta v3: em análise na Meta desde 26/10; o disparo no código entra depois da aprovação, com "pode".
 
 ## Registro de execução
 
 | Data | Fase | Resultado |
 |---|---|---|
-| 26/10 | F1 | Plano gravado. Rodapé D2 a D4 ok, com o defeito do modal corrigido em `c8dd378`. Regressão local 26/26 e 78/78. Pós-venda V2 e V5 ok; V3 e V4 dependem de uma apólice nossa em homologação. `rpa-fidelidade` e `testes-espocrm` não rodados (cotações na Tô Segurado). E-mail ao Fábio e template de WhatsApp aguardando aprovação |
+| 26/10 | F1 | Plano gravado. Rodapé D2 a D4 ok, com o defeito do modal corrigido em `c8dd378`. Regressão local 26/26 e 78/78. Pós-venda V2 e V5 ok; V3 e V4 dependem de uma apólice nossa em homologação. Ordem de deploy aprovada. Rascunho do e-mail ao Fábio no Gmail para o Luciano enviar. Templates `pendencia_suhai_util_v1` e `proposta_suhai_util_v3` em análise na Meta (registro em `GUIA_OCTADESK_TEMPLATES.md`). `rpa-fidelidade` e `testes-espocrm` autorizados; resultado abaixo |
