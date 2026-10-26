@@ -108,6 +108,16 @@ test("envelope de pendências usa o wrapper pendencia", () => {
   assert.match(xml, /<suh:proposta>999999<\/suh:proposta>/);
 });
 
+test("pendências aceitam placa ou chassi como filtro", () => {
+  const xml = montarEnvelopePendencias({ placa: "dbo7b72" }, credenciais);
+
+  assert.match(xml, /<suh:placa>DBO7B72<\/suh:placa>/);
+  assert.match(xml, /<suh:proposta\/>/);
+  assert.throws(() => montarEnvelopePendencias({ placa: "DBO-7B72" }, credenciais), (erro) => erro.entradaInvalida);
+  assert.throws(() => montarEnvelopePendencias({ chassi: "123" }, credenciais), (erro) => erro.entradaInvalida);
+  assert.throws(() => montarEnvelopeStatus({ placa: "DBO7B72" }, credenciais), (erro) => erro.entradaInvalida);
+});
+
 test("pendências trazem os painéis com link do prestador e o parecer", () => {
   const { propostas, semRegistro } = lerRespostaPendencias(corpoDoFixture("pendencias-sucesso.xml"));
 

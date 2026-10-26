@@ -51,6 +51,18 @@ function campo(no, nome) {
   return no[capitalizado];
 }
 
+/** Pendências também aceitam placa ou chassi (busca da Suhai), além de protocolo/proposta. */
+export function filtroPendencias(payload = {}) {
+  const placa = payload.placa ? String(payload.placa).trim().toUpperCase() : null;
+  const chassi = payload.chassi ? String(payload.chassi).trim().toUpperCase() : null;
+  if (placa && !/^[A-Z]{3}\d[A-Z0-9]\d{2}$/.test(placa)) throw new EntradaInvalidaError("Placa inválida.");
+  if (chassi && !/^[A-Z0-9]{17}$/.test(chassi)) throw new EntradaInvalidaError("Chassi inválido.");
+  if (placa || chassi) {
+    return { protocolo: digitos(payload.protocolo), proposta: digitos(payload.proposta), placa, chassi };
+  }
+  return { ...identificacao(payload), placa: null, chassi: null };
+}
+
 // ---------------------------------------------------------------- status
 
 export function montarEnvelopeStatus(payload, credenciais = config.credenciais) {
@@ -108,10 +120,10 @@ export async function consultarStatus(payload) {
 // ------------------------------------------------------------ pendências
 
 export function montarEnvelopePendencias(payload, credenciais = config.credenciais) {
-  const { protocolo, proposta } = identificacao(payload);
+  const { protocolo, proposta, placa, chassi } = filtroPendencias(payload);
   return envelope(`      <suh:ConsultarPendencias>
          <suh:pendencia>
-${tags({ login: credenciais.login, senha: credenciais.senha, protocolo, proposta })}
+${tags({ login: credenciais.login, senha: credenciais.senha, protocolo, proposta, placa, chassi })}
          </suh:pendencia>
       </suh:ConsultarPendencias>`);
 }
