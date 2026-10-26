@@ -35,7 +35,14 @@ Casos sem proposta real em homologação (emitida, recusa, cancelada, pendência
 
 ## Limpeza
 
-Lead, Oportunidade e Note de teste excluídos do Espo DEV; entradas do RTDB removidas. A Task `6adea181710d0ca0f` não pôde ser excluída pelo usuário de API (403) e ficou como "Canceled"; excluir pela sessão de administrador.
+Lead, Oportunidade e Note de teste excluídos do Espo DEV; entradas do RTDB removidas. As Tasks de teste (o usuário de API recebe 403 ao excluir) foram canceladas e depois excluídas pela sessão de administrador.
+
+## Campos no Espo DEV (25/10/2026, ~22h10)
+
+- Backup dos campos e do layout de detalhe do Lead e da Oportunidade antes da mudança: `C:\Users\Luciano\wt\_shots-etapa3\espo-dev-bkp-campos-20261025.json`.
+- Criados pela sessão de administrador: `cStatusProposta` (Varchar 60, "Status da proposta") e `cDataStatusProposta` (Data/hora, "Data do status da proposta"), no Lead e na Oportunidade, numa linha do painel "Cotação do Site" logo depois de `cNumeroProposta`; rebuild e limpeza de cache. O inventário (`fase0-suhai-fields.mjs --prefer=dev`) dá OK nos dois.
+- Rodada de novo com a 9061210: `mudou: 1`, e o Lead e a Oportunidade ficaram com "Pendências para emissão" e `2026-10-15 13:48:43` (UTC; 10:48:43 em Brasília). Limpeza feita como acima.
+- Rollback: excluir os dois campos no Field Manager e restaurar o layout do backup.
 
 ## Pós-venda (apólice e boleto na emissão)
 
