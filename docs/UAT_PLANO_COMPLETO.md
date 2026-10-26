@@ -158,6 +158,8 @@ Regra: cobrança só depois da apólice emitida; as APIs de boleto foram descont
 | V5 | `/posvenda/comissao` (até 31 dias; mais que isso, 400) | ok (26/10): 30 dias responde 200 vazio; 45 dias responde 400 |
 
 Rodada de 26/10, pela tag `homologacao`: a Digibee voltou (o 500 de domingo sumiu). A pesquisa por placa (DBO7B72) e por emissão de 2025-01-01 a 2026-10-25 voltou vazia. A apólice de exemplo do portal (1003106306367) respondeu "restrição de segurança": é de outro corretor, então o filtro de acesso da Suhai funciona. Para fechar V3, V4 e V6 é preciso uma apólice nossa em homologação: pedir ao Fábio que emita a 9061210 ou a proposta nova da F4.
+
+Resposta do Fábio (26/10, 10:32): a homologação não recebe carga diária e ele sugeriu consultar janeiro a março de 2026; a 9061210 entrou em emissão. Rodada das 10:40: pesquisa e comissão de janeiro, fevereiro e março, mês a mês, voltaram 200 vazias (sem apólices da corretora; as de outros corretores a Suhai bloqueia). A 9061210 está no status 10 ("Em processo de emissão", desde 10:29) e `/posvenda/apolice-da-proposta` ainda responde `encontrada: false`. V3, V4 e V6 ficam para quando ela for emitida.
 | V6 | Emitida com pós-venda ok: Note com PDF e boleto; Task com o link | testes; real depende de V2 a V4 |
 | V7 | Emitida no cartão: Task "Enviar apólice" | testes |
 | V8 | Pós-venda fora: Task volta ao texto do Portal do Cotador | testes |
@@ -192,7 +194,8 @@ Durante a viagem (29/10 a 02/11), nenhum deploy: só observação de R14 e do al
 
 ## 9. Fora deste UAT
 
-- Fase B (Suhai junto com o RPA): plano em [FASE_B_SUHAI_PARALELO.md](FASE_B_SUHAI_PARALELO.md), ainda sem código.
+- Fase B (Suhai junto com o RPA): plano em [FASE_B_SUHAI_PARALELO.md](FASE_B_SUHAI_PARALELO.md), ainda sem código. O Fábio confirmou em 26/10 que não há limite comercial nem de volume para as cotações.
+- Pós-venda em produção: a apikey de produção atende todos os serviços e a liberação do IP 34.39.164.249 foi pedida (ITSM-102658, SLA de 72 h).
 - Cartão de crédito: o Fábio confirmou em 26/10 o modelo de tela própria. O cliente digita o cartão no site, o servidor cifra número e CVV em AES-256 e envia direto à API Pagamento, sem gravar. A Suhai não tem página de pagamento. Projeto a abrir.
 - Boleto: a Suhai envia o "Kit Boas-Vindas" (apólice e boletos) ao e-mail informado na proposta; a segunda via sai pelo Atendimento Suhai ou pela API Apólice. Seguimos com `tp_pagamento 2`.
 - Status e pendências da proposta usam o mesmo usuário de serviço de produção (confirmado pelo Fábio em 26/10).
