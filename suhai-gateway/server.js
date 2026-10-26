@@ -11,6 +11,7 @@
 
 import http from "node:http";
 
+import { consultarPendencias, consultarStatus, gerarPdf } from "./src/acompanhamento.js";
 import { aesConfigurado, config, credenciaisPresentes } from "./src/config.js";
 import { cotar } from "./src/cotacao.js";
 import { consultarVeiculos } from "./src/fipe.js";
@@ -56,6 +57,9 @@ async function lerCorpo(req) {
  * cru para o chamador.
  */
 function tratarErro(res, erro, operacao) {
+  if (erro.entradaInvalida || erro instanceof SyntaxError) {
+    return responder(res, 400, { erro: "entrada_invalida", mensagem: erro.message });
+  }
   console.error(`[${operacao}] ${erro.name}: ${erro.message}`, erro.codigoSuhai ?? "");
   const status = erro.codigoSuhai ? 422 : 502;
   responder(res, status, {
@@ -115,6 +119,26 @@ const server = http.createServer(async (req, res) => {
       return responder(res, 200, await transmitir(await lerCorpo(req)));
     } catch (erro) {
       return tratarErro(res, erro, "proposta");
+    }
+  }
+
+  const acompanhamento = {
+    "/proposta/status": consultarStatus,
+    "/proposta/pendencias": consultarPendencias,
+    "/proposta/pdf": gerarPdf,
+  }[url.pathname];
+
+  if (acompanhamento && req.method === "POST") {
+    if (!credenciaisPresentes()) {
+      return responder(res, 503, {
+        erro: "sem_credenciais",
+        mensagem: "Credenciais de Cotador ainda não configuradas neste ambiente.",
+      });
+    }
+    try {
+      return responder(res, 200, await acompanhamento(await lerCorpo(req)));
+    } catch (erro) {
+      return tratarErro(res, erro, url.pathname.slice(1));
     }
   }
 

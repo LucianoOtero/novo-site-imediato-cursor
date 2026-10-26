@@ -1,0 +1,42 @@
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+   <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+      <ConsultarPendenciasResponse xmlns="suhaiseguradoracotacao.com.br:5155">
+         <ConsultarPendenciasResult>
+            <codMsgRet>001</codMsgRet>
+            <textoMsgRet>Sucesso</textoMsgRet>
+            <PropostaResult>
+               <proposta>9026075</proposta>
+               <protocolo>Nonono</protocolo>
+               <data_proposta>2022-11-21 05:03:10</data_proposta>
+               <cpfCnpj>99988877766</cpfCnpj>
+               <nome>Nononono</nome>
+               <placa>NON8N88</placa>
+               <marca>HONDA</marca>
+               <modelo>CB 300R</modelo>
+               <status_proposta>Pendências para Emissão</status_proposta>
+               <painel_pendencia num_pendencia="1">
+                  <pendencia>Vistoria Prévia</pendencia>
+                  <prestador>Vistoria</prestador>
+                  <Etapa>Solicitação</Etapa>
+                  <status>OS Criada</status>
+                  <ultima_atualizacao>2022-11-21 05:09:56</ultima_atualizacao>
+                  <link_prestador>https://vistoria_rastreador.com</link_prestador>
+               </painel_pendencia>
+               <painel_pendencia num_pendencia="2">
+                  <pendencia>Vistoria Prévia</pendencia>
+                  <prestador>Vistoria</prestador>
+                  <Etapa>Realização da Vistoria</Etapa>
+                  <status/>
+                  <ultima_atualizacao/>
+                  <link_prestador/>
+               </painel_pendencia>
+               <parecer num_parecer="1">
+                  <parecer_autor>Nonononononono</parecer_autor>
+                  <data_hora_parecer>2022-12-16 03:17:07</data_hora_parecer>
+                  <parecer_texto>Validação de Parecer</parecer_texto>
+               </parecer>
+            </PropostaResult>
+         </ConsultarPendenciasResult>
+      </ConsultarPendenciasResponse>
+   </s:Body>
+</s:Envelope>

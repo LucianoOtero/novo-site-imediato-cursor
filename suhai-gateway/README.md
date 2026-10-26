@@ -23,7 +23,12 @@ Rodando no Cloud Run com `--vpc-egress=all-traffic`, todo tráfego de saída pas
 | `/diag/ip` | GET | IP de saída visto pela internet — confirma a whitelist |
 | `/cotacao` | POST | `IncluirCotacaoSuhai`; devolve protocolo, veículo e coberturas com parcelamento |
 | `/proposta` | POST | `TransmitirProposta` com boleto (`tp_pagamento` 2); devolve o número da proposta |
+| `/proposta/status` | POST | `ConsultarStatusProposta` com `{ proposta }` e/ou `{ protocolo }`; devolve `status` (1–19), `statusTexto`, `dataAtualizacao` e o parecer das recusas reavaliáveis |
+| `/proposta/pendencias` | POST | `ConsultarPendencias`; devolve as pendências (vistoria, rastreador) com `linkPrestador`. "Nenhum registro" vira `{ propostas: [], semRegistro: true }` |
+| `/proposta/pdf` | POST | `GerarPDF`; devolve `pdfBase64`. Só manda e-mail ao proponente com `enviaEmail: true` |
 | `/fipe/consulta` | POST | `ConsultaVeiculos`; sem `codFipe` devolve a base inteira |
+
+As rotas de acompanhamento só leem: nenhuma altera a proposta na Suhai. Entrada sem protocolo/proposta, ou com algo além de dígitos, responde 400 `entrada_invalida`.
 
 Não use `/healthz`: o Google Frontend intercepta esse caminho no Cloud Run e devolve 404 antes de chegar ao container.
 

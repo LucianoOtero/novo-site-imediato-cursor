@@ -80,30 +80,30 @@ export const TIPO_UTILIZACAO = {
 } as const;
 
 /**
- * Status da proposta (`ConsultarStatusProposta`). `emiteBoleto` marca o
- * único estado em que a 1ª parcela pode ser gerada; `final` indica que não
- * há mais avanço possível pelo caminho automático.
+ * Status da proposta (`ConsultarStatusProposta` devolve o código em
+ * `codMsgRet`). `final` indica que não há mais avanço possível pelo caminho
+ * automático. A cobrança só sai depois da apólice emitida (Suhai, 24/10/2026),
+ * então nenhum status antes da emissão gera boleto.
  */
-export const STATUS_PROPOSTA: Record<
-  number,
-  { rotulo: string; emiteBoleto: boolean; final: boolean; cancelada: boolean }
-> = {
-  1: { rotulo: "Salva, não transmitida", emiteBoleto: false, final: false, cancelada: false },
-  2: { rotulo: "Pendente de análise nível 1", emiteBoleto: false, final: false, cancelada: false },
-  3: { rotulo: "Pendente de análise nível 2", emiteBoleto: false, final: false, cancelada: false },
-  4: { rotulo: "Recusa operacional", emiteBoleto: false, final: true, cancelada: true },
-  5: { rotulo: "Recusa reavaliável (automática)", emiteBoleto: false, final: true, cancelada: true },
-  6: { rotulo: "Aguardando emissão", emiteBoleto: false, final: false, cancelada: false },
-  7: { rotulo: "Cancelada a pedido", emiteBoleto: false, final: true, cancelada: true },
-  9: { rotulo: "Aprovada", emiteBoleto: false, final: false, cancelada: false },
-  10: { rotulo: "Em processo de emissão", emiteBoleto: false, final: false, cancelada: false },
-  11: { rotulo: "Aguardando emissão automática", emiteBoleto: false, final: false, cancelada: false },
-  12: { rotulo: "Pendências para emissão", emiteBoleto: true, final: false, cancelada: false },
-  13: { rotulo: "Emitida", emiteBoleto: false, final: true, cancelada: false },
-  14: { rotulo: "Recusa técnica", emiteBoleto: false, final: true, cancelada: true },
-  15: { rotulo: "Emissão manual", emiteBoleto: false, final: true, cancelada: false },
-  16: { rotulo: "Recusa reavaliável (manual)", emiteBoleto: false, final: true, cancelada: true },
-  17: { rotulo: "Emissão manual de endosso", emiteBoleto: false, final: true, cancelada: false },
+export const STATUS_PROPOSTA: Record<number, { rotulo: string; final: boolean; cancelada: boolean }> = {
+  1: { rotulo: "Salva, não transmitida", final: false, cancelada: false },
+  2: { rotulo: "Pendente de análise nível 1", final: false, cancelada: false },
+  3: { rotulo: "Pendente de análise nível 2", final: false, cancelada: false },
+  4: { rotulo: "Recusa operacional", final: true, cancelada: true },
+  5: { rotulo: "Recusa reavaliável (automática)", final: true, cancelada: true },
+  6: { rotulo: "Aguardando emissão", final: false, cancelada: false },
+  7: { rotulo: "Cancelada a pedido", final: true, cancelada: true },
+  9: { rotulo: "Aprovada", final: false, cancelada: false },
+  10: { rotulo: "Em processo de emissão", final: false, cancelada: false },
+  11: { rotulo: "Aguardando emissão automática", final: false, cancelada: false },
+  12: { rotulo: "Pendências para emissão", final: false, cancelada: false },
+  13: { rotulo: "Emitida", final: true, cancelada: false },
+  14: { rotulo: "Recusa técnica", final: true, cancelada: true },
+  15: { rotulo: "Emissão manual", final: true, cancelada: false },
+  16: { rotulo: "Recusa reavaliável (manual)", final: true, cancelada: true },
+  17: { rotulo: "Emissão manual de endosso", final: true, cancelada: false },
+  18: { rotulo: "Apólice emitida manualmente", final: true, cancelada: false },
+  19: { rotulo: "Endosso emitido manualmente", final: true, cancelada: false },
 };
 
 /** Cores aceitas na proposta (`cor`); 18 é "não informado". */
