@@ -151,8 +151,17 @@ Contra `https://uat.segurosimediato.com.br` (Vercel, staging), roteiro `C:\Users
 - **Observação, não bloqueia:** o ramo não aparece no Espo (nem campo nem Note). O site manda o ramo como `produto` e o Espo não guarda. Era assim antes do Lote 1; o ramo fica no RTDB.
 - **Observação:** logo depois da criação, o Lead mostra `cCanalCaptura` "formulario" por alguns segundos, até o PUT do canal (separado e best-effort) gravar "telefone".
 - **Regressão local com a correção** (build de produção em `127.0.0.1:3100`): `etapa3-consultor`, `lead-sessao` e `telefone` 26/26; `uat-lote1-campo` 78/78 (Chrome desktop, iPhone 13 WebKit, Pixel 7). `typecheck` sem erros.
-- **Não rodados:** `rpa-fidelidade` (50 casos no RPA) e `testes-espocrm` (23 casos com cálculo no RPA) geram cotações de teste na Tô Segurado e levam horas; ficam para decisão.
+- **Baterias com o RPA real:** rodadas no mesmo dia, ver a seção seguinte.
 - **Limpeza:** Espo DEV e staging do telefone de teste limpos depois de cada rodada do D4.
+
+## Baterias com o RPA real e foco no cartão (26/10)
+
+Build local de produção em `127.0.0.1:3100` (staging: RTDB, `deliverLead`, Espo DEV e Octadesk de verdade). Os 50 casos do manifesto da `rpa-fidelidade` usam o telefone de teste (conferido no RTDB antes de rodar), então nenhuma mensagem saiu para clientes.
+
+- **`testes-espocrm`, casos 3 a 23 (10:00 às 11:00):** a bateria passou a limpar o dedupe do Lote 1 entre casos (`adc93e1`). Casos 3 a 20 com o mesmo desfecho de 19/10, exceto o 6 (manual, "Tela 2 falhou"; antes sucesso) e o 16 (sucesso; antes erro do RPA). Todos com Lead e Opp no Espo DEV. O caso 21 (consultor) falhou só na conferência: o Lead existia, mas não foi achado pelo e-mail em 90 s, provavelmente por gravação atrasada do caso anterior no mesmo telefone. Reexecução dos casos 21 a 23 às 11:19: 3/3. Resultados em `e2e/testes-espocrm.resultado.uat-20261026-3a23.json` e `...-21a23.json`. O RPA levou cerca de 230 a 250 s por cotação, o dobro de 19/10.
+- **`rpa-fidelidade`:** a rodada das 09:10 falhou nas 6 motos (Tela 3) porque o teste ainda procurava o chip de ramo removido do funil e mandava `tipo_veiculo: "carro"`. Corrigido no teste em `689b4f2` (cada ramo pela sua página, `/seguro-{ramo}`). Amostra de 5 casos às 11:01: 3 das 4 motos calcularam com preço; a quarta caiu em manual, como no RPA direto; o caminhão fica sem cálculo automático, como previsto. Leads reais de moto não eram afetados.
+- **Foco no cartão (`4fbb4e6`, pedido do Luciano no aceite do aparelho):** ao sair do formulário, o cartão do cálculo é centralizado entre o header e o aviso de cookies; o resultado, mais alto que a tela, fica logo abaixo do header. Conferido em celular simulado (iPhone 13 e Android 360 × 640, 14 cenários com RPA e `/api/lead` simulados) e no aparelho do Luciano. Regressão local 52/52.
+- **Limpeza:** `purge-phone test` e `clean-staging-test` depois de cada rodada.
 
 ## Aceite
 
@@ -160,4 +169,5 @@ Contra `https://uat.segurosimediato.com.br` (Vercel, staging), roteiro `C:\Users
 - [x] Mensagens do Octadesk aceitas pela API (flags da `deliverLead`).
 - [x] Espo DEV revisado pelo agente (acima).
 - [x] Rodapé D2 a D4 e regressão local depois de `c8dd378` (26/10).
+- [x] Baterias com o RPA real (`testes-espocrm` 21/21 com a reexecução; amostra da `rpa-fidelidade`) e foco no cartão (`4fbb4e6`), em 26/10.
 - [x] Limpeza do Espo DEV e do staging (`purge-phone test`, `clean-staging-test`) em 26/10. Repetir depois do aceite no aparelho.
