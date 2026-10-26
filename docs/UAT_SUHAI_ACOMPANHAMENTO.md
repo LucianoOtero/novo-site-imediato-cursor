@@ -37,6 +37,20 @@ Casos sem proposta real em homologação (emitida, recusa, cancelada, pendência
 
 Lead, Oportunidade e Note de teste excluídos do Espo DEV; entradas do RTDB removidas. A Task `6adea181710d0ca0f` não pôde ser excluída pelo usuário de API (403) e ficou como "Canceled"; excluir pela sessão de administrador.
 
+## Pós-venda (apólice e boleto na emissão)
+
+Quando o status vira Emitida, a rotina chama `/posvenda/apolice-da-proposta` (placa do lead e emissão a partir da véspera da transmissão). Achando a apólice, a Note traz número, vigência, prêmio, PDF da apólice e o boleto da próxima parcela pendente, e a Task "Enviar boleto da 1ª parcela" já leva o link. No cartão, a Task vira "Enviar apólice". Sem resposta da pós-venda, a Task volta ao texto do Portal do Cotador.
+
+| Peça | Situação em 25/10/2026 |
+|---|---|
+| Secret | `SUHAI_API_KEY` (versão 1, chave de homologação), acesso só para `64754519959-compute@developer.gserviceaccount.com` |
+| Gateway | Revisão `suhai-gateway-00028-rew` na tag `homologacao`, sem tráfego, com `SUHAI_API_KEY`; `/status` mostra `posVenda: true`. Produção seguiu com 100% na `00022` |
+| Chamada da máquina local | 401 "restrição de segurança" (IP fora da whitelist), como esperado |
+| Chamada pela tag | Passa da restrição de IP, mas a Suhai responde 500 "serviço indisponível, tente mais tarde" em pesquisa, consulta e comissão. A homologação SOAP respondeu normalmente no mesmo horário (9061210, status 12) |
+| Testes | Gateway 35/35 (`posvenda.test.js` com os exemplos do portal); funções 61/61 (emissão com boleto, no cartão, sem apólice, e rodada com a pós-venda fora) |
+
+Falta repetir a pesquisa pela placa DBO7B72 quando a Digibee de homologação voltar. Se o 500 persistir num dia útil, abrir chamado com a Suhai (a chave pode não estar ativa no pipeline de pós-venda).
+
 ## Pendências antes do rollout
 
 - [ ] Campos `cStatusProposta` (Varchar 60, "Status da proposta") e `cDataStatusProposta` (Data/hora, "Data do status da proposta") no Lead e na Oportunidade, painel "Cotação do Site". O usuário de API recebe 403 no Field Manager: precisa da sessão de administrador (DEV e PROD). Conferir com `node scripts/espo-ops/fase0-suhai-fields.mjs --prefer=dev` (e `prod`).
@@ -45,7 +59,7 @@ Lead, Oportunidade e Note de teste excluídos do Espo DEV; entradas do RTDB remo
 ## Rollout (cada passo com "pode")
 
 1. **Merge** da branch em `main` (depois do Lote 1).
-2. **Gateway em produção:** nova revisão com o código da branch, `SUHAI_AMBIENTE=producao` e os secrets `*_PRODUCAO`, recebendo 100% e com a tag `producao`. Só acrescenta rotas de leitura. Rollback: `gcloud run services update-traffic suhai-gateway --to-revisions=suhai-gateway-00022-has=100`.
+2. **Gateway em produção:** nova revisão com o código da branch, `SUHAI_AMBIENTE=producao` e os secrets `*_PRODUCAO`, recebendo 100% e com a tag `producao`. Só acrescenta rotas de leitura. A pós-venda em produção depende da `apikey` de produção (ainda não recebida): até lá, sem `SUHAI_API_KEY` na revisão, `/posvenda/*` responde 503 e a Task da emissão usa o texto do Portal do Cotador. Rollback: `gcloud run services update-traffic suhai-gateway --to-revisions=suhai-gateway-00022-has=100`.
 3. **Validação de leitura em produção:** `POST /proposta/status` da proposta 12350578 (é o item `suhai-status-leitura`).
 4. **IAM:** `roles/run.invoker` no `suhai-gateway` para `64754519959-compute@developer.gserviceaccount.com` (conta das funções). Rollback: remover o binding.
 5. **Secret `SUHAI_ACOMP_CONFIG`**, primeiro só com homologação:

@@ -179,7 +179,30 @@ async function processarItem({ leadId, item, rootRef, config, espoAll, emailUrls
     }
   }
 
-  const plano = suhai.planoAcompanhamento(item, status, pendencias || [], agoraIso);
+  let posVenda = null;
+  const infoStatus = suhai.STATUS_PROPOSTA[status.status] || {};
+  if (infoStatus.tipo === "emitida" && item.status !== status.status) {
+    const placa = String(leadData.placa || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const transmitida = Date.parse(item.transmitidaEm || "");
+    try {
+      posVenda = await chamarGateway({
+        ambienteCfg,
+        rota: "/posvenda/apolice-da-proposta",
+        corpo: {
+          proposta: item.proposta,
+          ...(/^[A-Z]{3}\d[A-Z0-9]\d{2}$/.test(placa) ? { placa } : {}),
+          ...(Number.isFinite(transmitida) ? { emissaoDesde: new Date(transmitida - 86400000).toISOString().slice(0, 10) } : {}),
+        },
+        obterToken,
+        fetchImpl,
+      });
+    } catch (error) {
+      // Sem os links, a Task da emissão manda buscar o boleto no Portal do Cotador.
+      logger.warn(`[suhai-acomp] Lead ${leadId}: pós-venda da proposta ${item.proposta} falhou: ${error.message}`);
+    }
+  }
+
+  const plano = suhai.planoAcompanhamento(item, status, pendencias || [], agoraIso, { posVenda });
   if (pendencias === null) plano.atualizacao.assinaturaPendencias = item.assinaturaPendencias || "";
 
   const novosEfeitos = {};

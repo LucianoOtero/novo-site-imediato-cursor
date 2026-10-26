@@ -1,6 +1,6 @@
 {
   "name": "suhai-gateway",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "//versionamento": "Linha própria de tags suhai-vX.Y.Z — ver docs/VERSIONING.md",
   "private": true,
   "description": "Gateway de saída com IP fixo para a integração Suhai (Cloud Run + Cloud NAT)",

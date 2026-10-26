@@ -58,7 +58,7 @@ A Suhai só cobra depois da apólice emitida (Fábio Edo, 24/10/2026). Não exis
 | Status novo (análise, aguardando emissão…) | Note com o status e a data; `cStatusProposta` e `cDataStatusProposta` no Lead e na Oportunidade | — | "Proposta Suhai - Status atualizado" |
 | Pendência com link (autovistoria, rastreador) | Note com cada pendência e o **link para o cliente** | "Enviar ao cliente o link de \<pendência\> — proposta nº X" (D+0) | "Pendência para emissão" |
 | Pendência com problema (frustrada, recusada, novas fotos…) | Note | "\<pendência\> com problema (\<status\>)" (D+0) | idem |
-| Emitida (13, 15, 18) | Note "Apólice emitida" | "Enviar boleto da 1ª parcela ao cliente" (D+0) | "Apólice emitida" |
+| Emitida (13, 15, 18) | Note "Apólice emitida" com número, vigência, prêmio, PDF da apólice e boleto da próxima parcela (pós-venda) | "Enviar boleto da 1ª parcela ao cliente" (D+0), com o link do boleto; no cartão, "Enviar apólice" | "Apólice emitida" |
 | Recusa (4, 5, 14, 16) | Note com o parecer ou o fator FIPE sugerido | "Proposta recusada — falar com o cliente" (D+0) | "Recusada" |
 | Cancelada (7), endosso (17, 19) | Note | — | "Status atualizado" |
 | Sem desfecho em 45 dias | — | "Conferir proposta no Portal do Cotador" | — |
@@ -67,6 +67,7 @@ A Suhai só cobra depois da apólice emitida (Fábio Edo, 24/10/2026). Não exis
 - O registro do lead em `leads_backup/{leadId}` recebe `suhai_status_proposta` (fora de `data`, então a `deliverLead` não reprocessa).
 - Liga e desliga pelo secret `SUHAI_ACOMP_CONFIG`: `enabled`, `maxDias`, `intervaloMinutos` e um bloco por ambiente da Suhai em `ambientes` (`url` da tag do gateway e `audience` = URL principal do serviço). Ambiente fora de `ambientes` não é consultado.
 - A conta de serviço das funções (`64754519959-compute@developer.gserviceaccount.com`) precisa de `roles/run.invoker` no `suhai-gateway`.
+- Na emissão, a rotina chama `POST /posvenda/apolice-da-proposta` (pós-venda REST da Suhai, pela placa do lead). Se a pós-venda não responder ou a apólice ainda não aparecer, a Task manda buscar o boleto no Portal do Cotador.
 
 Código: `firebase/functions/suhai-acompanhamento.js` (rodada), regras em `suhai.js` (`planoAcompanhamento`), testes em `firebase/functions/test/suhai-acompanhamento.test.js`.
 

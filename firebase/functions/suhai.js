@@ -506,19 +506,51 @@ function linhasParecer(status) {
   return linhas;
 }
 
+function reais(valor) {
+  return typeof valor === "number" ? valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : null;
+}
+
+/**
+ * Resumo da apólice achada na pós-venda (`/posvenda/apolice-da-proposta`):
+ * linhas da Note e o boleto a mandar ao cliente. `null` se não achou.
+ */
+function resumoApolice(posVenda) {
+  if (!posVenda || !posVenda.encontrada || !posVenda.apolice) return null;
+  const a = posVenda.apolice;
+  const parcela = (posVenda.parcelas && posVenda.parcelas.proximaPendente) || null;
+  const linhas = [`Apólice nº ${a.codApolice}${a.dataEmissao ? ` emitida em ${dataHoraBr(a.dataEmissao)}` : ""}.`];
+  if (a.inicioVigencia && a.fimVigencia) linhas.push(`Vigência: ${dataHoraBr(a.inicioVigencia)} a ${dataHoraBr(a.fimVigencia)}.`);
+  if (reais(a.premioTotal)) linhas.push(`Prêmio: ${reais(a.premioTotal)}${a.qtdeParcelas ? ` em ${a.qtdeParcelas}x` : ""}.`);
+  if (a.linkApolice) linhas.push(`PDF da apólice: ${a.linkApolice}`);
+
+  let boleto = null;
+  if (parcela && parcela.linkBoleto) {
+    const detalhes = [parcela.vencimento && `vence ${dataHoraBr(parcela.vencimento)}`, reais(parcela.valor)].filter(Boolean).join(", ");
+    boleto = { texto: `boleto da ${parcela.parcela || 1}ª parcela${detalhes ? ` (${detalhes})` : ""}`, link: parcela.linkBoleto };
+  } else if (a.linkBoleto) {
+    boleto = { texto: "boleto da apólice", link: a.linkBoleto };
+  }
+  if (boleto) linhas.push(`${boleto.texto.charAt(0).toUpperCase()}${boleto.texto.slice(1)}: ${boleto.link}`);
+  const cartao = parcela ? /cart/i.test(parcela.formaPagamento || "") : false;
+  if (!boleto) linhas.push(cartao ? "Pagamento no cartão: não há boleto." : "Boleto ainda não disponível na pós-venda: conferir no Portal do Cotador.");
+  return { codApolice: a.codApolice, linkApolice: a.linkApolice || null, boleto, cartao, linhas };
+}
+
 /**
  * Decide os efeitos de uma consulta. Entradas:
  * - `item`: entrada atual de `suhai_acompanhamento/{leadId}`;
  * - `status`: retorno do gateway em `/proposta/status`;
- * - `pendencias`: lista de pendências da proposta (pode ser vazia).
+ * - `pendencias`: lista de pendências da proposta (pode ser vazia);
+ * - `extras.posVenda`: retorno de `/posvenda/apolice-da-proposta` na emissão (opcional).
  *
  * Devolve `{ atualizacao, nota, campos, tarefas, email }`. Cada tarefa e o
  * e-mail têm `chave`; o chamador só executa o que ainda não está em
  * `item.efeitos`.
  */
-function planoAcompanhamento(item, status, pendencias, agoraIso) {
+function planoAcompanhamento(item, status, pendencias, agoraIso, extras = {}) {
   const prefixo = prefixoAmbiente(item.ambiente);
   const info = infoStatus(status.status, status.statusTexto);
+  const apolice = info.tipo === "emitida" ? resumoApolice(extras.posVenda) : null;
   const mudouStatus = item.status !== status.status;
   const assinatura = assinaturaPendencias(pendencias);
   const mudouPendencias = (pendencias || []).length > 0 && assinatura !== (item.assinaturaPendencias || "");
@@ -535,6 +567,7 @@ function planoAcompanhamento(item, status, pendencias, agoraIso) {
     ultimoErro: null,
     final: info.final,
     ...(info.final ? { finalizadoEm: agoraIso, motivoFinal: info.tipo } : {}),
+    ...(apolice ? { apolice: apolice.codApolice } : {}),
   };
 
   if (!mudouStatus && !mudouPendencias) {
@@ -549,7 +582,9 @@ function planoAcompanhamento(item, status, pendencias, agoraIso) {
     linhas.push("Pendências para a emissão:");
     for (const p of pendencias) linhas.push(linhaPendencia(p));
   }
-  if (info.tipo === "emitida") {
+  if (info.tipo === "emitida" && apolice) {
+    linhas.push(...apolice.linhas);
+  } else if (info.tipo === "emitida") {
     linhas.push(
       "Apólice emitida. A cobrança da 1ª parcela só existe a partir de agora: buscar o boleto no Portal do Cotador Suhai e enviar ao cliente."
     );
@@ -579,13 +614,29 @@ function planoAcompanhamento(item, status, pendencias, agoraIso) {
   }
 
   if (mudouStatus && info.tipo === "emitida") {
+    const doc = apolice && apolice.linkApolice ? ` PDF da apólice: ${apolice.linkApolice}` : "";
+    let description =
+      `A Suhai emitiu a apólice da proposta nº ${numero}${quando}. A cobrança só existe depois da emissão: ` +
+      "buscar o boleto da 1ª parcela no Portal do Cotador Suhai e enviar ao cliente pelo WhatsApp.";
+    if (apolice && apolice.boleto) {
+      description =
+        `A Suhai emitiu a apólice nº ${apolice.codApolice} da proposta nº ${numero}${quando}. ` +
+        `Enviar ao cliente pelo WhatsApp o ${apolice.boleto.texto}: ${apolice.boleto.link}.${doc}`;
+    } else if (apolice && apolice.cartao) {
+      description =
+        `A Suhai emitiu a apólice nº ${apolice.codApolice} da proposta nº ${numero}${quando}. Pagamento no cartão, sem boleto: ` +
+        `enviar ao cliente a confirmação e a apólice.${doc}`;
+    } else if (apolice) {
+      description += doc;
+    }
     tarefas.push({
       chave: "task_emitida",
-      name: `${prefixo}Enviar boleto da 1ª parcela ao cliente — apólice Suhai da proposta nº ${numero}`,
+      name:
+        apolice && apolice.cartao && !apolice.boleto
+          ? `${prefixo}Enviar apólice Suhai ao cliente — proposta nº ${numero}`
+          : `${prefixo}Enviar boleto da 1ª parcela ao cliente — apólice Suhai da proposta nº ${numero}`,
       dias: 0,
-      description:
-        `A Suhai emitiu a apólice da proposta nº ${numero}${quando}. A cobrança só existe depois da emissão: ` +
-        "buscar o boleto da 1ª parcela no Portal do Cotador Suhai e enviar ao cliente pelo WhatsApp.",
+      description,
     });
   }
   if (mudouStatus && info.tipo === "recusa") {
@@ -609,7 +660,7 @@ function planoAcompanhamento(item, status, pendencias, agoraIso) {
   const email = {
     chave: `email_${status.status}_${assinatura ? crypto.createHash("sha1").update(assinatura).digest("hex").slice(0, 10) : "sem_pend"}`,
     momento,
-    detalhe: `${prefixo}Proposta Suhai nº ${numero}: ${info.rotulo}${(pendencias || []).length ? ` — ${pendencias.map((p) => [p.pendencia, p.status].filter(Boolean).join(" ")).join("; ")}` : ""}`,
+    detalhe: `${prefixo}Proposta Suhai nº ${numero}: ${info.rotulo}${apolice ? ` — apólice nº ${apolice.codApolice}` : ""}${(pendencias || []).length ? ` — ${pendencias.map((p) => [p.pendencia, p.status].filter(Boolean).join(" ")).join("; ")}` : ""}`,
   };
 
   const campos = mudouStatus

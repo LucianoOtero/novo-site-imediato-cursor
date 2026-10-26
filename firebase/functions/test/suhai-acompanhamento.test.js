@@ -99,6 +99,57 @@ test("emitida fecha o acompanhamento e pede o boleto", () => {
   assert.equal(plano.email.momento, "suhai_emitida");
 });
 
+const POS_VENDA = {
+  encontrada: true,
+  apolice: {
+    codApolice: "1003106306367",
+    proposta: "12350578",
+    dataEmissao: "2026-10-25",
+    inicioVigencia: "2026-10-25",
+    fimVigencia: "2027-10-25",
+    premioTotal: 1243.06,
+    qtdeParcelas: 4,
+    linkApolice: "http://i4pro/apolice.pdf",
+    linkBoleto: "http://i4pro/boleto-apolice.pdf",
+  },
+  parcelas: {
+    proximaPendente: { parcela: 1, valor: 312.56, situacao: "Pendente", vencimento: "2026-11-03", formaPagamento: "Boleto Bradesco", linkBoleto: "http://i4pro/boleto-1.pdf" },
+  },
+};
+
+test("emitida com a pós-venda: Note e Task levam o boleto e o PDF da apólice", () => {
+  const plano = suhai.planoAcompanhamento({ ...item, status: 12 }, { status: 13, statusTexto: "Emitida" }, [], AGORA_ISO, { posVenda: POS_VENDA });
+  assert.equal(plano.atualizacao.apolice, "1003106306367");
+  assert.match(plano.nota, /Apólice nº 1003106306367 emitida em 25\/10\/2026/);
+  assert.match(plano.nota, /Vigência: 25\/10\/2026 a 25\/10\/2027/);
+  assert.match(plano.nota, /PDF da apólice: http:\/\/i4pro\/apolice\.pdf/);
+  assert.match(plano.nota, /Boleto da 1ª parcela \(vence 03\/11\/2026, R\$\s?312,56\): http:\/\/i4pro\/boleto-1\.pdf/);
+  assert.doesNotMatch(plano.nota, /buscar o boleto/);
+  const tarefa = plano.tarefas[0];
+  assert.equal(tarefa.chave, "task_emitida");
+  assert.match(tarefa.description, /boleto da 1ª parcela .*http:\/\/i4pro\/boleto-1\.pdf/);
+  assert.match(tarefa.description, /PDF da apólice: http:\/\/i4pro\/apolice\.pdf/);
+  assert.match(plano.email.detalhe, /apólice nº 1003106306367/);
+});
+
+test("emitida no cartão: sem boleto, a Task manda a apólice", () => {
+  const cartao = {
+    ...POS_VENDA,
+    apolice: { ...POS_VENDA.apolice, linkBoleto: null },
+    parcelas: { proximaPendente: { parcela: 1, situacao: "Pendente", formaPagamento: "Cartão de crédito", linkBoleto: null } },
+  };
+  const plano = suhai.planoAcompanhamento({ ...item, status: 12 }, { status: 13 }, [], AGORA_ISO, { posVenda: cartao });
+  assert.match(plano.nota, /Pagamento no cartão: não há boleto/);
+  assert.match(plano.tarefas[0].name, /Enviar apólice Suhai ao cliente/);
+  assert.match(plano.tarefas[0].description, /sem boleto/);
+});
+
+test("emitida sem apólice na pós-venda cai no texto do Portal do Cotador", () => {
+  const plano = suhai.planoAcompanhamento({ ...item, status: 12 }, { status: 13 }, [], AGORA_ISO, { posVenda: { encontrada: false } });
+  assert.equal(plano.atualizacao.apolice, undefined);
+  assert.match(plano.tarefas[0].description, /buscar o boleto da 1ª parcela no Portal do Cotador/);
+});
+
 test("recusa reavaliável traz o parecer e o caminho da nova proposta", () => {
   const status = {
     status: 5,
@@ -270,6 +321,39 @@ test("rodada: Note falhando não grava o status, e a próxima rodada tenta de no
   assert.ok(salvo.efeitos.task_emitida, "a Task que deu certo fica marcada");
   assert.equal(db.raiz.leads_backup.ld_teste.suhai_status_proposta, undefined);
   assert.equal(gw.chamadas.filter((c) => c.rota === "/proposta/pendencias").length, 0, "status final não consulta pendências");
+});
+
+test("rodada: emissão busca a apólice pela placa e põe o boleto na Task", async (t) => {
+  const inicial = estadoInicial({ status: 12, transmitidaEm: "2026-10-20T15:00:00.000Z" });
+  inicial.leads_backup.ld_teste.data.placa = "abc-1d23";
+  const db = rtdbFalso(inicial);
+  const espoChamadas = espoFalso(t);
+  const gw = gatewayFalso({
+    "/proposta/status": { proposta: "12350578", status: 13, statusTexto: "Emitida", dataAtualizacao: "2026-10-25 10:00:00" },
+    "/posvenda/apolice-da-proposta": POS_VENDA,
+  });
+  const resumo = await acomp.acompanharPropostas({ rootRef: db.ref, config, espoAll, obterToken, fetchImpl: gw.fetchImpl, agora: AGORA, logger });
+
+  assert.equal(resumo.mudou, 1);
+  const chamada = gw.chamadas.find((c) => c.rota === "/posvenda/apolice-da-proposta");
+  assert.deepEqual(chamada.corpo, { proposta: "12350578", placa: "ABC1D23", emissaoDesde: "2026-10-19" });
+  assert.match(espoChamadas.tasks[0].description, /http:\/\/i4pro\/boleto-1\.pdf/);
+  assert.equal(db.raiz.suhai_acompanhamento.ld_teste.apolice, "1003106306367");
+  assert.equal(db.raiz.suhai_acompanhamento.ld_teste.final, true);
+});
+
+test("rodada: pós-venda fora não segura a emissão", async (t) => {
+  const db = rtdbFalso(estadoInicial({ status: 12 }));
+  const espoChamadas = espoFalso(t);
+  const gw = gatewayFalso({
+    "/proposta/status": { proposta: "12350578", status: 13, statusTexto: "Emitida" },
+    "/posvenda/apolice-da-proposta": { httpStatus: 503, corpo: { erro: "sem_api_key", mensagem: "sem chave" } },
+  });
+  const resumo = await acomp.acompanharPropostas({ rootRef: db.ref, config, espoAll, obterToken, fetchImpl: gw.fetchImpl, agora: AGORA, logger });
+
+  assert.equal(resumo.mudou, 1);
+  assert.match(espoChamadas.tasks[0].description, /Portal do Cotador/);
+  assert.equal(db.raiz.suhai_acompanhamento.ld_teste.final, true);
 });
 
 test("rodada: gateway fora conta erros seguidos e avisa por e-mail na 6ª", async (t) => {
