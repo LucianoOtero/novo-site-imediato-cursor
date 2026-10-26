@@ -135,6 +135,7 @@ Feita pela API (`espo-review.mjs`):
 
 - **Endereço sem login (25/10, 14:56):** `https://uat.segurosimediato.com.br` serve a branch `uat-funil-etapa3`, deployment com o commit `c96899f` ou posterior.
 - **Proteção desligada:** para abrir sem login, a proteção de previews do projeto Vercel `imediato-seguros` foi desligada: `ssoProtection` era `{"deploymentType":"all_except_custom_domains"}` e agora é `null`. Todos os previews do projeto ficam públicos. **Depois do UAT, religar com esse mesmo valor.**
+- **Proteção religada (26/10, 12:25, com "pode" do Luciano):** `ssoProtection` de volta a `{"deploymentType":"all_except_custom_domains"}`. A produção (`www.segurosimediato.com.br`) segue aberta. O `uat.segurosimediato.com.br` também passou a pedir login da Vercel, porque é domínio de preview. Para um novo UAT em aparelho sem login, desligar de novo (`null`) e religar ao fim.
 
 ## Rodapé com o ramo da página e regressão (26/10)
 
@@ -165,7 +166,7 @@ Build local de produção em `127.0.0.1:3100` (staging: RTDB, `deliverLead`, Esp
 
 ## Aceite
 
-- [ ] Luciano: Bloco A em aparelho real (iPhone e Android) e no formulário de proposta Suhai.
+- [x] Luciano: funil aceito no celular em 26/10 (formulário, foco no cartão depois de `4fbb4e6`, cotação real com o WhatsApp de cálculo pronto entregue). Marcado pelo agente a pedido do Luciano. O lead do teste (staging, número do Luciano) fica no Espo DEV e no RTDB como evidência.
 - [x] Mensagens do Octadesk aceitas pela API (flags da `deliverLead`).
 - [x] Espo DEV revisado pelo agente (acima).
 - [x] Rodapé D2 a D4 e regressão local depois de `c8dd378` (26/10).
