@@ -228,7 +228,7 @@ firebase deploy --only functions:deliverLead
 
 ## Templates do acompanhamento Suhai (2026-10-26)
 
-Criados pelo Luciano no WhatsApp Manager da Meta em 26/10, Português (BR), categoria Utilidade, cabeçalho de texto fixo "Proposta do seu seguro", sem rodapé e sem botões. **Status (26/10, 09:00):** `pendencia_suhai_util_v1` aprovado pela Meta; `proposta_suhai_util_v3` em análise. Nenhum dos dois aparece ainda no Octadesk (`GET /chat/templates-message`, conferido com `octa-templates.mjs`).
+Criados pelo Luciano no WhatsApp Manager da Meta em 26/10, Português (BR), categoria Utilidade, cabeçalho de texto fixo "Proposta do seu seguro", sem rodapé e sem botões. **Status (26/10, 09:06):** os dois aprovados pela Meta. Nenhum aparece no Octadesk: a lista de `GET /chat/templates-message` (25 modelos, conferida com `octa-templates.mjs`) não traz modelos criados direto na Meta. Para o envio pela API, recriar os dois no Octadesk com o mesmo texto e anotar os IDs.
 
 Os templates anteriores foram criados pelo Octadesk, e o envio usa o ID que o Octadesk dá a cada modelo. Depois da aprovação, conferir se os dois aparecem no Octadesk com ID; se não aparecerem, recriar por lá (variáveis pelo botão "Adicionar variável genérica").
 
@@ -259,6 +259,6 @@ Substitui a `proposta_suhai_util_v2`, que fala em enviar o boleto antes da emiss
 
 - [x] `pendencia_suhai_util_v1` e `proposta_suhai_util_v3` enviados para análise — 2026-10-26
 - [x] `pendencia_suhai_util_v1` aprovado pela Meta — 2026-10-26
-- [ ] `proposta_suhai_util_v3` aprovado pela Meta
-- [ ] IDs conferidos no Octadesk (em 26/10 ainda não aparecem na API)
+- [x] `proposta_suhai_util_v3` aprovado pela Meta — 2026-10-26
+- [ ] Recriados no Octadesk e IDs anotados (os criados na Meta não aparecem na API do Octadesk)
 - [ ] Com "pode": chaves no `OCTADESK_API_CONFIG`, disparo no código e deploy da `deliverLead`
