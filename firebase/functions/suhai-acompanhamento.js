@@ -8,7 +8,8 @@
  * 1. consulta o status e as pendências pelo `suhai-gateway` do ambiente da
  *    proposta (tag `homologacao` ou `producao`, com token OIDC);
  * 2. aplica as regras de `suhai.planoAcompanhamento` (Note, Tasks, campos
- *    `cStatusProposta`/`cDataStatusProposta` e e-mail admin);
+ *    `cStatusProposta`/`cDataStatusProposta`, e-mail admin e o WhatsApp
+ *    `suhai_pendencia` com o link da vistoria ou do rastreador);
  * 3. grava o resultado na entrada e `suhai_status_proposta` no registro do
  *    lead em `leads_backup/{leadId}` (fora de `data`, então a `deliverLead`
  *    ignora a escrita).
@@ -22,6 +23,9 @@
  *                 "producao":{"url":"https://producao---suhai-gateway-…","audience":"https://suhai-gateway-…"}}}
  * Ambiente ausente em `ambientes` = propostas daquele ambiente não são
  * consultadas (liga homologação antes de produção).
+ *
+ * O WhatsApp da pendência só sai com `suhai_pendencia` em
+ * `OCTADESK_API_CONFIG.templates`; sem o ID, fica só a Task.
  */
 
 const crypto = require("node:crypto");
@@ -29,6 +33,7 @@ const crypto = require("node:crypto");
 const suhai = require("./suhai");
 const espo = require("./espocrm");
 const emailNotif = require("./email-notification");
+const octa = require("./octadesk");
 
 const MAX_DIAS_PADRAO = 45;
 const INTERVALO_MINUTOS_PADRAO = 50;
@@ -82,11 +87,18 @@ function hashCurto(texto) {
   return crypto.createHash("sha1").update(texto).digest("hex").slice(0, 10);
 }
 
+/** Mesmo critério do `octaReady` da `deliverLead`. */
+function octaPronto(octaConfig) {
+  return Boolean(
+    octaConfig && octaConfig.enabled === true && octaConfig.baseUrl && octaConfig.apiKey && octaConfig.fromNumber
+  );
+}
+
 /**
  * Processa uma entrada. Devolve o desfecho ("pulado", "sem_mudanca",
  * "mudou", "erro", "expirado", "lead_apagado") para o resumo da rodada.
  */
-async function processarItem({ leadId, item, rootRef, config, espoAll, emailUrls, obterToken, fetchImpl, agora, logger }) {
+async function processarItem({ leadId, item, rootRef, config, espoAll, emailUrls, octaConfig, obterToken, fetchImpl, agora, logger }) {
   const ambienteCfg = config.ambientes && config.ambientes[item.ambiente];
   if (!ambienteCfg || !ambienteCfg.url) return "pulado";
 
@@ -120,6 +132,18 @@ async function processarItem({ leadId, item, rootRef, config, espoAll, emailUrls
     } catch (error) {
       logger.warn(`[suhai-acomp] Lead ${leadId}: Task ${tarefa.chave} falhou.`, error);
       return false;
+    }
+  };
+
+  // A Task da mesma pendência é a reserva: falha no envio não bloqueia a rodada.
+  const enviarWhatsapp = async ({ chave, key, pendencia, link }, novosEfeitos) => {
+    if (efeitos[chave] || !octaPronto(octaConfig) || !(octaConfig.templates || {})[key] || !leadData.phoneE164) return;
+    const variaveis = [octa.firstName(leadData.nome) || "cliente", String(item.proposta), pendencia, link];
+    try {
+      await octa.sendTemplate(octaConfig, key, leadData, variaveis, leadId);
+      novosEfeitos[`efeitos/${chave}`] = agoraIso;
+    } catch (error) {
+      logger.warn(`[suhai-acomp] Lead ${leadId}: WhatsApp ${chave} falhou.`, error);
     }
   };
 
@@ -229,6 +253,8 @@ async function processarItem({ leadId, item, rootRef, config, espoAll, emailUrls
     if (!(await criarTarefa(tarefa, novosEfeitos))) bloqueado = true;
   }
 
+  for (const mensagem of plano.whatsapps || []) await enviarWhatsapp(mensagem, novosEfeitos);
+
   // Campos podem ainda não existir no Entity Manager: best-effort, não bloqueia.
   if (plano.campos && espoConfig && espoLeadId) {
     try {
@@ -265,6 +291,7 @@ async function acompanharPropostas({
   config,
   espoAll,
   emailUrls = {},
+  octaConfig = null,
   obterToken = tokenOidcMetadata,
   fetchImpl = fetch,
   agora = Date.now(),
@@ -284,6 +311,7 @@ async function acompanharPropostas({
         config,
         espoAll,
         emailUrls,
+        octaConfig,
         obterToken,
         fetchImpl,
         agora,

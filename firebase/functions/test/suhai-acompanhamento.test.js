@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const suhai = require("../suhai");
 const espo = require("../espocrm");
 const emailNotif = require("../email-notification");
+const octa = require("../octadesk");
 const acomp = require("../suhai-acompanhamento");
 
 const AGORA = Date.parse("2026-10-26T12:00:00.000Z");
@@ -71,6 +72,24 @@ test("pendência com link vira Note com o link e Task para enviar ao cliente", (
   assert.match(plano.tarefas[0].description, /https:\/\/autovist\.exemplo\/abc/);
   assert.equal(plano.email.momento, "suhai_pendencia");
   assert.deepEqual(plano.campos, { cStatusProposta: "Pendências para emissão", cDataStatusProposta: "2026-10-21 12:00:00" });
+});
+
+test("vistoria e rastreador com link viram WhatsApp ao cliente; o resto fica só na Task", () => {
+  const rastreador = { numero: 2, pendencia: "Instalação de Rastreador", status: "Aguardando agendamento", linkPrestador: "https://rastreio.exemplo/x" };
+  const documento = { numero: 3, pendencia: "Documentação", linkPrestador: "https://docs.exemplo/y" };
+  const plano = suhai.planoAcompanhamento(item, { status: 12 }, [pendenciaVistoria, rastreador, documento], AGORA_ISO);
+  assert.deepEqual(plano.whatsapps, [
+    { chave: "wa_pend_vistoria_previa", key: "suhai_pendencia", pendencia: "agendar a vistoria do veículo", link: "https://autovist.exemplo/abc" },
+    { chave: "wa_pend_instalacao_de_rastreador", key: "suhai_pendencia", pendencia: "agendar a instalação do rastreador", link: "https://rastreio.exemplo/x" },
+  ]);
+  assert.equal(plano.tarefas.length, 3);
+});
+
+test("vistoria com problema ou sem link não vira WhatsApp", () => {
+  const frustrada = { ...pendenciaVistoria, status: "Frustrado" };
+  const semLink = { ...pendenciaVistoria, linkPrestador: null };
+  assert.deepEqual(suhai.planoAcompanhamento(item, { status: 12 }, [frustrada], AGORA_ISO).whatsapps, []);
+  assert.deepEqual(suhai.planoAcompanhamento(item, { status: 12 }, [semLink], AGORA_ISO).whatsapps, []);
 });
 
 test("pendência repetida no mesmo tipo gera uma Task só", () => {
@@ -291,6 +310,70 @@ test("rodada: pendência nova vira Note, Task, campos, e-mail e status gravado",
   assert.equal(resumo2.sem_mudanca, 1);
   assert.equal(espoChamadas.notes.length, 1);
   assert.equal(espoChamadas.tasks.length, 1);
+});
+
+const octaConfig = {
+  enabled: true,
+  baseUrl: "https://octa.exemplo",
+  apiKey: "k",
+  fromNumber: "+551100000000",
+  templates: { suhai_pendencia: "tpl-pendencia" },
+};
+const RESPOSTAS_PENDENCIA = {
+  "/proposta/status": { proposta: "12350578", status: 12, statusTexto: "Pendências para Emissão" },
+  "/proposta/pendencias": { propostas: [{ proposta: "12350578", pendencias: [pendenciaVistoria] }] },
+};
+
+test("rodada: link da vistoria vai ao cliente pelo WhatsApp uma vez só", async (t) => {
+  const db = rtdbFalso(estadoInicial());
+  const espoChamadas = espoFalso(t);
+  const envios = [];
+  t.mock.method(octa, "sendTemplate", async (_cfg, key, _lead, variaveis) => envios.push({ key, variaveis }));
+  const gw = gatewayFalso(RESPOSTAS_PENDENCIA);
+  const rodada = (agora) =>
+    acomp.acompanharPropostas({ rootRef: db.ref, config, espoAll, octaConfig, obterToken, fetchImpl: gw.fetchImpl, agora, logger });
+
+  await rodada(AGORA);
+  assert.deepEqual(envios, [
+    { key: "suhai_pendencia", variaveis: ["Teste", "12350578", "agendar a vistoria do veículo", "https://autovist.exemplo/abc"] },
+  ]);
+  assert.ok(db.raiz.suhai_acompanhamento.ld_teste.efeitos.wa_pend_vistoria_previa);
+  assert.deepEqual(espoChamadas.tasks.map((x) => x.chave), ["task_pend_vistoria_previa"]);
+
+  // A pendência muda de etapa: Note nova, mas a mensagem não se repete.
+  const agendada = { ...pendenciaVistoria, etapa: "Agendada" };
+  const gw2 = gatewayFalso({ ...RESPOSTAS_PENDENCIA, "/proposta/pendencias": { propostas: [{ proposta: "12350578", pendencias: [agendada] }] } });
+  await acomp.acompanharPropostas({ rootRef: db.ref, config, espoAll, octaConfig, obterToken, fetchImpl: gw2.fetchImpl, agora: AGORA + 3600000, logger });
+  assert.equal(espoChamadas.notes.length, 2);
+  assert.equal(envios.length, 1);
+});
+
+test("rodada: sem o ID do template ou com o Octadesk fora, fica só a Task e o status é gravado", async (t) => {
+  espoFalso(t);
+  const semId = rtdbFalso(estadoInicial());
+  const envio = t.mock.method(octa, "sendTemplate", async () => {
+    throw new Error("Octadesk fora");
+  });
+  await acomp.acompanharPropostas({
+    rootRef: semId.ref,
+    config,
+    espoAll,
+    octaConfig: { ...octaConfig, templates: {} },
+    obterToken,
+    fetchImpl: gatewayFalso(RESPOSTAS_PENDENCIA).fetchImpl,
+    agora: AGORA,
+    logger,
+  });
+  assert.equal(envio.mock.callCount(), 0);
+
+  const fora = rtdbFalso(estadoInicial());
+  const resumo = await acomp.acompanharPropostas({ rootRef: fora.ref, config, espoAll, octaConfig, obterToken, fetchImpl: gatewayFalso(RESPOSTAS_PENDENCIA).fetchImpl, agora: AGORA, logger });
+  assert.equal(envio.mock.callCount(), 1);
+  assert.equal(resumo.mudou, 1);
+  const salvo = fora.raiz.suhai_acompanhamento.ld_teste;
+  assert.equal(salvo.status, 12);
+  assert.equal(salvo.efeitos.wa_pend_vistoria_previa, undefined);
+  assert.ok(salvo.efeitos.task_pend_vistoria_previa);
 });
 
 test("rodada: consulta recente é pulada e ambiente sem gateway não é consultado", async (t) => {

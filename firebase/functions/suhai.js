@@ -496,6 +496,16 @@ function linhaPendencia(p) {
   return p.linkPrestador ? `${linha}\n  Link para o cliente: ${p.linkPrestador}` : linha;
 }
 
+/**
+ * Texto do `{{3}}` do template da pendência ("falta {{3}}"). Só vistoria e
+ * rastreador têm mensagem ao cliente; o resto fica na Task do vendedor.
+ */
+function pendenciaParaCliente(p) {
+  if (/vistoria/i.test(p.pendencia || "")) return "agendar a vistoria do veículo";
+  if (/rastreador/i.test(p.pendencia || "")) return "agendar a instalação do rastreador";
+  return null;
+}
+
 function linhasParecer(status) {
   const linhas = [];
   if (status.recusaReavaliavelAut) linhas.push(`Suhai: ${status.recusaReavaliavelAut}`);
@@ -543,9 +553,9 @@ function resumoApolice(posVenda) {
  * - `pendencias`: lista de pendências da proposta (pode ser vazia);
  * - `extras.posVenda`: retorno de `/posvenda/apolice-da-proposta` na emissão (opcional).
  *
- * Devolve `{ atualizacao, nota, campos, tarefas, email }`. Cada tarefa e o
- * e-mail têm `chave`; o chamador só executa o que ainda não está em
- * `item.efeitos`.
+ * Devolve `{ atualizacao, nota, campos, tarefas, whatsapps, email }`. Cada
+ * tarefa, mensagem e o e-mail têm `chave`; o chamador só executa o que
+ * ainda não está em `item.efeitos`.
  */
 function planoAcompanhamento(item, status, pendencias, agoraIso, extras = {}) {
   const prefixo = prefixoAmbiente(item.ambiente);
@@ -571,7 +581,7 @@ function planoAcompanhamento(item, status, pendencias, agoraIso, extras = {}) {
   };
 
   if (!mudouStatus && !mudouPendencias) {
-    return { atualizacao, nota: null, campos: null, tarefas: [], email: null };
+    return { atualizacao, nota: null, campos: null, tarefas: [], whatsapps: [], email: null };
   }
 
   const emoji = { emitida: "✅", recusa: "⛔", cancelada: "🚫", pendencias: "⚠️", endosso: "📝" }[info.tipo] || "🔎";
@@ -591,8 +601,13 @@ function planoAcompanhamento(item, status, pendencias, agoraIso, extras = {}) {
   }
 
   const tarefas = [];
+  const whatsapps = [];
   for (const p of pendencias || []) {
     const base = slug(p.pendencia) || "pendencia";
+    const paraCliente = pendenciaParaCliente(p);
+    if (p.linkPrestador && paraCliente && !(p.status && PENDENCIA_COM_PROBLEMA.test(p.status))) {
+      whatsapps.push({ chave: `wa_pend_${base}`, key: "suhai_pendencia", pendencia: paraCliente, link: p.linkPrestador });
+    }
     if (p.linkPrestador) {
       tarefas.push({
         chave: `task_pend_${base}`,
@@ -671,7 +686,8 @@ function planoAcompanhamento(item, status, pendencias, agoraIso, extras = {}) {
     : null;
 
   const unicas = [...new Map(tarefas.map((t) => [t.chave, t])).values()];
-  return { atualizacao, nota: linhas.join("\n"), campos, tarefas: unicas, email };
+  const mensagens = [...new Map(whatsapps.map((w) => [w.chave, w])).values()];
+  return { atualizacao, nota: linhas.join("\n"), campos, tarefas: unicas, whatsapps: mensagens, email };
 }
 
 const DIA_MS = 24 * 60 * 60 * 1000;

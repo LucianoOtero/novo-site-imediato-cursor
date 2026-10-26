@@ -1100,7 +1100,8 @@ exports.deliverLead = onValueWritten(
 /**
  * Acompanhamento das propostas Suhai transmitidas (2026-10-25): status,
  * pendências (vistoria, rastreador), emissão e recusa viram Note, Task,
- * campos no Espo e e-mail admin. Desligada sem `enabled:true` em
+ * campos no Espo e e-mail admin; o link da vistoria ou do rastreador
+ * também vai ao cliente pelo WhatsApp (`suhai_pendencia`). Desligada sem `enabled:true` em
  * SUHAI_ACOMP_CONFIG. A conta de serviço da função precisa de
  * `roles/run.invoker` no `suhai-gateway`.
  */
@@ -1111,7 +1112,13 @@ exports.acompanharPropostasSuhai = onSchedule(
     region: "us-central1",
     timeoutSeconds: 540,
     retryCount: 0,
-    secrets: [SUHAI_ACOMP_CONFIG, ESPOCRM_API_CONFIG, SEND_EMAIL_NOTIFICATION_URL_DEV, SEND_EMAIL_NOTIFICATION_URL_PROD],
+    secrets: [
+      SUHAI_ACOMP_CONFIG,
+      ESPOCRM_API_CONFIG,
+      OCTADESK_API_CONFIG,
+      SEND_EMAIL_NOTIFICATION_URL_DEV,
+      SEND_EMAIL_NOTIFICATION_URL_PROD,
+    ],
   },
   async () => {
     const config = parseJsonConfig(SUHAI_ACOMP_CONFIG.value());
@@ -1124,6 +1131,7 @@ exports.acompanharPropostasSuhai = onSchedule(
       config,
       espoAll: parseJsonConfig(ESPOCRM_API_CONFIG.value()),
       emailUrls: { dev: SEND_EMAIL_NOTIFICATION_URL_DEV.value(), prod: SEND_EMAIL_NOTIFICATION_URL_PROD.value() },
+      octaConfig: parseJsonConfig(OCTADESK_API_CONFIG.value()),
       logger,
     });
     logger.info(`[acompanharPropostasSuhai] rodada: ${JSON.stringify(resumo)}`);
