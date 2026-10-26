@@ -1,7 +1,10 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+
 import { useContactModal } from "@/components/cta/ContactModalContext";
 import { trackEvent } from "@/lib/analytics";
+import { ramoPorCaminho } from "@/lib/ramo-por-caminho";
 
 /**
  * FooterPhoneLink — link de telefone do rodapé, isolado em Client
@@ -22,14 +25,15 @@ export function FooterPhoneLink({
   className?: string;
 }) {
   const { open } = useContactModal();
+  const ramo = ramoPorCaminho(usePathname());
 
   return (
     <a
       href={`tel:${phoneNumber}`}
       onClick={(event) => {
         event.preventDefault();
-        trackEvent("call_click", { location });
-        open({ channel: "phone", location, phoneNumber });
+        trackEvent("call_click", { location, ramo });
+        open({ channel: "phone", location, ramo, phoneNumber });
       }}
       className={className}
     >
