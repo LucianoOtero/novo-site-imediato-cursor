@@ -91,9 +91,9 @@ Cada cálculo de carro no funil passa a gerar uma cotação na Suhai, com protoc
 | # | Etapa | Onde | Com "pode"? |
 |---|---|---|---|
 | B0 | Respostas do Fábio (volume) e conferência do aviso de privacidade | — | — |
-| B1 | Servidor: `origem: "funil"` na rota, perfil e veículo resolvidos no servidor, `suhaiParalelo` no RTDB, Note na `deliverLead`; testes | branch nova a partir de `main` depois dos Lotes 1 e do acompanhamento | — |
+| B1 | Servidor: `origem: "funil"` na rota, perfil e veículo resolvidos no servidor, `suhaiParalelo` no RTDB, Note na `deliverLead`; testes | branch nova a partir de `main`, depois do merge do Lote 1 e do acompanhamento | — |
 | B2 | Tela: disparo no `LeadForm`, lista única no `RpaCalculationScreen`, cartão com anual, analytics | mesma branch | — |
-| B3 | UAT em preview com `SUHAI_GATEWAY_URL` apontando para a tag `homologacao` (preços fictícios, fluxo real) e `SUHAI_PARALELO_ENABLED=1` | preview | Variável na preview: não é produção |
+| B3 | UAT em preview com `SUHAI_GATEWAY_URL` apontando para a tag `homologacao` (preços fictícios, fluxo real) e `SUHAI_PARALELO_ENABLED=1` | preview | Não (só preview) |
 | B4 | Deploy da `deliverLead` com a Note paralela | Firebase | Sim |
 | B5 | Merge e `SUHAI_PARALELO_ENABLED=1` em Production, primeiro em horário comercial, acompanhando as métricas | Vercel | Sim |
 
