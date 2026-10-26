@@ -80,6 +80,7 @@
  */
 const { onValueWritten, onValueCreated } = require("firebase-functions/v2/database");
 const { onRequest } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const { logger } = require("firebase-functions");
 const { initializeApp } = require("firebase-admin/app");
@@ -96,6 +97,7 @@ const soldSync = require("./sold-sync");
 const suhai = require("./suhai");
 const espoReserva = require("./espo-reserva");
 const oppDedupe = require("./opp-dedupe");
+const suhaiAcomp = require("./suhai-acompanhamento");
 
 const DATABASE_URL = "https://imediato-seguros-site-novo-default-rtdb.firebaseio.com";
 
@@ -162,6 +164,12 @@ const ESPO_WEBHOOK_AUTH = defineSecret("ESPO_WEBHOOK_AUTH");
  * do lote CSV. Ver docs/ADS_OFFLINE_VENDIDO_FIREBASE.md.
  */
 const GOOGLE_ADS_API_CONFIG = defineSecret("GOOGLE_ADS_API_CONFIG");
+
+/**
+ * Acompanhamento das propostas Suhai (2026-10-25): `enabled`, gateways por
+ * ambiente da Suhai, `maxDias`. Ver suhai-acompanhamento.js.
+ */
+const SUHAI_ACOMP_CONFIG = defineSecret("SUHAI_ACOMP_CONFIG");
 
 const RETRY_DELAYS_MS = [1000, 4000, 9000];
 /**
@@ -939,6 +947,25 @@ exports.deliverLead = onValueWritten(
       }
     }
 
+    // ——— Acompanhamento da proposta Suhai (2026-10-25) ———
+    // Registra a proposta transmitida em `suhai_acompanhamento/{leadId}` para
+    // a rotina `acompanharPropostasSuhai`. Uma proposta nova no mesmo lead
+    // substitui a anterior.
+    if (isSuhai && stage === "suhai_proposal") {
+      const registroFlag = `suhai_acomp_${stageKey}_registrado`;
+      const registro = suhai.registroAcompanhamento(leadData, workingRecord.environment, new Date().toISOString());
+      if (registro && workingRecord[registroFlag] !== true) {
+        try {
+          await getDatabase()
+            .ref(`suhai_acompanhamento/${leadId}`)
+            .transaction((atual) => (atual && atual.proposta === registro.proposta ? atual : registro));
+          updates[registroFlag] = true;
+        } catch (error) {
+          logger.warn(`[deliverLead/suhai] Lead ${leadId}: registro do acompanhamento falhou (best-effort).`, error);
+        }
+      }
+    }
+
     // ——— Mensagens Octadesk por momento, via API direta (2026-07-20) ———
     // "calculo_pronto"/"calculo_manual" (fim do RPA),
     // "calculo_completo_depois" (escolheu especialista) e
@@ -1067,6 +1094,39 @@ exports.deliverLead = onValueWritten(
     logger.info(
       `[deliverLead] Lead ${leadId} (stage=${stage}), falhas=${stillFailing ? updates.cf_retry_count : cfAttempts}: espocrm_sent=${updates.espocrm_sent ?? workingRecord.espocrm_sent}, octadesk_sent=${updates.octadesk_sent ?? workingRecord.octadesk_sent}, autoSync=${updates.autoSync}.`
     );
+  }
+);
+
+/**
+ * Acompanhamento das propostas Suhai transmitidas (2026-10-25): status,
+ * pendências (vistoria, rastreador), emissão e recusa viram Note, Task,
+ * campos no Espo e e-mail admin. Desligada sem `enabled:true` em
+ * SUHAI_ACOMP_CONFIG. A conta de serviço da função precisa de
+ * `roles/run.invoker` no `suhai-gateway`.
+ */
+exports.acompanharPropostasSuhai = onSchedule(
+  {
+    schedule: "every 60 minutes",
+    timeZone: "America/Sao_Paulo",
+    region: "us-central1",
+    timeoutSeconds: 540,
+    retryCount: 0,
+    secrets: [SUHAI_ACOMP_CONFIG, ESPOCRM_API_CONFIG, SEND_EMAIL_NOTIFICATION_URL_DEV, SEND_EMAIL_NOTIFICATION_URL_PROD],
+  },
+  async () => {
+    const config = parseJsonConfig(SUHAI_ACOMP_CONFIG.value());
+    if (!config || config.enabled !== true) {
+      logger.info("[acompanharPropostasSuhai] desligada (SUHAI_ACOMP_CONFIG.enabled != true).");
+      return;
+    }
+    const resumo = await suhaiAcomp.acompanharPropostas({
+      rootRef: getDatabase().ref(),
+      config,
+      espoAll: parseJsonConfig(ESPOCRM_API_CONFIG.value()),
+      emailUrls: { dev: SEND_EMAIL_NOTIFICATION_URL_DEV.value(), prod: SEND_EMAIL_NOTIFICATION_URL_PROD.value() },
+      logger,
+    });
+    logger.info(`[acompanharPropostasSuhai] rodada: ${JSON.stringify(resumo)}`);
   }
 );
 

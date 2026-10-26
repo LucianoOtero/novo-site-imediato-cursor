@@ -142,7 +142,8 @@ test("proposta transmitida grava número, pagamento, Task de emissão e WhatsApp
   assert.match(campos.cPagamento, /^Boleto em 10x/);
   assert.equal(suhai.etapaFunilNova("suhai_proposal", dados), "Proposta transmitida");
   const tarefa = suhai.taskSpec("suhai_proposal", dados);
-  assert.match(tarefa.name, /Emitir apólice Suhai e enviar boleto — proposta nº 9061210/);
+  assert.match(tarefa.name, /Acompanhar proposta Suhai nº 9061210 até a emissão da apólice/);
+  assert.match(tarefa.description, /cobrança só existe depois da apólice emitida/);
   assert.equal(tarefa.dias, 0);
   const escolha = suhai.octaTemplate("suhai_proposal", dados, "Maria");
   assert.equal(escolha.key, "suhai_proposta_enviada");

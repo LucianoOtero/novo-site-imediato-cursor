@@ -69,6 +69,32 @@ const MOMENTO_META = {
     momento_descricao: `${SITE_MARKER} — Cotação Suhai - Erro`,
     momento_emoji: "❌",
   },
+  // Acompanhamento da proposta (rotina agendada, 2026-10-25).
+  suhai_status: {
+    momento_envio: "update",
+    momento_descricao: `${SITE_MARKER} — Proposta Suhai - Status atualizado`,
+    momento_emoji: "🛡️🔎",
+  },
+  suhai_pendencia: {
+    momento_envio: "update",
+    momento_descricao: `${SITE_MARKER} — Proposta Suhai - Pendência para emissão`,
+    momento_emoji: "🛡️⚠️",
+  },
+  suhai_emitida: {
+    momento_envio: "update",
+    momento_descricao: `${SITE_MARKER} — Proposta Suhai - Apólice emitida`,
+    momento_emoji: "🛡️🎉",
+  },
+  suhai_recusa: {
+    momento_envio: "update_error",
+    momento_descricao: `${SITE_MARKER} — Proposta Suhai - Recusada`,
+    momento_emoji: "⛔",
+  },
+  suhai_acomp_erro: {
+    momento_envio: "update_error",
+    momento_descricao: `${SITE_MARKER} — Proposta Suhai - Acompanhamento sem resposta`,
+    momento_emoji: "❌",
+  },
 };
 
 /**

@@ -40,10 +40,35 @@ UI (/cotacao-suhai) ── POST /api/lead ────────────�
 | 4a | Preço apresentado (cotação real) | servidor | `suhai_quote` sucesso | Nome/CPF; `cStatusCalculo` Concluído; `cValorRecomendado`/`cValorAlternativo`; `cEtapaFunil` "Cálculo concluído" → "Cotação Suhai apresentada"; `cNumeroCotacao`; Note com **todas** as ofertas | `suhai_cotacao_pronta` | "Preço apresentado" + protocolo e plano recomendado |
 | 4b | Cotação falhou | servidor | `suhai_quote` falha | `cEtapaFunil` "Cálculo manual pendente"; `cStatusCalculo` Falhou; Note com o erro; **Task** "Efetuar cotação Suhai manual" (D+1) | `calculo_manual` | "Cotação Suhai - Erro" |
 | 5 | Plano escolhido | browser → servidor resolve | `suhai_plan_selected` | `cEtapaFunil` "Plano escolhido"; `cPlanoEscolhido`, `cPremioTotal`, `cFranquia`; Note | — | "Plano escolhido" + plano e prêmio |
-| 6a | Proposta transmitida | servidor | `suhai_proposal` sucesso | `cEtapaFunil` "Proposta transmitida"; `cNumeroProposta`, `cPagamento`; Note; **Task** "Emitir apólice Suhai e enviar boleto — proposta nº X" (D+0) | `suhai_proposta_enviada` | "Proposta transmitida" |
+| 6a | Proposta transmitida | servidor | `suhai_proposal` sucesso | `cEtapaFunil` "Proposta transmitida"; `cNumeroProposta`, `cPagamento`; Note; **Task** "Acompanhar proposta Suhai nº X até a emissão da apólice" (D+0); registro em `suhai_acompanhamento` (seção 2.1) | `suhai_proposta_enviada` | "Proposta transmitida" |
 | 6b | Proposta com erro | servidor | `suhai_proposal` falha | `cEtapaFunil` "Proposta com erro"; Note com o erro; **Task** "Concluir proposta Suhai pendente" (D+0) | — | "Cotação Suhai - Erro" |
 
 Em todas as etapas Suhai a Oportunidade recebe `cSeguradora = "Suhai"`. O Lead recebe `cCanalCaptura = "cotacao_suhai"`.
+
+### 2.1 Depois da proposta: acompanhamento automático (2026-10-25)
+
+A Suhai só cobra depois da apólice emitida (Fábio Edo, 24/10/2026). Não existe boleto antes disso. O que falta ao vendedor entre a proposta e a apólice é saber o status e as pendências, e isso agora chega ao Espo sozinho:
+
+- No `suhai_proposal` com sucesso, a `deliverLead` registra a proposta em `suhai_acompanhamento/{leadId}` (`proposta`, `protocolo`, `ambiente` da Suhai, `environment` do site).
+- A função agendada `acompanharPropostasSuhai` roda **de hora em hora**. Para cada proposta ainda aberta, chama `POST /proposta/status` e `POST /proposta/pendencias` no `suhai-gateway` do ambiente da proposta, com token OIDC.
+- Quando o status ou as pendências mudam:
+
+| Situação | EspoCRM (Lead) | Task | E-mail admin |
+|---|---|---|---|
+| Status novo (análise, aguardando emissão…) | Note com o status e a data; `cStatusProposta` e `cDataStatusProposta` no Lead e na Oportunidade | — | "Proposta Suhai - Status atualizado" |
+| Pendência com link (autovistoria, rastreador) | Note com cada pendência e o **link para o cliente** | "Enviar ao cliente o link de \<pendência\> — proposta nº X" (D+0) | "Pendência para emissão" |
+| Pendência com problema (frustrada, recusada, novas fotos…) | Note | "\<pendência\> com problema (\<status\>)" (D+0) | idem |
+| Emitida (13, 15, 18) | Note "Apólice emitida" | "Enviar boleto da 1ª parcela ao cliente" (D+0) | "Apólice emitida" |
+| Recusa (4, 5, 14, 16) | Note com o parecer ou o fator FIPE sugerido | "Proposta recusada — falar com o cliente" (D+0) | "Recusada" |
+| Cancelada (7), endosso (17, 19) | Note | — | "Status atualizado" |
+| Sem desfecho em 45 dias | — | "Conferir proposta no Portal do Cotador" | — |
+
+- Status final encerra o acompanhamento (`final: true`). Cada efeito tem chave em `efeitos/` e não se repete. Se a Note ou uma Task falhar, o status novo não é gravado e a rodada seguinte tenta de novo. Seis consultas seguidas sem resposta do gateway geram um e-mail "Acompanhamento sem resposta".
+- O registro do lead em `leads_backup/{leadId}` recebe `suhai_status_proposta` (fora de `data`, então a `deliverLead` não reprocessa).
+- Liga e desliga pelo secret `SUHAI_ACOMP_CONFIG`: `enabled`, `maxDias`, `intervaloMinutos` e um bloco por ambiente da Suhai em `ambientes` (`url` da tag do gateway e `audience` = URL principal do serviço). Ambiente fora de `ambientes` não é consultado.
+- A conta de serviço das funções (`64754519959-compute@developer.gserviceaccount.com`) precisa de `roles/run.invoker` no `suhai-gateway`.
+
+Código: `firebase/functions/suhai-acompanhamento.js` (rodada), regras em `suhai.js` (`planoAcompanhamento`), testes em `firebase/functions/test/suhai-acompanhamento.test.js`.
 
 **Cotação simulada** (sem `SUHAI_GATEWAY_URL`) registra no CRM e no e-mail, mas **nunca** envia WhatsApp nem grava `cNumeroCotacao`.
 
