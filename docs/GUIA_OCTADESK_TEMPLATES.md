@@ -234,10 +234,12 @@ Os templates anteriores foram criados pelo Octadesk, e o envio usa o ID que o Oc
 
 **Recriados no Octadesk em 26/10** (mesmo texto, variáveis pelo botão "Adicionar variável genérica"), em análise na Meta:
 
-| Modelo no Octadesk | ID | Status (26/10, 09:51) |
+| Modelo no Octadesk | ID | Status (26/10, 10:08) |
 |---|---|---|
-| `pendencia_suhai_util_v1_octa` | `6adf4cb24582fe09dcd79943` | pendente |
-| `proposta_suhai_util_v3_octa` | `6adf4c4204118aa70b52a4dc` | pendente |
+| `pendencia_suhai_util_v1_octa` | `6adf4cb24582fe09dcd79943` | aprovado |
+| `proposta_suhai_util_v3_octa` | `6adf4c4204118aa70b52a4dc` | aprovado |
+
+Uso no código: a `proposta_suhai_util_v3_octa` entra no lugar da v2 na chave `suhai_proposta_enviada` do `OCTADESK_API_CONFIG`, com as mesmas três variáveis (nome, número da proposta, `pagamentoTexto`), sem mudar o código. A pendência ainda não tem disparo automático: hoje a rotina cria a Task "Enviar o link ao cliente pelo WhatsApp"; o envio pelo template precisa de código na `acompanharPropostasSuhai`.
 
 Depois da aprovação, apagar na Meta os quatro criados por lá (`pendencia_suhai_util_v1` e `proposta_suhai_util_v3`, em inglês e em português).
 
@@ -270,6 +272,6 @@ Substitui a `proposta_suhai_util_v2`, que fala em enviar o boleto antes da emiss
 - [x] `pendencia_suhai_util_v1` aprovado pela Meta — 2026-10-26
 - [x] `proposta_suhai_util_v3` aprovado pela Meta — 2026-10-26
 - [x] Recriados no Octadesk e IDs anotados (os criados na Meta não aparecem na API do Octadesk) — 2026-10-26
-- [ ] `pendencia_suhai_util_v1_octa` e `proposta_suhai_util_v3_octa` aprovados pela Meta
+- [x] `pendencia_suhai_util_v1_octa` e `proposta_suhai_util_v3_octa` aprovados pela Meta — 2026-10-26
 - [ ] Os quatro criados direto na Meta apagados
 - [ ] Com "pode": chaves no `OCTADESK_API_CONFIG`, disparo no código e deploy da `deliverLead`
