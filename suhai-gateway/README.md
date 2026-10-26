@@ -24,7 +24,7 @@ Rodando no Cloud Run com `--vpc-egress=all-traffic`, todo tráfego de saída pas
 | `/cotacao` | POST | `IncluirCotacaoSuhai`; devolve protocolo, veículo e coberturas com parcelamento |
 | `/proposta` | POST | `TransmitirProposta` com boleto (`tp_pagamento` 2); devolve o número da proposta |
 | `/proposta/status` | POST | `ConsultarStatusProposta` com `{ proposta }` e/ou `{ protocolo }`; devolve `status` (1–19), `statusTexto`, `dataAtualizacao` e o parecer das recusas reavaliáveis |
-| `/proposta/pendencias` | POST | `ConsultarPendencias`; devolve as pendências (vistoria, rastreador) com `linkPrestador`. "Nenhum registro" vira `{ propostas: [], semRegistro: true }` |
+| `/proposta/pendencias` | POST | `ConsultarPendencias`; aceita também `placa` ou `chassi`. Devolve as pendências (vistoria, rastreador) com `linkPrestador`. "Nenhum registro" vira `{ propostas: [], semRegistro: true }` |
 | `/proposta/pdf` | POST | `GerarPDF`; devolve `pdfBase64`. Só manda e-mail ao proponente com `enviaEmail: true` |
 | `/fipe/consulta` | POST | `ConsultaVeiculos`; sem `codFipe` devolve a base inteira |
 
