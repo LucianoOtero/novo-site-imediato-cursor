@@ -60,8 +60,9 @@ Falta repetir a pesquisa pela placa DBO7B72 quando a Digibee de homologação vo
 
 ## Pendências antes do rollout
 
-- [ ] Campos `cStatusProposta` (Varchar 60, "Status da proposta") e `cDataStatusProposta` (Data/hora, "Data do status da proposta") no Lead e na Oportunidade, painel "Cotação do Site". O usuário de API recebe 403 no Field Manager: precisa da sessão de administrador (DEV e PROD). Conferir com `node scripts/espo-ops/fase0-suhai-fields.mjs --prefer=dev` (e `prod`).
-- [ ] Rodada local de novo com os campos no DEV, conferindo os dois campos no Lead e na Oportunidade.
+- [x] Campos `cStatusProposta` e `cDataStatusProposta` no Espo DEV (seção acima).
+- [x] Rodada local de novo com os campos no DEV, conferindo os dois campos no Lead e na Oportunidade.
+- [ ] Os mesmos campos no Espo PROD, com "pode" e a sessão de administrador. Conferir com `node scripts/espo-ops/fase0-suhai-fields.mjs --prefer=prod`.
 
 ## Rollout (cada passo com "pode")
 
