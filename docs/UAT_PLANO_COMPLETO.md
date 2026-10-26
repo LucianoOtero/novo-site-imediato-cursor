@@ -193,11 +193,13 @@ Durante a viagem (29/10 a 02/11), nenhum deploy: só observação de R14 e do al
 ## 9. Fora deste UAT
 
 - Fase B (Suhai junto com o RPA): plano em [FASE_B_SUHAI_PARALELO.md](FASE_B_SUHAI_PARALELO.md), ainda sem código.
-- Cartão de crédito: aguarda a resposta do Fábio.
-- Templates de WhatsApp da pendência (vistoria ou rastreador) e da proposta v3: em análise na Meta desde 26/10; o disparo no código entra depois da aprovação, com "pode".
+- Cartão de crédito: o Fábio confirmou em 26/10 o modelo de tela própria. O cliente digita o cartão no site, o servidor cifra número e CVV em AES-256 e envia direto à API Pagamento, sem gravar. A Suhai não tem página de pagamento. Projeto a abrir.
+- Boleto: a Suhai envia o "Kit Boas-Vindas" (apólice e boletos) ao e-mail informado na proposta; a segunda via sai pelo Atendimento Suhai ou pela API Apólice. Seguimos com `tp_pagamento 2`.
+- Status e pendências da proposta usam o mesmo usuário de serviço de produção (confirmado pelo Fábio em 26/10).
+- Templates de WhatsApp da pendência e da proposta: criados no Octadesk como `pendencia_suhai_util_v1_octa` (`6adf4cb24582fe09dcd79943`) e `proposta_suhai_util_v3_octa` (`6adf4c4204118aa70b52a4dc`), em análise na Meta. Os criados direto na Meta não aparecem no Octadesk e serão apagados. O disparo no código entra depois da aprovação, com "pode".
 
 ## Registro de execução
 
 | Data | Fase | Resultado |
 |---|---|---|
-| 26/10 | F1 | Plano gravado. Rodapé D2 a D4 ok, com o defeito do modal corrigido em `c8dd378`. Regressão local 26/26 e 78/78. Pós-venda V2 e V5 ok; V3 e V4 dependem de uma apólice nossa em homologação. Ordem de deploy aprovada. Rascunho do e-mail ao Fábio no Gmail para o Luciano enviar. Templates `pendencia_suhai_util_v1` e `proposta_suhai_util_v3` em análise na Meta (registro em `GUIA_OCTADESK_TEMPLATES.md`). `rpa-fidelidade` e `testes-espocrm` autorizados; resultado abaixo |
+| 26/10 | F1 | Plano gravado. Rodapé D2 a D4 ok, com o defeito do modal corrigido em `c8dd378`. Regressão local 26/26 e 78/78. Pós-venda V2 e V5 ok; V3 e V4 dependem de uma apólice nossa em homologação. Ordem de deploy aprovada. Fábio respondeu (cartão, boleto, login) e a réplica foi enviada pedindo a confirmação do escopo do ITSM-102658, a apólice de teste e o limite de volume. Templates recriados no Octadesk, em análise (seção 9). Baterias com RPA real: as 6 motos da `rpa-fidelidade` falharam na Tela 3 porque o teste ainda procurava o chip de ramo, removido do funil, e mandava moto como `tipo_veiculo: "carro"` (corrigido no teste em `689b4f2`, sem rodar; leads reais de moto entram por `/seguro-moto` e não são afetados). A `testes-espocrm` passou a limpar o dedupe do Lote 1 entre casos (`adc93e1`); casos 3 a 23 em execução |

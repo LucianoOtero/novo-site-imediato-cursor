@@ -230,7 +230,16 @@ firebase deploy --only functions:deliverLead
 
 Criados pelo Luciano no WhatsApp Manager da Meta em 26/10, Português (BR), categoria Utilidade, cabeçalho de texto fixo "Proposta do seu seguro", sem rodapé e sem botões. **Status (26/10, 09:06):** os dois aprovados pela Meta. Nenhum aparece no Octadesk: a lista de `GET /chat/templates-message` (25 modelos, conferida com `octa-templates.mjs`) não traz modelos criados direto na Meta. Para o envio pela API, recriar os dois no Octadesk com o mesmo texto e anotar os IDs.
 
-Os templates anteriores foram criados pelo Octadesk, e o envio usa o ID que o Octadesk dá a cada modelo. Depois da aprovação, conferir se os dois aparecem no Octadesk com ID; se não aparecerem, recriar por lá (variáveis pelo botão "Adicionar variável genérica").
+Os templates anteriores foram criados pelo Octadesk, e o envio usa o ID que o Octadesk dá a cada modelo. O "sincronizar mensagens" do Octadesk só atualiza o status dos modelos que ele já conhece; não importa os criados na Meta.
+
+**Recriados no Octadesk em 26/10** (mesmo texto, variáveis pelo botão "Adicionar variável genérica"), em análise na Meta:
+
+| Modelo no Octadesk | ID | Status (26/10, 09:51) |
+|---|---|---|
+| `pendencia_suhai_util_v1_octa` | `6adf4cb24582fe09dcd79943` | pendente |
+| `proposta_suhai_util_v3_octa` | `6adf4c4204118aa70b52a4dc` | pendente |
+
+Depois da aprovação, apagar na Meta os quatro criados por lá (`pendencia_suhai_util_v1` e `proposta_suhai_util_v3`, em inglês e em português).
 
 O código ainda não envia nenhum dos dois: a chave em `templates` do `OCTADESK_API_CONFIG` e o disparo na rotina de acompanhamento entram depois da aprovação, com "pode".
 
@@ -260,5 +269,7 @@ Substitui a `proposta_suhai_util_v2`, que fala em enviar o boleto antes da emiss
 - [x] `pendencia_suhai_util_v1` e `proposta_suhai_util_v3` enviados para análise — 2026-10-26
 - [x] `pendencia_suhai_util_v1` aprovado pela Meta — 2026-10-26
 - [x] `proposta_suhai_util_v3` aprovado pela Meta — 2026-10-26
-- [ ] Recriados no Octadesk e IDs anotados (os criados na Meta não aparecem na API do Octadesk)
+- [x] Recriados no Octadesk e IDs anotados (os criados na Meta não aparecem na API do Octadesk) — 2026-10-26
+- [ ] `pendencia_suhai_util_v1_octa` e `proposta_suhai_util_v3_octa` aprovados pela Meta
+- [ ] Os quatro criados direto na Meta apagados
 - [ ] Com "pode": chaves no `OCTADESK_API_CONFIG`, disparo no código e deploy da `deliverLead`
