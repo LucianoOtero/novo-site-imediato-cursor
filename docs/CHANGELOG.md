@@ -28,6 +28,7 @@ Em teste em `uat.segurosimediato.com.br` (branch `uat-funil-etapa3`). Resultado 
 - `LeadForm`: passos 2/3 enviados antes da resposta do contato inicial levavam a um segundo lead. O `initial` entrou na fila de POSTs e o `leadId` é resolvido na hora do envio (`e2e/lead-sessao.spec.ts`).
 - Cache de idempotência de 10 min (era 24 h): o corpo do `initial` se repete entre jornadas do mesmo telefone.
 - Telefone do rodapé: o modal abria com ramo "auto" em qualquer página. O `FooterPhoneLink` agora tira o ramo do caminho (`lib/ramo-por-caminho.ts`, conferido contra `lib/ramos.ts` em `npm run test:ramo-caminho`).
+- `ContactLeadModal`: o envio final antes da resposta do contato inicial saía sem `leadId` e virava um segundo lead com Opportunity própria (achado no UAT de 26/10, modal do rodapé em `/seguro-pet`). O envio final agora espera o `initial` por até 8 s (`e2e/lead-sessao.spec.ts`).
 
 ### Docs
 - `docs/suhai-integracao/`: APIs de boleto descontinuadas pela Suhai (24/10); a cobrança só existe depois da apólice emitida.

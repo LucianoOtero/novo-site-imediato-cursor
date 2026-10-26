@@ -132,6 +132,12 @@ export function ContactLeadModal() {
   const [step2Visible, setStep2Visible] = useState(false);
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
+  /**
+   * Contato inicial em andamento. O envio final espera por ele: sem o
+   * `leadId` da resposta, o "complete" vira um segundo lead com
+   * Opportunity própria (mesma corrida corrigida no `LeadForm`).
+   */
+  const initialRequestRef = useRef<Promise<void>>(Promise.resolve());
   /** Guarda contra reenvio duplicado no submit final — mesmo achado/motivo de `finalSubmitInFlightRef` em `LeadForm.tsx` (ver docs/INVESTIGACAO_APPLICATION_ERROR_OBRIGADO.md). */
   const finalSubmitInFlightRef = useRef(false);
   /** Marca que o submit veio do link "Prosseguir sem preencher o resto" — vira `submit_mode: "skip"` no `whatsapp_modal_submit` (telemetria GA4, 2026-08-04). */
@@ -209,6 +215,7 @@ export function ContactLeadModal() {
     setStep2Visible(false);
     initialLeadIdRef.current = null;
     initialCallInFlightRef.current = false;
+    initialRequestRef.current = Promise.resolve();
     finalSubmitInFlightRef.current = false;
     skipSubmitRef.current = false;
     resetModalAbandonFlags();
@@ -321,7 +328,7 @@ export function ContactLeadModal() {
     if (!valid) return;
 
     setStep2Visible(true);
-    void sendInitialContact();
+    if (!initialCallInFlightRef.current) initialRequestRef.current = sendInitialContact();
 
     const { ddd, celular } = getValues();
     fetch("/api/validate/phone", {
@@ -445,6 +452,8 @@ export function ContactLeadModal() {
   async function sendLeadAndNavigate(data: LeadInput, skipStrictValidation?: boolean) {
     setSubmitting(true);
     try {
+      // Espera limitada: um "initial" preso na rede não pode segurar o envio final.
+      await Promise.race([initialRequestRef.current, new Promise((resolve) => setTimeout(resolve, 8000))]);
       await postLead({
         ...data,
         ramo: ramo ?? data.ramo,
