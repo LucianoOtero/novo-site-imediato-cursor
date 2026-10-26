@@ -226,6 +226,32 @@ const PHONE_MICROCOPY =
 const FROST_CARD_CLASS =
   "border-white/50 bg-white/95 supports-[backdrop-filter]:bg-white/85 backdrop-blur-md shadow-2xl";
 
+/**
+ * Traz para a vista o cartão que substitui o formulário (cálculo do RPA ou
+ * "Recebemos seus dados"): centralizado entre o header sticky e o aviso de
+ * cookies (quando aberto), ou alinhado logo abaixo do header quando o
+ * cartão é mais alto que essa área. O `StickyCTA` não entra na conta: ele
+ * some sozinho quando a rolagem volta ao formulário.
+ */
+function trazerCartaoParaVista(el: HTMLElement) {
+  const header = document.querySelector("header");
+  const topoLivre = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+  const avisoCookies = document.querySelector('[aria-label="Preferências de cookies"]');
+  const baseLivre = avisoCookies
+    ? Math.min(window.innerHeight, avisoCookies.getBoundingClientRect().top)
+    : window.innerHeight;
+  const alturaLivre = baseLivre - topoLivre;
+  const rect = el.getBoundingClientRect();
+  const folga = 16;
+  const deslocamento =
+    rect.height + folga * 2 <= alturaLivre
+      ? rect.top - topoLivre - (alturaLivre - rect.height) / 2
+      : rect.top - topoLivre - folga;
+  if (Math.abs(deslocamento) < 4 || typeof window.scrollBy !== "function") return;
+  const reduzirMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  window.scrollBy({ top: deslocamento, behavior: reduzirMovimento ? "auto" : "smooth" });
+}
+
 /** Ordem de exibição/foco no passo 3 — mesma ordem dos campos na tela. */
 const STEP_3_FIELDS = ["placa", "cep", "cpf"] as const;
 const STEP_3_FIELD_LABELS: Record<(typeof STEP_3_FIELDS)[number], string> = {
@@ -269,6 +295,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
    */
   const [pendingValidations, setPendingValidations] = useState(0);
   const telefoneInputRef = useRef<HTMLInputElement>(null);
+  const cartaoFinalRef = useRef<HTMLDivElement>(null);
   const rpa = useRpaCalculation();
   const initialLeadIdRef = useRef<string | null>(null);
   const initialCallInFlightRef = useRef(false);
@@ -429,6 +456,23 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     // que interessa aqui (o envio é guardado por `rpaResultReportedRef`).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rpaActive, rpa.phase, rpa.result]);
+
+  /** Só reposiciona ao trocar de cartão — não a cada fase do cálculo, para não puxar quem rolou a página. */
+  const cartaoFinal =
+    status === "success"
+      ? "recebido"
+      : rpaActive
+        ? rpa.phase === "success" || rpa.phase === "error"
+          ? "resultado"
+          : "calculando"
+        : null;
+  useEffect(() => {
+    if (!cartaoFinal) return;
+    const frame = window.requestAnimationFrame(() => {
+      if (cartaoFinalRef.current) trazerCartaoParaVista(cartaoFinalRef.current);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [cartaoFinal]);
 
   /** Fase 1 UX: rpa_wait_start / rpa_wait_end (complementar a form_abandon). */
   useEffect(() => {
@@ -1213,7 +1257,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
 
   if (rpaActive) {
     return (
-      <div className="rounded-xl border border-neutral-200 bg-white p-6">
+      <div ref={cartaoFinalRef} className="rounded-xl border border-neutral-200 bg-white p-6">
         <RpaCalculationScreen
           phase={rpa.phase}
           currentStep={rpa.currentStep}
@@ -1233,6 +1277,7 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
   if (status === "success") {
     return (
       <div
+        ref={cartaoFinalRef}
         role="status"
         className={cn(
           "flex flex-col items-center gap-3 rounded-xl border p-8 text-center",
