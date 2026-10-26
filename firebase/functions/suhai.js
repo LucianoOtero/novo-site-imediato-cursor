@@ -543,7 +543,7 @@ function planoAcompanhamento(item, status, pendencias, agoraIso) {
 
   const emoji = { emitida: "✅", recusa: "⛔", cancelada: "🚫", pendencias: "⚠️", endosso: "📝" }[info.tipo] || "🔎";
   const linhas = [`${prefixo}${emoji} PROPOSTA SUHAI nº ${numero} — ${info.rotulo}${quando}`];
-  if (status.statusTexto && status.statusTexto !== info.rotulo) linhas.push(`Texto da Suhai: ${status.statusTexto}`);
+  if (status.statusTexto && slug(status.statusTexto) !== slug(info.rotulo)) linhas.push(`Texto da Suhai: ${status.statusTexto}`);
   linhas.push(...linhasParecer(status));
   if ((pendencias || []).length > 0) {
     linhas.push("Pendências para a emissão:");
