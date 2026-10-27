@@ -313,6 +313,7 @@ Critério para o corte: 5 lotes seguidos sem divergência grave.
 | Rodada | Lote (data das vendas) | Linhas | Projetadas | Casadas | Graves |
 |---|---|---|---|---|---|
 | 1 — 2026-10-25 | 2026-10-23 | 4 | 4 | 4 | 0 |
+| 2 — 2026-10-27 | 2026-10-26 | 4 | 4 | 4 | 0 |
 
 ---
 

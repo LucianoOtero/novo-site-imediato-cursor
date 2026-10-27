@@ -1,7 +1,10 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
 import { test, expect, request as pwRequest, type Page } from "@playwright/test";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getDatabase } from "firebase-admin/database";
 
 /**
  * Plano de testes EspoCRM (2026-07-28) — 23 casos ponta a ponta no SITE
@@ -20,6 +23,9 @@ import { test, expect, request as pwRequest, type Page } from "@playwright/test"
  * - ESPO_BASE_URL   (ex.: https://dev.flyingdonkeys.com.br)
  * - ESPO_API_KEY    (chave do api_dev)
  * - CASE_FILTER     (opcional; ex.: "1" roda só o caso 1 — piloto)
+ * - DEDUPE_ENV      (opcional; ambiente do índice de dedupe no RTDB, padrão
+ *                   "staging" = `NEXT_PUBLIC_APP_ENV` do build local)
+ * - FIREBASE_*      (service account do RTDB; se ausentes, lidos do `.env.local`)
  */
 
 const CASES_PATH = path.join(__dirname, "testes-espocrm.cases.json");
@@ -47,6 +53,53 @@ function resetLocalLeadStore() {
   } catch {
     /* best-effort */
   }
+}
+
+const DEDUPE_ENV = process.env.DEDUPE_ENV || "staging";
+if (!["staging", "development"].includes(DEDUPE_ENV)) {
+  throw new Error(`Recusado: DEDUPE_ENV=${DEDUPE_ENV}. A limpeza do dedupe só roda em staging/development.`);
+}
+
+function firebaseEnv(): Record<string, string> {
+  const out: Record<string, string> = {};
+  const envLocal = path.join(__dirname, "..", ".env.local");
+  if (fs.existsSync(envLocal)) {
+    for (const line of fs.readFileSync(envLocal, "utf-8").split(/\r?\n/)) {
+      const m = line.match(/^(FIREBASE_[A-Z_]+)=(.*)$/);
+      if (m) out[m[1]] = m[2].replace(/^(["'])(.*)\1$/, "$2");
+    }
+  }
+  for (const k of Object.keys(process.env)) if (k.startsWith("FIREBASE_")) out[k] = process.env[k] as string;
+  return out;
+}
+
+/**
+ * Lote 1: `/api/lead` e a Cloud Function deduplicam por telefone + ramo
+ * (`lead_dedupe`/`opp_dedupe/{ambiente}/{sha256(telefone:ramo)}`). Como o
+ * telefone é o mesmo em todos os casos, sem apagar esses índices o caso
+ * seguinte reaproveita o leadId do anterior, cujo Lead já foi apagado no Espo.
+ */
+async function limparDedupeRtdb(phoneE164: string): Promise<string> {
+  const fb = firebaseEnv();
+  if (!fb.FIREBASE_DATABASE_URL || !fb.FIREBASE_CLIENT_EMAIL || !fb.FIREBASE_PRIVATE_KEY) {
+    return "sem credenciais FIREBASE_* — dedupe não limpo";
+  }
+  if (!getApps().length) {
+    initializeApp({
+      credential: cert({
+        projectId: fb.FIREBASE_PROJECT_ID,
+        clientEmail: fb.FIREBASE_CLIENT_EMAIL,
+        privateKey: fb.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      }),
+      databaseURL: fb.FIREBASE_DATABASE_URL,
+    });
+  }
+  const db = getDatabase();
+  for (const ramo of ["auto", ""]) {
+    const chave = createHash("sha256").update(`${phoneE164}:${ramo}`).digest("hex");
+    for (const node of ["lead_dedupe", "opp_dedupe"]) await db.ref(`${node}/${DEDUPE_ENV}/${chave}`).remove();
+  }
+  return `dedupe ${DEDUPE_ENV} limpo`;
 }
 
 interface Identidade {
@@ -339,7 +392,9 @@ async function purgarPorTelefone(celular: string): Promise<string> {
   return acoes.length ? acoes.join("; ") : "nada a purgar";
 }
 
-test.describe.configure({ mode: "serial" });
+// 11 min de espera pelo RPA + até 2 min de polling no Espo + passos do
+// funil: acima dos 12 min do config, o caso morria antes de gravar o resultado.
+test.describe.configure({ mode: "serial", timeout: 16 * 60 * 1000 });
 test.afterAll(() => writeResults());
 
 for (const caso of casos) {
@@ -384,7 +439,8 @@ for (const caso of casos) {
 
     // Slate limpa: store local (dedupe telefone em localhost) + Espo DEV.
     resetLocalLeadStore();
-    const purga = await purgarPorTelefone(`${identidade.ddd}${identidade.celular}`);
+    const dedupe = await limparDedupeRtdb(`+55${identidade.ddd}${identidade.celular}`.replace(/[^\d+]/g, ""));
+    const purga = `${await purgarPorTelefone(`${identidade.ddd}${identidade.celular}`)}; ${dedupe}`;
 
     await page.goto("/cotacao", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => {
@@ -458,7 +514,7 @@ for (const caso of casos) {
         detalhe = `Botão 'Quero calcular agora' seguiu desabilitado após 45s (veículo não identificado pela placa? infoVisivel=${infoVisivel})`;
       } else {
         await btnAguardar.click();
-        const sucesso = page.getByRole("heading", { name: "Encontramos 2 opções para você" });
+        const sucesso = page.getByRole("heading", { name: /Encontramos (2 opções|uma opção) para você/ });
         const manual = page.getByRole("heading", { name: "Vamos calcular manualmente para você" });
         const deadline = Date.now() + 11 * 60 * 1000;
         // eslint-disable-next-line no-constant-condition
@@ -490,7 +546,8 @@ for (const caso of casos) {
           }
           if (Date.now() > deadline) {
             desfecho = "timeout";
-            detalhe = "Sem desfecho em 11 min";
+            const titulo = await page.getByRole("heading").first().textContent().catch(() => null);
+            detalhe = `Sem desfecho em 11 min (título na tela: ${titulo?.trim() || "?"}; RPA: ${rpa.lastMensagem || "?"})`;
             break;
           }
           await page.waitForTimeout(2000);

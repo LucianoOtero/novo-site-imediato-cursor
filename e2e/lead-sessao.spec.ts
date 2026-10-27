@@ -61,3 +61,24 @@ test("passo 2 preenchido antes da resposta do contato inicial leva o leadId", as
   await page.getByRole("button", { name: "Falta pouco" }).click();
   expect((await progresso).postDataJSON().leadId).toBe("ld_sessao_1");
 });
+
+test("modal do rodapé: envio antes da resposta do contato inicial leva o leadId", async ({ page }) => {
+  await prepararRotas(page);
+  await page.route("**/api/lead", async (route) => {
+    if (route.request().postDataJSON()?.stage === "initial") await new Promise((resolve) => setTimeout(resolve, 2500));
+    await route.fulfill({ status: 201, contentType: "application/json", body: '{"leadId":"ld_modal_1"}' });
+  });
+
+  await page.goto("/seguro-pet", { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => document.querySelector<HTMLAnchorElement>('footer a[href^="tel:"]')?.click());
+  await page.locator("#modal-telefone").pressSequentially("11987654321");
+  await page.locator("#modal-telefone").blur();
+  await page.locator("#modal-nome").fill("Teste Automatizado");
+  const completo = page.waitForRequest(
+    (request) => request.url().endsWith("/api/lead") && request.postDataJSON()?.stage === "complete"
+  );
+  await page.getByRole("dialog").locator("button[type=submit]").first().click();
+  const corpo = (await completo).postDataJSON();
+  expect(corpo.leadId).toBe("ld_modal_1");
+  expect(corpo.ramo).toBe("pet");
+});

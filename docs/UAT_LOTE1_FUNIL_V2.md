@@ -135,10 +135,40 @@ Feita pela API (`espo-review.mjs`):
 
 - **Endereço sem login (25/10, 14:56):** `https://uat.segurosimediato.com.br` serve a branch `uat-funil-etapa3`, deployment com o commit `c96899f` ou posterior.
 - **Proteção desligada:** para abrir sem login, a proteção de previews do projeto Vercel `imediato-seguros` foi desligada: `ssoProtection` era `{"deploymentType":"all_except_custom_domains"}` e agora é `null`. Todos os previews do projeto ficam públicos. **Depois do UAT, religar com esse mesmo valor.**
+- **Proteção religada (26/10, 12:25, com "pode" do Luciano):** `ssoProtection` de volta a `{"deploymentType":"all_except_custom_domains"}`. A produção (`www.segurosimediato.com.br`) segue aberta. O `uat.segurosimediato.com.br` também passou a pedir login da Vercel, porque é domínio de preview. Para um novo UAT em aparelho sem login, desligar de novo (`null`) e religar ao fim.
+
+## Rodapé com o ramo da página e regressão (26/10)
+
+Contra `https://uat.segurosimediato.com.br` (Vercel, staging), roteiro `C:\Users\Luciano\wt\_shots-etapa3\uat-rodape-run.mjs`. D2 e D3 interceptam o `POST /api/lead`; D4 entrega de verdade (RTDB staging, `deliverLead`, Espo DEV e Octadesk).
+
+| Caso | Resultado | Evidência |
+|---|---|---|
+| D2 — `/seguro-moto`, `/fianca`, `/assistencia-24-horas` | OK | `call_click` com `ramo` igual ao caminho e `location: "footer"`; o `initial` do modal leva o mesmo ramo, `modalChannel: "phone"` |
+| D3 — `/`, `/contato`, `/a-imediato` | OK | `call_click` sem ramo; o `initial` leva `ramo: "auto"` |
+| D4 — lead pelo modal do rodapé em `/seguro-pet` (1ª rodada, 11:14 UTC) | **Falhou** | O `complete` saiu 163 ms depois do `initial`, sem `leadId`: 2 registros no RTDB e 2 Opps no mesmo Lead do Espo DEV |
+| D4 — depois da correção `c8dd378` (11:27 UTC) | OK | `initial` e `complete` com o mesmo `leadId` (`ld_d716c30cff9b`), `ramo: "pet"`; 1 Lead (`6adf39376f1b1fe53`) e 1 Opp (`6adf3937b4dbc3b68`), `cCanalCaptura` "telefone" |
+
+- **Defeito 3, corrigido em `c8dd378`:** a mesma corrida do defeito 1, agora no `ContactLeadModal`. Com nome preenchido logo depois do telefone (autofill ou rede lenta), o envio final saía antes da resposta do `initial`. O envio final passou a esperar o `initial` por até 8 s. Teste de regressão em `e2e/lead-sessao.spec.ts` ("modal do rodapé: envio antes da resposta do contato inicial leva o leadId").
+- **Observação, não bloqueia:** o ramo não aparece no Espo (nem campo nem Note). O site manda o ramo como `produto` e o Espo não guarda. Era assim antes do Lote 1; o ramo fica no RTDB.
+- **Observação:** logo depois da criação, o Lead mostra `cCanalCaptura` "formulario" por alguns segundos, até o PUT do canal (separado e best-effort) gravar "telefone".
+- **Regressão local com a correção** (build de produção em `127.0.0.1:3100`): `etapa3-consultor`, `lead-sessao` e `telefone` 26/26; `uat-lote1-campo` 78/78 (Chrome desktop, iPhone 13 WebKit, Pixel 7). `typecheck` sem erros.
+- **Baterias com o RPA real:** rodadas no mesmo dia, ver a seção seguinte.
+- **Limpeza:** Espo DEV e staging do telefone de teste limpos depois de cada rodada do D4.
+
+## Baterias com o RPA real e foco no cartão (26/10)
+
+Build local de produção em `127.0.0.1:3100` (staging: RTDB, `deliverLead`, Espo DEV e Octadesk de verdade). Os 50 casos do manifesto da `rpa-fidelidade` usam o telefone de teste (conferido no RTDB antes de rodar), então nenhuma mensagem saiu para clientes.
+
+- **`testes-espocrm`, casos 3 a 23 (10:00 às 11:00):** a bateria passou a limpar o dedupe do Lote 1 entre casos (`adc93e1`). Casos 3 a 20 com o mesmo desfecho de 19/10, exceto o 6 (manual, "Tela 2 falhou"; antes sucesso) e o 16 (sucesso; antes erro do RPA). Todos com Lead e Opp no Espo DEV. O caso 21 (consultor) falhou só na conferência: o Lead existia, mas não foi achado pelo e-mail em 90 s, provavelmente por gravação atrasada do caso anterior no mesmo telefone. Reexecução dos casos 21 a 23 às 11:19: 3/3. Resultados em `e2e/testes-espocrm.resultado.uat-20261026-3a23.json` e `...-21a23.json`. O RPA levou cerca de 230 a 250 s por cotação, o dobro de 19/10.
+- **`rpa-fidelidade`:** a rodada das 09:10 falhou nas 6 motos (Tela 3) porque o teste ainda procurava o chip de ramo removido do funil e mandava `tipo_veiculo: "carro"`. Corrigido no teste em `689b4f2` (cada ramo pela sua página, `/seguro-{ramo}`). Amostra de 5 casos às 11:01: 3 das 4 motos calcularam com preço; a quarta caiu em manual, como no RPA direto; o caminhão fica sem cálculo automático, como previsto. Leads reais de moto não eram afetados.
+- **Foco no cartão (`4fbb4e6`, pedido do Luciano no aceite do aparelho):** ao sair do formulário, o cartão do cálculo é centralizado entre o header e o aviso de cookies; o resultado, mais alto que a tela, fica logo abaixo do header. Conferido em celular simulado (iPhone 13 e Android 360 × 640, 14 cenários com RPA e `/api/lead` simulados) e no aparelho do Luciano. Regressão local 52/52.
+- **Limpeza:** `purge-phone test` e `clean-staging-test` depois de cada rodada.
 
 ## Aceite
 
-- [ ] Luciano: Bloco A em aparelho real (iPhone e Android) e no formulário de proposta Suhai.
+- [x] Luciano: funil aceito no celular em 26/10 (formulário, foco no cartão depois de `4fbb4e6`, cotação real com o WhatsApp de cálculo pronto entregue). Marcado pelo agente a pedido do Luciano. O lead do teste (staging, número do Luciano) fica no Espo DEV e no RTDB como evidência.
 - [x] Mensagens do Octadesk aceitas pela API (flags da `deliverLead`).
 - [x] Espo DEV revisado pelo agente (acima).
-- [ ] Limpeza do Espo DEV e do staging (`purge-phone test`, `clean-staging-test`).
+- [x] Rodapé D2 a D4 e regressão local depois de `c8dd378` (26/10).
+- [x] Baterias com o RPA real (`testes-espocrm` 21/21 com a reexecução; amostra da `rpa-fidelidade`) e foco no cartão (`4fbb4e6`), em 26/10.
+- [x] Limpeza do Espo DEV e do staging (`purge-phone test`, `clean-staging-test`) em 26/10. Repetir depois do aceite no aparelho.
