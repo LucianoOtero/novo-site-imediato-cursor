@@ -105,6 +105,7 @@ Teste automatizado: `_shots-etapa3/ux-suhai-local.mjs`, contra o build local com
 | U3 | Sinal de ok na cotação | Celular (já com o DDD digitado, como no formulário padrão), placa, CEP, nome e CPF; celular incompleto no blur mostra erro e tira o ok | automatizado ok (27/10); conferir no preview |
 | U4 | Validação da proposta ao sair do campo | E-mail (formato e SafetyMails), celular (formato e APILayer), CEP (aviso de não encontrado), chassi de 17 sem I, O e Q; UF e vencimento em lista | automatizado ok (27/10); conferir no preview |
 | U5 | "Transmitir" com pendências | Não chama a Suhai, rola até o primeiro campo inválido e mostra o erro do aceite | automatizado ok (27/10); conferir no preview |
+| U6 | Proposta aceita, no celular | Modal "Proposta enviada à Suhai" com o número e os próximos passos; "Entendi" fecha e mostra o resumo | automatizado ok (27/10); conferir no preview |
 
 ## 3. Gateway: rotas de acompanhamento (tag `homologacao`)
 

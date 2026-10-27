@@ -1,18 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CircleCheck } from "lucide-react";
 
 import { Field } from "@/components/lead/fields";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TelefoneInput } from "@/components/ui/telefone-input";
 import { trackEvent } from "@/lib/analytics";
 import { COMBUSTIVEL, COR_VEICULO } from "@/lib/suhai/dominio";
+import { PLANOS } from "@/lib/suhai/planos";
 import { propostaInputSchema, type Oferta, type PropostaInput, type PropostaResultado } from "@/lib/suhai/types";
 import { formatCep, formatTelefone, isValidEmailFormat, onlyDigits } from "@/lib/validators";
 
 const selectClasses =
   "flex h-11 w-full rounded-lg border border-neutral-200 bg-white px-3.5 text-base text-neutral-900 outline-none focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/30 aria-invalid:border-alert";
+
+const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 const UFS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA",
@@ -132,6 +137,7 @@ export function PropostaSuhaiForm({
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<PropostaResultado | null>(null);
+  const [confirmacaoAberta, setConfirmacaoAberta] = useState(false);
   const valoresRef = useRef({ email, telefone: "", cep });
   valoresRef.current = { email: email.trim(), telefone: onlyDigits(ddd) + onlyDigits(celular), cep: onlyDigits(cep) };
 
@@ -304,6 +310,7 @@ export function PropostaSuhaiForm({
         return;
       }
       setResultado(corpo as PropostaResultado);
+      setConfirmacaoAberta(true);
       trackEvent("suhai_proposal_sent", { form_id: "cotacao_suhai" });
     } catch {
       setErroGeral("Falha de conexão. Tente novamente.");
@@ -324,15 +331,62 @@ export function PropostaSuhaiForm({
     return Boolean(valor.trim()) && chaves.every((chave) => tocados[chave]) && !mensagem(...chaves);
   }
 
+  /** Ao fechar, o resumo que substituiu o formulário pode estar fora da tela (no celular, acima). */
+  function fecharConfirmacao() {
+    setConfirmacaoAberta(false);
+    document.getElementById("proposta-enviada")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   if (resultado) {
     return (
-      <div role="status" className="mt-6 rounded-xl border border-brand-200 bg-white p-5">
-        <h3 className="font-display text-xl font-bold text-neutral-900">Proposta enviada</h3>
-        <p className="mt-2 text-sm text-neutral-700">
-          Número da proposta <strong>{resultado.numeroProposta}</strong>, protocolo {resultado.protocolo}. O pagamento é
-          por boleto: nossa equipe acompanha a emissão da apólice e envia o boleto da 1ª parcela.
-        </p>
-      </div>
+      <>
+        <div id="proposta-enviada" role="status" className="mt-6 scroll-mt-28 rounded-xl border border-brand-200 bg-white p-5">
+          <h3 className="flex items-center gap-2 font-display text-xl font-bold text-neutral-900">
+            <CircleCheck className="size-6 shrink-0 text-emerald-600" aria-hidden="true" />
+            Proposta enviada
+          </h3>
+          <p className="mt-2 text-sm text-neutral-700">
+            Número da proposta <strong>{resultado.numeroProposta}</strong>, protocolo {resultado.protocolo}. O pagamento é
+            por boleto: nossa equipe acompanha a emissão da apólice e envia o boleto da 1ª parcela.
+          </p>
+        </div>
+        <AlertDialog open={confirmacaoAberta} onOpenChange={(aberto) => !aberto && fecharConfirmacao()}>
+          <AlertDialogContent className="max-h-[90dvh] max-w-md overflow-y-auto">
+            <CircleCheck className="size-12 text-emerald-600" aria-hidden="true" />
+            <AlertDialogTitle className="mt-3 text-xl">Proposta enviada à Suhai</AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-neutral-700">
+              Número da proposta <strong className="text-neutral-900">{resultado.numeroProposta}</strong>
+            </AlertDialogDescription>
+            <dl className="mt-4 divide-y divide-neutral-100 rounded-lg bg-neutral-50 px-4 text-sm">
+              <div className="flex justify-between gap-3 py-2">
+                <dt className="text-neutral-500">Plano</dt>
+                <dd className="text-right font-medium text-neutral-900">{PLANOS.find((plano) => plano.id === oferta.planoId)?.nome ?? "Suhai"}</dd>
+              </div>
+              <div className="flex justify-between gap-3 py-2">
+                <dt className="text-neutral-500">Valor</dt>
+                <dd className="text-right font-medium text-neutral-900">{moeda.format(oferta.premioTotal)} no ano</dd>
+              </div>
+              <div className="flex justify-between gap-3 py-2">
+                <dt className="text-neutral-500">Pagamento</dt>
+                <dd className="text-right font-medium text-neutral-900">
+                  Boleto em {parcelas}x, vencimento dia {vencimento}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3 py-2">
+                <dt className="text-neutral-500">Início da vigência</dt>
+                <dd className="text-right font-medium text-neutral-900">{vigencia.split("-").reverse().join("/")}</dd>
+              </div>
+            </dl>
+            <ol className="mt-4 flex list-decimal flex-col gap-1.5 pl-5 text-sm text-neutral-700">
+              <li>A Suhai analisa a proposta. Se pedir vistoria ou rastreador, mandamos o link pelo WhatsApp.</li>
+              <li>Com a apólice emitida, você recebe o boleto da 1ª parcela no e-mail informado.</li>
+            </ol>
+            <Button type="button" fullWidth className="mt-5" onClick={fecharConfirmacao}>
+              Entendi
+            </Button>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
