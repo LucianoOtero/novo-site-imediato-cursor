@@ -371,7 +371,7 @@ export function PropostaSuhaiForm({
         label="Celular com DDD"
         htmlFor="proposta-telefone"
         error={mensagem("dddCel", "numCel")}
-        valid={valido(celular, "dddCel", "numCel")}
+        valid={/^\d{2}$/.test(onlyDigits(ddd)) && valido(celular, "dddCel", "numCel")}
       >
         <TelefoneInput
           id="proposta-telefone"
@@ -379,6 +379,7 @@ export function PropostaSuhaiForm({
           onTelefoneChange={(next) => {
             setDdd(next.ddd);
             setCelular(next.celular);
+            setTocados((anterior) => ({ ...anterior, dddCel: true, numCel: true }));
             limpar("dddCel", "numCel");
           }}
           onBlur={() => void confirmarCelular()}

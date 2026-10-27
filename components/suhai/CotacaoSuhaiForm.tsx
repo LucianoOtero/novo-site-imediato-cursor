@@ -636,12 +636,15 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   const fichaVisivel = Boolean(estado.marca || estado.modelo || estado.anoModelo);
   const consultaVisivel =
     (consultando === "placa" && etapa === 2) || (consultando === "cpf" && etapa === 4) ? consultando : null;
-  /** Sinal de ok do LeadForm: campo tocado, preenchido no formato certo e sem erro. */
+  /**
+   * Sinal de ok do LeadForm: campo tocado, preenchido e sem erro. No telefone, como lá,
+   * aparece com o DDD completo enquanto o celular é digitado; o formato é conferido no blur.
+   */
   const valido = {
     telefone: Boolean(
       tocados.telefone &&
         /^\d{2}$/.test(onlyDigits(estado.ddd)) &&
-        /^9\d{8}$/.test(onlyDigits(estado.celular)) &&
+        onlyDigits(estado.celular) &&
         !erros.ddd &&
         !erros.celular,
     ),
@@ -703,12 +706,19 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                 value={formatTelefone(onlyDigits(estado.ddd) + onlyDigits(estado.celular))}
                 aria-invalid={Boolean(erros.ddd || erros.celular)}
                 onTelefoneChange={(next) => {
+                  tocar("telefone");
                   setEstado((anterior) => ({ ...anterior, ddd: next.ddd, celular: next.celular }));
                   setErros((anterior) => ({ ...anterior, ddd: "", celular: "" }));
                 }}
                 onBlur={() => {
                   tocar("telefone");
-                  void validarCelularApi(estadoRef.current);
+                  const atual = estadoRef.current;
+                  const falhas = validarEtapa(atual, 1);
+                  if (onlyDigits(atual.ddd + atual.celular) && Object.keys(falhas).length > 0) {
+                    setErros((anterior) => ({ ...anterior, ...falhas }));
+                    return;
+                  }
+                  void validarCelularApi(atual);
                 }}
               />
             </Field>

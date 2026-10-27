@@ -94,6 +94,18 @@ Regra: cobrança só depois da apólice emitida; as APIs de boleto foram descont
 | P3 | `deliverLead` no `suhai_proposal` | Cria `suhai_acompanhamento/{leadId}` uma vez | testes; real em F4 |
 | P4 | Reenvio do mesmo estágio | Não duplica o registro | testes; real em F4 |
 
+### 2A. Experiência do `/cotacao-suhai` (achados do Luciano no preview, F4)
+
+Teste automatizado: `_shots-etapa3/ux-suhai-local.mjs`, contra o build local com todas as APIs simuladas (nenhuma chamada à Suhai, ao CRM ou aos validadores, e nenhuma proposta transmitida).
+
+| # | Caso | Esperado | Situação |
+|---|---|---|---|
+| U1 | Clique em "Contratar" | A página rola até a proposta, o foco vai para o e-mail e o card mostra "Plano escolhido" | automatizado ok (27/10); conferir no preview |
+| U2 | "Continuar" na placa e "Ver meu preço" no CPF | Botão ocupado e "Consultando a placa…" (ou "o CPF") abaixo dos botões; depois de 8 s, aviso de demora | automatizado ok (27/10); conferir no preview |
+| U3 | Sinal de ok na cotação | Celular (já com o DDD digitado, como no formulário padrão), placa, CEP, nome e CPF; celular incompleto no blur mostra erro e tira o ok | automatizado ok (27/10); conferir no preview |
+| U4 | Validação da proposta ao sair do campo | E-mail (formato e SafetyMails), celular (formato e APILayer), CEP (aviso de não encontrado), chassi de 17 sem I, O e Q; UF e vencimento em lista | automatizado ok (27/10); conferir no preview |
+| U5 | "Transmitir" com pendências | Não chama a Suhai, rola até o primeiro campo inválido e mostra o erro do aceite | automatizado ok (27/10); conferir no preview |
+
 ## 3. Gateway: rotas de acompanhamento (tag `homologacao`)
 
 | # | Caso | Esperado | Situação |
@@ -102,9 +114,9 @@ Regra: cobrança só depois da apólice emitida; as APIs de boleto foram descont
 | G2 | `/proposta/status` 9061210 | status 12, data 2026-10-15 10:48:43 | ok |
 | G3 | `/proposta/pendencias` por proposta e por placa | Pendências de vistoria com `linkPrestador` | ok |
 | G4 | `/proposta/pendencias` sem registro | `{ propostas: [], semRegistro: true }` | testes |
-| G5 | `/proposta/pdf` | `pdfBase64` e `envia_email=N` | a fazer (F4) |
-| G6 | Entrada inválida (letras, placa errada, JSON quebrado) | 400 `entrada_invalida` | a fazer (F4) |
-| G7 | Chamada sem token OIDC | 403 do Cloud Run | a fazer (F4) |
+| G5 | `/proposta/pdf` | `pdfBase64` e `envia_email=N` | ok (27/10, PDF da 9061210) |
+| G6 | Entrada inválida (letras, placa errada, JSON quebrado) | 400 `entrada_invalida` | ok (27/10) |
+| G7 | Chamada sem token OIDC | 403 do Cloud Run | ok (27/10) |
 
 ## 4. Rotina de acompanhamento (`acompanharPropostasSuhai`)
 
@@ -210,3 +222,4 @@ Durante a viagem (29/10 a 02/11), nenhum deploy: só observação de R14 e do al
 |---|---|---|
 | 26/10 | F1 | Plano gravado. Rodapé D2 a D4 ok, com o defeito do modal corrigido em `c8dd378`. Regressão local 26/26 e 78/78. Pós-venda V2 e V5 ok; V3 e V4 dependem de uma apólice nossa em homologação. Ordem de deploy aprovada. Fábio respondeu (cartão, boleto, login) e a réplica foi enviada pedindo a confirmação do escopo do ITSM-102658, a apólice de teste e o limite de volume. Templates recriados no Octadesk, em análise (seção 9). Baterias com RPA real: as 6 motos da `rpa-fidelidade` falharam na Tela 3 porque o teste ainda procurava o chip de ramo, removido do funil, e mandava moto como `tipo_veiculo: "carro"` (corrigido no teste em `689b4f2`, sem rodar; leads reais de moto entram por `/seguro-moto` e não são afetados). A `testes-espocrm` passou a limpar o dedupe do Lote 1 entre casos (`adc93e1`); casos 3 a 23 em execução. Templates aprovados às 10:08. Com "pode": mensagem da proposta trocada para a v3 (`OCTADESK_API_CONFIG` v7, `deliverLead` publicada de novo sem mudança de código, revisão `deliverlead-00037-cek`, sem erros no log). Disparo da pendência escrito na rotina, com testes (65/65); liga na F7 |
 | 26/10 | F2 | Fábio (10:32): apikey de produção vale para todos os serviços, IP pedido; sem limite de volume; homolog sem apólices nossas de janeiro a março; 9061210 em emissão (pedido aviso por e-mail às 10:40). `testes-espocrm` 21/21 com a reexecução dos casos 21 a 23 (o 21 falhou só na conferência do Espo na primeira rodada). Amostra da `rpa-fidelidade` com a correção: 3 de 4 motos calcularam pela `/seguro-moto`. Funil aprovado pelo Luciano no celular; pedido de foco no cartão atendido em `4fbb4e6` (regressão 52/52) e conferido no aparelho. Detalhes em `UAT_LOTE1_FUNIL_V2.md` (`30ffc7a`). Pendentes: `ssoProtection` (com "pode") e marcação do aceite |
+| 27/10 | F4 (parcial) | `main` trazida para a branch, alerta da rotina (R16 e R17), PR #11 aberto. Preview com `SUHAI_GATEWAY_URL` da tag `homologacao`; a cotação dava 401 porque o token OIDC usava a URL da tag como audiência, corrigido com `SUHAI_GATEWAY_AUDIENCE` (`bf9385e`). G5 a G7 ok. No teste do Luciano, "Contratar" parecia não fazer nada (a proposta abria fora da tela) e faltavam o aviso da consulta da placa, o sinal de ok e as validações da proposta: corrigido em `ff877e8` e no commit seguinte (seção 2A, 23/23 no teste automatizado). Pendentes: proposta nova no preview para P1 a P4 e R1 a R3, E2, limpeza e religar a proteção da Vercel |
