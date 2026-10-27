@@ -13,12 +13,13 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
-## [0.2.56] — em UAT (funil v2, Lote 1: telefone em campo único, dedupe durável, Opp reaproveitada)
+## [0.2.56] — 2026-10-27 (funil v2, Lote 1: telefone em campo único, dedupe durável, Opp reaproveitada)
 
-Em teste em `uat.segurosimediato.com.br` (branch `uat-funil-etapa3`). Resultado em [`UAT_LOTE1_FUNIL_V2.md`](UAT_LOTE1_FUNIL_V2.md). Data e deployment de produção entram aqui no merge.
+Aceito em 26/10 em `uat.segurosimediato.com.br` (branch `uat-funil-etapa3`): aparelho do Luciano, baterias com o RPA real (`testes-espocrm` 21/21, amostra da `rpa-fidelidade`) e regressão local. Resultado em [`UAT_LOTE1_FUNIL_V2.md`](UAT_LOTE1_FUNIL_V2.md). Merge e deployment de produção entram aqui depois do "pode".
 
 ### Changed
 - Telefone em campo único `(11) 98765-4321` nos quatro formulários (`/cotacao`, modal do WhatsApp, modal do rodapé e proposta Suhai), com `inputmode="tel"`, máscara, colagem com `+55` e autofill sem máscara.
+- `LeadForm`: ao sair do formulário, a página rola até o cartão do cálculo e o centraliza entre o header e o aviso de cookies; o resultado, mais alto que a tela, fica logo abaixo do header (pedido no aceite do aparelho, 26/10).
 
 ### Added
 - Dedupe durável no site: índice `lead_dedupe/{env}/{sha256(telefoneE164:ramo)}` no RTDB por 24 h; o `leadId` fica na sessão (`imediato_lead:{ramo}:{telefone}`) e o `POST /api/leads` aceita `X-Idempotency-Key` (hash do corpo).
