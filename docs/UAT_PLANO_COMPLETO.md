@@ -129,6 +129,8 @@ Regra: cobrança só depois da apólice emitida; as APIs de boleto foram descont
 | R10 | Lead apagado | `lead_apagado`, entrada final | testes |
 | R11 | Mais de 45 dias | Task "Conferir no Portal"; `expirado` | testes |
 | R12 | Ambiente sem bloco no config | Não consulta | testes |
+| R16 | Três rodadas seguidas falhando por inteiro (exceção, ou todas as propostas com erro) | E-mail "Rotina Suhai falhando", um por dia | testes (27/10) |
+| R17 | Rotina ligada sem rodar há mais de 3 h | `vigiarRotinaSuhai` manda "Rotina Suhai parada", um por dia | testes (27/10) |
 
 ### 4C. Função publicada (com "pode", F7)
 
@@ -137,6 +139,7 @@ Regra: cobrança só depois da apólice emitida; as APIs de boleto foram descont
 | R13 | Disparo manual no Cloud Scheduler: processa a entrada de teste e o log mostra o resumo | a fazer (F7) |
 | R14 | Execução de hora em hora sem erro por 24 h | observação de 28/10 a 03/11 |
 | R15 | `enabled:false` faz a rodada sair sem consultar nada | a fazer (F7) |
+| R18 | `vigiarRotinaSuhai` publicada: disparo manual com a rotina ligada mostra `ok` no log; `suhai_acomp_rotina` recebe o batimento de cada rodada | a fazer (F7) |
 
 ## 5. Campos no Espo
 
@@ -186,7 +189,7 @@ Princípio: uma mudança de produção por vez, com smoke logo depois; cada depl
 | 5 | F6 | Gateway em produção: revisão nova com o código da branch, `SUHAI_AMBIENTE=producao`, 100% e tag `producao` | `/status`; `/proposta/status` da 12350578 (só leitura) | `gcloud run services update-traffic suhai-gateway --to-revisions=suhai-gateway-00022-has=100` |
 | 6 | F6 | Campos no Espo PROD (backup antes) | `fase0-suhai-fields.mjs --prefer=prod` | Excluir os campos e restaurar o layout do backup |
 | 7 | F7 | Merge do PR da Suhai em `main`; IAM `roles/run.invoker` para a conta das funções; `SUHAI_ACOMP_CONFIG` só com `homologacao`; `OCTADESK_API_CONFIG` v8 com `suhai_pendencia` = `6adf4cb24582fe09dcd79943` | `gcloud` mostra o binding e a versão dos secrets | Remover o binding; `enabled:false`; secret do Octadesk v7 |
-| 8 | F7 | Deploy da `acompanharPropostasSuhai` e da `deliverLead` (registro das propostas) | R13 e R15 | `enabled:false`; deploy da versão anterior da `deliverLead`; `firebase functions:delete acompanharPropostasSuhai` |
+| 8 | F7 | Deploy da `acompanharPropostasSuhai`, da `vigiarRotinaSuhai` e da `deliverLead` (registro das propostas) | R13, R15 e R18 | `enabled:false`; deploy da versão anterior da `deliverLead`; `firebase functions:delete acompanharPropostasSuhai vigiarRotinaSuhai` |
 | 9 | F8 | Versão nova do `SUHAI_ACOMP_CONFIG` com o bloco `producao`, se a rotina rodou sem erro até 03/11 | Primeiras propostas reais acompanhadas | Versão anterior do secret |
 | 10 | F8 | Pós-venda em produção, quando chegar a `apikey` de produção | `/status` com `posVenda: true`; V2 a V4 em produção | Sem a chave, `/posvenda/*` responde 503 e a Task volta ao texto do Portal |
 
