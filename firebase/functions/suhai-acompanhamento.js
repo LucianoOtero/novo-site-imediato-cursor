@@ -22,7 +22,12 @@
  *    "ambientes":{"homologacao":{"url":"https://homologacao---suhai-gateway-…","audience":"https://suhai-gateway-…"},
  *                 "producao":{"url":"https://producao---suhai-gateway-…","audience":"https://suhai-gateway-…"}}}
  * Ambiente ausente em `ambientes` = propostas daquele ambiente não são
- * consultadas (liga homologação antes de produção).
+ * consultadas (liga homologação antes de produção). Opcional:
+ * `alertaSemRodadaHoras` (padrão 3) para a `vigiarRotina`.
+ *
+ * Cada rodada grava o batimento em `suhai_acomp_rotina`; 3 rodadas
+ * seguidas falhando por inteiro, ou nenhuma rodada no prazo da vigia,
+ * viram e-mail admin.
  *
  * O WhatsApp da pendência só sai com `suhai_pendencia` em
  * `OCTADESK_API_CONFIG.templates`; sem o ID, fica só a Task.
@@ -327,8 +332,88 @@ async function acompanharPropostas({
   return resumo;
 }
 
+/** Estado da própria rotina (batimento e alertas), lido pela `vigiarRotina`. */
+const ROTINA_PATH = "suhai_acomp_rotina";
+const RODADAS_FALHAS_PARA_ALERTA = 3;
+const HORAS_SEM_RODADA_PADRAO = 3;
+
+function diaBrasilia(agora) {
+  return new Date(agora - 3 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+/**
+ * Grava o batimento da rodada. Falha inteira = exceção, ou todas as
+ * propostas consultadas com erro. Na 3ª seguida manda um e-mail (no
+ * máximo um por dia).
+ */
+async function registrarRodada({ rootRef, resumo = null, erro = null, emailUrl, agora = Date.now(), logger }) {
+  const ref = rootRef.child(ROTINA_PATH);
+  const anterior = (await ref.once("value")).val() || {};
+  const falhou = Boolean(erro) || Boolean(resumo && resumo.total > 0 && resumo.erro === resumo.total);
+  const seguidas = falhou ? (anterior.rodadasFalhasSeguidas || 0) + 1 : 0;
+  const hoje = diaBrasilia(agora);
+  const atualizacao = {
+    ultimaRodada: new Date(agora).toISOString(),
+    ultimoResumo: resumo,
+    ultimoErro: erro ? String(erro.message || erro).slice(0, 300) : null,
+    rodadasFalhasSeguidas: seguidas,
+  };
+
+  if (seguidas >= RODADAS_FALHAS_PARA_ALERTA && anterior.alertaFalhaEm !== hoje) {
+    const detalhe = erro
+      ? `${seguidas} rodadas seguidas terminaram em erro: ${atualizacao.ultimoErro}`
+      : `${seguidas} rodadas seguidas sem conseguir consultar nenhuma das ${resumo.total} propostas`;
+    const payload = emailNotif.buildAlertaSistemaPayload({
+      momento: "suhai_acomp_rotina_falhou",
+      detalhe,
+      erro: erro ? emailNotif.errorPayload(erro) : null,
+    });
+    const resultado = await emailNotif.sendAdminEmail(emailUrl, payload, "rotina-suhai");
+    if (resultado.success) atualizacao.alertaFalhaEm = hoje;
+    else logger.warn("[suhai-acomp] alerta de rotina falhando não foi enviado; tenta de novo na próxima rodada.");
+  }
+
+  await ref.update(atualizacao);
+  return { falhou, seguidas };
+}
+
+/**
+ * Roda em outro agendamento: com a rotina ligada e sem batimento há mais
+ * de `alertaSemRodadaHoras` (padrão 3), manda um e-mail (no máximo um
+ * por dia). Sem batimento nenhum, conta a partir da primeira vigia.
+ */
+async function vigiarRotina({ rootRef, config, emailUrl, agora = Date.now(), logger }) {
+  if (!config || config.enabled !== true) return "desligada";
+  const ref = rootRef.child(ROTINA_PATH);
+  const estado = (await ref.once("value")).val() || {};
+  const desde = Date.parse(estado.ultimaRodada || estado.vigiaDesde || "");
+  if (!Number.isFinite(desde)) {
+    await ref.update({ vigiaDesde: new Date(agora).toISOString() });
+    return "iniciada";
+  }
+  const limiteMs = (Number(config.alertaSemRodadaHoras) || HORAS_SEM_RODADA_PADRAO) * 3600 * 1000;
+  if (agora - desde <= limiteMs) return "ok";
+
+  const hoje = diaBrasilia(agora);
+  if (estado.alertaParadaEm === hoje) return "parada";
+  const horas = Math.floor((agora - desde) / 3600000);
+  const payload = emailNotif.buildAlertaSistemaPayload({
+    momento: "suhai_acomp_rotina_parada",
+    detalhe: estado.ultimaRodada
+      ? `a rotina de acompanhamento não roda há ${horas} h (última rodada ${estado.ultimaRodada})`
+      : `a rotina de acompanhamento está ligada mas não rodou nenhuma vez em ${horas} h`,
+  });
+  const resultado = await emailNotif.sendAdminEmail(emailUrl, payload, "rotina-suhai");
+  if (resultado.success) await ref.update({ alertaParadaEm: hoje });
+  else logger.warn("[suhai-acomp] alerta de rotina parada não foi enviado; tenta de novo na próxima vigia.");
+  return "parada";
+}
+
 module.exports = {
   acompanharPropostas,
+  registrarRodada,
+  vigiarRotina,
+  ROTINA_PATH,
   processarItem,
   chamarGateway,
   tokenOidcMetadata,

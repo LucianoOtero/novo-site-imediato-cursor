@@ -478,3 +478,98 @@ test("bloco do Espo segue o environment do lead", () => {
   assert.equal(acomp.espoBloco(espoAll, "staging").baseUrl, "https://dev.exemplo");
   assert.equal(acomp.espoBloco(espoAll, "production"), null);
 });
+
+// ——— Alerta da própria rotina ———
+
+function emailFalso(t, { sucesso = true } = {}) {
+  const enviados = [];
+  t.mock.method(emailNotif, "sendAdminEmail", async (url, payload) => {
+    enviados.push({ url, payload });
+    return { success: sucesso };
+  });
+  return enviados;
+}
+
+const HORA = 3600 * 1000;
+const tudoComErro = { total: 2, pulado: 0, sem_mudanca: 0, mudou: 0, erro: 2, expirado: 0, lead_apagado: 0 };
+
+test("alerta de sistema vai com telefone zerado e nome de alerta", () => {
+  const payload = emailNotif.buildAlertaSistemaPayload({ momento: "suhai_acomp_rotina_parada", detalhe: "x" });
+  assert.equal(payload.ddd, "00");
+  assert.match(payload.nome, /ALERTA DO SISTEMA/);
+  assert.match(payload.momento_descricao, /Rotina Suhai parada — x$/);
+});
+
+test("rotina: rodada boa grava o batimento e zera as falhas", async (t) => {
+  const enviados = emailFalso(t);
+  const db = rtdbFalso({ suhai_acomp_rotina: { rodadasFalhasSeguidas: 2 } });
+  const resumo = { ...tudoComErro, erro: 1, sem_mudanca: 1 };
+  const r = await acomp.registrarRodada({ rootRef: db.ref, resumo, emailUrl: "https://mail", agora: AGORA, logger });
+  assert.deepEqual(r, { falhou: false, seguidas: 0 });
+  assert.equal(db.raiz.suhai_acomp_rotina.ultimaRodada, AGORA_ISO);
+  assert.equal(db.raiz.suhai_acomp_rotina.rodadasFalhasSeguidas, 0);
+  assert.equal(enviados.length, 0);
+});
+
+test("rotina: rodada sem propostas não conta como falha", async (t) => {
+  emailFalso(t);
+  const db = rtdbFalso({});
+  const vazio = { ...tudoComErro, total: 0, erro: 0 };
+  assert.equal((await acomp.registrarRodada({ rootRef: db.ref, resumo: vazio, emailUrl: "https://mail", agora: AGORA, logger })).falhou, false);
+});
+
+test("rotina: 3ª falha inteira seguida manda um e-mail, e só um por dia", async (t) => {
+  const enviados = emailFalso(t);
+  const db = rtdbFalso({});
+  const rodada = (agora, extra) => acomp.registrarRodada({ rootRef: db.ref, emailUrl: "https://mail", agora, logger, ...extra });
+
+  await rodada(AGORA, { resumo: tudoComErro });
+  await rodada(AGORA + HORA, { erro: new Error("secret inválido") });
+  assert.equal(enviados.length, 0);
+  await rodada(AGORA + 2 * HORA, { resumo: tudoComErro });
+  assert.equal(enviados.length, 1);
+  assert.equal(enviados[0].payload.momento, "update_error");
+  assert.match(enviados[0].payload.momento_descricao, /Rotina Suhai falhando — 3 rodadas seguidas sem conseguir consultar nenhuma das 2 propostas/);
+  await rodada(AGORA + 3 * HORA, { resumo: tudoComErro });
+  assert.equal(enviados.length, 1);
+  assert.equal(db.raiz.suhai_acomp_rotina.rodadasFalhasSeguidas, 4);
+});
+
+test("rotina: e-mail que não saiu é tentado de novo na rodada seguinte", async (t) => {
+  emailFalso(t, { sucesso: false });
+  const db = rtdbFalso({ suhai_acomp_rotina: { rodadasFalhasSeguidas: 2 } });
+  await acomp.registrarRodada({ rootRef: db.ref, resumo: tudoComErro, emailUrl: "https://mail", agora: AGORA, logger });
+  assert.equal(db.raiz.suhai_acomp_rotina.alertaFalhaEm, undefined);
+  assert.equal(emailNotif.sendAdminEmail.mock.callCount(), 1);
+});
+
+test("vigia: desligada não faz nada; sem batimento começa a contar", async (t) => {
+  const enviados = emailFalso(t);
+  const db = rtdbFalso({});
+  assert.equal(await acomp.vigiarRotina({ rootRef: db.ref, config: { enabled: false }, emailUrl: "https://mail", agora: AGORA, logger }), "desligada");
+  assert.equal(db.raiz.suhai_acomp_rotina, undefined);
+  assert.equal(await acomp.vigiarRotina({ rootRef: db.ref, config, emailUrl: "https://mail", agora: AGORA, logger }), "iniciada");
+  assert.equal(await acomp.vigiarRotina({ rootRef: db.ref, config, emailUrl: "https://mail", agora: AGORA + 2 * HORA, logger }), "ok");
+  assert.equal(await acomp.vigiarRotina({ rootRef: db.ref, config, emailUrl: "https://mail", agora: AGORA + 4 * HORA, logger }), "parada");
+  assert.match(enviados[0].payload.momento_descricao, /ligada mas não rodou nenhuma vez em 4 h/);
+});
+
+test("vigia: rotina sem rodar há mais de 3 h manda um e-mail por dia", async (t) => {
+  const enviados = emailFalso(t);
+  const db = rtdbFalso({ suhai_acomp_rotina: { ultimaRodada: AGORA_ISO } });
+  const vigia = (agora) => acomp.vigiarRotina({ rootRef: db.ref, config, emailUrl: "https://mail", agora, logger });
+  assert.equal(await vigia(AGORA + 3 * HORA), "ok");
+  assert.equal(await vigia(AGORA + 4 * HORA), "parada");
+  assert.equal(await vigia(AGORA + 6 * HORA), "parada");
+  assert.equal(enviados.length, 1);
+  assert.match(enviados[0].payload.momento_descricao, /Rotina Suhai parada — a rotina de acompanhamento não roda há 4 h/);
+  assert.equal(await vigia(AGORA + 30 * HORA), "parada");
+  assert.equal(enviados.length, 2);
+});
+
+test("vigia: prazo configurável", async (t) => {
+  emailFalso(t);
+  const db = rtdbFalso({ suhai_acomp_rotina: { ultimaRodada: AGORA_ISO } });
+  const cfg = { ...config, alertaSemRodadaHoras: 6 };
+  assert.equal(await acomp.vigiarRotina({ rootRef: db.ref, config: cfg, emailUrl: "https://mail", agora: AGORA + 5 * HORA, logger }), "ok");
+});

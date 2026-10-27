@@ -1126,15 +1126,50 @@ exports.acompanharPropostasSuhai = onSchedule(
       logger.info("[acompanharPropostasSuhai] desligada (SUHAI_ACOMP_CONFIG.enabled != true).");
       return;
     }
-    const resumo = await suhaiAcomp.acompanharPropostas({
+    const rootRef = getDatabase().ref();
+    const emailUrls = { dev: SEND_EMAIL_NOTIFICATION_URL_DEV.value(), prod: SEND_EMAIL_NOTIFICATION_URL_PROD.value() };
+    let resumo = null;
+    let erro = null;
+    try {
+      resumo = await suhaiAcomp.acompanharPropostas({
+        rootRef,
+        config,
+        espoAll: parseJsonConfig(ESPOCRM_API_CONFIG.value()),
+        emailUrls,
+        octaConfig: parseJsonConfig(OCTADESK_API_CONFIG.value()),
+        logger,
+      });
+      logger.info(`[acompanharPropostasSuhai] rodada: ${JSON.stringify(resumo)}`);
+    } catch (error) {
+      erro = error;
+      logger.error("[acompanharPropostasSuhai] rodada falhou inteira.", error);
+    }
+    await suhaiAcomp.registrarRodada({ rootRef, resumo, erro, emailUrl: emailUrls.prod || emailUrls.dev, logger });
+  }
+);
+
+/**
+ * Vigia da rotina acima: com `enabled:true` e sem rodada há mais de
+ * `alertaSemRodadaHoras` (padrão 3), manda e-mail admin. Cobre o caso que
+ * a própria rotina não consegue avisar — parar de ser executada.
+ */
+exports.vigiarRotinaSuhai = onSchedule(
+  {
+    schedule: "every 120 minutes",
+    timeZone: "America/Sao_Paulo",
+    region: "us-central1",
+    timeoutSeconds: 60,
+    retryCount: 0,
+    secrets: [SUHAI_ACOMP_CONFIG, SEND_EMAIL_NOTIFICATION_URL_DEV, SEND_EMAIL_NOTIFICATION_URL_PROD],
+  },
+  async () => {
+    const resultado = await suhaiAcomp.vigiarRotina({
       rootRef: getDatabase().ref(),
-      config,
-      espoAll: parseJsonConfig(ESPOCRM_API_CONFIG.value()),
-      emailUrls: { dev: SEND_EMAIL_NOTIFICATION_URL_DEV.value(), prod: SEND_EMAIL_NOTIFICATION_URL_PROD.value() },
-      octaConfig: parseJsonConfig(OCTADESK_API_CONFIG.value()),
+      config: parseJsonConfig(SUHAI_ACOMP_CONFIG.value()),
+      emailUrl: SEND_EMAIL_NOTIFICATION_URL_PROD.value() || SEND_EMAIL_NOTIFICATION_URL_DEV.value(),
       logger,
     });
-    logger.info(`[acompanharPropostasSuhai] rodada: ${JSON.stringify(resumo)}`);
+    logger.info(`[vigiarRotinaSuhai] ${resultado}`);
   }
 );
 

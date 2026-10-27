@@ -95,7 +95,31 @@ const MOMENTO_META = {
     momento_descricao: `${SITE_MARKER} — Proposta Suhai - Acompanhamento sem resposta`,
     momento_emoji: "❌",
   },
+  // Alertas da própria rotina, sem lead (2026-10-27).
+  suhai_acomp_rotina_falhou: {
+    momento_envio: "update_error",
+    momento_descricao: `${SITE_MARKER} — ALERTA DO SISTEMA - Rotina Suhai falhando`,
+    momento_emoji: "🚨",
+  },
+  suhai_acomp_rotina_parada: {
+    momento_envio: "update_error",
+    momento_descricao: `${SITE_MARKER} — ALERTA DO SISTEMA - Rotina Suhai parada`,
+    momento_emoji: "🚨",
+  },
 };
+
+/**
+ * O Cloud Run de e-mail exige DDD e celular; um alerta de sistema não tem
+ * lead, então vai com o telefone zerado e o nome dizendo o que é.
+ */
+const TELEFONE_ALERTA_SISTEMA = "+5500000000000";
+
+function buildAlertaSistemaPayload({ momento, detalhe = null, erro = null }) {
+  return buildEmailPayload(
+    { phoneE164: TELEFONE_ALERTA_SISTEMA, nome: "ALERTA DO SISTEMA (sem cliente)" },
+    { momento, detalhe, erro }
+  );
+}
 
 /**
  * Monta o payload idêntico ao `sendAdminEmailNotification` do modal legado.
@@ -180,6 +204,7 @@ function errorPayload(error, status) {
 
 module.exports = {
   buildEmailPayload,
+  buildAlertaSistemaPayload,
   sendAdminEmail,
   errorPayload,
   USER_AGENT,
