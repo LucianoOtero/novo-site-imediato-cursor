@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Check } from "lucide-react";
 
 import { OfertaCard } from "@/components/quote/OfertaCard";
 import { Button } from "@/components/ui/button";
@@ -25,10 +26,12 @@ const NIVEIS: PlanoAssistencia[] = [1, 2, 0];
 
 export function OfertasSuhai({
   resultado,
+  escolhida,
   onEscolher,
   onPedirAssistencia,
 }: {
   resultado: CotacaoResultado;
+  escolhida?: Oferta | null;
   onEscolher?: (oferta: Oferta) => void;
   onPedirAssistencia?: (nivel: PlanoAssistencia) => Promise<void>;
 }) {
@@ -126,19 +129,24 @@ export function OfertasSuhai({
         {PLANOS.map((plano) => {
           const oferta = porPlano.get(plano.id);
           if (!oferta) return null;
+          const selecionada =
+            escolhida?.protocolo === oferta.protocolo && escolhida.cdCobertura === oferta.cdCobertura;
 
           return (
             <OfertaCard
               key={plano.id}
               as="li"
               oferta={fromSuhaiOferta(plano, oferta)}
+              className={selecionada ? "border-emerald-600 ring-2 ring-emerald-600" : undefined}
               acao={
                 <Button
                   fullWidth
-                  variant={plano.destaque ? "primary" : "secondary"}
+                  variant={selecionada || plano.destaque ? "primary" : "secondary"}
+                  aria-pressed={selecionada}
+                  iconLeft={selecionada ? <Check className="size-4" aria-hidden="true" /> : undefined}
                   onClick={() => onEscolher?.(oferta)}
                 >
-                  Contratar {plano.nome}
+                  {selecionada ? "Plano escolhido" : `Contratar ${plano.nome}`}
                 </Button>
               }
             />

@@ -26,8 +26,11 @@ Branch `suhai-acompanhamento`. Teste de aceite em [`UAT_PLANO_COMPLETO.md`](UAT_
 ### Changed
 - Proposta transmitida: Task "Acompanhar proposta Suhai nº X até a emissão da apólice", e Note e e-mail com esse próximo passo. A Suhai só gera cobrança depois da apólice emitida (24/10), então nenhum passo pede boleto antes disso.
 - `lib/suhai/dominio.ts`: sai o `emiteBoleto` dos status; entram os status 18 e 19 (emissão manual de apólice e de endosso).
+- `/cotacao-suhai`, cotação: enquanto a placa ou o CPF são consultados, o botão fica ocupado e aparece "Consultando a placa…" (ou "o CPF"), com aviso de demora depois de 8 s. O aviso fica abaixo dos botões para não deslocar o "Continuar" no meio do clique. Celular, placa, CEP, nome e CPF ganham o sinal de ok do formulário padrão.
+- `/cotacao-suhai`, proposta: validação por campo ao sair dele e de todos antes de enviar, com as regras do `propostaInputSchema` e as do formulário padrão (e-mail com SafetyMails, celular `9` + 8 dígitos com APILayer, CEP com aviso de não encontrado, chassi de 17 caracteres sem I, O e Q). UF e dia de vencimento (1 a 28) viram listas. O envio com erro rola até o primeiro campo inválido e não chama a Suhai. O endereço já vem preenchido pelo CEP da cotação, e os campos ganham o sinal de ok.
 
 ### Fixed
+- `/cotacao-suhai`: "Contratar" parecia não fazer nada, porque o formulário da proposta abria abaixo dos cards, fora da tela. Agora a página rola até ele, o foco vai para o e-mail e o card escolhido fica marcado como "Plano escolhido" (F4).
 - `lib/suhai/gateway.ts`: com `SUHAI_GATEWAY_URL` apontando para uma tag (`homologacao---…`), o token OIDC saía com a URL da tag como audiência e o Cloud Run respondia 401 ("Não foi possível calcular agora" na preview, F4). Nova variável opcional `SUHAI_GATEWAY_AUDIENCE` com a URL do serviço; sem ela, nada muda.
 
 ---

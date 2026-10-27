@@ -37,11 +37,20 @@ export function CotacaoSuhaiExperiencia({
   const [ajustando, setAjustando] = useState(false);
   const [recalculando, setRecalculando] = useState(false);
   const [escolhida, setEscolhida] = useState<Oferta | null>(null);
+  const [cliquesContratar, setCliquesContratar] = useState(0);
   const [contexto, setContexto] = useState<ContextoProposta>({ placa: "", cep: "", nome: "", ddd: "", celular: "" });
   const planoEnviadoRef = useRef<string>("");
 
+  // O formulário da proposta abre abaixo dos cards, fora da tela: sem rolar, o clique parece não fazer nada.
+  useEffect(() => {
+    if (cliquesContratar === 0) return;
+    document.getElementById("proposta-suhai")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("proposta-email")?.focus({ preventScroll: true });
+  }, [cliquesContratar]);
+
   function escolher(oferta: Oferta) {
     setEscolhida(oferta);
+    setCliquesContratar((total) => total + 1);
     if (!resultado || resultado.simulado || !contexto.leadId) return;
     const chave = `${oferta.protocolo}:${oferta.cdCobertura}`;
     if (planoEnviadoRef.current === chave) return;
@@ -204,17 +213,20 @@ export function CotacaoSuhaiExperiencia({
               <OfertasSuhai
                 key={resultado.protocolo}
                 resultado={resultado}
+                escolhida={escolhida}
                 onEscolher={escolher}
                 onPedirAssistencia={pedirAssistencia}
               />
-              {escolhida && resultado.simulado && (
-                <p role="status" className="mt-4 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">
-                  Plano selecionado. A transmissão da proposta só abre com uma cotação real da Suhai.
-                </p>
-              )}
-              {escolhida && !resultado.simulado && (
-                <PropostaSuhaiForm protocolo={escolhida.protocolo} oferta={escolhida} contexto={contexto} />
-              )}
+              <div id="proposta-suhai" className="scroll-mt-28">
+                {escolhida && resultado.simulado && (
+                  <p role="status" className="mt-4 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">
+                    Plano selecionado. A transmissão da proposta só abre com uma cotação real da Suhai.
+                  </p>
+                )}
+                {escolhida && !resultado.simulado && (
+                  <PropostaSuhaiForm protocolo={escolhida.protocolo} oferta={escolhida} contexto={contexto} />
+                )}
+              </div>
             </div>
           </Container>
         </Section>
