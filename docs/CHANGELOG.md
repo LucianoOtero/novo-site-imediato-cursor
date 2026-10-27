@@ -27,6 +27,9 @@ Branch `suhai-acompanhamento`. Teste de aceite em [`UAT_PLANO_COMPLETO.md`](UAT_
 - Proposta transmitida: Task "Acompanhar proposta Suhai nº X até a emissão da apólice", e Note e e-mail com esse próximo passo. A Suhai só gera cobrança depois da apólice emitida (24/10), então nenhum passo pede boleto antes disso.
 - `lib/suhai/dominio.ts`: sai o `emiteBoleto` dos status; entram os status 18 e 19 (emissão manual de apólice e de endosso).
 
+### Fixed
+- `lib/suhai/gateway.ts`: com `SUHAI_GATEWAY_URL` apontando para uma tag (`homologacao---…`), o token OIDC saía com a URL da tag como audiência e o Cloud Run respondia 401 ("Não foi possível calcular agora" na preview, F4). Nova variável opcional `SUHAI_GATEWAY_AUDIENCE` com a URL do serviço; sem ela, nada muda.
+
 ---
 
 ## [0.2.56] — 2026-10-27 (funil v2, Lote 1: telefone em campo único, dedupe durável, Opp reaproveitada)

@@ -16,6 +16,8 @@ import { normalizarCotacao, type CotacaoBruta } from "./normalizar";
 import type { CotacaoPayload, CotacaoResultado } from "./types";
 
 const GATEWAY_URL = process.env.SUHAI_GATEWAY_URL?.replace(/\/$/, "") ?? "";
+/** O Cloud Run recusa (401) token cuja audiência é a URL de uma tag (`homologacao---…`): nesse caso, a URL do serviço. */
+const GATEWAY_AUDIENCE = process.env.SUHAI_GATEWAY_AUDIENCE?.replace(/\/$/, "") || GATEWAY_URL;
 const TIMEOUT_MS = Number(process.env.SUHAI_GATEWAY_TIMEOUT_MS ?? 30000);
 
 export function gatewayConfigurado(): boolean {
@@ -47,7 +49,7 @@ async function authorizationHeader(): Promise<Record<string, string>> {
   if (tokenFixo) return { authorization: `Bearer ${tokenFixo}` };
 
   authCache ??= construirAuth();
-  const client = await authCache.getIdTokenClient(GATEWAY_URL);
+  const client = await authCache.getIdTokenClient(GATEWAY_AUDIENCE);
   const headers = await client.getRequestHeaders();
   const authorization = headers.get("authorization");
   return authorization ? { authorization } : {};
