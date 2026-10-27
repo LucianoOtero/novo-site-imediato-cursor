@@ -13,6 +13,29 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## [0.2.56] — 2026-10-27 (funil v2, Lote 1: telefone em campo único, dedupe durável, Opp reaproveitada)
+
+Aceito em 26/10 em `uat.segurosimediato.com.br` (branch `uat-funil-etapa3`): aparelho do Luciano, baterias com o RPA real (`testes-espocrm` 21/21, amostra da `rpa-fidelidade`) e regressão local. Resultado em [`UAT_LOTE1_FUNIL_V2.md`](UAT_LOTE1_FUNIL_V2.md). Merge e deployment de produção entram aqui depois do "pode".
+
+### Changed
+- Telefone em campo único `(11) 98765-4321` nos quatro formulários (`/cotacao`, modal do WhatsApp, modal do rodapé e proposta Suhai), com `inputmode="tel"`, máscara, colagem com `+55` e autofill sem máscara.
+- `LeadForm`: ao sair do formulário, a página rola até o cartão do cálculo e o centraliza entre o header e o aviso de cookies; o resultado, mais alto que a tela, fica logo abaixo do header (pedido no aceite do aparelho, 26/10).
+
+### Added
+- Dedupe durável no site: índice `lead_dedupe/{env}/{sha256(telefoneE164:ramo)}` no RTDB por 24 h; o `leadId` fica na sessão (`imediato_lead:{ramo}:{telefone}`) e o `POST /api/leads` aceita `X-Idempotency-Key` (hash do corpo).
+- `deliverLead`: reaproveita a Opportunity aberta do mesmo telefone e ramo criada em até `oppReuseDays` dias (`opp_dedupe/{env}/{hash}`), com a nota "🔁 Nova jornada do site em DD/MM". Opp em Vendido/Perdido ou mais antiga gera uma nova. Desligado por padrão; no secret `ESPOCRM_API_CONFIG` v6 só o bloco `dev` tem `oppReuseDays: 7`.
+
+### Fixed
+- `LeadForm`: passos 2/3 enviados antes da resposta do contato inicial levavam a um segundo lead. O `initial` entrou na fila de POSTs e o `leadId` é resolvido na hora do envio (`e2e/lead-sessao.spec.ts`).
+- Cache de idempotência de 10 min (era 24 h): o corpo do `initial` se repete entre jornadas do mesmo telefone.
+- Telefone do rodapé: o modal abria com ramo "auto" em qualquer página. O `FooterPhoneLink` agora tira o ramo do caminho (`lib/ramo-por-caminho.ts`, conferido contra `lib/ramos.ts` em `npm run test:ramo-caminho`).
+- `ContactLeadModal`: o envio final antes da resposta do contato inicial saía sem `leadId` e virava um segundo lead com Opportunity própria (achado no UAT de 26/10, modal do rodapé em `/seguro-pet`). O envio final agora espera o `initial` por até 8 s (`e2e/lead-sessao.spec.ts`).
+
+### Docs
+- `docs/suhai-integracao/`: APIs de boleto descontinuadas pela Suhai (24/10); a cobrança só existe depois da apólice emitida.
+
+---
+
 ## [0.2.55] — 2026-10-25 (Fase A: etapa 3 nova, cartão único de oferta, DDD → celular)
 
 Publicado em Production em 25/10 (~08h50) pelo [PR #8](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/8) (merge `bb8287f`, deployment `dpl_EvMWtzBsFyZDtoz3z6DDXBQSi3K4`), depois do aceite do UAT em `uat.segurosimediato.com.br`. Inclui as seções "2026-10-23" abaixo e a etapa 3 com placa, CEP e CPF obrigatórios e o cartão único de oferta ([`UAT_ETAPA3_CARTAO_asof-2026-10-19.md`](UAT_ETAPA3_CARTAO_asof-2026-10-19.md)).

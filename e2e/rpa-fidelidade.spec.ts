@@ -7,7 +7,7 @@ import { test, expect, type Page, type Route } from "@playwright/test";
  * Etapa 3 do teste de fidelidade RPA — executa os 50 casos no SITE NOVO.
  *
  * Para cada caso do manifesto `selecao_50.json` (mesma seleção usada na
- * bateria local), preenche os 4 passos do `LeadForm` em `/cotacao`, escolhe
+ * bateria local), preenche os 4 passos do `LeadForm` na página do ramo, escolhe
  * "Aguardar o cálculo" e captura o resultado (2 planos ou cálculo manual),
  * gravando em `resultado_site.json` / `.csv` no repo do RPA (ao lado de
  * `resultado_local.json`, para o comparador cruzar as duas pontas).
@@ -36,14 +36,14 @@ const MANIFEST_PATH = path.join(RPA_DATA_DIR, "selecao_50.json");
 const OUT_JSON = path.join(RPA_DATA_DIR, "resultado_site.json");
 const OUT_CSV = path.join(RPA_DATA_DIR, "resultado_site.csv");
 
-const RAMO_CHIP_LABEL: Record<string, string> = {
-  auto: "Auto",
-  moto: "Moto",
-  caminhao: "Caminhão",
-  uber: "Uber",
-  taxi: "Táxi",
-  utilitario: "Utilitário",
-};
+/**
+ * O funil novo não tem mais chips de ramo: `/cotacao` é fixo em "auto" e cada
+ * ramo tem a sua página (`/seguro-{ramo}`), com o mesmo `LeadForm`. Sem isso,
+ * uma moto chegava ao RPA como `tipo_veiculo: "carro"` e falhava na Tela 3.
+ */
+function paginaDoRamo(ramo: string): string {
+  return ramo === "auto" ? "/cotacao" : `/seguro-${ramo}`;
+}
 
 interface ManifestCaso {
   id: string;
@@ -246,18 +246,15 @@ for (const caso of manifest.casos) {
     const ff = caso.formFields;
     await stubValidations(page, ff);
 
-    await page.goto("/cotacao");
-
-    // Seleciona o ramo (chip). caminhao -> "Caminhão".
-    const chipLabel = RAMO_CHIP_LABEL[caso.ramo] ?? "Auto";
-    const chip = page.getByRole("button", { name: chipLabel, exact: true });
-    if ((await chip.count()) > 0) {
-      await chip.first().click();
+    const pagina = paginaDoRamo(caso.ramo);
+    const resposta = await page.goto(pagina);
+    if (!resposta || resposta.status() >= 400) {
+      registrar("bloqueado_site", { detalhe: `Página do ramo ${pagina} respondeu ${resposta?.status() ?? "sem resposta"}` });
+      return;
     }
 
     // Passo 1 — DDD + Celular
-    await fillStep(page, "ddd", ff.ddd);
-    await fillStep(page, "celular", ff.celular);
+    await fillStep(page, "telefone", ff.ddd && ff.celular ? `${ff.ddd}${ff.celular}` : undefined);
     await page.getByRole("button", { name: "Receber cotação" }).click();
 
     // Passo 2 — Nome + E-mail

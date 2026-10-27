@@ -116,21 +116,75 @@ export async function getTurnstileToken(): Promise<string | undefined> {
   });
 }
 
+const SESSION_LEAD_PREFIX = "imediato_lead:";
+
+function sessionLeadKey(payload: Record<string, unknown>): string | null {
+  const telefone = `${payload.ddd ?? ""}${payload.celular ?? ""}`.replace(/\D/g, "");
+  if (telefone.length < 10) return null;
+  return `${SESSION_LEAD_PREFIX}${String(payload.ramo ?? "")}:${telefone}`;
+}
+
+function recallLeadId(payload: Record<string, unknown>): string | undefined {
+  const key = sessionLeadKey(payload);
+  try {
+    return (key && window.sessionStorage.getItem(key)) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function rememberLeadId(payload: Record<string, unknown>, leadId: string) {
+  const key = sessionLeadKey(payload);
+  try {
+    if (key) window.sessionStorage.setItem(key, leadId);
+  } catch {
+    // Safari privado / storage cheio: a jornada segue sem a lembrança.
+  }
+}
+
+/**
+ * Mesma chave para o mesmo envio lógico (corpo idêntico), para o servidor
+ * devolver a resposta já dada a um clique duplo ou reenvio do navegador.
+ */
+async function idempotencyKeyFor(body: string): Promise<string> {
+  try {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body));
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
 /**
  * POST a `/api/lead` com o token do Turnstile anexado (quando disponível).
  * Substitui os `fetch("/api/lead", …)` espalhados por LeadForm,
  * ContactLeadModal e useSubmitLead — headers e formato idênticos aos
  * originais; o tratamento de erro/resposta continua em cada chamador.
+ *
+ * Contato inicial (projeto funil v2): o `leadId` fica no `sessionStorage`
+ * por telefone+ramo, e um novo contato inicial na mesma aba (recarregar a
+ * página, reabrir o modal) leva esse `leadId` para continuar a jornada.
  */
 export async function postLead(
   payload: Record<string, unknown>,
   options: { keepalive?: boolean } = {}
 ): Promise<Response> {
-  const turnstileToken = await getTurnstileToken();
-  return fetch("/api/lead", {
+  const isInitial = payload.stage === "initial";
+  const finalPayload = isInitial && !payload.leadId ? { ...payload, leadId: recallLeadId(payload) } : payload;
+  const body = JSON.stringify(finalPayload);
+  const [turnstileToken, idempotencyKey] = await Promise.all([getTurnstileToken(), idempotencyKeyFor(body)]);
+  const response = await fetch("/api/lead", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-    body: JSON.stringify(turnstileToken ? { ...payload, turnstileToken } : payload),
+    headers: { "Content-Type": "application/json", "X-Idempotency-Key": idempotencyKey },
+    body: turnstileToken ? JSON.stringify({ ...finalPayload, turnstileToken }) : body,
     keepalive: options.keepalive,
   });
+  if (isInitial && response.ok) {
+    const data = (await response
+      .clone()
+      .json()
+      .catch(() => null)) as { leadId?: string } | null;
+    if (data?.leadId) rememberLeadId(payload, data.leadId);
+  }
+  return response;
 }

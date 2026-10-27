@@ -5,10 +5,11 @@ import { useState } from "react";
 import { Field } from "@/components/lead/fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TelefoneInput } from "@/components/ui/telefone-input";
 import { trackEvent } from "@/lib/analytics";
 import { COMBUSTIVEL, COR_VEICULO } from "@/lib/suhai/dominio";
 import type { Oferta, PropostaResultado } from "@/lib/suhai/types";
-import { formatCep, onlyDigits } from "@/lib/validators";
+import { formatCep, formatTelefone, onlyDigits } from "@/lib/validators";
 
 const selectClasses =
   "flex h-11 w-full rounded-lg border border-neutral-200 bg-white px-3.5 text-base text-neutral-900 outline-none focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/30";
@@ -174,14 +175,17 @@ export function PropostaSuhaiForm({
       <Field label="E-mail" htmlFor="proposta-email" error={erros.email}>
         <Input id="proposta-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} aria-invalid={Boolean(erros.email)} />
       </Field>
-      <div className="grid grid-cols-[5rem_1fr] gap-2">
-        <Field label="DDD" htmlFor="proposta-ddd" error={erros.dddCel}>
-          <Input id="proposta-ddd" inputMode="numeric" value={ddd} onChange={(event) => setDdd(event.target.value)} aria-invalid={Boolean(erros.dddCel)} />
-        </Field>
-        <Field label="Celular" htmlFor="proposta-cel" error={erros.numCel}>
-          <Input id="proposta-cel" inputMode="numeric" autoComplete="tel" value={celular} onChange={(event) => setCelular(event.target.value)} aria-invalid={Boolean(erros.numCel)} />
-        </Field>
-      </div>
+      <Field label="Celular com DDD" htmlFor="proposta-telefone" error={erros.dddCel || erros.numCel}>
+        <TelefoneInput
+          id="proposta-telefone"
+          value={formatTelefone(onlyDigits(ddd) + onlyDigits(celular))}
+          onTelefoneChange={(next) => {
+            setDdd(next.ddd);
+            setCelular(next.celular);
+          }}
+          aria-invalid={Boolean(erros.dddCel || erros.numCel)}
+        />
+      </Field>
 
       <Field label="CEP" htmlFor="proposta-cep" error={erros["endereco.cep"]}>
         <Input

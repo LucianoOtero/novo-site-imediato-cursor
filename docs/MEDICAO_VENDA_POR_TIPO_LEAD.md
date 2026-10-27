@@ -1,6 +1,6 @@
 # Medição de venda real por tipo de lead
 
-**Status:** Fases 0–3 concluídas (histórico); Fase 4 código+CF ok; Enum `cCanalCaptura` e pacote Ads completo na Opp ainda pendentes de execução (docs 2026-08-21)  
+**Status:** Fases 0–4 concluídas. Enum `cCanalCaptura` e pacote Ads completo na Opp em produção desde 15/10/2026, conferidos em 2026-10-25 ([`FASE5_ROLLOUT_PRODUCAO.md`](FASE5_ROLLOUT_PRODUCAO.md)).  
 **Gerado em:** 2026-08-17 · **Docs atribuição/testes:** 2026-08-21  
 **Operação:** EspoCRM + Firebase somente leitura nas Fases 0–3; instrumentação aditiva só no site novo na Fase 4. Legado Webflow intocado.  
 **Contrato Ads → Espo → venda:** [`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) · **Runbook staging:** [`AMBIENTE_TESTES_SITE_NOVO.md`](AMBIENTE_TESTES_SITE_NOVO.md)

@@ -321,23 +321,36 @@ export function formatPlacaMascara(value: string): string {
   return `${placa.slice(0, 3)}-${placa.slice(3)}`;
 }
 
-export function formatDdd(value: string): string {
-  return onlyDigits(value).slice(0, 2);
-}
-
 /**
- * Separa DDD e número quando chega o telefone inteiro num campo só
- * (preenchimento automático `tel-national` ou colagem de
- * "(11) 98765-4321"/"+55 11 98765-4321"). Retorna `null` se não houver
- * 10 ou 11 dígitos depois de tirar o +55.
+ * Dígitos do campo único de telefone (DDD + celular), no máximo 11.
+ * `stripCountry` tira o 55 do início quando o valor chega inteiro
+ * (colagem ou preenchimento automático com +55). Na digitação ele fica
+ * desligado, porque 55 também é DDD válido (RS).
  */
-export function splitFullPhone(value: string): { ddd: string; celular: string } | null {
+export function telefoneDigits(value: string, stripCountry = false): string {
   let digits = onlyDigits(value);
-  if ((digits.length === 12 || digits.length === 13) && digits.startsWith("55")) {
+  if (stripCountry && digits.length >= 12 && digits.startsWith("55")) {
     digits = digits.slice(2);
   }
-  if (digits.length !== 10 && digits.length !== 11) return null;
-  return { ddd: digits.slice(0, 2), celular: formatCelular(digits.slice(2)) };
+  return digits.slice(0, 11);
+}
+
+/** Máscara progressiva do campo único: `(11) 98765-4321`. */
+export function formatTelefone(digits: string): string {
+  const clean = onlyDigits(digits).slice(0, 11);
+  if (!clean) return "";
+  if (clean.length <= 2) return `(${clean}`;
+  return `(${clean.slice(0, 2)}) ${formatCelular(clean.slice(2))}`;
+}
+
+/** Separa o campo único nos `ddd`/`celular` que o formulário envia. */
+export function splitTelefone(digits: string): { display: string; ddd: string; celular: string } {
+  const clean = onlyDigits(digits).slice(0, 11);
+  return {
+    display: formatTelefone(clean),
+    ddd: clean.slice(0, 2),
+    celular: formatCelular(clean.slice(2)),
+  };
 }
 
 /**

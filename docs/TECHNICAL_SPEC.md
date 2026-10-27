@@ -165,6 +165,16 @@ Legenda: **O**=obrigatório · **op**=opcional · **U**=usuário · **A**=autom�
 ### 44.2 Deduplicação
 Chave `hash(telefone_e164 + ramo)` em janela 24h. Duplicado: atualiza o existente (novos UTMs) e responde `200 {duplicate:true}` (UX de sucesso normal). Idempotency key evita duplo-clique.
 
+**Implementação atual (projeto funil v2, 2026-10-25):**
+
+| Camada | Onde | Regra |
+|---|---|---|
+| Índice do site | RTDB `lead_dedupe/{env}/{sha256(phoneE164:ramo)}` = `{leadId, at}` | Criado por `transaction()` no `RtdbLeadStore` (`lib/leads/store.ts`); vale 24 h e é compartilhado por todas as instâncias. Um `initial` com o mesmo telefone+ramo devolve o `leadId` existente (sem nova mensagem inicial). Um `complete` sobre um lead já completo mescla os dados novos no mesmo registro e responde `200 {duplicate:true}`. |
+| Sessão do navegador | `sessionStorage` `imediato_lead:{ramo}:{telefone}` (`lib/leads/post-lead.ts`) | O `initial` seguinte na mesma aba (recarregar, reabrir o modal) leva o `leadId` guardado. |
+| Idempotência | `X-Idempotency-Key` = SHA-256 do corpo | Mesmo corpo → mesma resposta (cache local de 10 min por instância). Curto porque o corpo do `initial` se repete entre jornadas do mesmo telefone: com 24 h, uma jornada posterior recebia o lead antigo sem gravar registro nem disparar a mensagem inicial (achado do UAT). |
+| Fila do `LeadForm` | `queueLeadPost` (`components/lead/LeadForm.tsx`) | `initial`, `progress`, `rpa_result`, `consultant_requested` e `complete` saem em fila, e o `leadId` é resolvido na hora do envio. Passos 2/3 preenchidos antes da resposta do `initial` (autofill) não criam um segundo lead. O envio final espera a fila por até 8 s. |
+| Opportunity no Espo | RTDB `opp_dedupe/{env}/{mesma chave}` = `{opportunityId, at}` (`firebase/functions/opp-dedupe.js`) | Ao criar a Opp de uma jornada nova, se a última jornada tem menos de `oppReuseDays` dias e a Opp não está em `Vendido`/`Perdido`, ela é reaproveitada (PUT com os dados novos + nota "Nova jornada do site em DD/MM" no Stream da Opp). `oppReuseDays` fica no bloco do ambiente de `ESPOCRM_API_CONFIG`; ausente ou 0 = Opp nova por jornada (regra de 2026-08-04). O índice é regravado a cada entrega, então a janela conta da jornada mais recente. |
+
 ### 44.3 Resiliência
 CRM com retry exponencial 3× (1s/4s/9s); falha → fallback e-mail + persistência `status:'pending_crm'` (fila). Falha total: ainda persiste e responde sucesso (nunca perder lead) + alerta (Sentry/Slack). DB é a fonte da verdade.
 

@@ -9,7 +9,7 @@ Portal: bem-vindo em [Portal de Integrações](https://suhai.atlassian.net/wiki/
 
 | Eixo | Tecnologia | Uso principal | Auth típica |
 |---|---|---|---|
-| **Vendas / Multicálculos** | **SOAP/XML** (`*.svc`) | Cotar, propor, boleto/PDF, cancelar, pendências | `login` + `senha` do **Cotador Suhai** (por corretora) no body SOAP |
+| **Vendas / Multicálculos** | **SOAP/XML** (`*.svc`) | Cotar, propor, PDF da proposta, cancelar, pendências (boleto descontinuado) | `login` + `senha` do **Cotador Suhai** (por corretora) no body SOAP |
 | **Pagamento cartão** | **REST/JSON** (Digibee) | Dados de cartão / token após proposta | `apikey` (+ AES nos dados sensíveis) |
 | **Pós-vendas** | **REST/JSON** (Digibee) | Apólice, parcelas, comissão, sinistro | `apikey` obrigatória; em alguns casos também `Authorization: Basic` |
 

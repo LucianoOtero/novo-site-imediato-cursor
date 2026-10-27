@@ -8,7 +8,28 @@ Gerado ao final da sessão de 2026-07-03; atualizado com conquistas de 2026-08-0
 
 ---
 
-## 0. Conquistas recentes (2026-08-07) — retomar daqui
+## Projeto funil v2 (2026-10-25) — retomar daqui
+
+O 0.2.55 está em produção. O projeto seguinte tem 6 lotes, cada um com UAT próprio. Passos que só existem em produção pedem o "pode" do Luciano antes:
+- campos no Espo;
+- deploy da Cloud Function e das regras do Firebase;
+- secret e jobs do Ads;
+- publicação do GTM.
+
+| Lote | Conteúdo | Situação |
+|---|---|---|
+| 0 | Conferir a atribuição Ads → Espo em produção | **Concluído** em 25/10 ([`FASE5_ROLLOUT_PRODUCAO.md`](FASE5_ROLLOUT_PRODUCAO.md)) |
+| 1 | Telefone em campo único + deduplicação durável (reaproveita a Opp aberta do mesmo celular e ramo por 7 dias) | **UAT** desde 25/10. Código na branch `uat-funil-etapa3`; `deliverLead` publicada com `ESPOCRM_API_CONFIG` v6 (`oppReuseDays: 7` só no `dev`; rollback = v5 + deploy). Roteiro automatizado aprovado em 25/10 (blocos A a F, com 2 correções: `60107d9` e `6dc9afd`) — ver `docs/UAT_LOTE1_FUNIL_V2.md`. Falta o aceite do Luciano (aparelho real, mensagens do Octadesk, Espo DEV); os registros do UAT ficam no Espo DEV/staging até lá. Produção: ligar `oppReuseDays` no `prod` só depois do smoke |
+| 2 | Venda ao Google Ads na hora, desligando o CSV noturno do Espo ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md)) | Sombra 1/5 ok (lote de 23/10: 4/4). `loginCustomerId` e corte aguardam o "pode" |
+| 3 | Velocidade no celular (linha de base, limpeza do GTM, GTM atrasado em teste) | Pendente |
+| 4 | Cálculo Suhai junto com o RPA, em modo simulado e só no UAT | Pendente |
+| 5 | SEO orgânico com Semrush: monitoramento, conteúdo das páginas de ramo, guias | Pendente |
+
+Os itens antigos abaixo sobre a Fase 0/Fase 5 de atribuição estão superados por essa conferência.
+
+---
+
+## 0. Conquistas recentes (2026-08-07)
 
 Status canônico: [`docs/FASE_A_GTM_ESPOCRM_OPS.md`](FASE_A_GTM_ESPOCRM_OPS.md) (secção *Migração para novo.segurosimediato.com.br*).
 

@@ -65,8 +65,7 @@ async function prepararPagina(
 }
 
 async function irParaEtapa3(page: Page, posts: LeadPost[]) {
-  await page.locator("#ddd").fill("11");
-  await page.locator("#celular").fill("98765-4321");
+  await page.locator("#telefone").fill("11987654321");
   await page.getByRole("button", { name: "Receber cotação" }).click();
   await expect(page.locator("#nome")).toBeVisible({ timeout: 30_000 });
   // O `leadId` da resposta do `initial` é reaproveitado nas etapas seguintes.
