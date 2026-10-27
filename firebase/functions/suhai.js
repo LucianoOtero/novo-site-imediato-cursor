@@ -47,12 +47,30 @@ function isSuhai(leadData) {
   return Boolean(leadData && leadData.captureChannel === "suhai_form");
 }
 
+/**
+ * O erro chega como o site gravou; um 401/403 do Cloud Run vinha com a página HTML inteira,
+ * que ia parar na Note, na Task e na description do Lead. Fica o título, em uma linha.
+ */
+function erroLegivel(erro) {
+  if (typeof erro !== "string" || !/<[a-z!][^>]*>/i.test(erro)) return erro;
+  const inicio = erro.search(/<[a-z!][^>]*>/i);
+  const antes = erro.slice(0, inicio).replace(/[\s:]+$/, "");
+  const titulo = (erro.match(/<title>([^<]*)<\/title>/i)?.[1] || "").replace(/\s+/g, " ").trim();
+  const texto = [antes, titulo && `(${titulo})`].filter(Boolean).join(" ") || "erro em HTML sem título";
+  return texto.length > 200 ? `${texto.slice(0, 199)}…` : texto;
+}
+
+function comErroLegivel(registro) {
+  if (!registro) return {};
+  return registro.erro ? { ...registro, erro: erroLegivel(registro.erro) } : registro;
+}
+
 function cotacaoDe(leadData) {
-  return leadData.suhaiCotacao || {};
+  return comErroLegivel(leadData.suhaiCotacao);
 }
 
 function propostaDe(leadData) {
-  return leadData.suhaiProposta || {};
+  return comErroLegivel(leadData.suhaiProposta);
 }
 
 function cotacaoReal(cotacao) {
@@ -730,4 +748,5 @@ module.exports = {
   octaTemplate,
   emailMomento,
   moeda,
+  erroLegivel,
 };

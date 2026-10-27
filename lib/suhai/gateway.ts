@@ -96,8 +96,11 @@ async function chamar<T>(caminho: string, corpo: unknown): Promise<T> {
       );
     } catch (error) {
       if (error instanceof GatewayError) throw error;
+      // A página HTML inteira ia parar na Note e na description do Lead: fica o título.
+      const titulo = texto.match(/<title>([^<]*)<\/title>/i)?.[1]?.replace(/\s+/g, " ").trim();
+      const detalhe = titulo || (/<[a-z!]/i.test(texto) ? "" : texto.replace(/\s+/g, " ").trim().slice(0, 200));
       throw new GatewayError(
-        `gateway ${caminho} respondeu ${resposta.status}: ${texto.slice(0, 200)}`,
+        `gateway ${caminho} respondeu ${resposta.status}${detalhe ? ` (${detalhe})` : ""}`,
         "indisponivel",
         resposta.status,
       );

@@ -89,10 +89,12 @@ Regra: cobrança só depois da apólice emitida; as APIs de boleto foram descont
 
 | # | Caso | Esperado | Situação |
 |---|---|---|---|
-| P1 | Proposta transmitida em homologação | Task "Acompanhar proposta Suhai nº X até a emissão da apólice", sem pedir boleto | testes; real em F4 |
-| P2 | Note e e-mail da proposta | "Próximo passo" fala em acompanhar até a apólice | testes; real em F4 |
-| P3 | `deliverLead` no `suhai_proposal` | Cria `suhai_acompanhamento/{leadId}` uma vez | testes; real em F4 |
-| P4 | Reenvio do mesmo estágio | Não duplica o registro | testes; real em F4 |
+| P1 | Proposta transmitida em homologação | Task "Acompanhar proposta Suhai nº X até a emissão da apólice", sem pedir boleto | ok (27/10, 9061554, handler da branch rodado localmente) |
+| P2 | Note e e-mail da proposta | "Próximo passo" fala em acompanhar até a apólice | ok (27/10) |
+| P3 | `deliverLead` no `suhai_proposal` | Cria `suhai_acompanhamento/{leadId}` uma vez | ok (27/10) |
+| P4 | Reenvio do mesmo estágio | Não duplica o registro | ok (27/10: sem Note, Task ou registro novos) |
+
+A `deliverLead` publicada ainda é a da `main`: no lead da 9061554 ela criou antes a Task antiga "Emitir apólice Suhai e enviar boleto". Some quando a da branch for publicada (F7).
 
 ### 2A. Experiência do `/cotacao-suhai` (achados do Luciano no preview, F4)
 
@@ -125,9 +127,9 @@ Teste automatizado: `_shots-etapa3/ux-suhai-local.mjs`, contra o build local com
 
 | # | Caso | Situação |
 |---|---|---|
-| R1 | 1ª rodada: Note, Task de vistoria, e-mail, `suhai_status_proposta` e campos no Lead e na Opp | ok (9061210); repetir com a proposta nova em F4 |
-| R2 | Rodada imediata | `pulado` ok |
-| R3 | Rodada 1 h depois sem mudança | `sem_mudanca` ok |
+| R1 | 1ª rodada: Note, Task de vistoria, e-mail, `suhai_status_proposta` e campos no Lead e na Opp | ok (9061210); ok (27/10, 9061554: status 2 "Pendente de análise nível 1", Note, e-mail e campos no Lead e na Opp; sem pendência de vistoria ainda, logo sem Task) |
+| R2 | Rodada imediata | `pulado` ok; ok (27/10, 9061554) |
+| R3 | Rodada 1 h depois sem mudança | `sem_mudanca` ok; ok (27/10, 9061554) |
 
 ### 4B. Cenários sem proposta real
 
@@ -159,7 +161,7 @@ Teste automatizado: `_shots-etapa3/ux-suhai-local.mjs`, contra o build local com
 | # | Caso | Situação |
 |---|---|---|
 | E1 | DEV: `cStatusProposta` e `cDataStatusProposta` no Lead e na Opp, painel "Cotação do Site" | ok (backup e inventário) |
-| E2 | DEV: data gravada em UTC aparece no fuso do usuário | a fazer (F4) |
+| E2 | DEV: data gravada em UTC aparece no fuso do usuário | ok (27/10: gravada 13:18:43 UTC, exibida "Hoje 10:18") |
 | E3 | PROD: mesma criação, com backup, "pode" e sessão de admin | a fazer (F6) |
 | E4 | Rotina com o campo inexistente | testes |
 
@@ -223,4 +225,4 @@ Durante a viagem (29/10 a 02/11), nenhum deploy: só observação de R14 e do al
 |---|---|---|
 | 26/10 | F1 | Plano gravado. Rodapé D2 a D4 ok, com o defeito do modal corrigido em `c8dd378`. Regressão local 26/26 e 78/78. Pós-venda V2 e V5 ok; V3 e V4 dependem de uma apólice nossa em homologação. Ordem de deploy aprovada. Fábio respondeu (cartão, boleto, login) e a réplica foi enviada pedindo a confirmação do escopo do ITSM-102658, a apólice de teste e o limite de volume. Templates recriados no Octadesk, em análise (seção 9). Baterias com RPA real: as 6 motos da `rpa-fidelidade` falharam na Tela 3 porque o teste ainda procurava o chip de ramo, removido do funil, e mandava moto como `tipo_veiculo: "carro"` (corrigido no teste em `689b4f2`, sem rodar; leads reais de moto entram por `/seguro-moto` e não são afetados). A `testes-espocrm` passou a limpar o dedupe do Lote 1 entre casos (`adc93e1`); casos 3 a 23 em execução. Templates aprovados às 10:08. Com "pode": mensagem da proposta trocada para a v3 (`OCTADESK_API_CONFIG` v7, `deliverLead` publicada de novo sem mudança de código, revisão `deliverlead-00037-cek`, sem erros no log). Disparo da pendência escrito na rotina, com testes (65/65); liga na F7 |
 | 26/10 | F2 | Fábio (10:32): apikey de produção vale para todos os serviços, IP pedido; sem limite de volume; homolog sem apólices nossas de janeiro a março; 9061210 em emissão (pedido aviso por e-mail às 10:40). `testes-espocrm` 21/21 com a reexecução dos casos 21 a 23 (o 21 falhou só na conferência do Espo na primeira rodada). Amostra da `rpa-fidelidade` com a correção: 3 de 4 motos calcularam pela `/seguro-moto`. Funil aprovado pelo Luciano no celular; pedido de foco no cartão atendido em `4fbb4e6` (regressão 52/52) e conferido no aparelho. Detalhes em `UAT_LOTE1_FUNIL_V2.md` (`30ffc7a`). Pendentes: `ssoProtection` (com "pode") e marcação do aceite |
-| 27/10 | F4 (parcial) | `main` trazida para a branch, alerta da rotina (R16 e R17), PR #11 aberto. Preview com `SUHAI_GATEWAY_URL` da tag `homologacao`; a cotação dava 401 porque o token OIDC usava a URL da tag como audiência, corrigido com `SUHAI_GATEWAY_AUDIENCE` (`bf9385e`). G5 a G7 ok. No teste do Luciano, "Contratar" parecia não fazer nada (a proposta abria fora da tela) e faltavam o aviso da consulta da placa, o sinal de ok e as validações da proposta: corrigido em `ff877e8` e nos commits seguintes (seção 2A, 25/25 no teste automatizado). Proposta 9061554 (protocolo 535416, FXG1E20, Completo) transmitida pelo Luciano no celular às 10:18; a tela não mostrava a confirmação, agora há o modal (U6). Pendentes: P1 a P4 e R1 a R3 com a 9061554, E2, limpeza e religar a proteção da Vercel |
+| 27/10 | F4 (parcial) | `main` trazida para a branch, alerta da rotina (R16 e R17), PR #11 aberto. Preview com `SUHAI_GATEWAY_URL` da tag `homologacao`; a cotação dava 401 porque o token OIDC usava a URL da tag como audiência, corrigido com `SUHAI_GATEWAY_AUDIENCE` (`bf9385e`). G5 a G7 ok. No teste do Luciano, "Contratar" parecia não fazer nada (a proposta abria fora da tela) e faltavam o aviso da consulta da placa, o sinal de ok e as validações da proposta: corrigido em `ff877e8` e nos commits seguintes (seção 2A, 25/25 no teste automatizado). Proposta 9061554 (protocolo 535416, FXG1E20, Completo) transmitida pelo Luciano no celular às 10:18; a tela não mostrava a confirmação, agora há o modal (U6). P1 a P4 e R1 a R3 ok com a 9061554. E2 ok. Na ficha do Espo DEV, a description guardava a página HTML do 401 da primeira tentativa: o erro agora fica em uma linha (site e `suhai.js`). Pendentes: U1 a U6 no preview, limpeza e religar a proteção da Vercel |
