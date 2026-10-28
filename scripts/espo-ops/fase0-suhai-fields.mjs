@@ -25,6 +25,9 @@ const NOVOS = [
   { final: "cPremioTotal", apiName: "premioTotal", label: "Prêmio total", type: "currency" },
   { final: "cPagamento", apiName: "pagamento", label: "Pagamento", type: "varchar", maxLength: 80 },
   { final: "cFranquia", apiName: "franquia", label: "Franquia", type: "varchar", maxLength: 30 },
+  // Acompanhamento da proposta (rotina agendada, 2026-10-25).
+  { final: "cStatusProposta", apiName: "statusProposta", label: "Status da proposta", type: "varchar", maxLength: 60 },
+  { final: "cDataStatusProposta", apiName: "dataStatusProposta", label: "Data do status da proposta", type: "datetime" },
 ];
 
 const OPCOES_ESPERADAS = {
@@ -39,6 +42,7 @@ const OPCOES_OPP = {
 function payload(def) {
   const base = { name: def.apiName, label: def.label, required: false, audited: false, readOnly: false, tooltip: null };
   if (def.type === "currency") return { ...base, type: "currency" };
+  if (def.type === "datetime") return { ...base, type: "datetime" };
   return { ...base, type: "varchar", maxLength: def.maxLength || 255 };
 }
 

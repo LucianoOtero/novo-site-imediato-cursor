@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import { EnderecoCepDisplay } from "@/components/lead/EnderecoCepDisplay";
 import { Field } from "@/components/lead/fields";
@@ -142,6 +143,12 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   const [erros, setErros] = useState<Record<string, string>>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [consultando, setConsultando] = useState<"placa" | "cpf" | null>(null);
+  const [avancando, setAvancando] = useState(false);
+  const avancandoRef = useRef(false);
+  const [demorando, setDemorando] = useState(false);
+  const [tocados, setTocados] = useState<Record<string, boolean>>({});
+  const consultaAtivaRef = useRef(0);
   const estadoRef = useRef(estado);
   estadoRef.current = estado;
   const premissasRef = useRef(premissas);
@@ -157,6 +164,29 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   const contatoInicialRef = useRef<Promise<void> | null>(null);
   const telefoneEnviadoRef = useRef("");
   const consultaPlacaRef = useRef<{ placa: string; resultado: ReturnType<typeof consultarPlaca> } | null>(null);
+  const consultaCpfRef = useRef<{ cpf: string; resultado: ReturnType<typeof consultarPerfil> } | null>(null);
+
+  useEffect(() => {
+    if (!consultando) return;
+    const espera = setTimeout(() => setDemorando(true), 8000);
+    return () => {
+      clearTimeout(espera);
+      setDemorando(false);
+    };
+  }, [consultando]);
+
+  /** Mantém o aviso "Consultando…" enquanto a consulta mais recente não volta. */
+  function acompanharConsulta<T>(tipo: "placa" | "cpf", promessa: Promise<T>): Promise<T> {
+    const consulta = ++consultaAtivaRef.current;
+    setConsultando(tipo);
+    return promessa.finally(() => {
+      if (consultaAtivaRef.current === consulta) setConsultando(null);
+    });
+  }
+
+  function tocar(campo: string) {
+    setTocados((anterior) => (anterior[campo] ? anterior : { ...anterior, [campo]: true }));
+  }
 
   /**
    * Campos do lead já conhecidos — cada `progress` reenvia tudo, como o
@@ -331,7 +361,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     if (!isValidPlacaFormat(placa)) return Promise.resolve(null);
     const anterior = consultaPlacaRef.current;
     if (anterior?.placa === placa) return anterior.resultado;
-    const resultado = consultarPlaca(placa).then((patch) => {
+    const resultado = acompanharConsulta("placa", consultarPlaca(placa)).then((patch) => {
       if (!patch && consultaPlacaRef.current?.resultado === resultado) consultaPlacaRef.current = null;
       return patch;
     });
@@ -382,9 +412,21 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     }
   }
 
-  async function preencherPorCpf(cpfInformado?: string) {
+  /** Blur e "Ver meu preço" pedem o mesmo CPF: reaproveita a consulta (falha libera nova tentativa). */
+  function preencherPorCpf(cpfInformado?: string): ReturnType<typeof consultarPerfil> {
     const cpf = onlyDigits(cpfInformado ?? estadoRef.current.cpf);
-    if (!isValidCpf(cpf)) return null;
+    if (!isValidCpf(cpf)) return Promise.resolve(null);
+    const anterior = consultaCpfRef.current;
+    if (anterior?.cpf === cpf) return anterior.resultado;
+    const resultado = acompanharConsulta("cpf", consultarPerfil(cpf)).then((patch) => {
+      if (!patch && consultaCpfRef.current?.resultado === resultado) consultaCpfRef.current = null;
+      return patch;
+    });
+    consultaCpfRef.current = { cpf, resultado };
+    return resultado;
+  }
+
+  async function consultarPerfil(cpf: string) {
     try {
       await contatoInicialRef.current;
       const resposta = await fetch("/api/suhai/perfil", {
@@ -545,6 +587,18 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   }));
 
   async function avancar() {
+    if (avancandoRef.current) return;
+    avancandoRef.current = true;
+    setAvancando(true);
+    try {
+      await avancarEtapa();
+    } finally {
+      avancandoRef.current = false;
+      setAvancando(false);
+    }
+  }
+
+  async function avancarEtapa() {
     let atual = estadoRef.current;
     if (etapa === 2 && !atual.semPlaca && (!atual.marca || !atual.modelo || !atual.anoModelo)) {
       const patch = await preencherPorPlaca(atual.placa);
@@ -565,7 +619,10 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
     if (!atual.dataNascimento) {
       const patch = await preencherPorCpf(atual.cpf);
-      if (patch) atual = { ...atual, ...patch };
+      if (patch) {
+        atual = { ...atual, ...patch };
+        setEstado((anterior) => ({ ...anterior, ...patch }));
+      }
     }
     if (!atual.dataNascimento) {
       setEstado((anterior) => ({ ...anterior, perfilManual: true }));
@@ -577,6 +634,31 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
   const indice = etapa - 1;
   const fichaVisivel = Boolean(estado.marca || estado.modelo || estado.anoModelo);
+  const consultaVisivel =
+    (consultando === "placa" && etapa === 2) || (consultando === "cpf" && etapa === 4) ? consultando : null;
+  /**
+   * Sinal de ok do LeadForm: campo tocado, preenchido e sem erro. No telefone, como lá,
+   * aparece com o DDD completo enquanto o celular é digitado; o formato é conferido no blur.
+   */
+  const valido = {
+    telefone: Boolean(
+      tocados.telefone &&
+        /^\d{2}$/.test(onlyDigits(estado.ddd)) &&
+        onlyDigits(estado.celular) &&
+        !erros.ddd &&
+        !erros.celular,
+    ),
+    placa: Boolean(
+      tocados.placa &&
+        isValidPlacaFormat(estado.placa.replace(/[^A-Za-z0-9]/g, "")) &&
+        estado.marca &&
+        consultando !== "placa" &&
+        !erros.placa,
+    ),
+    cep: Boolean(tocados.cep && onlyDigits(estado.cepPernoite).length === 8 && !erros.cep),
+    nome: Boolean(tocados.nome && estado.nome.trim().length >= 3 && !erros.nome),
+    cpf: Boolean(tocados.cpf && isValidCpf(estado.cpf) && !erros.cpf),
+  };
 
   return (
     <form
@@ -611,7 +693,12 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       >
         {etapa === 1 && (
           <>
-            <Field label="Celular com DDD" htmlFor="suhai-telefone" error={erros.ddd || erros.celular}>
+            <Field
+              label="Celular com DDD"
+              htmlFor="suhai-telefone"
+              error={erros.ddd || erros.celular}
+              valid={valido.telefone}
+            >
               <TelefoneInput
                 id="suhai-telefone"
                 name="telefone"
@@ -619,10 +706,20 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                 value={formatTelefone(onlyDigits(estado.ddd) + onlyDigits(estado.celular))}
                 aria-invalid={Boolean(erros.ddd || erros.celular)}
                 onTelefoneChange={(next) => {
+                  tocar("telefone");
                   setEstado((anterior) => ({ ...anterior, ddd: next.ddd, celular: next.celular }));
                   setErros((anterior) => ({ ...anterior, ddd: "", celular: "" }));
                 }}
-                onBlur={() => void validarCelularApi(estadoRef.current)}
+                onBlur={() => {
+                  tocar("telefone");
+                  const atual = estadoRef.current;
+                  const falhas = validarEtapa(atual, 1);
+                  if (onlyDigits(atual.ddd + atual.celular) && Object.keys(falhas).length > 0) {
+                    setErros((anterior) => ({ ...anterior, ...falhas }));
+                    return;
+                  }
+                  void validarCelularApi(atual);
+                }}
               />
             </Field>
             <p className="text-xs leading-snug text-neutral-500">
@@ -634,9 +731,10 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         {etapa === 2 && (
           <>
             {!estado.semPlaca && (
-              <Field label="Placa" htmlFor="placa" error={erros.placa || undefined}>
+              <Field label="Placa" htmlFor="placa" error={erros.placa || undefined} valid={valido.placa}>
                 <Input
                   id="placa"
+                  aria-invalid={Boolean(erros.placa)}
                   value={estado.placa}
                   autoComplete="off"
                   autoCapitalize="characters"
@@ -645,7 +743,10 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                   maxLength={8}
                   data-clarity-mask="true"
                   onChange={(event) => definir("placa", formatPlacaMascara(event.target.value))}
-                  onBlur={(event) => void preencherPorPlaca(event.target.value)}
+                  onBlur={(event) => {
+                    tocar("placa");
+                    void preencherPorPlaca(event.target.value);
+                  }}
                 />
               </Field>
             )}
@@ -725,10 +826,12 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
               label="CEP onde o veículo dorme"
               htmlFor="cep"
               error={erros.cep}
+              valid={valido.cep}
               hint="É o CEP de pernoite, o lugar em que o carro passa a noite."
             >
               <Input
                 id="cep"
+                aria-invalid={Boolean(erros.cep)}
                 inputMode="numeric"
                 autoComplete="postal-code"
                 value={estado.cepPernoite}
@@ -738,7 +841,10 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                   setEstado((anterior) => ({ ...anterior, cepPernoite: cep, enderecoLinha: "" }));
                   setErros((anterior) => ({ ...anterior, cep: "" }));
                 }}
-                onBlur={(event) => void consultarCep(event.target.value)}
+                onBlur={(event) => {
+                  tocar("cep");
+                  void consultarCep(event.target.value);
+                }}
               />
             </Field>
             <EnderecoCepDisplay linha={estado.enderecoLinha} />
@@ -777,18 +883,24 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                 </button>
               </p>
             </div>
-            <Field label="Nome completo" htmlFor="nome" error={erros.nome}>
+            <Field label="Nome completo" htmlFor="nome" error={erros.nome} valid={valido.nome}>
               <Input
                 id="nome"
                 autoComplete="name"
                 value={estado.nome}
-                onChange={(event) => definir("nome", event.target.value)}
+                aria-invalid={Boolean(erros.nome)}
+                onChange={(event) => {
+                  definir("nome", event.target.value);
+                  setErros((anterior) => ({ ...anterior, nome: "" }));
+                }}
+                onBlur={() => tocar("nome")}
               />
             </Field>
             <Field
               label="CPF"
               htmlFor="cpf"
               error={erros.cpf}
+              valid={valido.cpf}
               hint="Usamos o CPF para calcular o seu preço, não para abrir um cadastro."
             >
               <Input
@@ -796,16 +908,22 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                 inputMode="numeric"
                 autoComplete="off"
                 value={estado.cpf}
-                onChange={(event) =>
+                aria-invalid={Boolean(erros.cpf)}
+                onChange={(event) => {
+                  consultaCpfRef.current = null;
                   setEstado((anterior) => ({
                     ...anterior,
                     cpf: formatCpf(event.target.value),
                     perfilPronto: false,
                     perfilManual: false,
                     dataNascimento: "",
-                  }))
-                }
-                onBlur={(event) => void preencherPorCpf(event.target.value)}
+                  }));
+                  setErros((anterior) => ({ ...anterior, cpf: "" }));
+                }}
+                onBlur={(event) => {
+                  tocar("cpf");
+                  void preencherPorCpf(event.target.value);
+                }}
               />
             </Field>
             {estado.perfilManual && (
@@ -855,14 +973,31 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
       <div className="flex items-center gap-3">
         {etapa > 1 && (
-          <Button type="button" variant="ghost" onClick={() => setEtapa((passo) => (passo - 1) as Etapa)}>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={avancando}
+            onClick={() => setEtapa((passo) => (passo - 1) as Etapa)}
+          >
             Voltar
           </Button>
         )}
-        <Button type="submit" loading={carregando}>
+        <Button type="submit" loading={carregando || avancando}>
           {CTAS[indice]}
         </Button>
       </div>
+
+      {/* Abaixo dos botões: o aviso surge no blur da placa e não pode deslocar o "Continuar" no meio do clique. */}
+      {consultaVisivel && (
+        <p role="status" className="flex items-center gap-2 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">
+          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+          {demorando
+            ? "Está demorando um pouco mais que o normal…"
+            : consultaVisivel === "placa"
+              ? "Consultando a placa…"
+              : "Consultando o CPF…"}
+        </p>
+      )}
     </form>
   );
 });

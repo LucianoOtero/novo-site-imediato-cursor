@@ -16,6 +16,8 @@ import { normalizarCotacao, type CotacaoBruta } from "./normalizar";
 import type { CotacaoPayload, CotacaoResultado } from "./types";
 
 const GATEWAY_URL = process.env.SUHAI_GATEWAY_URL?.replace(/\/$/, "") ?? "";
+/** O Cloud Run recusa (401) token cuja audiência é a URL de uma tag (`homologacao---…`): nesse caso, a URL do serviço. */
+const GATEWAY_AUDIENCE = process.env.SUHAI_GATEWAY_AUDIENCE?.replace(/\/$/, "") || GATEWAY_URL;
 const TIMEOUT_MS = Number(process.env.SUHAI_GATEWAY_TIMEOUT_MS ?? 30000);
 
 export function gatewayConfigurado(): boolean {
@@ -47,7 +49,7 @@ async function authorizationHeader(): Promise<Record<string, string>> {
   if (tokenFixo) return { authorization: `Bearer ${tokenFixo}` };
 
   authCache ??= construirAuth();
-  const client = await authCache.getIdTokenClient(GATEWAY_URL);
+  const client = await authCache.getIdTokenClient(GATEWAY_AUDIENCE);
   const headers = await client.getRequestHeaders();
   const authorization = headers.get("authorization");
   return authorization ? { authorization } : {};
@@ -94,8 +96,11 @@ async function chamar<T>(caminho: string, corpo: unknown): Promise<T> {
       );
     } catch (error) {
       if (error instanceof GatewayError) throw error;
+      // A página HTML inteira ia parar na Note e na description do Lead: fica o título.
+      const titulo = texto.match(/<title>([^<]*)<\/title>/i)?.[1]?.replace(/\s+/g, " ").trim();
+      const detalhe = titulo || (/<[a-z!]/i.test(texto) ? "" : texto.replace(/\s+/g, " ").trim().slice(0, 200));
       throw new GatewayError(
-        `gateway ${caminho} respondeu ${resposta.status}: ${texto.slice(0, 200)}`,
+        `gateway ${caminho} respondeu ${resposta.status}${detalhe ? ` (${detalhe})` : ""}`,
         "indisponivel",
         resposta.status,
       );

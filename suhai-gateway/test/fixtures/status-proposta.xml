@@ -1,0 +1,12 @@
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+   <soap:Body>
+      <ConsultarStatusPropostaResponse xmlns="http://suhaiseguradoracotacao.com.br:5155/">
+         <ConsultarStatusPropostaResult>
+            <protocolo>28370</protocolo>
+            <codMsgRet>003</codMsgRet>
+            <textoMsgRet>Pendente Análise Nível 2</textoMsgRet>
+            <proposta>30765</proposta>
+         </ConsultarStatusPropostaResult>
+      </ConsultarStatusPropostaResponse>
+   </soap:Body>
+</soap:Envelope>

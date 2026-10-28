@@ -11,9 +11,17 @@
 
 import http from "node:http";
 
-import { aesConfigurado, config, credenciaisPresentes } from "./src/config.js";
+import { consultarPendencias, consultarStatus, gerarPdf } from "./src/acompanhamento.js";
+import { aesConfigurado, config, credenciaisPresentes, posVendaConfigurada } from "./src/config.js";
 import { cotar } from "./src/cotacao.js";
 import { consultarVeiculos } from "./src/fipe.js";
+import {
+  apoliceDaProposta,
+  consultarApolice,
+  consultarComissao,
+  consultarParcelas,
+  pesquisarApolices,
+} from "./src/posvenda.js";
 import { transmitir } from "./src/proposta.js";
 
 const PORT = Number(process.env.PORT) || 8080;
@@ -56,12 +64,16 @@ async function lerCorpo(req) {
  * cru para o chamador.
  */
 function tratarErro(res, erro, operacao) {
-  console.error(`[${operacao}] ${erro.name}: ${erro.message}`, erro.codigoSuhai ?? "");
+  if (erro.entradaInvalida || erro instanceof SyntaxError) {
+    return responder(res, 400, { erro: "entrada_invalida", mensagem: erro.message });
+  }
+  console.error(`[${operacao}] ${erro.name}: ${erro.message}`, erro.codigoSuhai ?? "", erro.detalhe ?? "");
   const status = erro.codigoSuhai ? 422 : 502;
   responder(res, status, {
     erro: erro.codigoSuhai ? "suhai" : "indisponivel",
     mensagem: erro.message,
     codigoSuhai: erro.codigoSuhai ?? null,
+    ...(erro.detalhe ? { detalhe: erro.detalhe } : {}),
   });
 }
 
@@ -76,6 +88,7 @@ const server = http.createServer(async (req, res) => {
       ambiente: config.ambiente,
       credenciais: credenciaisPresentes(),
       aes: aesConfigurado(),
+      posVenda: posVendaConfigurada(),
     });
   }
 
@@ -115,6 +128,48 @@ const server = http.createServer(async (req, res) => {
       return responder(res, 200, await transmitir(await lerCorpo(req)));
     } catch (erro) {
       return tratarErro(res, erro, "proposta");
+    }
+  }
+
+  const acompanhamento = {
+    "/proposta/status": consultarStatus,
+    "/proposta/pendencias": consultarPendencias,
+    "/proposta/pdf": gerarPdf,
+  }[url.pathname];
+
+  if (acompanhamento && req.method === "POST") {
+    if (!credenciaisPresentes()) {
+      return responder(res, 503, {
+        erro: "sem_credenciais",
+        mensagem: "Credenciais de Cotador ainda não configuradas neste ambiente.",
+      });
+    }
+    try {
+      return responder(res, 200, await acompanhamento(await lerCorpo(req)));
+    } catch (erro) {
+      return tratarErro(res, erro, url.pathname.slice(1));
+    }
+  }
+
+  const posVenda = {
+    "/posvenda/apolice/pesquisa": pesquisarApolices,
+    "/posvenda/apolice": consultarApolice,
+    "/posvenda/parcelas": consultarParcelas,
+    "/posvenda/apolice-da-proposta": apoliceDaProposta,
+    "/posvenda/comissao": consultarComissao,
+  }[url.pathname];
+
+  if (posVenda && req.method === "POST") {
+    if (!posVendaConfigurada()) {
+      return responder(res, 503, {
+        erro: "sem_api_key",
+        mensagem: "API Key de pós-venda ainda não configurada neste ambiente.",
+      });
+    }
+    try {
+      return responder(res, 200, await posVenda(await lerCorpo(req)));
+    } catch (erro) {
+      return tratarErro(res, erro, url.pathname.slice(1));
     }
   }
 

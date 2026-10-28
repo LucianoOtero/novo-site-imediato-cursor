@@ -12,6 +12,8 @@ Base:
 
 Escopo Imediato fase 1 (cotação/venda no site): **não obrigatório**. Útil para área logada / conciliação / dash futuro.
 
+**Uso atual (2026-10-25):** como a Suhai descontinuou as APIs de boleto e só cobra depois da apólice, o boleto da 1ª parcela vem daqui. O `suhai-gateway` expõe pesquisa, consulta, parcelas, comissão e `/posvenda/apolice-da-proposta` (README do gateway). O acompanhamento chama esta última no status Emitida. Observado: fora do IP da whitelist volta 401 "restrição de segurança"; em 25/10 (domingo), pelo gateway, a homologação respondeu 500 "serviço indisponível" em todas as rotas.
+
 ---
 
 ## 1. API Apólice

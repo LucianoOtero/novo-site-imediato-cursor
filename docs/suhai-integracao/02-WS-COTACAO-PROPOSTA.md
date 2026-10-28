@@ -157,11 +157,11 @@ Formaliza contratação de **uma** cobertura a partir do `protocolo` da cotaçã
 
 **Página:** [438861937](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/438861937)
 
-Entrada: `login`, `senha`, e **pelo menos um** de `protocolo` / `proposta`.
+Operação SOAP `ConsultarStatusProposta`, campos dentro do wrapper `<suh:consulta>`. Entrada: `login`, `senha`, e **pelo menos um** de `protocolo` / `proposta`.
 
-Retorno: status textual, `data_atualizacao_status`, campos de **Recusa Reavaliável** (AUT/MAN: fator FIPE sugerido, parecer, autor).
+Retorno (`ConsultarStatusPropostaResult`): **`codMsgRet` é o código do status** (ex.: `003`) e `textoMsgRet` o nome ("Pendente Análise Nível 2"); `503` é erro da consulta. Também `protocolo`, `proposta`, `data_atualizacao_status` e, nas recusas reavaliáveis, `recusa_reavaliavel_aut` (fator FIPE sugerido) ou `parecer_autor` / `data_hora_parecer` / `parecer_texto` (MAN).
 
-Tabela completa de status (1–17+): [`06-DOMINIOS-E-FLUXOS.md`](./06-DOMINIOS-E-FLUXOS.md).  
+Tabela completa de status (1–19): [`06-DOMINIOS-E-FLUXOS.md`](./06-DOMINIOS-E-FLUXOS.md). Implementado no gateway em `POST /proposta/status` (`suhai-gateway/src/acompanhamento.js`).  
 ~~Destaque operacional: status **12 Pendências para Emissão** é o que **permite emitir boleto 1ª parcela**.~~ Superado: a cobrança só sai depois da apólice emitida (ver seção 6).
 
 ---
@@ -169,7 +169,7 @@ Tabela completa de status (1–17+): [`06-DOMINIOS-E-FLUXOS.md`](./06-DOMINIOS-E
 ## 4. Gerar Documento (PDF) da Proposta
 
 **Página:** [439320637](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/439320637)  
-SOAP com `login`/`senha` + identificação da proposta/protocolo; retorno inclui PDF (binário/base64 na resposta — doc volumosa).
+Operação SOAP `GerarPDF`, wrapper `<suh:impressao>`: `login`/`senha`, `protocolo` e/ou `proposta`, `envia_email` (S/N — S manda o PDF ao proponente). Retorno `GerarPDFResult` com `protocolo`, `proposta` e `arquivo` (PDF em base64). Gateway: `POST /proposta/pdf`, com `envia_email` N por padrão.
 
 ---
 
@@ -205,11 +205,11 @@ Busca e leitura analítica pós-transmissão (filtros e campos na doc oficial).
 ## 10. Consultar Pendências de Emissão
 
 **Página:** [615841800](https://suhai.atlassian.net/wiki/spaces/SUHAPI/pages/615841800)  
-Operação SOAP `ConsultarPendencias`.
+Operação SOAP `ConsultarPendencias`, wrapper `<suh:pendencia>`.
 
-Filtros: `proposta`, `cpfCnpj`, `placa`, `chassi`, período `data_proposta_ini`/`fim` (**máx. 15 dias**).
+Filtros: `proposta`, `protocolo`, `cpfCnpj`, `placa`, `chassi`, período `data_proposta_ini`/`fim` (**máx. 15 dias**).
 
-Retorno pode incluir links de **autovistoria** / site do **rastreador** conforme exigência da proposta (`link_prestador` etc.).
+Retorno (`ConsultarPendenciasResult`): `codMsgRet` 001 e um `PropostaResult` por proposta, com `status_proposta`, um `painel_pendencia num_pendencia="n"` por pendência (`pendencia`, `prestador`, `Etapa`, `status`, `ultima_atualizacao`, `link_prestador` — link da **autovistoria** ou do site do **rastreador** enquanto pendente) e `parecer num_parecer="n"`. Proposta sem pendência volta como 503 "Não foi encontrado nenhum registro para os critérios utilizados." — o gateway (`POST /proposta/pendencias`) traduz para lista vazia.
 
 ---
 

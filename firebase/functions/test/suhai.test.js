@@ -92,6 +92,19 @@ test("cotação com falha vira cálculo manual com Task e calculo_manual", () =>
   assert.equal(email.erro.message, "Modelo fora da tabela");
 });
 
+test("erro em HTML do Cloud Run vira uma linha na Note, na Task e no e-mail", () => {
+  const html =
+    'gateway /cotacao respondeu 401: <html><head>\n<meta http-equiv="content-type" content="text/html;charset=utf-8">\n<title>401 Unauthorized</title>\n</head>\n<body><h1>Error: Unauthorized</h1><h2>Your client does not have permission</h2></body></html>';
+  const dados = { ...base, suhaiCotacao: { status: "falha", ambiente: "homologacao", simulado: false, erro: html, geradoEm: "x" } };
+  assert.equal(suhai.erroLegivel(html), "gateway /cotacao respondeu 401 (401 Unauthorized)");
+  assert.match(suhai.buildNote("suhai_quote", dados), /NÃO CONCLUÍDA — gateway \/cotacao respondeu 401 \(401 Unauthorized\)\./);
+  assert.doesNotMatch(suhai.buildNote("suhai_quote", dados), /<html|<title/);
+  assert.doesNotMatch(suhai.taskSpec("suhai_quote", dados).description, /</);
+  assert.equal(suhai.emailMomento("suhai_quote", dados).erro.message, "gateway /cotacao respondeu 401 (401 Unauthorized)");
+  assert.equal(suhai.erroLegivel("Modelo fora da tabela"), "Modelo fora da tabela");
+  assert.equal(dados.suhaiCotacao.erro, html);
+});
+
 test("template da cotação pronta usa o plano recomendado", () => {
   const escolha = suhai.octaTemplate("suhai_quote", { ...base, suhaiCotacao: cotacao }, "Maria");
   assert.equal(escolha.key, "suhai_cotacao_pronta");
@@ -142,7 +155,8 @@ test("proposta transmitida grava número, pagamento, Task de emissão e WhatsApp
   assert.match(campos.cPagamento, /^Boleto em 10x/);
   assert.equal(suhai.etapaFunilNova("suhai_proposal", dados), "Proposta transmitida");
   const tarefa = suhai.taskSpec("suhai_proposal", dados);
-  assert.match(tarefa.name, /Emitir apólice Suhai e enviar boleto — proposta nº 9061210/);
+  assert.match(tarefa.name, /Acompanhar proposta Suhai nº 9061210 até a emissão da apólice/);
+  assert.match(tarefa.description, /cobrança só existe depois da apólice emitida/);
   assert.equal(tarefa.dias, 0);
   const escolha = suhai.octaTemplate("suhai_proposal", dados, "Maria");
   assert.equal(escolha.key, "suhai_proposta_enviada");

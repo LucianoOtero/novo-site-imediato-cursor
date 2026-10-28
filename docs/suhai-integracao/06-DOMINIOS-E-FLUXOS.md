@@ -95,6 +95,8 @@ Se Particular → preencher também `tipoUtilizacao` (1/2/3).
 | 15 | Emissão manual | Não | Não | Não |
 | 16 | Recusa reavaliável (MAN) | Não | Não* | Sim |
 | 17 | Emissão manual endosso | Não | Não | Não |
+| 18 | Apólice emitida manual | Não | Não | Não |
+| 19 | Endosso emitido manual | Não | Não | Não |
 
 \*Recusas reavaliáveis: doc descreve caminho via novo cálculo/fator FIPE ou nova condição — tratar como fluxo especial de UX.
 

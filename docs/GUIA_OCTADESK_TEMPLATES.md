@@ -225,3 +225,58 @@ firebase deploy --only functions:deliverLead
 - [x] `suhai_proposta_enviada` criado e aprovado — 2026-10-15
 - [x] IDs gravados no `OCTADESK_API_CONFIG` e `deliverLead` redeployada — 2026-10-15
 - [x] Entrega testada no celular de teste (lead sintético `staging`, registros apagados) — 2026-10-15
+
+## Templates do acompanhamento Suhai (2026-10-26)
+
+Criados pelo Luciano no WhatsApp Manager da Meta em 26/10, Português (BR), categoria Utilidade, cabeçalho de texto fixo "Proposta do seu seguro", sem rodapé e sem botões. **Status (26/10, 09:06):** os dois aprovados pela Meta. Nenhum aparece no Octadesk: a lista de `GET /chat/templates-message` (25 modelos, conferida com `octa-templates.mjs`) não traz modelos criados direto na Meta. Para o envio pela API, recriar os dois no Octadesk com o mesmo texto e anotar os IDs.
+
+Os templates anteriores foram criados pelo Octadesk, e o envio usa o ID que o Octadesk dá a cada modelo. O "sincronizar mensagens" do Octadesk só atualiza o status dos modelos que ele já conhece; não importa os criados na Meta.
+
+**Recriados no Octadesk em 26/10** (mesmo texto, variáveis pelo botão "Adicionar variável genérica"), em análise na Meta:
+
+| Modelo no Octadesk | ID | Status (26/10, 10:08) |
+|---|---|---|
+| `pendencia_suhai_util_v1_octa` | `6adf4cb24582fe09dcd79943` | aprovado |
+| `proposta_suhai_util_v3_octa` | `6adf4c4204118aa70b52a4dc` | aprovado |
+
+Uso no código:
+
+- **Proposta, no ar desde 26/10 às 10:15.** A `proposta_suhai_util_v3_octa` substituiu a v2 na chave `suhai_proposta_enviada`, com as mesmas três variáveis (nome, número da proposta, `pagamentoTexto`), sem mudar o código: `OCTADESK_API_CONFIG` v7 (só essa chave mudou) e `deliverLead` publicada de novo a partir da `uat-funil-etapa3`, sem mudança de código (revisão `deliverlead-00037-cek`). Rollback: secret v6 e nova publicação.
+- **Pendência, código pronto na `suhai-acompanhamento`.** A `acompanharPropostasSuhai` manda `suhai_pendencia` quando a Suhai aponta vistoria ou rastreador com link do prestador e sem problema no status. Variáveis: primeiro nome, número da proposta, "agendar a vistoria do veículo" ou "agendar a instalação do rastreador", e o link. Sai uma vez por tipo de pendência (`efeitos/wa_pend_*`); a Task "Enviar ao cliente o link" continua como reserva. Para ligar: chave `suhai_pendencia` = `6adf4cb24582fe09dcd79943` numa versão nova do `OCTADESK_API_CONFIG`, no deploy da F7, com "pode".
+
+Depois da aprovação, apagar na Meta os quatro criados por lá (`pendencia_suhai_util_v1` e `proposta_suhai_util_v3`, em inglês e em português).
+
+O código ainda não envia nenhum dos dois: a chave em `templates` do `OCTADESK_API_CONFIG` e o disparo na rotina de acompanhamento entram depois da aprovação, com "pode".
+
+### `pendencia_suhai_util_v1` — vistoria ou rastreador pendente
+
+> Olá, {{1}}. Para a seguradora Suhai emitir a apólice da sua proposta nº {{2}}, falta {{3}}. Acesse: {{4}} . Um especialista da Imediato Seguros acompanha por aqui. Se precisar, responda esta mensagem.
+
+| Variável | Conteúdo | Exemplo |
+|---|---|---|
+| `{{1}}` | primeiro nome | Maria |
+| `{{2}}` | número da proposta Suhai | 9061210 |
+| `{{3}}` | pendência | agendar a vistoria do veículo / agendar a instalação do rastreador |
+| `{{4}}` | link do prestador (`linkPrestador` de `/proposta/pendencias`) | https://vistoria.exemplo.com.br/agendar/123 |
+
+### `proposta_suhai_util_v3` — proposta transmitida, cobrança depois da apólice
+
+Substitui a `proposta_suhai_util_v2`, que fala em enviar o boleto antes da emissão (a Suhai passou a cobrar só depois da apólice).
+
+> Olá, {{1}}. Sua proposta de seguro Suhai nº {{2}} foi transmitida. Pagamento: {{3}}, cobrado depois da emissão da apólice. Um especialista da Imediato Seguros vai acompanhar a emissão por aqui. Se precisar, responda esta mensagem.
+
+| Variável | Conteúdo | Exemplo |
+|---|---|---|
+| `{{1}}` | primeiro nome | Maria |
+| `{{2}}` | número da proposta Suhai | 9061210 |
+| `{{3}}` | forma de pagamento | Boleto em 12x (≈ R$ 105,09) |
+
+- [x] `pendencia_suhai_util_v1` e `proposta_suhai_util_v3` enviados para análise — 2026-10-26
+- [x] `pendencia_suhai_util_v1` aprovado pela Meta — 2026-10-26
+- [x] `proposta_suhai_util_v3` aprovado pela Meta — 2026-10-26
+- [x] Recriados no Octadesk e IDs anotados (os criados na Meta não aparecem na API do Octadesk) — 2026-10-26
+- [x] `pendencia_suhai_util_v1_octa` e `proposta_suhai_util_v3_octa` aprovados pela Meta — 2026-10-26
+- [ ] Os quatro criados direto na Meta apagados
+- [x] Proposta v3 no ar: `OCTADESK_API_CONFIG` v7 e `deliverLead` publicada de novo — 2026-10-26
+- [x] Disparo da pendência no código da `acompanharPropostasSuhai` (testes 65/65) — 2026-10-26
+- [ ] Com "pode", na F7: chave `suhai_pendencia` no `OCTADESK_API_CONFIG` e deploy da rotina

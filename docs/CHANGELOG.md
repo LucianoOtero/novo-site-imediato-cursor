@@ -13,9 +13,32 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## [0.2.57] — não publicada (acompanhamento das propostas Suhai até a apólice)
+
+Branch `suhai-acompanhamento`. Teste de aceite em [`UAT_PLANO_COMPLETO.md`](UAT_PLANO_COMPLETO.md) (F4, 27/10). A publicação segue a ordem da seção 8 desse documento: gateway e campos no Espo PROD (F6), depois a rotina ligada só para homologação (F7).
+
+### Added
+- `suhai-gateway`: acompanhamento da proposta (`/proposta/status`, `/proposta/pendencias` por proposta, placa ou chassi, `/proposta/pdf`) e pós-venda (`/posvenda/apolice-da-proposta`, apólice, parcelas e comissão).
+- `deliverLead`: cada proposta transmitida pelo site entra em `suhai_acompanhamento/{leadId}`, uma vez só.
+- `acompanharPropostasSuhai` (de hora em hora, desligada sem `enabled:true` em `SUHAI_ACOMP_CONFIG`): status, pendências, emissão e recusa viram Note, Task, `cStatusProposta`/`cDataStatusProposta` no Lead e na Opp e e-mail admin. O link da vistoria ou do rastreador vai ao cliente pelo WhatsApp (`suhai_pendencia`). Na emissão, a Task traz a apólice e o boleto do pós-venda quando a Suhai responde.
+- Alerta da rotina: cada rodada grava o batimento em `suhai_acomp_rotina`. Três rodadas seguidas falhando por inteiro geram o e-mail "Rotina Suhai falhando". A nova `vigiarRotinaSuhai`, a cada 2 h, manda "Rotina Suhai parada" quando a rotina está ligada e não roda há mais de 3 h (`alertaSemRodadaHoras`). No máximo um e-mail de cada por dia.
+
+### Changed
+- Proposta transmitida: Task "Acompanhar proposta Suhai nº X até a emissão da apólice", e Note e e-mail com esse próximo passo. A Suhai só gera cobrança depois da apólice emitida (24/10), então nenhum passo pede boleto antes disso.
+- `lib/suhai/dominio.ts`: sai o `emiteBoleto` dos status; entram os status 18 e 19 (emissão manual de apólice e de endosso).
+- `/cotacao-suhai`, cotação: enquanto a placa ou o CPF são consultados, o botão fica ocupado e aparece "Consultando a placa…" (ou "o CPF"), com aviso de demora depois de 8 s. O aviso fica abaixo dos botões para não deslocar o "Continuar" no meio do clique. Celular, placa, CEP, nome e CPF ganham o sinal de ok do formulário padrão.
+- `/cotacao-suhai`, proposta: validação por campo ao sair dele e de todos antes de enviar, com as regras do `propostaInputSchema` e as do formulário padrão (e-mail com SafetyMails, celular `9` + 8 dígitos com APILayer, CEP com aviso de não encontrado, chassi de 17 caracteres sem I, O e Q). UF e dia de vencimento (1 a 28) viram listas. O envio com erro rola até o primeiro campo inválido e não chama a Suhai. O endereço já vem preenchido pelo CEP da cotação, e os campos ganham o sinal de ok. Proposta aceita: modal "Proposta enviada à Suhai" com número, plano, valor, pagamento, vigência e próximos passos; ao fechar, a página rola até o resumo que substitui o formulário (no celular ele ficava fora da tela e parecia que nada tinha acontecido).
+
+### Fixed
+- Erro do Cloud Run em HTML (401/403) gravava a página inteira na Note, na Task, no e-mail e na description do Lead (visto no Espo DEV, F4). `lib/suhai/gateway.ts` guarda só o título ("gateway /cotacao respondeu 401 (401 Unauthorized)"), e `suhai.js` limpa o erro já gravado antes de montar os textos.
+- `/cotacao-suhai`: "Contratar" parecia não fazer nada, porque o formulário da proposta abria abaixo dos cards, fora da tela. Agora a página rola até ele, o foco vai para o e-mail e o card escolhido fica marcado como "Plano escolhido" (F4).
+- `lib/suhai/gateway.ts`: com `SUHAI_GATEWAY_URL` apontando para uma tag (`homologacao---…`), o token OIDC saía com a URL da tag como audiência e o Cloud Run respondia 401 ("Não foi possível calcular agora" na preview, F4). Nova variável opcional `SUHAI_GATEWAY_AUDIENCE` com a URL do serviço; sem ela, nada muda.
+
+---
+
 ## [0.2.56] — 2026-10-27 (funil v2, Lote 1: telefone em campo único, dedupe durável, Opp reaproveitada)
 
-Aceito em 26/10 em `uat.segurosimediato.com.br` (branch `uat-funil-etapa3`): aparelho do Luciano, baterias com o RPA real (`testes-espocrm` 21/21, amostra da `rpa-fidelidade`) e regressão local. Resultado em [`UAT_LOTE1_FUNIL_V2.md`](UAT_LOTE1_FUNIL_V2.md). Merge e deployment de produção entram aqui depois do "pode".
+Aceito em 26/10 em `uat.segurosimediato.com.br` (branch `uat-funil-etapa3`): aparelho do Luciano, baterias com o RPA real (`testes-espocrm` 21/21, amostra da `rpa-fidelidade`) e regressão local. Resultado em [`UAT_LOTE1_FUNIL_V2.md`](UAT_LOTE1_FUNIL_V2.md). Em produção desde 27/10 às 07:55: merge do [PR #10](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/10) (`1c754e0`), deployment `dpl_GWpNdZbynddP3ee2paY997jLgFfL`. Teste em produção no mesmo dia: cotação em `/cotacao` duas vezes (mesmo lead), telefone do rodapé em `/seguro-moto` (ramo moto), Espo PROD e as quatro mensagens do Octadesk ok.
 
 ### Changed
 - Telefone em campo único `(11) 98765-4321` nos quatro formulários (`/cotacao`, modal do WhatsApp, modal do rodapé e proposta Suhai), com `inputmode="tel"`, máscara, colagem com `+55` e autofill sem máscara.
