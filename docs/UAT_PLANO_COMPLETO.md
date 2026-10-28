@@ -215,7 +215,7 @@ Durante a viagem (29/10 a 02/11), nenhum deploy: só observação de R14 e do al
 ## 9. Fora deste UAT
 
 - Fase B (Suhai junto com o RPA): plano em [FASE_B_SUHAI_PARALELO.md](FASE_B_SUHAI_PARALELO.md), ainda sem código. O Fábio confirmou em 26/10 que não há limite comercial nem de volume para as cotações.
-- Pós-venda em produção: a apikey de produção atende todos os serviços e a liberação do IP 34.39.164.249 foi pedida (ITSM-102658, SLA de 72 h).
+- Pós-venda em produção: a apikey de produção atende todos os serviços. ITSM-102658 concluído em 27/10 (repassado pelo Fábio em 28/10): chaves de produção da pós-venda (apólice, sinistro, comissão) e da API Pagamento, IP liberado, visibilidade restrita ao CNPJ da corretora. Guardadas em 28/10 no Secret Manager, sem uso por nenhum serviço: `SUHAI_API_KEY_PRODUCAO`, `SUHAI_AES_KEY_HOMOLOGACAO`, `SUHAI_AES_IV_HOMOLOGACAO`, `SUHAI_AES_KEY_PRODUCAO` e `SUHAI_AES_IV_PRODUCAO` (a apikey de homologação é a mesma do `SUHAI_API_KEY`). Na F8, o gateway de produção passa a montar `SUHAI_API_KEY=SUHAI_API_KEY_PRODUCAO`; a AES fica para o projeto do cartão.
 - Cartão de crédito: o Fábio confirmou em 26/10 o modelo de tela própria. O cliente digita o cartão no site, o servidor cifra número e CVV em AES-256 e envia direto à API Pagamento, sem gravar. A Suhai não tem página de pagamento. Projeto a abrir.
 - Boleto: a Suhai envia o "Kit Boas-Vindas" (apólice e boletos) ao e-mail informado na proposta; a segunda via sai pelo Atendimento Suhai ou pela API Apólice. Seguimos com `tp_pagamento 2`.
 - Status e pendências da proposta usam o mesmo usuário de serviço de produção (confirmado pelo Fábio em 26/10).
