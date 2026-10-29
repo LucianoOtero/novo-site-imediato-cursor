@@ -1370,6 +1370,17 @@ exports.syncOpportunitySold = onRequest(
       try {
         payload = await soldSync.enrichPayloadFromEspo(payload, espoApiConfigRaw);
       } catch (e) {
+        if (e.code === "opportunity_not_found") {
+          // Nova tentativa do Espo não traz a oportunidade de volta.
+          logger.info(`[syncOpportunitySold] ${e.message} — webhook ignorado.`);
+          itemResults.push({
+            opportunityId: payload.opportunityId,
+            ok: true,
+            httpStatus: 200,
+            skipped: "opportunity_not_found",
+          });
+          continue;
+        }
         logger.warn(`[syncOpportunitySold] enrich Espo falhou: ${e.message}`);
       }
 

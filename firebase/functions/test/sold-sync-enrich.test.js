@@ -69,6 +69,44 @@ test("comissão enviada no webhook prevalece sobre a do Espo", async () => {
   }
 });
 
+/** Espo DEV com 404 e PROD respondendo `status`. */
+function espoProdStatus(status) {
+  const original = global.fetch;
+  global.fetch = async (url) => {
+    if (String(url).startsWith("https://espo-dev.test")) {
+      return { ok: false, status: 404, text: async () => "" };
+    }
+    return { ok: false, status, text: async () => "" };
+  };
+  return () => {
+    global.fetch = original;
+  };
+}
+
+test("oportunidade apagada (404 nos dois Espo) é identificada", async () => {
+  const restaurar = espoProdStatus(404);
+  try {
+    await assert.rejects(
+      enrichPayloadFromEspo(normalizePayload({ id: "opp1" }), CONFIG),
+      (e) => e.code === "opportunity_not_found"
+    );
+  } finally {
+    restaurar();
+  }
+});
+
+test("falha do Espo PROD que não é 404 não vira oportunidade apagada", async () => {
+  const restaurar = espoProdStatus(503);
+  try {
+    await assert.rejects(
+      enrichPayloadFromEspo(normalizePayload({ id: "opp1" }), CONFIG),
+      (e) => e.code !== "opportunity_not_found" && e.status === 503
+    );
+  } finally {
+    restaurar();
+  }
+});
+
 test("edição sem stage de oportunidade fora de Vendido vira clear sem copiar comissão", async () => {
   const restaurar = espoFalso({ ...VENDIDA, stage: "Proximo de Fechar" });
   try {

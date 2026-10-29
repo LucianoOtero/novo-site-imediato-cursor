@@ -155,7 +155,9 @@ async function fetchOpportunityFromEspo(espoCfg, opportunityId) {
   });
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Espo GET Opportunity ${opportunityId} HTTP ${res.status}: ${text.slice(0, 200)}`);
+    const err = new Error(`Espo GET Opportunity ${opportunityId} HTTP ${res.status}: ${text.slice(0, 200)}`);
+    err.status = res.status;
+    throw err;
   }
   return text ? JSON.parse(text) : null;
 }
@@ -198,6 +200,7 @@ async function enrichPayloadFromEspo(payload, espoApiConfigRaw) {
 
   let opp = null;
   let lastErr = null;
+  let notFound = 0;
   for (const cfg of configs) {
     try {
       opp = await fetchOpportunityFromEspo(
@@ -210,9 +213,15 @@ async function enrichPayloadFromEspo(payload, espoApiConfigRaw) {
       if (opp) break;
     } catch (e) {
       lastErr = e;
+      if (e.status === 404) notFound += 1;
     }
   }
   if (!opp) {
+    if (configs.length > 0 && notFound === configs.length) {
+      const err = new Error(`Opportunity ${payload.opportunityId} não existe em nenhum Espo (apagada)`);
+      err.code = "opportunity_not_found";
+      throw err;
+    }
     if (lastErr) throw lastErr;
     return payload;
   }
