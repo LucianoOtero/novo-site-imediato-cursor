@@ -1021,6 +1021,12 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
       missClass,
       skipEmail: skipMissEmail,
     });
+    if (noMatchIsFinal(skipMissEmail, results)) {
+      return {
+        httpStatus: 200,
+        body: { ok: true, action, firebaseMatch: false, updatedCount: 0, noopCount: 0, missClass, results },
+      };
+    }
     return {
       httpStatus: 404,
       body: { ok: false, error: "no_firebase_match", missClass, results },
@@ -1120,6 +1126,28 @@ function timingSafeEqualString(a, b) {
 }
 
 /** Offline Ads no set com update, ou no-op se o upload ainda não foi confirmado. Clear nunca. */
+/**
+ * "Sem lead" esperado (sem atribuição, legado/sem vínculo) é definitivo e não
+ * pede nova tentativa do Espo — exceto com o legado fora: aí a nova tentativa
+ * é o que acaba marcando as vendas do site antigo.
+ */
+function noMatchIsFinal(skipEmail, results) {
+  const legacyFailed = (results || []).some(
+    (r) => r && r.projectId === LEGACY_PROJECT && r.ok === false
+  );
+  return Boolean(skipEmail) && !legacyFailed;
+}
+
+/**
+ * Status HTTP do lote do webhook. 500 e 404 pedem nova tentativa do Espo e
+ * prevalecem sobre itens ok do mesmo lote (reprocessar item ok é no-op).
+ */
+function batchHttpStatus(itemResults) {
+  if (itemResults.some((r) => r.httpStatus === 500)) return 500;
+  if (itemResults.some((r) => r.httpStatus === 404)) return 404;
+  return itemResults.some((r) => r.ok === true) ? 200 : 400;
+}
+
 function shouldAttemptAdsOffline(action, totalUpdated, opts = {}) {
   if (action !== "set") return false;
   if (Number(totalUpdated) > 0) return true;
@@ -1166,6 +1194,8 @@ module.exports = {
   notifySoldSyncError,
   explainSoldSyncErrorPlain,
   timingSafeEqualString,
+  noMatchIsFinal,
+  batchHttpStatus,
   shouldAttemptAdsOffline,
   shouldAttemptAdsRetract,
   hasOpportunityClick,

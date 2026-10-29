@@ -1439,13 +1439,7 @@ exports.syncOpportunitySold = onRequest(
     }
 
     const anyOk = itemResults.some((r) => r.ok === true);
-    const status = anyOk
-      ? 200
-      : itemResults.some((r) => r.httpStatus === 500)
-        ? 500
-        : itemResults.every((r) => r.httpStatus === 404)
-          ? 404
-          : 400;
+    const status = soldSync.batchHttpStatus(itemResults);
 
     res.status(status).json({
       ok: anyOk,
