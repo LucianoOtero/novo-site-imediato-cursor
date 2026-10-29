@@ -11,10 +11,10 @@
  *
  * Nunca envia PII (nome, e-mail, telefone, CPF etc.) em claro — os
  * eventos abaixo, tipados a partir da seção 20, não têm esses campos.
- * Enhanced Conversions (dados hasheados) é tratado separadamente, no
- * servidor, na Issue 12 (`/api/lead`) — não faz parte deste contrato de
- * eventos client-side.
+ * A única exceção é o `user_data` das conversões Ads, que só carrega o
+ * celular com hash SHA-256 (ver `lib/enhanced-conversions.ts`).
  */
+import type { HashedUserData } from "./enhanced-conversions";
 
 declare global {
   interface Window {
@@ -75,7 +75,7 @@ type AnalyticsEventMap = {
    * Tag `[NovoSite] Ads - form initial contact` (label da action de
    * formulário, sem valor) — ver `docs/FASE_A_GTM_ESPOCRM_OPS.md`.
    */
-  form_initial_contact: { ramo: RamoSlug; method: "form" | "suhai" };
+  form_initial_contact: { ramo: RamoSlug; method: "form" | "suhai"; user_data?: HashedUserData };
   /**
    * Abandono do LeadForm (pagehide / aba oculta / unmount) sem completar
    * a jornada (`form_quote_choice` / `generate_lead`). Sem PII.
@@ -134,11 +134,11 @@ type AnalyticsEventMap = {
    * ver `docs/LEGACY_JS_AUDIT.md`), para que as **tags Ads legadas**
    * (`Modal WhatsApp - Initial Contact` / `CE - phone_modal_initial_contact`)
    * disparem identicamente nos dois braços do experimento — mesmo
-   * momento, mesma action, mesmo (nenhum) valor. Sem `user_data`
-   * (contrato client-side não envia PII; os acionadores não dependem).
+   * momento, mesma action, mesmo (nenhum) valor. `user_data` leva só o
+   * celular hasheado, para as conversões otimizadas.
    */
-  whatsapp_modal_initial_contact: { form_type: "whatsapp_modal"; modal_channel: "whatsapp"; location: string; ramo?: RamoSlug };
-  phone_modal_initial_contact: { form_type: "whatsapp_modal"; modal_channel: "phone"; location: string; ramo?: RamoSlug };
+  whatsapp_modal_initial_contact: { form_type: "whatsapp_modal"; modal_channel: "whatsapp"; location: string; ramo?: RamoSlug; user_data?: HashedUserData };
+  phone_modal_initial_contact: { form_type: "whatsapp_modal"; modal_channel: "phone"; location: string; ramo?: RamoSlug; user_data?: HashedUserData };
   /**
    * Dispensa do `ContactLeadModal` sem enviar (×, Esc, clique fora) —
    * a navegação ao destino ainda acontece, mas sem lead (decisão

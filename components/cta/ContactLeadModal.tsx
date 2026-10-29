@@ -17,6 +17,7 @@ import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { company } from "@/lib/company";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { trackEvent } from "@/lib/analytics";
+import { trackConversion } from "@/lib/enhanced-conversions";
 import {
   markModalFunnelComplete,
   resetModalAbandonFlags,
@@ -293,13 +294,14 @@ export function ContactLeadModal() {
     if (initialCallInFlightRef.current) return;
     initialCallInFlightRef.current = true;
 
-    trackEvent(
+    const values = getValues();
+    trackConversion(
       channel === "whatsapp" ? "whatsapp_modal_initial_contact" : "phone_modal_initial_contact",
       { form_type: "whatsapp_modal", modal_channel: channel, location, ramo },
+      { ddd: values.ddd, celular: values.celular },
     );
 
     try {
-      const values = getValues();
       const response = await postLead({
         ramo: ramo ?? values.ramo,
         ddd: values.ddd,

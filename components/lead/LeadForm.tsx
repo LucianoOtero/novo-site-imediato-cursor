@@ -39,6 +39,7 @@ import {
   type LeadInput,
 } from "@/lib/validators";
 import { trackEvent } from "@/lib/analytics";
+import { trackConversion } from "@/lib/enhanced-conversions";
 import {
   markLeadFormFunnelComplete,
   markLeadFormHadInitialContact,
@@ -696,11 +697,11 @@ export function LeadForm({ ramo, variant = "page", onSuccess }: LeadFormProps) {
     if (initialCallInFlightRef.current) return;
     initialCallInFlightRef.current = true;
 
-    trackEvent("form_initial_contact", { ramo, method: "form" });
+    const values = getValues();
+    trackConversion("form_initial_contact", { ramo, method: "form" }, { ddd: values.ddd, celular: values.celular });
     markLeadFormHadInitialContact();
 
     try {
-      const values = getValues();
       await queueLeadPost({
         ramo,
         ddd: values.ddd,
