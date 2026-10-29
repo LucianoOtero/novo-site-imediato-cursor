@@ -106,6 +106,12 @@ const MOMENTO_META = {
     momento_descricao: `${SITE_MARKER} — ALERTA DO SISTEMA - Rotina Suhai parada`,
     momento_emoji: "🚨",
   },
+  // Resumo diário do sincronizador de vendas Espo → Firebase (2026-10-29).
+  sold_sync_resumo: {
+    momento_envio: "update_error",
+    momento_descricao: `${SITE_MARKER} — ALERTA DO SISTEMA - Vendas do Espo com problema`,
+    momento_emoji: "🚨",
+  },
 };
 
 /**

@@ -11,7 +11,6 @@
 const { initializeApp, getApps, applicationDefault } = require("firebase-admin/app");
 const { getDatabase } = require("firebase-admin/database");
 const { logger } = require("firebase-functions");
-const nodemailer = require("nodemailer");
 const crypto = require("node:crypto");
 const adsOffline = require("./ads-offline-conversion");
 
@@ -30,13 +29,6 @@ const LEGACY_TIMEOUT_MS = 8000;
 const GCLID_INDEX_PATH = {
   [LEGACY_PROJECT]: "data/GCLID_FLD",
 };
-
-/** Destinatários de alerta (validation_error, database_error, actionable no_firebase_match, …). */
-const ERROR_EMAIL_TO = [
-  "lrotero@gmail.com",
-  "alexkaminski70@gmail.com",
-  "alex.kaminski@imediatoseguros.com.br",
-].join(", ");
 
 const SOLD_FIELDS = [
   "soldStatus",
@@ -823,66 +815,19 @@ function explainSoldSyncErrorPlain({ reason, missClass = null, results, payload 
 }
 
 /**
- * Best-effort: SMTP via CONTACT_SMTP_CONFIG (pode falhar em IP GCP).
- * Sempre loga; se SMTP falhar, grava sold_sync_errors no RTDB site novo.
+ * Grava o problema em sold_sync_errors (RTDB site novo). O aviso por e-mail
+ * sai no resumo diário (sold-sync-resumo.js) para os registros sem
+ * `skipEmail` — o SMTP do cPanel recusa conexões do GCP.
  */
 async function notifySoldSyncError({
-  smtpConfigRaw,
   reason,
   payload,
   results,
   skipEmail = false,
   missClass = null,
 }) {
-  const subject = missClass
-    ? `[sold-sync] ${reason} (${missClass})`
-    : `[sold-sync] ${reason}`;
   const plain = explainSoldSyncErrorPlain({ reason, missClass, results, payload });
-  const text = [
-    plain,
-    "—",
-    "Detalhes técnicos (para TI):",
-    `Motivo: ${reason}`,
-    missClass ? `Classe: ${missClass}` : null,
-    `Quando: ${new Date().toISOString()}`,
-    `Payload: ${JSON.stringify(payload, null, 2)}`,
-    `Resultados: ${JSON.stringify(results, null, 2)}`,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-
   logger.error(`[sold-sync] ${reason}`, { payload, results, missClass });
-
-  let emailSent = false;
-  let emailError = null;
-
-  if (!skipEmail && smtpConfigRaw) {
-    try {
-      const cfg = JSON.parse(smtpConfigRaw);
-      if (cfg.host && cfg.user && cfg.pass) {
-        const transporter = nodemailer.createTransport({
-          host: cfg.host,
-          port: Number(cfg.port || 465),
-          secure: Number(cfg.port || 465) === 465,
-          auth: { user: cfg.user, pass: cfg.pass },
-          // Padrão do nodemailer é 2 min de conexão; a CF tem timeout de 120 s.
-          connectionTimeout: 10000,
-          greetingTimeout: 10000,
-          socketTimeout: 20000,
-        });
-        await transporter.sendMail({
-          from: cfg.from || cfg.user,
-          to: ERROR_EMAIL_TO,
-          subject,
-          text,
-        });
-        emailSent = true;
-      }
-    } catch (err) {
-      emailError = err.message || String(err);
-      logger.warn(`[sold-sync] e-mail falhou: ${emailError}`);
-    }
-  }
 
   try {
     const errRef = getSiteNovoDatabase().ref("sold_sync_errors").push();
@@ -892,20 +837,15 @@ async function notifySoldSyncError({
       missClass: missClass || null,
       payload,
       results,
-      emailTo: ERROR_EMAIL_TO,
-      emailSent,
-      emailError,
       skipEmail: Boolean(skipEmail),
       plainSummary: plain,
     });
   } catch (err) {
     logger.warn(`[sold-sync] falha ao gravar sold_sync_errors: ${err.message}`);
   }
-
-  return { emailSent, emailError };
 }
 
-async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds = false } = {}) {
+async function handleSoldSync(payload, { adsConfigRaw, allowAds = false } = {}) {
   const action = payload.action;
   const results = [];
 
@@ -959,7 +899,6 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
 
   if (siteNovoFailed) {
     await notifySoldSyncError({
-      smtpConfigRaw,
       reason: "database_error",
       payload,
       results,
@@ -995,7 +934,6 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
         const progressed = adsAttemptProgressed(fromOpp);
         if (progressed) {
           await notifySoldSyncError({
-            smtpConfigRaw,
             reason: "no_firebase_match",
             payload,
             results,
@@ -1023,7 +961,6 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
       }
     }
     await notifySoldSyncError({
-      smtpConfigRaw,
       reason: "no_firebase_match",
       payload,
       results,
@@ -1047,7 +984,6 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
   const legacy = results.find((r) => r.projectId === LEGACY_PROJECT);
   if (legacy && legacy.ok === false) {
     await notifySoldSyncError({
-      smtpConfigRaw,
       reason: "legacy_partial_failure",
       payload,
       results,
@@ -1181,7 +1117,6 @@ module.exports = {
   SITE_NOVO_PROJECT,
   LEGACY_PROJECT,
   GCLID_INDEX_PATH,
-  ERROR_EMAIL_TO,
   normalizePayload,
   expandRequestItems,
   enrichPayloadFromEspo,
