@@ -217,19 +217,25 @@ async function enrichPayloadFromEspo(payload, espoApiConfigRaw) {
     return payload;
   }
 
+  // Webhook de edição sem `stage` chega com action vazia: a ação vem da
+  // etapa lida do Espo (mesma regra do normalizePayload), senão amount e
+  // cDataVenda ficam vazios e a venda é rejeitada na validação.
+  const stage = payload.stage || opp.stage;
+  const action = payload.action || (stage === "Vendido" ? "set" : stage ? "clear" : "");
+
   return normalizePayload({
     ...payload,
-    action: payload.action,
+    action,
     opportunityId: payload.opportunityId,
-    stage: payload.stage || opp.stage,
+    stage,
     amount:
-      payload.action === "set"
+      action === "set"
         ? payload.amount != null
           ? payload.amount
           : opp.amount
         : payload.amount,
     cDataVenda:
-      payload.action === "set"
+      action === "set"
         ? payload.cDataVenda || opp.cDataVenda
         : payload.cDataVenda,
     cLeadId: payload.cLeadId || opp.cLeadId,
