@@ -293,7 +293,7 @@ async function ensureAdGroups(s, spec, campaign, report) {
         s,
         `SELECT ad_group.name, ad_group.resource_name
          FROM ad_group
-         WHERE campaign.id = ${campaign.id} AND ad_group.status != 'REMOVED'`,
+         WHERE ad_group.campaign = '${campaign.resourceName}' AND ad_group.status != 'REMOVED'`,
       )
     : [];
   const byName = new Map(existing.map((r) => [r.adGroup.name, r.adGroup.resourceName]));
@@ -360,7 +360,7 @@ async function ensureNegatives(s, campaign, negatives, report) {
       s,
       `SELECT campaign_criterion.criterion_id
        FROM campaign_criterion
-       WHERE campaign.id = ${campaign.id}
+       WHERE campaign_criterion.campaign = '${campaign.resourceName}'
          AND campaign_criterion.type = 'KEYWORD' AND campaign_criterion.negative = TRUE`,
     );
     if (rows.length) {
@@ -389,7 +389,7 @@ async function ensureAssets(s, spec, campaign, report) {
         s,
         `SELECT campaign_asset.field_type
          FROM campaign_asset
-         WHERE campaign.id = ${campaign.id} AND campaign_asset.status != 'REMOVED'`,
+         WHERE campaign_asset.campaign = '${campaign.resourceName}' AND campaign_asset.status != 'REMOVED'`,
       )
     : [];
   const have = new Set(linked.map((r) => r.campaignAsset.fieldType));
@@ -437,7 +437,7 @@ async function ensureConversionGoals(s, spec, campaign, report) {
     `SELECT campaign_conversion_goal.resource_name, campaign_conversion_goal.category,
        campaign_conversion_goal.origin, campaign_conversion_goal.biddable
      FROM campaign_conversion_goal
-     WHERE campaign.id = ${campaign.id}`,
+     WHERE campaign_conversion_goal.campaign = '${campaign.resourceName}'`,
   );
   const ops = [];
   for (const r of rows) {
