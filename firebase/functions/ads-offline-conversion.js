@@ -801,6 +801,7 @@ async function handleAdsOfflineAfterSoldSet({
         const prevValue =
           t.previousAmount != null ? Number(t.previousAmount) : nextValue;
         if (
+          !cfg.validateOnly &&
           Number.isFinite(nextValue) &&
           nextValue > 0 &&
           Number.isFinite(prevValue) &&
@@ -1448,6 +1449,7 @@ async function handleAdsOfflineRetract({
   if (!cfg || !cfg.enabled || !configReadyForUpload(cfg)) {
     return { skipped: true, reason: "disabled" };
   }
+  if (cfg.validateOnly) return { skipped: true, reason: "validate_only" };
   const orderId = String(payload?.opportunityId || "").trim();
   if (!orderId) return { skipped: true, reason: "no_opportunity_id" };
   let accessToken;

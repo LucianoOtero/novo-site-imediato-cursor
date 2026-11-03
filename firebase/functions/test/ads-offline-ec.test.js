@@ -174,6 +174,22 @@ test("marketing recusado: sem hash, e sem click a venda é pulada", async () => 
   assert.equal(r.res.leadResults[0].reason, "no_click_id");
 });
 
+test("validateOnly não manda estorno ao Google", async () => {
+  const google = googleFalso();
+  try {
+    const r = await ads.handleAdsOfflineRetract({
+      payload: { opportunityId: "opp1" },
+      results: [{ projectId: "p1", ok: true, updated: [{ leadId: "L1", adsStatus: "uploaded" }] }],
+      adsConfigRaw: config({ validateOnly: true, developerToken: "dt" }),
+      databases: { p1: bancoFalso({}) },
+    });
+    assert.equal(r.reason, "validate_only");
+    assert.equal(google.ingests.length, 0);
+  } finally {
+    google.restaurar();
+  }
+});
+
 test("modo completo sem validateOnly continua enviando o gclid, agora com hash", async () => {
   const r = await rodar({
     lead: { data: { phoneE164: "+5511987654321", email: "a@b.com", utm: { gclid: "g1" } } },
