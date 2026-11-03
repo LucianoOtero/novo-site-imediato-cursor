@@ -23,6 +23,7 @@ Este pacote documenta **todas as opções de integração publicadas** no espaç
 | [`07-MAPA-SITE-IMEDIATO.md`](./07-MAPA-SITE-IMEDIATO.md) | Encaixe no site novo + gaps vs LeadForm atual |
 | [`08-CHAMADO-ACESSO.md`](./08-CHAMADO-ACESSO.md) | SUTI-4370 encerrado pela TI; pedido no comercial e acompanhamento |
 | [`09-ARQUITETURA.md`](./09-ARQUITETURA.md) | **O que já foi construído**: gateway, IP fixo, código do site, modo simulado |
+| [`10-MEDICAO-E-CAMPANHA.md`](./10-MEDICAO-E-CAMPANHA.md) | Eventos `suhai_*`, GTM v54, GA4, conversões e meta da campanha no Google Ads |
 | [`FONTES.md`](./FONTES.md) | Links Confluence por página (IDs) e datas de coleta |
 
 ---

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Resumo de uma campanha (somente leitura): status, orçamento, grupos,
- * palavras-chave, anúncios com revisão, negativas, critérios, assets e metas.
+ * palavras-chave, anúncios com revisão, negativas, critérios, assets e metas
+ * (incluindo a meta personalizada, quando a campanha usa uma).
  *
  *   node ads-verify-campaign.mjs --campaign-id=123
  */
@@ -55,6 +56,33 @@ const metas = await searchAll(
   `SELECT campaign_conversion_goal.category, campaign_conversion_goal.origin, campaign_conversion_goal.biddable
    FROM campaign_conversion_goal WHERE campaign_conversion_goal.campaign = '${rn}'`,
 );
+const [goalConfig] = await searchAll(
+  s,
+  `SELECT conversion_goal_campaign_config.goal_config_level, conversion_goal_campaign_config.custom_conversion_goal
+   FROM conversion_goal_campaign_config WHERE conversion_goal_campaign_config.campaign = '${rn}'`,
+);
+const customGoalRn = goalConfig?.conversionGoalCampaignConfig?.customConversionGoal;
+let metaPersonalizada = null;
+if (customGoalRn) {
+  const [g] = await searchAll(
+    s,
+    `SELECT custom_conversion_goal.name, custom_conversion_goal.status, custom_conversion_goal.conversion_actions
+     FROM custom_conversion_goal WHERE custom_conversion_goal.resource_name = '${customGoalRn}'`,
+  );
+  const acoesRn = g?.customConversionGoal?.conversionActions || [];
+  const nomes = acoesRn.length
+    ? await searchAll(
+        s,
+        `SELECT conversion_action.name FROM conversion_action
+         WHERE conversion_action.resource_name IN (${acoesRn.map((r) => `'${r}'`).join(", ")})`,
+      )
+    : [];
+  metaPersonalizada = {
+    nome: g?.customConversionGoal?.name,
+    status: g?.customConversionGoal?.status,
+    acoes: nomes.map((n) => n.conversionAction.name),
+  };
+}
 
 const contar = (linhas, chave) =>
   linhas.reduce((acc, l) => {
@@ -90,6 +118,8 @@ console.log(
       metasNoLance: metas
         .filter((m) => m.campaignConversionGoal.biddable)
         .map((m) => `${m.campaignConversionGoal.category}|${m.campaignConversionGoal.origin}`),
+      nivelDasMetas: goalConfig?.conversionGoalCampaignConfig?.goalConfigLevel,
+      metaPersonalizada,
     },
     null,
     2,
