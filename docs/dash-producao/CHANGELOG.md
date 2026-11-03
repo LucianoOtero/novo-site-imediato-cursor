@@ -5,6 +5,20 @@ Ver [`docs/VERSIONING.md`](../VERSIONING.md).
 
 ---
 
+## [0.2.0] — 2026-11-03 (Fase 6: Cloudflare Access + runbook)
+
+### Added
+- Middleware exige o JWT do Cloudflare Access (`lib/cf-access.ts`, `jose`) antes do login Espo,
+  quando `CF_ACCESS_TEAM_DOMAIN` + `CF_ACCESS_AUD` estão definidos. Bloqueia acesso pelo alias
+  `*.vercel.app` e pelo IP da Vercel sem passar pela Cloudflare.
+- [`RUNBOOK.md`](./RUNBOOK.md): falha da ingestão Agger, key/login Espo, Cloudflare Access.
+
+### Infra
+- Cloudflare Access na aplicação `dash-producao` (domínios Imediato + exceção nominal, código por e-mail).
+- DNS `dash` com proxy; Configuration Rule SSL Full (strict) só para o host.
+
+---
+
 ## [0.1.0] — 2026-09-16 (MVP Fase 4 em produção)
 
 ### Added
