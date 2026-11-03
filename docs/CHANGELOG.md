@@ -13,9 +13,9 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
-## [Não publicada] — conversões otimizadas do Google Ads
+## [0.2.58] — 03/11/2026 — conversões otimizadas do Google Ads
 
-Branch `feat/conversoes-otimizadas`, a partir da 0.2.57. Motivo: em 29/10 o Diagnóstico do Ads mostrava cobertura de 0% em "Envio de Formulário de Lead na Página" (30 de 30 conversões sem dados do usuário) e 6% em "Preencher o telefone no modal de whatsapp". O site novo não mandava nenhum dado do usuário junto da conversão.
+Branch `feat/conversoes-otimizadas`, a partir da 0.2.57. GTM preparado no workspace 60 e publicado junto com o site. Motivo: em 29/10 o Diagnóstico do Ads mostrava cobertura de 0% em "Envio de Formulário de Lead na Página" (30 de 30 conversões sem dados do usuário) e 6% em "Preencher o telefone no modal de whatsapp". O site novo não mandava nenhum dado do usuário junto da conversão.
 
 ### Added
 - `lib/enhanced-conversions.ts`: `form_initial_contact` (formulário e Suhai) e `whatsapp_modal_initial_contact`/`phone_modal_initial_contact` saem com `user_data.sha256_phone_number` (celular em E.164, `+55DDNNNNNNNNN`, com hash SHA-256 no navegador). Sem `user_data` quando o visitante rejeitou marketing no banner.
