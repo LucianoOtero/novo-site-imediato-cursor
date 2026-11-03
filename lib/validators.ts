@@ -382,7 +382,7 @@ export function captureUtmFromLocation(): UtmData | undefined {
     placement: pick("placement"),
     adgroupid: pick("adgroupid"),
     creative: pick("creative"),
-    landing_page: window.location.pathname,
+    landing_page: window.location.host + window.location.pathname,
     referrer: document.referrer || undefined,
   };
 

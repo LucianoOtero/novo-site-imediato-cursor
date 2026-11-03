@@ -5,8 +5,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { PRODUTOS_SUHAI } from "@/components/suhai/marca-suhai-produtos";
+import { trackEvent } from "@/lib/analytics";
 import { company } from "@/lib/company";
 import { SITE_PRINCIPAL } from "@/lib/suhai-host";
+import { bracoSuhai } from "@/lib/suhai/analytics";
 import { seguradoraSuhai as suhai } from "@/lib/suhai/seguradora";
 import { useWhatsappHref } from "@/lib/use-whatsapp-href";
 
@@ -59,12 +61,16 @@ export function MarcaSuhaiCasca({ children }: { children: ReactNode }) {
             href={ajuda}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("whatsapp_click", { location: "suhai_header", arm: bracoSuhai() })}
             className="whitespace-nowrap text-sm font-semibold text-[#1D2D0F] underline-offset-2 hover:underline"
           >
             Preciso de ajuda agora
           </a>
           <a
             href="#cotacao"
+            onClick={() =>
+              trackEvent("cta_click", { cta_id: "suhai_iniciar_cotacao", location: "suhai_header", arm: bracoSuhai() })
+            }
             className="shrink-0 whitespace-nowrap rounded-lg bg-[#B0F867] px-3 py-2.5 text-sm font-semibold text-[#1D2D0F] sm:px-4"
           >
             Iniciar Cotação
@@ -81,7 +87,13 @@ export function MarcaSuhaiCasca({ children }: { children: ReactNode }) {
             <div className="mt-6 space-y-4 text-sm">
               <p>
                 <span className="block font-semibold">{company.tradeName}: cotação e proposta</span>
-                <a className="underline" href={ajuda} target="_blank" rel="noopener noreferrer">
+                <a
+                  className="underline"
+                  href={ajuda}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackEvent("whatsapp_click", { location: "suhai_footer", arm: bracoSuhai() })}
+                >
                   WhatsApp {company.contact.whatsappDisplay}
                 </a>
                 <span className="block text-white/70">{company.business.hoursDisplay}</span>

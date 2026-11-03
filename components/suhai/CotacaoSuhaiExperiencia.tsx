@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { postLead } from "@/lib/leads/post-lead";
+import { faixaPremio, trackSuhai } from "@/lib/suhai/analytics";
 import { TIPO_UTILIZACAO, UTILIZACAO_DUT, type PlanoAssistencia } from "@/lib/suhai/dominio";
 import type { CotacaoResultado, Oferta } from "@/lib/suhai/types";
 
@@ -40,6 +41,31 @@ export function CotacaoSuhaiExperiencia({
   const [cliquesContratar, setCliquesContratar] = useState(0);
   const [contexto, setContexto] = useState<ContextoProposta>({ placa: "", cep: "", nome: "", ddd: "", celular: "" });
   const planoEnviadoRef = useRef<string>("");
+  /** Até onde o cliente chegou depois do preço; `null` = ainda sem preço ou proposta já transmitida. */
+  const estagioRef = useRef<"price" | "plan" | "proposal_form" | null>(null);
+
+  useEffect(() => {
+    let emitido = false;
+    let espera: ReturnType<typeof setTimeout> | null = null;
+    const emitir = (reason: "pagehide" | "hidden") => {
+      const stage = estagioRef.current;
+      if (emitido || !stage) return;
+      emitido = true;
+      trackSuhai("suhai_offer_abandon", { stage, reason });
+    };
+    const aoSair = () => emitir("pagehide");
+    const aoOcultar = () => {
+      if (espera) clearTimeout(espera);
+      espera = document.visibilityState === "hidden" ? setTimeout(() => emitir("hidden"), 400) : null;
+    };
+    window.addEventListener("pagehide", aoSair);
+    document.addEventListener("visibilitychange", aoOcultar);
+    return () => {
+      window.removeEventListener("pagehide", aoSair);
+      document.removeEventListener("visibilitychange", aoOcultar);
+      if (espera) clearTimeout(espera);
+    };
+  }, []);
 
   // O formulário da proposta abre abaixo dos cards, fora da tela: sem rolar, o clique parece não fazer nada.
   useEffect(() => {
@@ -51,6 +77,12 @@ export function CotacaoSuhaiExperiencia({
   function escolher(oferta: Oferta) {
     setEscolhida(oferta);
     setCliquesContratar((total) => total + 1);
+    if (estagioRef.current === "price") estagioRef.current = "plan";
+    trackSuhai("suhai_plan_select", {
+      plan: oferta.planoId,
+      assist: oferta.assistencia,
+      premium_band: faixaPremio(oferta.premioTotal),
+    });
     if (!resultado || resultado.simulado || !contexto.leadId) return;
     const chave = `${oferta.protocolo}:${oferta.cdCobertura}`;
     if (planoEnviadoRef.current === chave) return;
@@ -112,6 +144,7 @@ export function CotacaoSuhaiExperiencia({
         setResultado(cotacao);
         setContexto(origem);
         setEscolhida(null);
+        if (estagioRef.current === null) estagioRef.current = "price";
       }}
     />
   );
@@ -224,7 +257,17 @@ export function CotacaoSuhaiExperiencia({
                   </p>
                 )}
                 {escolhida && !resultado.simulado && (
-                  <PropostaSuhaiForm protocolo={escolhida.protocolo} oferta={escolhida} contexto={contexto} />
+                  <PropostaSuhaiForm
+                    protocolo={escolhida.protocolo}
+                    oferta={escolhida}
+                    contexto={contexto}
+                    onInicio={() => {
+                      if (estagioRef.current) estagioRef.current = "proposal_form";
+                    }}
+                    onEnviada={() => {
+                      estagioRef.current = null;
+                    }}
+                  />
                 )}
               </div>
             </div>

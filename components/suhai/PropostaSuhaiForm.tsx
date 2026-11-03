@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogTit
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TelefoneInput } from "@/components/ui/telefone-input";
-import { trackEvent } from "@/lib/analytics";
+import { trackSuhai } from "@/lib/suhai/analytics";
 import { COMBUSTIVEL, COR_VEICULO } from "@/lib/suhai/dominio";
 import { PLANOS } from "@/lib/suhai/planos";
 import { propostaInputSchema, type Oferta, type PropostaInput, type PropostaResultado } from "@/lib/suhai/types";
@@ -109,11 +109,16 @@ export function PropostaSuhaiForm({
   protocolo,
   oferta,
   contexto,
+  onInicio,
+  onEnviada,
 }: {
   protocolo: string;
   oferta: Oferta;
   contexto: ContextoProposta;
+  onInicio?: () => void;
+  onEnviada?: () => void;
 }) {
+  const comecouRef = useRef(false);
   const [email, setEmail] = useState("");
   const [ddd, setDdd] = useState(contexto.ddd || "11");
   const [celular, setCelular] = useState(contexto.celular);
@@ -284,6 +289,7 @@ export function PropostaSuhaiForm({
     setErros(falhas);
     setErroGeral(null);
     if (Object.keys(falhas).length > 0) {
+      for (const field of Object.keys(falhas)) trackSuhai("suhai_field_error", { step: "proposta", field });
       const primeiro = CAMPOS.find(([chave]) => falhas[chave]);
       if (primeiro) {
         const campo = document.getElementById(primeiro[1]);
@@ -297,6 +303,7 @@ export function PropostaSuhaiForm({
     }
 
     setEnviando(true);
+    const inicio = Date.now();
     try {
       const resposta = await fetch("/api/suhai/proposta", {
         method: "POST",
@@ -305,14 +312,26 @@ export function PropostaSuhaiForm({
       });
       const corpo = await resposta.json();
       if (!resposta.ok) {
+        trackSuhai("suhai_proposal_result", {
+          result: corpo?.erro === "validacao" ? "validation" : corpo?.erro === "suhai" ? "suhai_error" : "error",
+          http_status: resposta.status,
+          duration_ms: Date.now() - inicio,
+        });
         setErros(corpo.campos ?? {});
         setErroGeral(corpo.mensagem ?? "Não foi possível transmitir a proposta.");
         return;
       }
+      trackSuhai("suhai_proposal_result", {
+        result: "success",
+        http_status: resposta.status,
+        duration_ms: Date.now() - inicio,
+      });
       setResultado(corpo as PropostaResultado);
       setConfirmacaoAberta(true);
-      trackEvent("suhai_proposal_sent", { form_id: "cotacao_suhai" });
+      trackSuhai("suhai_proposal_sent", { plan: oferta.planoId, installments: Number(parcelas) });
+      onEnviada?.();
     } catch {
+      trackSuhai("suhai_proposal_result", { result: "network", duration_ms: Date.now() - inicio });
       setErroGeral("Falha de conexão. Tente novamente.");
     } finally {
       setEnviando(false);
@@ -394,6 +413,12 @@ export function PropostaSuhaiForm({
     <form
       noValidate
       className="mt-6 grid gap-4 rounded-xl border border-neutral-200 bg-white p-5 sm:grid-cols-2"
+      onFocusCapture={() => {
+        if (comecouRef.current) return;
+        comecouRef.current = true;
+        trackSuhai("suhai_proposal_start", {});
+        onInicio?.();
+      }}
       onSubmit={(event) => {
         event.preventDefault();
         void enviar();
