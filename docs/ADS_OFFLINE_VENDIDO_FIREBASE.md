@@ -1,6 +1,6 @@
 # Offline Conversion Ads no evento Vendido (Firebase → Google Ads API)
 
-**Status:** modelo corrigido em 2026-09-21 — upload **continua desligado** (`enabled: false`). O lote CSV do Espo (ter–sáb 02:00) segue sendo o que o Google recebe.  
+**Status:** desde 2026-11-03 ligado em **modo de validação** (`enabled: true`, `mode: "complementar"`, `validateOnly: true`; `syncOpportunitySold` na revisão `00018-tib`, secret v10). O Google só valida e nada é registrado; vendas com `cGclid` seguem pelo lote CSV do Espo (ter–sáb 02:00). Próximo passo: conferir `ads_offline_audit` (`validated` × `error`) e, com "pode", passar `validateOnly` para `false`. Rollback: `enabled: false`.  
 **Plano:** Ads offline on Vendido  
 **Depende de:** sync Espo `Vendido` → Firebase ([`ESPO_VENDIDO_FIREBASE_SYNC.md`](ESPO_VENDIDO_FIREBASE_SYNC.md), Fase 4 OK)
 
@@ -226,7 +226,7 @@ firebase deploy --only functions:syncOpportunitySold
 
 Notas:
 
-- `enabled: false` permanece até o corte da seção 9. O espelho `sold*` grava normalmente; o upload e o retract só rodam com a assinatura do webhook **PROD** e com `enabled: true`.
+- Desde 03/11 `enabled: true` com `validateOnly: true` (ver Status no topo); o registro de verdade depende do "pode" para `validateOnly: false`. O espelho `sold*` grava normalmente; o upload e o retract só rodam com a assinatura do webhook **PROD** e com `enabled: true`.
 - Preferir refresh token de conta com acesso à conta Ads (ops Luciano / MCC).
 - **Não** commitir tokens; não colar no chat.
 - Tag `AW-815139667` permanece para conversões **online** GTM; offline API usa `customerId` + `conversionActionId` acima.
@@ -299,7 +299,7 @@ Comparar vendas reais API vs batch → **sombra Fase 3**.
 - [ ] MCC `4321602293` no secret — em 30/09 o campo `loginCustomerId` está vazio. `customerId` é `9947918772`. `enabled` continua `false`. Não preencher nem ligar antes do aceite de domingo.
 - [x] Pós-smoke: dry-run verify 2026-09-06 (GO-WITH-WARNINGS) + tarefa **10/09/2026 02:00**
 - [x] 2026-09-21: falso `uploaded` corrigido no código; `enabled` continua `false`
-- [ ] Sombra do lote diário ok em 30/09; aceite para ligar fica para domingo 04/10 (abaixo)
+- [x] Sombra do lote diário ok em 30/09 (o aceite de 04/10 foi substituído pela sombra do Lote 2, abaixo, e pelo modo de validação de 03/11)
 
 ### Sombra 2026-09-30 07:33 BRT
 

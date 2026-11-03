@@ -279,4 +279,4 @@ Substitui a `proposta_suhai_util_v2`, que fala em enviar o boleto antes da emiss
 - [ ] Os quatro criados direto na Meta apagados
 - [x] Proposta v3 no ar: `OCTADESK_API_CONFIG` v7 e `deliverLead` publicada de novo — 2026-10-26
 - [x] Disparo da pendência no código da `acompanharPropostasSuhai` (testes 65/65) — 2026-10-26
-- [ ] Com "pode", na F7: chave `suhai_pendencia` no `OCTADESK_API_CONFIG` e deploy da rotina
+- [x] Com "pode", na F7: chave `suhai_pendencia` no `OCTADESK_API_CONFIG` (v8) e deploy da rotina — 2026-10-28

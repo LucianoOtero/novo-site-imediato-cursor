@@ -61,7 +61,7 @@ Smoke DEV: App/user 200, Opp Vendido 200 (total 29), Role/Lead 403.
 |---|---|
 | Firebase Secret `ESPO_DASH_API_CONFIG` (project `imediato-seguros-site-novo`) | **criado** v1 — blocos `prod` + `dev` (`baseUrl`, `apiKey`, `userName`) |
 | Local (fora do repo) `C:\AggerRpa\config\espo-dash-api.json` | **gravado** (mesmo conteúdo) |
-| Vercel env do app `dash.segurosimediato.com.br` | **OK** — projeto `dash-producao`; DNS custom ainda pendente (ver [`DEPLOY.md`](./DEPLOY.md)) |
+| Vercel env do app `dash.segurosimediato.com.br` | **OK** — projeto `dash-producao`; domínio próprio no ar (ver [`DEPLOY.md`](./DEPLOY.md)) |
 
 Formato do secret (ilustrativo): `{ "prod": { "baseUrl", "apiKey", "userName" }, "dev": { ... }, "note": "..." }`.
 
@@ -73,8 +73,8 @@ Formato do secret (ilustrativo): `{ "prod": { "baseUrl", "apiKey", "userName" },
 - [x] Role + API User PROD + smoke
 - [x] Secret do dash separado (`ESPO_DASH_API_CONFIG` + arquivo local PC robô)
 - [x] Vercel env quando o app do dash existir
-- [ ] Atualizar inventário Fase 0 (“ACL atual = necessária” para o user do dash)
-- [ ] DNS `dash.segurosimediato.com.br` no Cloudflare (A → `76.76.21.21`)
+- [x] Atualizar inventário Fase 0 (“ACL atual = necessária” para o user do dash) — [`ESPO_ACL_INVENTORY.md`](./ESPO_ACL_INVENTORY.md) §7.3 (2026-11-03)
+- [x] DNS `dash.segurosimediato.com.br` no Cloudflare — domínio no ar desde a `dash-v0.1.0` (16/09), atrás do Cloudflare Access desde a F6 (`dash-v0.2.0`, 03/11)
 
 ---
 
