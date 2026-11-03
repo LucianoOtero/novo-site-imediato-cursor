@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "logPrefix": "suhai",
+  "campaignName": "ATIVA - Suhai Cotacao - Site Novo",
+  "notes": [
+    "Molde da Porto (ads-porto-campaign-spec.json), com a marca Suhai pura como positiva: nos termos de 90 dias, 'suhai' e 'suhai seguros' somam 2.269 cliques e 332 conversões.",
+    "Os dois grupos apontam para o braço base do experimento (subdomínio). O braço de teste (www /cotacao-suhai) entra pelo experimento do Google Ads, depois de 5 dias úteis.",
+    "Sem sitelinks: apontariam para um host só e misturariam os braços do experimento.",
+    "Metas no lance da fase A: formulário (contato inicial) e compra (venda offline). As ações próprias da Suhai entram depois, numa meta personalizada."
+  ],
+  "budgetDailyBrl": 150,
+  "networkSettings": {
+    "targetGoogleSearch": true,
+    "targetSearchNetwork": false,
+    "targetContentNetwork": false,
+    "targetPartnerSearchNetwork": false
+  },
+  "geoTargetTypeSetting": {
+    "positiveGeoTargetType": "PRESENCE",
+    "negativeGeoTargetType": "PRESENCE"
+  },
+  "geoTargetConstants": ["geoTargetConstants/20106"],
+  "languageConstants": ["languageConstants/1014"],
+  "adSchedule": [
+    { "dayOfWeek": "MONDAY", "startHour": 9, "endHour": 18 },
+    { "dayOfWeek": "TUESDAY", "startHour": 9, "endHour": 18 },
+    { "dayOfWeek": "WEDNESDAY", "startHour": 9, "endHour": 18 },
+    { "dayOfWeek": "THURSDAY", "startHour": 9, "endHour": 18 },
+    { "dayOfWeek": "FRIDAY", "startHour": 9, "endHour": 18 }
+  ],
+  "trackingUrlTemplate": "{lpurl}?gclid={gclid}",
+  "finalUrlSuffix": "utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_id={campaignid}&utm_content={creative}&utm_term={keyword}&gad_source=1&gad_campaignid={campaignid}&matchtype={matchtype}&device={device}&network={network}&placement={placement}&adgroupid={adgroupid}&creative={creative}&campaign_name={campaignname}",
+  "allowedHosts": ["suhai.segurosimediato.com.br", "www.segurosimediato.com.br"],
+  "finalUrl": "https://suhai.segurosimediato.com.br/",
+  "path1": "seguro",
+  "path2": "suhai",
+  "biddableConversionGoals": [
+    { "category": "SUBMIT_LEAD_FORM", "origin": "WEBSITE" },
+    { "category": "PURCHASE", "origin": "WEBSITE" }
+  ],
+  "rsa": {
+    "headlines": [
+      { "text": "Imediato Seguros", "pinnedField": "HEADLINE_1" },
+      { "text": "Cotação do Seguro Suhai" },
+      { "text": "Seguro Suhai Online" },
+      { "text": "Corretora Parceira Suhai" },
+      { "text": "Veja o Preço na Hora" },
+      { "text": "Suhai Carro, Moto e Caminhão" },
+      { "text": "Boleto em Até 12x" },
+      { "text": "Proposta 100% Online" },
+      { "text": "Roubo, Furto e Perda Total" },
+      { "text": "Guincho 24h Até 500 km" },
+      { "text": "Cote Grátis e Sem Compromisso" },
+      { "text": "Aceita Carro de Aplicativo" },
+      { "text": "Atendimento Via WhatsApp" },
+      { "text": "25 Anos de Experiência" },
+      { "text": "Simule o Seguro Suhai" }
+    ],
+    "descriptions": [
+      { "text": "Não somos o site oficial da Suhai: somos corretora parceira. Cote online e grátis." },
+      { "text": "Informe a placa e veja o preço do seguro Suhai na hora. Proposta enviada pelo site." },
+      { "text": "Planos com roubo e furto, perda total e terceiros. Boleto em até 12x, direto à Suhai." },
+      { "text": "A Imediato Seguros acompanha a emissão da apólice e envia o boleto da 1ª parcela." }
+    ]
+  },
+  "adGroups": [
+    {
+      "name": "Suhai Cotacao",
+      "keywords": [
+        { "text": "suhai", "matchType": "PHRASE" },
+        { "text": "suhai seguros", "matchType": "PHRASE" },
+        { "text": "suhai seguradora", "matchType": "PHRASE" },
+        { "text": "seguradora suhai", "matchType": "PHRASE" },
+        { "text": "seguro suhai", "matchType": "PHRASE" },
+        { "text": "suhai cotação", "matchType": "PHRASE" },
+        { "text": "cotação suhai", "matchType": "PHRASE" },
+        { "text": "cotação seguro suhai", "matchType": "PHRASE" },
+        { "text": "cotar seguro suhai", "matchType": "PHRASE" },
+        { "text": "simular seguro suhai", "matchType": "PHRASE" },
+        { "text": "contratar seguro suhai", "matchType": "PHRASE" },
+        { "text": "seguro de carro suhai", "matchType": "PHRASE" },
+        { "text": "suhai seguro carro", "matchType": "PHRASE" },
+        { "text": "suhai seguro auto", "matchType": "PHRASE" },
+        { "text": "suhai", "matchType": "EXACT" },
+        { "text": "suhai seguros", "matchType": "EXACT" },
+        { "text": "suhai seguradora", "matchType": "EXACT" },
+        { "text": "seguradora suhai", "matchType": "EXACT" },
+        { "text": "seguro suhai", "matchType": "EXACT" },
+        { "text": "suhai seguro", "matchType": "EXACT" },
+        { "text": "suhaiseguradora", "matchType": "EXACT" }
+      ]
+    },
+    {
+      "name": "Suhai Moto e Caminhao",
+      "keywords": [
+        { "text": "seguro moto suhai", "matchType": "PHRASE" },
+        { "text": "seguro para motos suhai", "matchType": "PHRASE" },
+        { "text": "seguro de motos suhai", "matchType": "PHRASE" },
+        { "text": "suhai motos", "matchType": "PHRASE" },
+        { "text": "suhai seguro moto", "matchType": "PHRASE" },
+        { "text": "suhai seguros motos", "matchType": "PHRASE" },
+        { "text": "suhai caminhão", "matchType": "PHRASE" },
+        { "text": "suhai seguro caminhão", "matchType": "PHRASE" },
+        { "text": "seguradora suhai caminhão", "matchType": "PHRASE" },
+        { "text": "seguro suhai caminhão", "matchType": "PHRASE" }
+      ],
+      "rsa": {
+        "headlines": [
+          { "text": "Imediato Seguros", "pinnedField": "HEADLINE_1" },
+          { "text": "Seguro Suhai Para Moto" },
+          { "text": "Seguro Suhai Para Caminhão" },
+          { "text": "Suhai Moto: Preço na Hora" },
+          { "text": "Caminhão, Van e VUC" },
+          { "text": "Moto de Entrega e Aplicativo" },
+          { "text": "Moto de Qualquer Ano" },
+          { "text": "Corretora Parceira Suhai" },
+          { "text": "Boleto em Até 12x" },
+          { "text": "Proposta 100% Online" },
+          { "text": "Guincho 24h Até 500 km" },
+          { "text": "Roubo, Furto e Perda Total" },
+          { "text": "Cote Grátis e Sem Compromisso" },
+          { "text": "Atendimento Via WhatsApp" },
+          { "text": "25 Anos de Experiência" }
+        ],
+        "descriptions": [
+          { "text": "Não somos o site oficial da Suhai: somos corretora parceira. Cote online e grátis." },
+          { "text": "Seguro Suhai para moto, caminhão, van e VUC. Informe a placa e veja o preço na hora." },
+          { "text": "Planos com roubo e furto, perda total e terceiros. Boleto em até 12x, direto à Suhai." },
+          { "text": "Uso profissional e entrega por aplicativo aceitos. Proposta enviada pelo próprio site." }
+        ]
+      }
+    }
+  ],
+  "campaignNegatives": [
+    { "text": "telefone", "matchType": "PHRASE" },
+    { "text": "tel", "matchType": "PHRASE" },
+    { "text": "ligar", "matchType": "PHRASE" },
+    { "text": "zap", "matchType": "PHRASE" },
+    { "text": "whatsapp", "matchType": "PHRASE" },
+    { "text": "0800", "matchType": "PHRASE" },
+    { "text": "sac", "matchType": "PHRASE" },
+    { "text": "ouvidoria", "matchType": "PHRASE" },
+    { "text": "reclame aqui", "matchType": "PHRASE" },
+    { "text": "apólice", "matchType": "PHRASE" },
+    { "text": "apolice", "matchType": "PHRASE" },
+    { "text": "consultar", "matchType": "PHRASE" },
+    { "text": "boleto", "matchType": "PHRASE" },
+    { "text": "2 via", "matchType": "PHRASE" },
+    { "text": "segunda via", "matchType": "PHRASE" },
+    { "text": "sinistro", "matchType": "PHRASE" },
+    { "text": "rastreador", "matchType": "PHRASE" },
+    { "text": "guincho", "matchType": "PHRASE" },
+    { "text": "assistência 24h", "matchType": "PHRASE" },
+    { "text": "assistencia 24h", "matchType": "PHRASE" },
+    { "text": "vistoria", "matchType": "PHRASE" },
+    { "text": "login", "matchType": "PHRASE" },
+    { "text": "área do cliente", "matchType": "PHRASE" },
+    { "text": "area do cliente", "matchType": "PHRASE" },
+    { "text": "meu seguro", "matchType": "PHRASE" },
+    { "text": "cliente", "matchType": "PHRASE" },
+    { "text": "app", "matchType": "PHRASE" },
+    { "text": "endereço", "matchType": "PHRASE" },
+    { "text": "endereco", "matchType": "PHRASE" },
+    { "text": "cnpj", "matchType": "PHRASE" },
+    { "text": "contrato social", "matchType": "PHRASE" },
+    { "text": "condições gerais", "matchType": "PHRASE" },
+    { "text": "condicoes gerais", "matchType": "PHRASE" },
+    { "text": "trabalhe conosco", "matchType": "PHRASE" },
+    { "text": "vagas", "matchType": "PHRASE" },
+    { "text": "emprego", "matchType": "PHRASE" },
+    { "text": "leilão", "matchType": "PHRASE" },
+    { "text": "leilões", "matchType": "PHRASE" },
+    { "text": "leilao", "matchType": "PHRASE" },
+    { "text": "leiloes", "matchType": "PHRASE" },
+    { "text": "cancelar", "matchType": "PHRASE" },
+    { "text": "cancelamento", "matchType": "PHRASE" },
+    { "text": "parceiros", "matchType": "PHRASE" },
+    { "text": "ituran", "matchType": "PHRASE" },
+    { "text": "cooperativa", "matchType": "PHRASE" }
+  ],
+  "importNegatives": {
+    "snapshot": "logs/exp-snapshot-for-suhai.json",
+    "excludeContaining": ["suhai"],
+    "excludeTexts": ["furto", "roubado", "uber", "99", "aplicativo", "truck", "bike", "transporte", "taxi", "taxista"]
+  },
+  "assets": {
+    "callouts": [
+      "Corretora Parceira Suhai",
+      "Cotação Grátis",
+      "Preço na Hora",
+      "Boleto em Até 12x",
+      "Proposta Online",
+      "Guincho Até 500 km",
+      "25 Anos de Experiência",
+      "Atendimento WhatsApp"
+    ],
+    "structuredSnippets": [
+      { "header": "Tipos", "values": ["Carro", "Moto", "Caminhão", "Van", "VUC"] }
+    ]
+  },
+  "phraseNegativesOnExisting": {
+    "phrases": ["suhai"],
+    "campaignIds": ["24095000558", "24314317841", "24278639461"]
+  }
+}
