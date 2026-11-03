@@ -2,7 +2,7 @@ export type CardSuhai = { titulo: string; texto: string };
 export type PerguntaSuhai = { question: string; answer: string };
 
 export const NOTA_PRECO =
-  "O preço nesta página sai de três planos: Essencial, só roubo e furto; Completo, roubo e furto mais perda total; e Completo + Terceiros. A assistência entra à parte: sem guincho, guincho até 200 km ou até 500 km. A cobertura completa, com conserto de batida menor, é como a Suhai descreve essa opção. O plano Completo da cotação não inclui esse conserto.";
+  "O preço nesta página sai de três planos: Essencial, só roubo e furto; Completo, roubo e furto mais perda total; e Completo + Terceiros. A assistência entra à parte: sem guincho, guincho até 200 km ou até 500 km. Nenhum plano da cotação inclui conserto de batida menor.";
 
 export const PASSOS: CardSuhai[] = [
   { titulo: "Peça sua cotação", texto: "Preencha seus dados e receba a cotação do seu seguro, grátis e sem compromisso" },
@@ -30,8 +30,8 @@ export const COBERTURAS: CardSuhai[] = [
     texto: "Cobre dano material, corporal ou moral causado a outra pessoa ou a outro veículo num acidente de sua responsabilidade.",
   },
   {
-    titulo: "Cobertura completa",
-    texto: "Reúne roubo e furto, perda total e também o conserto em batida menor.",
+    titulo: "Planos para combinar",
+    texto: "Essencial, Completo ou Completo + Terceiros, com a assistência 24h que você escolher: sem guincho, até 200 km ou até 500 km.",
   },
 ];
 

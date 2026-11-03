@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useCurrentRamo } from "@/components/cta/use-current-ramo";
@@ -41,6 +42,9 @@ export function StickyCTA() {
   const { open } = useContactModal();
   const visible = useStickyCtaVisible();
   const href = useWhatsappHref(ramo);
+  // Na cotação Suhai o formulário já está na página: o botão rola até ele em vez de levar à cotação geral.
+  const suhai = usePathname() === "/cotacao-suhai";
+  const arm = suhai ? ("site" as const) : undefined;
 
   return (
     <div role="complementary" aria-label="Barra de contato rápido">
@@ -60,7 +64,7 @@ export function StickyCTA() {
           rel="noopener noreferrer"
           onClick={(event) => {
             event.preventDefault();
-            trackEvent("whatsapp_click", { location: "sticky", ramo });
+            trackEvent("whatsapp_click", { location: "sticky", ramo, arm });
             open({ channel: "whatsapp", location: "sticky", ramo });
           }}
           aria-label="Falar no WhatsApp"
@@ -69,12 +73,14 @@ export function StickyCTA() {
           <WhatsAppIcon className="size-5" />
         </a>
         <Button
-          render={<Link href="/cotacao" />}
+          render={<Link href={suhai ? "#cotacao-suhai" : "/cotacao"} />}
           variant="primary"
           fullWidth
-          onClick={() => trackEvent("cta_click", { cta_id: "sticky_cotar", location: "sticky" })}
+          onClick={() =>
+            trackEvent("cta_click", { cta_id: suhai ? "sticky_ver_preco" : "sticky_cotar", location: "sticky", arm })
+          }
         >
-          Cotar agora
+          {suhai ? "Ver meu preço" : "Cotar agora"}
         </Button>
       </div>
     </div>

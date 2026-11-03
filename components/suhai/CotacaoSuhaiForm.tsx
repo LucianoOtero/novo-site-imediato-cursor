@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TelefoneInput } from "@/components/ui/telefone-input";
 import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO, type PlanoAssistencia } from "@/lib/suhai/dominio";
-import { trackEvent } from "@/lib/analytics";
+import type { AnalyticsEventParams } from "@/lib/analytics";
+import { trackSuhai } from "@/lib/suhai/analytics";
 import { trackConversion } from "@/lib/enhanced-conversions";
 import { getAttributionUtm } from "@/lib/leads/attribution";
 import { postLead } from "@/lib/leads/post-lead";
@@ -282,7 +283,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   function marcarInicio() {
     if (comecouRef.current) return;
     comecouRef.current = true;
-    trackEvent("suhai_quote_start", { form_id: "cotacao_suhai" });
+    trackSuhai("suhai_quote_start", {});
   }
 
   useEffect(() => {
@@ -292,8 +293,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     const emitir = (reason: "pagehide" | "hidden" | "unmount") => {
       if (abandonouRef.current || !comecouRef.current || precoEmitidoRef.current) return;
       abandonouRef.current = true;
-      trackEvent("suhai_quote_abandon", {
-        form_id: "cotacao_suhai",
+      trackSuhai("suhai_quote_abandon", {
         last_step: etapaRef.current,
         reason,
       });
@@ -372,6 +372,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
   async function consultarPlaca(placa: string) {
     setErroGeral(null);
+    const inicio = Date.now();
     try {
       const resposta = await fetch("/api/suhai/veiculo", {
         method: "POST",
@@ -390,6 +391,10 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       };
       const opcoes = corpo.opcoes ?? [];
       if (!corpo.ok || !corpo.marca || !corpo.anoModelo || (opcoes.length === 0 && !corpo.modelo)) {
+        trackSuhai("suhai_vehicle_lookup", {
+          result: resposta.ok ? "not_found" : "error",
+          duration_ms: Date.now() - inicio,
+        });
         setErros((anterior) => ({ ...anterior, placa: "Não encontramos essa placa. Confira ou informe o veículo." }));
         setEstado((anterior) => ({ ...anterior, semPlaca: true }));
         return null;
@@ -404,10 +409,15 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         codFipe: opcoes.length > 1 ? "" : corpo.codFipe || "",
         opcoes,
       };
+      trackSuhai("suhai_vehicle_lookup", {
+        result: opcoes.length > 1 ? "multiple" : "found",
+        duration_ms: Date.now() - inicio,
+      });
       setErros((anterior) => ({ ...anterior, placa: "" }));
       setEstado((anterior) => ({ ...anterior, ...patch }));
       return patch;
     } catch {
+      trackSuhai("suhai_vehicle_lookup", { result: "error", duration_ms: Date.now() - inicio });
       setErros((anterior) => ({ ...anterior, placa: "Não foi possível consultar a placa agora." }));
       return null;
     }
@@ -428,6 +438,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   }
 
   async function consultarPerfil(cpf: string) {
+    const inicio = Date.now();
     try {
       await contatoInicialRef.current;
       const resposta = await fetch("/api/suhai/perfil", {
@@ -442,9 +453,14 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         estadoCivil?: number;
       };
       if (!corpo.ok || !corpo.dataNascimento || !corpo.sexo || !corpo.estadoCivil) {
+        trackSuhai("suhai_profile_lookup", {
+          result: resposta.ok ? "manual" : "error",
+          duration_ms: Date.now() - inicio,
+        });
         setEstado((anterior) => ({ ...anterior, perfilPronto: false, perfilManual: true }));
         return null;
       }
+      trackSuhai("suhai_profile_lookup", { result: "filled", duration_ms: Date.now() - inicio });
       const patch = {
         dataNascimento: corpo.dataNascimento,
         sexo: String(corpo.sexo),
@@ -455,6 +471,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       setEstado((anterior) => ({ ...anterior, ...patch }));
       return patch;
     } catch {
+      trackSuhai("suhai_profile_lookup", { result: "error", duration_ms: Date.now() - inicio });
       setEstado((anterior) => ({ ...anterior, perfilPronto: false, perfilManual: true }));
       return null;
     }
@@ -551,14 +568,33 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     return corpo as CotacaoResultado;
   }
 
-  async function enviar(atual: Estado, usadas: PremissasSuhai) {
+  async function enviar(atual: Estado, usadas: PremissasSuhai, recalc = false) {
     setCarregando(true);
     setErroGeral(null);
+    let inicio = Date.now();
+    const resultado = (
+      result: AnalyticsEventParams<"suhai_quote_result">["result"],
+      http_status?: number,
+    ) => {
+      const duration_ms = Date.now() - inicio;
+      trackSuhai("suhai_quote_result", { result, http_status, duration_ms, slow: duration_ms > 8000, recalc });
+    };
     try {
       await contatoInicialRef.current;
+      inicio = Date.now();
       const resposta = await pedirCotacao(atual, usadas);
       const corpo = await resposta.json();
       if (!resposta.ok) {
+        resultado(
+          resposta.status === 429
+            ? "rate_limited"
+            : resposta.status === 422
+              ? corpo?.erro === "suhai"
+                ? "declined"
+                : "invalid"
+              : "error",
+          resposta.status,
+        );
         setErros(corpo.campos ?? {});
         setErroGeral(corpo.mensagem ?? "Não foi possível calcular agora.");
         return;
@@ -571,11 +607,14 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         celular: onlyDigits(atual.celular),
         leadId: leadIdRef.current,
       });
+      resultado("success", resposta.status);
       if (!precoEmitidoRef.current) {
         precoEmitidoRef.current = true;
-        trackEvent("suhai_quote_price", { form_id: "cotacao_suhai" });
+        const cotacao = corpo as CotacaoResultado;
+        trackSuhai("suhai_quote_price", { plans: cotacao.ofertas?.length ?? 0, simulated: Boolean(cotacao.simulado) });
       }
     } catch {
+      resultado("network");
       setErroGeral("Falha de conexão. Tente novamente.");
     } finally {
       setCarregando(false);
@@ -583,7 +622,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   }
 
   useImperativeHandle(ref, () => ({
-    recalcular: (usadas) => enviar(estadoRef.current, usadas),
+    recalcular: (usadas) => enviar(estadoRef.current, usadas, true),
     cotarAssistencia,
   }));
 
@@ -607,13 +646,18 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     }
     const falhas = validarEtapa(atual, etapa);
     setErros(falhas);
-    if (Object.values(falhas).some(Boolean)) return;
+    const camposComErro = Object.keys(falhas).filter((campo) => falhas[campo]);
+    if (camposComErro.length > 0) {
+      for (const field of camposComErro) trackSuhai("suhai_field_error", { step: String(etapa) as `${Etapa}`, field });
+      return;
+    }
 
     if (etapa === 1) enviarContatoInicial(atual);
     if (etapa === 2) void enviarProgresso(atual, "veiculo");
     if (etapa === 3) void enviarProgresso(atual, "cep");
 
     if (etapa < 4) {
+      trackSuhai("suhai_quote_step", { step: (etapa + 1) as 2 | 3 | 4 });
       setEtapa((passo) => (passo + 1) as Etapa);
       return;
     }
@@ -628,6 +672,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     if (!atual.dataNascimento) {
       setEstado((anterior) => ({ ...anterior, perfilManual: true }));
       setErros({ nascimento: "Informe a data de nascimento." });
+      trackSuhai("suhai_field_error", { step: "4", field: "nascimento" });
       return;
     }
     await enviar(atual, premissasRef.current);
@@ -806,15 +851,16 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
             <button
               type="button"
               className="self-start text-sm font-medium text-brand-700 underline-offset-2 hover:underline"
-              onClick={() =>
+              onClick={() => {
+                if (!estado.semPlaca) trackSuhai("suhai_no_plate", {});
                 setEstado((anterior) => ({
                   ...anterior,
                   semPlaca: !anterior.semPlaca,
                   placa: anterior.semPlaca ? anterior.placa : "",
                   codFipe: "",
                   opcoes: [],
-                }))
-              }
+                }));
+              }}
             >
               {estado.semPlaca ? "Tenho a placa" : "Ainda não tenho placa"}
             </button>

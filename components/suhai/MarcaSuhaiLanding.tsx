@@ -103,7 +103,7 @@ export function MarcaSuhaiLanding() {
 
       <CardsNumerados
         titulo="Escolha e combine as coberturas do seu jeito"
-        texto="Roubo e furto, perda total, danos a terceiros e a opção mais ampla, com conserto de batida menor."
+        texto="Roubo e furto, perda total e danos a terceiros, com a assistência 24h escolhida à parte."
         itens={COBERTURAS}
         nota={NOTA_PRECO}
       />

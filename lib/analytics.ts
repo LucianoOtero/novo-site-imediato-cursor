@@ -99,7 +99,7 @@ type AnalyticsEventMap = {
     wait_ms: number;
     outcome: "success" | "error" | "abandon";
   };
-  whatsapp_click: { location: "hero" | "sticky" | "fab" | string; ramo?: RamoSlug };
+  whatsapp_click: { location: "hero" | "sticky" | "fab" | string; ramo?: RamoSlug; arm?: SuhaiArm };
   call_click: { location: string; ramo?: RamoSlug };
   scroll_depth: {
     percent: 25 | 50 | 75 | 90 | 100;
@@ -108,7 +108,7 @@ type AnalyticsEventMap = {
     scope?: "page" | "below_hero";
   };
   engaged_time: { seconds: 30 | 60; page_path: string };
-  cta_click: { cta_id: string; location: string };
+  cta_click: { cta_id: string; location: string; arm?: SuhaiArm };
   faq_open: { question: string };
   /**
    * Disparado ao enviar o `ContactLeadModal` (integrações 2026-07-08),
@@ -159,18 +159,53 @@ type AnalyticsEventMap = {
   /** Envio bem-sucedido do formulário da página `/contato`. */
   contact_form_submit: { location: "contato" };
   /** Início da cotação Suhai (foco no formulário). Igual nos dois hosts do experimento. */
-  suhai_quote_start: { form_id: "cotacao_suhai" };
+  suhai_quote_start: SuhaiBase;
+  /** Entrou numa etapa do formulário (a 1 é o `suhai_quote_start`). */
+  suhai_quote_step: SuhaiBase & { step: 2 | 3 | 4 };
+  /** Campo barrado na validação. `field` é o nome do campo, nunca o valor. */
+  suhai_field_error: SuhaiBase & { step: "1" | "2" | "3" | "4" | "proposta"; field: string };
+  /** Consulta da placa. */
+  suhai_vehicle_lookup: SuhaiBase & { result: "found" | "multiple" | "not_found" | "error"; duration_ms: number };
+  /** Clicou em "Ainda não tenho placa". */
+  suhai_no_plate: SuhaiBase;
+  /** Consulta do perfil pelo CPF (PH3A): `manual` = o cliente vai digitar nascimento, sexo e estado civil. */
+  suhai_profile_lookup: SuhaiBase & { result: "filled" | "manual" | "error"; duration_ms: number };
+  /** Resposta da cotação. `declined` = recusa da própria Suhai; `slow` = passou de 8 s. */
+  suhai_quote_result: SuhaiBase & {
+    result: "success" | "declined" | "invalid" | "rate_limited" | "error" | "network";
+    http_status?: number;
+    duration_ms: number;
+    slow: boolean;
+    recalc: boolean;
+  };
   /** Preço exibido — conversão do experimento Suhai. Uma vez por carregamento. */
-  suhai_quote_price: { form_id: "cotacao_suhai" };
+  suhai_quote_price: SuhaiBase & { plans: number; simulated: boolean };
   /** Saiu depois de começar e antes de ver o preço. */
-  suhai_quote_abandon: {
-    form_id: "cotacao_suhai";
+  suhai_quote_abandon: SuhaiBase & {
     last_step: 1 | 2 | 3 | 4;
     reason: "pagehide" | "hidden" | "unmount";
   };
+  /** Trocou o nível de assistência na tela de preços. */
+  suhai_assist_change: SuhaiBase & { level: 0 | 1 | 2; result: "cached" | "success" | "error" };
+  /** Clicou em "Contratar" num plano. `premium_band` é a faixa do prêmio anual. */
+  suhai_plan_select: SuhaiBase & { plan: string; assist: 0 | 1 | 2; premium_band: string };
+  /** Primeiro foco no formulário da proposta. */
+  suhai_proposal_start: SuhaiBase;
+  /** Resposta da transmissão da proposta. */
+  suhai_proposal_result: SuhaiBase & {
+    result: "success" | "validation" | "suhai_error" | "error" | "network";
+    http_status?: number;
+    duration_ms: number;
+  };
+  /** Saiu depois de ver o preço sem transmitir a proposta. `stage` = até onde chegou. */
+  suhai_offer_abandon: SuhaiBase & { stage: "price" | "plan" | "proposal_form"; reason: "pagehide" | "hidden" };
   /** Proposta transmitida à Suhai. Igual nos dois hosts do experimento. */
-  suhai_proposal_sent: { form_id: "cotacao_suhai" };
+  suhai_proposal_sent: SuhaiBase & { plan: string; installments: number };
 };
+
+/** Braço do experimento Suhai: `subdominio` = suhai.segurosimediato.com.br; `site` = /cotacao-suhai. */
+export type SuhaiArm = "subdominio" | "site";
+type SuhaiBase = { form_id: "cotacao_suhai"; arm: SuhaiArm };
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;
 export type AnalyticsEventParams<E extends AnalyticsEventName> = AnalyticsEventMap[E];

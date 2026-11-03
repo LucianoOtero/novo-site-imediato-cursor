@@ -7,6 +7,7 @@ import { OfertaCard } from "@/components/quote/OfertaCard";
 import { Button } from "@/components/ui/button";
 import { fromSuhaiOferta } from "@/lib/quote/oferta";
 import { cn } from "@/lib/utils";
+import { trackSuhai } from "@/lib/suhai/analytics";
 import { ROTULO_ASSISTENCIA, type PlanoAssistencia } from "@/lib/suhai/dominio";
 import { PLANOS } from "@/lib/suhai/planos";
 import type { CotacaoResultado, Oferta } from "@/lib/suhai/types";
@@ -54,11 +55,16 @@ export function OfertasSuhai({
     setAssistencia(nivel);
     setErro(null);
     const jaCotado = resultado.ofertas.some((oferta) => oferta.assistencia === nivel);
-    if (jaCotado || !onPedirAssistencia) return;
+    if (jaCotado || !onPedirAssistencia) {
+      if (nivel !== assistencia) trackSuhai("suhai_assist_change", { level: nivel, result: "cached" });
+      return;
+    }
     setCarregando(nivel);
     try {
       await onPedirAssistencia(nivel);
+      trackSuhai("suhai_assist_change", { level: nivel, result: "success" });
     } catch (falha) {
+      trackSuhai("suhai_assist_change", { level: nivel, result: "error" });
       setErro(falha instanceof Error ? falha.message : "Não foi possível calcular agora.");
     } finally {
       setCarregando(null);
