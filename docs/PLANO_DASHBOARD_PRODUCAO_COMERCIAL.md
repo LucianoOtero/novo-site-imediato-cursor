@@ -1,6 +1,6 @@
 # Plano — Dashboard de produção comercial (`dash.segurosimediato.com.br`)
 
-**Status:** PLANEJADO — 2026-09-16 · **F0+F1 CONCLUÍDAS** · **F2 PROPOSTA** · **F3 CONCLUÍDA** · **F4 APP+APIs** ([`dash-producao/FASE4_APP_NEXT.md`](dash-producao/FASE4_APP_NEXT.md); UI mínima incluída — F5 refina desk/deploy)  
+**Status:** PLANEJADO — 2026-09-16 · **F0+F1 CONCLUÍDAS** · **F2 PROPOSTA** · **F3 CONCLUÍDA** · **F4 APP+APIs** ([`dash-producao/FASE4_APP_NEXT.md`](dash-producao/FASE4_APP_NEXT.md); UI mínima incluída — F5 refina desk/deploy) · **F6 CONCLUÍDA** — 2026-11-03 (Cloudflare Access + [`dash-producao/RUNBOOK.md`](dash-producao/RUNBOOK.md); release `dash-v0.2.0`)  
 **Origem:** especificação de produção mensal Espo × Agger + questionário de requisitos (53 decisões).  
 **Escopo deste documento:** plano de implementação somente. **Não** inclui código, deploy, alteração de Role Espo nem provisionamento DNS nesta etapa.
 
@@ -352,7 +352,7 @@ Renovação só-Agger: **excluída** (não é inconsistência — filtro de esco
 - [x] **F3** lib + testes unitários (`scripts/dash-producao/lib` + `npm run test:dash-producao`)
 - [ ] **F4** API Next + auth Espo
 - [ ] **F5** UI MVP (3–4 rotas) + export Excel
-- [ ] **F6** DNS + Cloudflare Access + runbook
+- [x] **F6** DNS + Cloudflare Access + runbook (2026-11-03)
 - [ ] **F7** (depois) gráficos + UI sofisticada
 
 ---
