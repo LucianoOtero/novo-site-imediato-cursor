@@ -27,9 +27,9 @@ Branch `feat/conversoes-otimizadas`, a partir da 0.2.57. GTM preparado no worksp
 
 ---
 
-## [0.2.57] — não publicada (acompanhamento das propostas Suhai até a apólice)
+## [0.2.57] — 2026-10-28 (acompanhamento das propostas Suhai até a apólice)
 
-Branch `suhai-acompanhamento`. Teste de aceite em [`UAT_PLANO_COMPLETO.md`](UAT_PLANO_COMPLETO.md) (F4, 27/10). A publicação segue a ordem da seção 8 desse documento: gateway e campos no Espo PROD (F6), depois a rotina ligada só para homologação (F7).
+Branch `suhai-acompanhamento`. Teste de aceite em [`UAT_PLANO_COMPLETO.md`](UAT_PLANO_COMPLETO.md) (F4, 27/10). Publicada em 28/10 na ordem da seção 8 desse documento: gateway `suhai-gateway-00029-man` e campos de status no Espo PROD (F6); merge do [PR #11](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/11) às 09:17 (`6b44aad`) e rotina ligada só para homologação (F7); no mesmo dia, F8 antecipada: pós-venda em produção (gateway `suhai-gateway-00032-yom`, tag `producao`) e rotina com o bloco `producao` (`SUHAI_ACOMP_CONFIG` v4). Rollback da F8: tráfego para a `00029-man` e `SUHAI_ACOMP_CONFIG` com o conteúdo da v3 e novo deploy das duas funções.
 
 ### Added
 - `suhai-gateway`: acompanhamento da proposta (`/proposta/status`, `/proposta/pendencias` por proposta, placa ou chassi, `/proposta/pdf`) e pós-venda (`/posvenda/apolice-da-proposta`, apólice, parcelas e comissão).

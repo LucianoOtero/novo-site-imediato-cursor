@@ -62,7 +62,7 @@ Segunda-feira, 26/10: a Digibee de homologação voltou. Pesquisa por placa (DBO
 
 - [x] Campos `cStatusProposta` e `cDataStatusProposta` no Espo DEV (seção acima).
 - [x] Rodada local de novo com os campos no DEV, conferindo os dois campos no Lead e na Oportunidade.
-- [ ] Os mesmos campos no Espo PROD, com "pode" e a sessão de administrador. Conferir com `node scripts/espo-ops/fase0-suhai-fields.mjs --prefer=prod`.
+- [x] Os mesmos campos no Espo PROD, com "pode" e a sessão de administrador. Conferir com `node scripts/espo-ops/fase0-suhai-fields.mjs --prefer=prod`. Feito em 28/10 (F6 de [`UAT_PLANO_COMPLETO.md`](UAT_PLANO_COMPLETO.md)); o rollout abaixo foi concluído no mesmo dia (F7 e F8).
 
 ## Rollout (cada passo com "pode")
 

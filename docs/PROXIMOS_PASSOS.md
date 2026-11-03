@@ -4,7 +4,31 @@
 Documento de referência para retomar o projeto na próxima sessão. Resume o que foi feito, o estado atual e exatamente o que falta, com responsável de cada pendência. Não substitui `docs/BACKLOG.md` (histórico completo, issue a issue) — este arquivo é o resumo executivo para retomada rápida.
 
 ## Origem
-Gerado ao final da sessão de 2026-07-03; atualizado com conquistas de 2026-08-02 (GTM/Ads).
+Gerado ao final da sessão de 2026-07-03; atualizado com conquistas de 2026-08-02 (GTM/Ads); ponto de parada de 2026-11-03.
+
+---
+
+## Ponto de parada (2026-11-03)
+
+Pendências com data. Passos de produção continuam pedindo o "pode" do Luciano.
+
+| Quando | Frente | O que fazer |
+|---|---|---|
+| 03/11, noite | Google Ads / Suhai | Executar o plano da campanha de pesquisa Suhai (molde da Porto, R$ 150/dia, seg–sex 9h–18h): spec, paridade das duas páginas Suhai, eventos de atrito no GA4, conversões próprias, campanha criada pausada; ativação e frase negativa `suhai` na Exp, no Sábado e na Porto com "pode" |
+| 04/11, 08h | Ads offline | Conferir `ads_offline_audit` (`validated` × `error`) e o resumo de erros de vendas; se ok, "pode" para `validateOnly: false` |
+| 04/11, 09h | Suhai (F8 continuação) | Revisar as rodadas da rotina de 28/10 a 03/11 e as primeiras propostas reais; Fase B; Lotes 3 e 5; projeto do cartão |
+| 04 a 06/11 | Ads | Cobertura das conversões otimizadas (0.2.58) no Diagnóstico do Ads |
+| 06/11, 09–12h | Dash | F5: telas de vendedores, analítico e inconsistências, com export para Excel |
+| 08/11 | RPA | Ajustes no servidor Hetzner (snapshot, swap, limpeza de disco, 4 GB de RAM) |
+| 09/11 | Ads | Primeiro e-mail do script semanal de termos de pesquisa |
+| 15/11 | RPA | Otimização de tempo, fases B a E |
+| 20/11 | RPA | Banco de logs |
+| ~24/11 | Ads | Custo por lead da campanha Demand Gen |
+| Sem data | Funil v2 | Corte do Lote 2; Lote 3 (velocidade e GTM); Lote 5 (SEO) |
+| Sem data | Dash | F7 (gráficos e interface) |
+| Com o Luciano | — | Publicar o app OAuth do Google se ainda estiver em teste; confirmar com o Alex os leads de teste de 02/11; apagar os quatro templates criados direto na Meta |
+
+Já concluídos e registrados: Lote 1 do funil v2 (27–28/10), acompanhamento Suhai com pós-venda em produção (0.2.57, 28/10), conversões otimizadas (0.2.58, 03/11) e F6 do dash (`dash-v0.2.0`, 03/11).
 
 ---
 
@@ -19,10 +43,10 @@ O 0.2.55 está em produção. O projeto seguinte tem 6 lotes, cada um com UAT pr
 | Lote | Conteúdo | Situação |
 |---|---|---|
 | 0 | Conferir a atribuição Ads → Espo em produção | **Concluído** em 25/10 ([`FASE5_ROLLOUT_PRODUCAO.md`](FASE5_ROLLOUT_PRODUCAO.md)) |
-| 1 | Telefone em campo único + deduplicação durável (reaproveita a Opp aberta do mesmo celular e ramo por 7 dias) | **UAT** desde 25/10. Código na branch `uat-funil-etapa3`; `deliverLead` publicada com `ESPOCRM_API_CONFIG` v6 (`oppReuseDays: 7` só no `dev`; rollback = v5 + deploy). Roteiro automatizado aprovado em 25/10 (blocos A a F, com 2 correções: `60107d9` e `6dc9afd`) — ver `docs/UAT_LOTE1_FUNIL_V2.md`. Falta o aceite do Luciano (aparelho real, mensagens do Octadesk, Espo DEV); os registros do UAT ficam no Espo DEV/staging até lá. Produção: ligar `oppReuseDays` no `prod` só depois do smoke |
-| 2 | Venda ao Google Ads na hora, desligando o CSV noturno do Espo ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md)) | Sombra 1/5 ok (lote de 23/10: 4/4). `loginCustomerId` e corte aguardam o "pode" |
+| 1 | Telefone em campo único + deduplicação durável (reaproveita a Opp aberta do mesmo celular e ramo por 7 dias) | **Concluído.** Em produção desde 27/10 (0.2.56); `oppReuseDays: 7` no bloco `prod` desde 28/10 (`ESPOCRM_API_CONFIG` v7, `deliverlead-00038-dej`; rollback = v6 + deploy). Registro em [`UAT_PLANO_COMPLETO.md`](UAT_PLANO_COMPLETO.md) (F5) e [`UAT_LOTE1_FUNIL_V2.md`](UAT_LOTE1_FUNIL_V2.md) |
+| 2 | Venda ao Google Ads na hora, desligando o CSV noturno do Espo ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md)) | Sombra 2/5 ok (lotes de 23/10 e 26/10). Desde 03/11 a função envia em modo de validação (`complementar`, `validateOnly: true`). Faltam: conferir a auditoria, `validateOnly: false` com "pode", completar as 5 rodadas e o aceite para desligar os 5 jobs do CSV |
 | 3 | Velocidade no celular (linha de base, limpeza do GTM, GTM atrasado em teste) | Pendente |
-| 4 | Cálculo Suhai junto com o RPA, em modo simulado e só no UAT | Pendente |
+| 4 | Cálculo Suhai junto com o RPA, em modo simulado e só no UAT | Pendente: só o plano, em [`FASE_B_SUHAI_PARALELO.md`](FASE_B_SUHAI_PARALELO.md); revisão em 04/11 |
 | 5 | SEO orgânico com Semrush: monitoramento, conteúdo das páginas de ramo, guias | Pendente |
 
 Os itens antigos abaixo sobre a Fase 0/Fase 5 de atribuição estão superados por essa conferência.

@@ -350,7 +350,7 @@ Renovação só-Agger: **excluída** (não é inconsistência — filtro de esco
 - [x] **F1** Role + API user dash + smoke DEV/prod + secret `ESPO_DASH_API_CONFIG`
 - [x] **F2** `CONTRATO_JOIN_ESPO_AGGER.md` + glossário Nova/Renovação (homologação comercial pendente)
 - [x] **F3** lib + testes unitários (`scripts/dash-producao/lib` + `npm run test:dash-producao`)
-- [ ] **F4** API Next + auth Espo
+- [x] **F4** API Next + auth Espo (2026-09-16, `dash-v0.1.0`)
 - [ ] **F5** UI MVP (3–4 rotas) + export Excel
 - [x] **F6** DNS + Cloudflare Access + runbook (2026-11-03)
 - [ ] **F7** (depois) gráficos + UI sofisticada

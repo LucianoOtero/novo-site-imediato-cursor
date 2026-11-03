@@ -1,7 +1,7 @@
 # Sync Opportunity `Vendido` → Firebase
 
 **Status:** Fase 4 OK (2026-09-05) — E2E PROD passou; **monitor 72h** em andamento  
-**Offline Ads (código):** [`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md) — Fase 1 no CF (`enabled: false`); smoke/cutover = Fases 2–3
+**Offline Ads (código):** [`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md) — ligado em modo de validação desde 2026-11-03 (`complementar`, `validateOnly: true`); corte do CSV = Lote 2 do funil v2
 **Hardening / runbook:** [`FASE3_HARDENING_SOLD_SYNC.md`](FASE3_HARDENING_SOLD_SYNC.md)  
 **DEV:** [`FASE2_ESPO_DEV_VENDIDO_FIREBASE.md`](FASE2_ESPO_DEV_VENDIDO_FIREBASE.md)  
 **PROD:** [`FASE4_ESPO_PROD_VENDIDO_FIREBASE.md`](FASE4_ESPO_PROD_VENDIDO_FIREBASE.md)  
@@ -250,8 +250,8 @@ sequenceDiagram
 - [x] Índices `espocrmOpportunityId` / `espocrmLeadId` em `database.rules.json` (site novo)
 - [x] Testes unitários: `node scripts/espo-ops/sold-sync-unit-test.mjs`
 - [x] Runbook smoke: [`SMOKE_SYNC_OPPORTUNITY_SOLD.md`](SMOKE_SYNC_OPPORTUNITY_SOLD.md)
-- [ ] Deploy Firebase + secret + smoke HTTP real (operacional — ver smoke doc)
-- [ ] IAM SA no RTDB legado (operacional)
+- [x] Deploy Firebase + secret + smoke HTTP real (operacional — ver smoke doc); em produção desde a Fase 4 (2026-09-05)
+- [x] IAM SA no RTDB legado (operacional) — `roles/firebasedatabase.admin` no `leads-imediato-seguros`, 2026-09-05 ([`SMOKE_SYNC_OPPORTUNITY_SOLD.md`](SMOKE_SYNC_OPPORTUNITY_SOLD.md))
 
 **Próximo passo:** aguardar **“Aprovo Fase 2”** (ligar Espo DEV). Deploy/smoke da CF pode ser feito antes ou no início da Fase 2.
 

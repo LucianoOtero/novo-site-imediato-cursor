@@ -174,14 +174,16 @@ Least privilege para o runtime do `dash.segurosimediato.com.br` (somente leitura
 
 Role sugerida: `dashboard-producao-readonly`
 
-- [ ] Opportunity: read=all; create=edit=delete=stream=no  
-- [ ] User: read=all; demais no  
-- [ ] Team: read=all; demais no  
-- [ ] Account: read=all; demais no  
-- [ ] Special permissions: export/dataPrivacy/assignment/user/massUpdate = no  
-- [ ] API User tipo `api`, auth API Key, Role acima, **sem** teams restritivas que anulem `read=all`  
-- [ ] Smoke: mesmas queries da §5 com a key nova  
-- [ ] Validar primeiro em **DEV**, depois prod
+Feito em 2026-09-16 em DEV e PROD (Role e API User `api_dashboard_producao`, smoke 200/403): ver [`FASE1_DEV_STATUS.md`](./FASE1_DEV_STATUS.md).
+
+- [x] Opportunity: read=all; create=edit=delete=stream=no  
+- [x] User: read=all; demais no  
+- [x] Team: read=all; demais no  
+- [x] Account: read=all; demais no  
+- [x] Special permissions: export/dataPrivacy/assignment/user/massUpdate = no  
+- [x] API User tipo `api`, auth API Key, Role acima, **sem** teams restritivas que anulem `read=all`  
+- [x] Smoke: mesmas queries da §5 com a key nova  
+- [x] Validar primeiro em **DEV**, depois prod
 
 ---
 

@@ -144,11 +144,11 @@ O acesso programático ao Gmail usa o projeto **`imediato-gmail-mcp`**, criado d
 - [ ] Avisar o Otávio no WhatsApp
 - [x] Receber credenciais de homologação do comercial (login do Cotador, 30/09/2026)
 - [x] Registrar credenciais no Secret Manager e redeployar o gateway com `--set-secrets` (revisão `suhai-gateway-00006-225`)
-- [ ] Definir `SUHAI_GATEWAY_URL` na Vercel (só depois da cotação real)
+- [x] Definir `SUHAI_GATEWAY_URL` na Vercel: está em Production e nas previews `uat-suhai` e `uat-marca-suhai` ([`../FASE_B_SUHAI_PARALELO.md`](../FASE_B_SUHAI_PARALELO.md))
 - [x] Smoke de `ConsultaVeiculos` a partir do IP liberado (30/09/2026, código de exemplo da documentação)
-- [ ] Primeira cotação real em homologação, comparando o retorno com os fixtures dos testes
-- [ ] Confirmar a resposta sobre captura de cartão (define o escopo PCI da fase de pagamento)
-- [ ] Solicitar liberação de produção quando a homologação for validada
+- [x] Primeira cotação real em homologação, comparando o retorno com os fixtures dos testes
+- [x] Confirmar a resposta sobre captura de cartão: em 26/10 o Fábio confirmou tela própria, com número e CVV cifrados em AES-256 e enviados direto à API Pagamento ([`../UAT_PLANO_COMPLETO.md`](../UAT_PLANO_COMPLETO.md)). O projeto do cartão ainda vai ser aberto
+- [x] Liberação de produção: a proposta 12350578 (16/10) foi a primeira em produção; a pós-venda de produção veio pelo ITSM-102658, concluído em 27/10
 
 ### O que fazer quando a resposta chegar
 
