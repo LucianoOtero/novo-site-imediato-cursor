@@ -88,8 +88,9 @@ Zero Trust → Logs → Access (motivo da negação).
 
 1. DNS do `dash` está **Proxied**? Se alguém voltou para "DNS only", religar.
 2. A aplicação do Access foi recriada? O *Application Audience (AUD) Tag* muda: copiar o novo
-   (Applications → `dash-producao` → Overview) para `CF_ACCESS_AUD` na Vercel → Redeploy.
-3. Mudou o *team domain* (Zero Trust → Settings → Custom Pages/Team domain)? Atualizar `CF_ACCESS_TEAM_DOMAIN`.
+   (Applications → `dash-producao` → Additional settings → AUD tag) para `CF_ACCESS_AUD` na Vercel → Redeploy.
+3. Mudou o *team domain* (Zero Trust → Settings → Team domain; hoje `imediatoseguros.cloudflareaccess.com`)?
+   Atualizar `CF_ACCESS_TEAM_DOMAIN`.
 
 **Desligar o Access em emergência** (o login Espo continua protegendo):
 

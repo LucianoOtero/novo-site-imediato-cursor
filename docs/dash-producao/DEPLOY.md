@@ -26,6 +26,8 @@ SSO Protection Vercel: **desligado** (o gate é Cloudflare Access + login Espo; 
 
 - DNS: **A** `dash` → `76.76.21.21` **Proxied**. SSL Vercel emitido.
 - Configuration Rule `dash - SSL Full strict` (só este hostname).
+- Zero Trust (plano Free, até 50 usuários) — team domain `imediatoseguros.cloudflareaccess.com`
+  (= `CF_ACCESS_TEAM_DOMAIN`).
 - Zero Trust → Access → Applications → `dash-producao` (self-hosted, `dash.segurosimediato.com.br`),
   policy `Imediato` (Allow): e-mails terminando em `@imediatoseguros.com.br` / `@segurosimediato.com.br`
   + exceções nominais. Login: código por e-mail (one-time PIN).
