@@ -2,18 +2,20 @@
  * Conversões otimizadas (Enhanced Conversions) do Google Ads.
  *
  * Os eventos que convertem no Ads saem com `user_data` contendo o celular
- * em E.164 com hash SHA-256 (feito no navegador — o número nunca entra em
- * claro no dataLayer). O evento sai sem `user_data` quando o visitante
- * rejeitou marketing no banner, quando não há Web Crypto ou quando o hash
- * não termina a tempo.
+ * em E.164 (e, quando houver, o e-mail normalizado) com hash SHA-256 feito
+ * no navegador — os dados nunca entram em claro no dataLayer. O evento sai
+ * sem `user_data` quando o visitante rejeitou marketing no banner, quando
+ * não há Web Crypto ou quando o hash não termina a tempo.
  *
  * As chaves seguem o formato `user_data` da tag do Google
- * (`sha256_phone_number`), lido no GTM pela variável de dados fornecidos
- * pelo usuário.
+ * (`sha256_phone_number`, `sha256_email_address`), lido no GTM pela
+ * variável de dados fornecidos pelo usuário.
  */
 import { trackEvent, type AnalyticsEventParams } from "./analytics";
 
-export type HashedUserData = { sha256_phone_number: string };
+export type HashedUserData = { sha256_phone_number: string; sha256_email_address?: string };
+
+export type ContatoConversao = { ddd: string; celular: string; email?: string };
 
 type ConversionEvent = "form_initial_contact" | "whatsapp_modal_initial_contact" | "phone_modal_initial_contact";
 
@@ -40,10 +42,22 @@ async function sha256Hex(text: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function hashedUserData(ddd: string, celular: string): Promise<HashedUserData | null> {
-  const phone = phoneToE164(ddd, celular);
+async function hashedUserData(contact: ContatoConversao): Promise<HashedUserData | null> {
+  const phone = phoneToE164(contact.ddd, contact.celular);
   if (!phone || marketingRejected() || !globalThis.crypto?.subtle) return null;
-  return { sha256_phone_number: await sha256Hex(phone) };
+  const email = contact.email?.trim().toLowerCase();
+  const [sha256_phone_number, sha256_email_address] = await Promise.all([
+    sha256Hex(phone),
+    email && email.includes("@") ? sha256Hex(email) : Promise.resolve(undefined),
+  ]);
+  return sha256_email_address ? { sha256_phone_number, sha256_email_address } : { sha256_phone_number };
+}
+
+/** `user_data` com hash, ou `null` em até `HASH_TIMEOUT_MS` (nunca rejeita). */
+export function userDataComPrazo(contact: ContatoConversao): Promise<HashedUserData | null> {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), HASH_TIMEOUT_MS));
+  return Promise.race([hashedUserData(contact), timeout]).catch(() => null);
 }
 
 /**
@@ -54,13 +68,10 @@ async function hashedUserData(ddd: string, celular: string): Promise<HashedUserD
 export function trackConversion<E extends ConversionEvent>(
   event: E,
   params: Omit<AnalyticsEventParams<E>, "user_data">,
-  contact: { ddd: string; celular: string },
+  contact: ContatoConversao,
 ): void {
   if (typeof window === "undefined") return;
-  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), HASH_TIMEOUT_MS));
-  void Promise.race([hashedUserData(contact.ddd, contact.celular), timeout])
-    .catch(() => null)
-    .then((userData) => {
-      trackEvent(event, (userData ? { ...params, user_data: userData } : params) as AnalyticsEventParams<E>);
-    });
+  void userDataComPrazo(contact).then((userData) => {
+    trackEvent(event, (userData ? { ...params, user_data: userData } : params) as AnalyticsEventParams<E>);
+  });
 }

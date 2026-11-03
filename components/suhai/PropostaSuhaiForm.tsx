@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogTit
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TelefoneInput } from "@/components/ui/telefone-input";
-import { trackSuhai } from "@/lib/suhai/analytics";
+import { trackPropostaSuhai, trackSuhai } from "@/lib/suhai/analytics";
 import { COMBUSTIVEL, COR_VEICULO } from "@/lib/suhai/dominio";
 import { PLANOS } from "@/lib/suhai/planos";
 import { propostaInputSchema, type Oferta, type PropostaInput, type PropostaResultado } from "@/lib/suhai/types";
@@ -326,9 +326,13 @@ export function PropostaSuhaiForm({
         http_status: resposta.status,
         duration_ms: Date.now() - inicio,
       });
-      setResultado(corpo as PropostaResultado);
+      const proposta = corpo as PropostaResultado;
+      setResultado(proposta);
       setConfirmacaoAberta(true);
-      trackSuhai("suhai_proposal_sent", { plan: oferta.planoId, installments: Number(parcelas) });
+      trackPropostaSuhai(
+        { plan: oferta.planoId, installments: Number(parcelas), transaction_id: String(proposta.numeroProposta || proposta.protocolo) },
+        { ddd: dados.dddCel, celular: dados.numCel, email: dados.email },
+      );
       onEnviada?.();
     } catch {
       trackSuhai("suhai_proposal_result", { result: "network", duration_ms: Date.now() - inicio });
