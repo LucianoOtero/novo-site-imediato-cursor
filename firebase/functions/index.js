@@ -1421,6 +1421,8 @@ exports.syncOpportunitySold = onRequest(
         const result = await soldSync.handleSoldSync(payload, {
           adsConfigRaw,
           allowAds,
+          loadOpportunityContact: () =>
+            soldSync.fetchOpportunityContact(payload.opportunityId, espoApiConfigRaw),
         });
         itemResults.push({
           opportunityId: payload.opportunityId,

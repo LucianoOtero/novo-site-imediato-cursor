@@ -154,6 +154,53 @@ async function fetchOpportunityFromEspo(espoCfg, opportunityId) {
   return text ? JSON.parse(text) : null;
 }
 
+/** Blocos do Espo em ordem de tentativa: dev primeiro, depois prod. */
+function espoConfigList(espoApiConfigRaw) {
+  const configs = [];
+  if (espoApiConfigRaw) {
+    try {
+      const j = JSON.parse(espoApiConfigRaw);
+      if (j.dev?.baseUrl && j.dev?.apiKey) configs.push(j.dev);
+      if (j.prod?.baseUrl && j.prod?.apiKey) configs.push(j.prod);
+      if (!j.dev && !j.prod && j.baseUrl) configs.push(j);
+    } catch {
+      /* ignore */
+    }
+  }
+  const espoCfg = resolveEspoDevConfig(espoApiConfigRaw);
+  if (espoCfg && !configs.length) configs.push(espoCfg);
+  return configs;
+}
+
+/**
+ * Celular e e-mail da Opportunity para as conversões otimizadas. Fica fora do
+ * payload porque o payload vai para logs e sold_sync_errors.
+ * @returns {Promise<{ phone: string|null, email: string|null } | null>}
+ */
+async function fetchOpportunityContact(opportunityId, espoApiConfigRaw) {
+  if (!opportunityId) return null;
+  for (const cfg of espoConfigList(espoApiConfigRaw)) {
+    try {
+      const opp = await fetchOpportunityFromEspo(
+        {
+          baseUrl: String(cfg.baseUrl).replace(/\/$/, ""),
+          apiKey: String(cfg.apiKey),
+        },
+        opportunityId
+      );
+      if (opp) {
+        return {
+          phone: opp.cCelular || null,
+          email: opp.cEmailAdress || opp.emailAddress || null,
+        };
+      }
+    } catch {
+      /* tenta o próximo bloco */
+    }
+  }
+  return null;
+}
+
 /**
  * Completa amount/cDataVenda/cLeadId/cGclid/stage (e cWebpage/leadSource para
  * classificação) a partir do Espo quando o webhook manda só campos alterados.
@@ -174,22 +221,7 @@ async function enrichPayloadFromEspo(payload, espoApiConfigRaw) {
     needsIdentity || needsSetCommercial || needsClassifyMeta || needsStage;
   if (!needsFetch) return payload;
 
-  const espoCfg = resolveEspoDevConfig(espoApiConfigRaw);
-  // Preferir bloco conforme ambiente: se stage set e amount missing, tentar
-  // ambos os blocos (dev primeiro; prod se baseUrl diferente).
-  const configs = [];
-  if (espoApiConfigRaw) {
-    try {
-      const j = JSON.parse(espoApiConfigRaw);
-      if (j.dev?.baseUrl && j.dev?.apiKey) configs.push(j.dev);
-      if (j.prod?.baseUrl && j.prod?.apiKey) configs.push(j.prod);
-      if (!j.dev && !j.prod && j.baseUrl) configs.push(j);
-    } catch {
-      /* ignore */
-    }
-  }
-  if (espoCfg && !configs.length) configs.push(espoCfg);
-
+  const configs = espoConfigList(espoApiConfigRaw);
   let opp = null;
   let lastErr = null;
   let notFound = 0;
@@ -845,7 +877,10 @@ async function notifySoldSyncError({
   }
 }
 
-async function handleSoldSync(payload, { adsConfigRaw, allowAds = false } = {}) {
+async function handleSoldSync(
+  payload,
+  { adsConfigRaw, allowAds = false, loadOpportunityContact = null } = {}
+) {
   const action = payload.action;
   const results = [];
 
@@ -930,6 +965,7 @@ async function handleSoldSync(payload, { adsConfigRaw, allowAds = false } = {}) 
                 adsConfigRaw,
                 databases,
                 opportunityOnly: true,
+                loadOpportunityContact,
               });
         const progressed = adsAttemptProgressed(fromOpp);
         if (progressed) {
@@ -1015,6 +1051,7 @@ async function handleSoldSync(payload, { adsConfigRaw, allowAds = false } = {}) 
           [SITE_NOVO_PROJECT]: getSiteNovoDatabase(),
           [LEGACY_PROJECT]: getLegacyDatabase(),
         },
+        loadOpportunityContact,
       });
     } catch (err) {
       logger.warn(
@@ -1120,6 +1157,7 @@ module.exports = {
   normalizePayload,
   expandRequestItems,
   enrichPayloadFromEspo,
+  fetchOpportunityContact,
   authorizeRequest,
   parseEspoWebhookAuth,
   buildEspoSignatureV9,

@@ -202,9 +202,20 @@ JSON (exemplo de **shape**; valores só no Secret Manager):
   "loginCustomerId": "4321602293",
   "conversionActionId": "303889427",
   "currencyCode": "BRL",
-  "timezoneOffset": "-03:00"
+  "timezoneOffset": "-03:00",
+  "mode": "completo",
+  "validateOnly": false
 }
 ```
+
+- `mode`: `completo` (padrão) envia todas as vendas. `complementar` pula as vendas cuja Opportunity tem `cGclid`, que seguem pelo CSV do Espo. Assim a mesma venda não chega duas vezes. As demais vendas sobem por gbraid/wbraid ou só pelos dados com hash.
+- `validateOnly`: `true` manda `validateOnly` ao `events:ingest`. O Google valida o formato e não registra a conversão. A auditoria grava `validated`, e o lead e `ads_offline_by_opportunity` não são marcados.
+
+### Conversões otimizadas para leads (2026-11-03)
+
+Cada evento leva `userData.userIdentifiers` com SHA-256 hex do celular em E.164 (`+55DDNNNNNNNNN`) e do e-mail (minúsculo, sem espaços, sem pontos antes de `@gmail.com`). A origem é o lead no Firebase (`data/phoneE164`, `data/email`; no legado, `DDD-CELULAR` + `CELULAR` e `Email`). Se faltar algum dado, a função lê `cCelular`/`cEmailAdress` da Opportunity no Espo, uma vez por venda. Esses dados não entram no payload, porque o payload vai para os logs e para `sold_sync_errors`. O e-mail "falso" `…@imediatoseguros.com.br` é descartado. Lead com `consent.marketing === false` não envia hash. Sem click e sem hash, a venda é pulada (`no_click_id`). A auditoria guarda só `userIdentifierCount`; `clickIdType = user_data` indica envio sem click.
+
+Ligação recomendada: `enabled: true`, `mode: "complementar"`, `validateOnly: true` no primeiro dia. Conferir `ads_offline_audit` (`validated` versus `error`) e só então passar `validateOnly` para `false`. Rollback: `enabled: false`.
 
 ```bash
 cd firebase
