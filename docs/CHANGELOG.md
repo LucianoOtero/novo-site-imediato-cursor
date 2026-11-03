@@ -13,6 +13,20 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## [0.2.58] — 03/11/2026 — conversões otimizadas do Google Ads
+
+Branch `feat/conversoes-otimizadas`, a partir da 0.2.57. GTM preparado no workspace 60 e publicado junto com o site. Motivo: em 29/10 o Diagnóstico do Ads mostrava cobertura de 0% em "Envio de Formulário de Lead na Página" (30 de 30 conversões sem dados do usuário) e 6% em "Preencher o telefone no modal de whatsapp". O site novo não mandava nenhum dado do usuário junto da conversão.
+
+### Added
+- `lib/enhanced-conversions.ts`: `form_initial_contact` (formulário e Suhai) e `whatsapp_modal_initial_contact`/`phone_modal_initial_contact` saem com `user_data.sha256_phone_number` (celular em E.164, `+55DDNNNNNNNNN`, com hash SHA-256 no navegador). Sem `user_data` quando o visitante rejeitou marketing no banner.
+- **Antes de publicar, no GTM:**
+  - Variável JavaScript personalizada `JS - user_data conversoes otimizadas`, lendo a DLV `user_data`: devolve `{sha256_phone_number}` quando existir (site novo) ou `{phone_number}` (legado); senão `undefined`.
+  - Variável `Dados fornecidos pelo usuário` (`awec`) de `MANUAL` para `Code`, apontando para essa variável.
+  - Ligar "Incluir dados fornecidos pelo usuário" com essa variável nas tags `[NovoSite] Ads - form initial contact`, `Google Ads - Conversão Modal WhatsApp`, `Google Ads - Conversão no Modal do Telefone` e `Conversão Formulário Válido`.
+  - Validar no Preview que o hit de conversão leva os dados (`em=` na requisição) e conferir a cobertura no Diagnóstico de 48 a 72 h depois.
+
+---
+
 ## [0.2.57] — não publicada (acompanhamento das propostas Suhai até a apólice)
 
 Branch `suhai-acompanhamento`. Teste de aceite em [`UAT_PLANO_COMPLETO.md`](UAT_PLANO_COMPLETO.md) (F4, 27/10). A publicação segue a ordem da seção 8 desse documento: gateway e campos no Espo PROD (F6), depois a rotina ligada só para homologação (F7).

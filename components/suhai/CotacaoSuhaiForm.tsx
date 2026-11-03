@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { TelefoneInput } from "@/components/ui/telefone-input";
 import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO, type PlanoAssistencia } from "@/lib/suhai/dominio";
 import { trackEvent } from "@/lib/analytics";
+import { trackConversion } from "@/lib/enhanced-conversions";
 import { getAttributionUtm } from "@/lib/leads/attribution";
 import { postLead } from "@/lib/leads/post-lead";
 import type { OpcaoVeiculo } from "@/lib/suhai/veiculo-placa";
@@ -222,7 +223,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     if (telefoneEnviadoRef.current === telefone) return;
     telefoneEnviadoRef.current = telefone;
     leadIdRef.current = undefined;
-    trackEvent("form_initial_contact", { ramo: "auto", method: "suhai" });
+    trackConversion("form_initial_contact", { ramo: "auto", method: "suhai" }, { ddd: atual.ddd, celular: atual.celular });
     contatoInicialRef.current = (async () => {
       try {
         const resposta = await postLead({
