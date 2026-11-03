@@ -9,7 +9,12 @@
  * - Feature flag: GOOGLE_ADS_API_CONFIG.enabled (permanece false até o corte).
  * - Retract (RETRACTION) só se o status era `uploaded`. Ajuste de valor = RESTATEMENT.
  * - Sem nó no Firebase, usa o click da Opportunity e audita sem inventar leads_backup.
+ * - Conversões otimizadas para leads: telefone (E.164) e e-mail vão só como
+ *   SHA-256 hex em userData; a auditoria guarda apenas a contagem.
+ * - mode "complementar": venda com cGclid na Opportunity fica para o CSV do Espo.
+ * - validateOnly: o Google só valida; nada é marcado como enviado.
  */
+const crypto = require("node:crypto");
 const { logger } = require("firebase-functions");
 const { getDatabase } = require("firebase-admin/database");
 
@@ -40,6 +45,8 @@ const DAILY_JOB_ID_SUFFIX = 1;
  *   conversionActionId: string,
  *   currencyCode: string,
  *   timezoneOffset: string,
+ *   mode: 'completo'|'complementar',
+ *   validateOnly: boolean,
  * } | null}
  */
 function parseAdsConfig(raw) {
@@ -69,6 +76,8 @@ function parseAdsConfig(raw) {
       conversionActionId,
       currencyCode: String(j.currencyCode || DEFAULT_CURRENCY),
       timezoneOffset: String(j.timezoneOffset || DEFAULT_TIMEZONE_OFFSET),
+      mode: j.mode === "complementar" ? "complementar" : "completo",
+      validateOnly: j.validateOnly === true,
     };
   } catch {
     return null;
@@ -133,6 +142,90 @@ function nonEmpty(v) {
   if (v == null) return null;
   const s = String(v).trim();
   return s ? s : null;
+}
+
+/** Celular BR em E.164 (+55DDNNNNNNNNN) ou null. */
+function normalizePhoneBr(raw) {
+  let d = String(raw || "").replace(/\D/g, "");
+  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) d = d.slice(2);
+  d = d.replace(/^0+/, "");
+  if (d.length !== 10 && d.length !== 11) return null;
+  return `+55${d}`;
+}
+
+/** E-mail minúsculo, sem espaços e sem pontos antes de @gmail.com. Descarta o e-mail "falso" gerado do telefone. */
+function normalizeEmail(raw) {
+  let s = String(raw || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return null;
+  if (/@(imediatoseguros|segurosimediato)\.com\.br$/.test(s)) return null;
+  const [local, domain] = s.split("@");
+  if (domain === "gmail.com" || domain === "googlemail.com") {
+    s = `${local.replace(/\./g, "")}@${domain}`;
+  }
+  return s;
+}
+
+/** Telefone/e-mail do nó do Firebase (site novo na raiz, legado em data). */
+function extractContact(rec) {
+  if (!rec || typeof rec !== "object") return { phone: null, email: null };
+  const data = rec.data && typeof rec.data === "object" ? rec.data : {};
+  return {
+    phone:
+      normalizePhoneBr(rec.phoneE164) ||
+      normalizePhoneBr(data.phoneE164) ||
+      normalizePhoneBr(`${data["DDD-CELULAR"] || ""}${data.CELULAR || ""}`),
+    email:
+      normalizeEmail(rec.email) ||
+      normalizeEmail(data.email) ||
+      normalizeEmail(data.Email) ||
+      normalizeEmail(data.EMAIL),
+  };
+}
+
+/** Recusa explícita de marketing gravada no lead. */
+function marketingRejected(rec) {
+  if (!rec || typeof rec !== "object") return false;
+  const data = rec.data && typeof rec.data === "object" ? rec.data : {};
+  return [rec, data].some(
+    (o) => o.consentMarketing === false || (o.consent && o.consent.marketing === false)
+  );
+}
+
+function sha256Hex(value) {
+  return crypto.createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+/** userData do Data Manager (HEX) ou null sem identificador. */
+function buildUserData(...contacts) {
+  const phone = contacts.map((c) => c && normalizePhoneBr(c.phone)).find(Boolean);
+  const email = contacts.map((c) => c && normalizeEmail(c.email)).find(Boolean);
+  const userIdentifiers = [];
+  if (phone) userIdentifiers.push({ phoneNumber: sha256Hex(phone) });
+  if (email) userIdentifiers.push({ emailAddress: sha256Hex(email) });
+  return userIdentifiers.length ? { userIdentifiers } : null;
+}
+
+/** Contato da Opportunity no Espo, lido no máximo uma vez por venda. */
+function onceContactLoader(loadOpportunityContact) {
+  let pending = null;
+  return () => {
+    if (typeof loadOpportunityContact !== "function") return Promise.resolve(null);
+    if (!pending) {
+      pending = Promise.resolve()
+        .then(loadOpportunityContact)
+        .catch((err) => {
+          logger.warn(`[ads-offline] contato da Opportunity indisponível: ${err.message || err}`);
+          return null;
+        });
+    }
+    return pending;
+  };
+}
+
+/** Tentativas em ordem; sem click, uma tentativa só com userData. */
+function uploadAttempts(clicks, userData) {
+  if (clicks.length) return clicks;
+  return userData ? [null] : [];
 }
 
 /**
@@ -273,24 +366,25 @@ function buildClickConversion({
   return conv;
 }
 
-/** Evento Data Manager (equiv. ClickConversion). */
+/** Evento Data Manager (equiv. ClickConversion). Precisa de click ou userData. */
 function buildDataManagerEvent({
   click,
+  userData = null,
   orderId,
   conversionValue,
   currencyCode,
   eventTimestamp,
 }) {
-  const adIdentifiers = {};
-  adIdentifiers[click.type] = click.value;
-  return {
-    adIdentifiers,
+  const event = {
     conversionValue: Number(conversionValue),
     currency: currencyCode || DEFAULT_CURRENCY,
     eventTimestamp,
     transactionId: String(orderId),
     eventSource: "WEB",
   };
+  if (click) event.adIdentifiers = { [click.type]: click.value };
+  if (userData) event.userData = userData;
+  return event;
 }
 
 function buildDataManagerDestination(cfg) {
@@ -338,6 +432,8 @@ function buildAuditEntry({
   adsRequestId = null,
   error = null,
   responseSnippet = null,
+  userIdentifierCount = 0,
+  validateOnly = false,
 }) {
   return {
     status,
@@ -362,6 +458,8 @@ function buildAuditEntry({
     responseSnippet: responseSnippet
       ? truncateSnippet(responseSnippet)
       : null,
+    userIdentifierCount: Number(userIdentifierCount) || 0,
+    validateOnly: Boolean(validateOnly),
   };
 }
 
@@ -438,7 +536,7 @@ async function uploadOfflineConversion(cfg, event, accessToken) {
   const body = {
     destinations: [buildDataManagerDestination(cfg)],
     encoding: "HEX",
-    validateOnly: false,
+    validateOnly: cfg.validateOnly === true,
     events: [event],
   };
 
@@ -544,8 +642,10 @@ async function handleAdsOfflineAfterSoldSet({
   adsConfigRaw,
   databases,
   opportunityOnly = false,
+  loadOpportunityContact = null,
 }) {
   const cfg = parseAdsConfig(adsConfigRaw);
+  const opportunityContact = onceContactLoader(loadOpportunityContact);
   if (!cfg) {
     logger.info("[ads-offline] skip: secret ausente/inválido");
     await appendAdsOfflineAudit(
@@ -597,6 +697,21 @@ async function handleAdsOfflineAfterSoldSet({
     return { skipped: true, reason: "no_opportunity_id" };
   }
 
+  if (cfg.mode === "complementar" && nonEmpty(payload.cGclid)) {
+    await appendAdsOfflineAudit(
+      buildAuditEntry({
+        status: "skipped",
+        reason: "gclid_via_csv",
+        opportunityId: orderId,
+        orderId,
+        customerId: cfg.customerId,
+        conversionActionId: cfg.conversionActionId,
+        validateOnly: cfg.validateOnly,
+      })
+    );
+    return { skipped: true, reason: "gclid_via_csv" };
+  }
+
   const payloadClicks = clicksFromPayload(payload);
   const targets = [];
   if (!opportunityOnly) {
@@ -620,12 +735,14 @@ async function handleAdsOfflineAfterSoldSet({
   }
 
   if (targets.length === 0) {
-    if (payloadClicks.length > 0) {
+    const userData = buildUserData(await opportunityContact());
+    if (payloadClicks.length > 0 || userData) {
       return uploadFromOpportunity({
         cfg,
         payload,
         orderId,
         clicks: payloadClicks,
+        userData,
       });
     }
     await appendAdsOfflineAudit(
@@ -684,6 +801,7 @@ async function handleAdsOfflineAfterSoldSet({
         const prevValue =
           t.previousAmount != null ? Number(t.previousAmount) : nextValue;
         if (
+          !cfg.validateOnly &&
           Number.isFinite(nextValue) &&
           nextValue > 0 &&
           Number.isFinite(prevValue) &&
@@ -883,7 +1001,15 @@ async function handleAdsOfflineAfterSoldSet({
         }
       }
       if (skipRejected) clicks = clicks.filter((c) => c.type !== skipRejected);
-      if (!clicks.length) {
+      let userData = null;
+      if (!marketingRejected(existing)) {
+        const local = extractContact(existing);
+        const fromOpp = local.phone && local.email ? null : await opportunityContact();
+        userData = buildUserData(local, fromOpp);
+      }
+      const attempts = uploadAttempts(clicks, userData);
+      const userIdentifierCount = userData ? userData.userIdentifiers.length : 0;
+      if (!attempts.length) {
         const auditKey = await appendAdsOfflineAudit(
           buildAuditEntry({
             status: "skipped",
@@ -899,15 +1025,19 @@ async function handleAdsOfflineAfterSoldSet({
                 ? existing.soldCommissionAmount
                 : payload.amount,
             currencyCode: cfg.currencyCode,
+            validateOnly: cfg.validateOnly,
           })
         );
-        const patch = adsFlagsPatch({
-          status: "skipped",
-          clickType: null,
-          orderId,
-          adsOfflineAuditKey: auditKey,
-        });
-        await ref.update(patch);
+        if (!cfg.validateOnly) {
+          await ref.update(
+            adsFlagsPatch({
+              status: "skipped",
+              clickType: null,
+              orderId,
+              adsOfflineAuditKey: auditKey,
+            })
+          );
+        }
         item.status = "skipped";
         item.reason = "no_click_id";
         item.adsOfflineAuditKey = auditKey;
@@ -926,10 +1056,11 @@ async function handleAdsOfflineAfterSoldSet({
         cfg.timezoneOffset
       );
       let settled = null;
-      for (let i = 0; i < clicks.length; i++) {
-        const click = clicks[i];
+      for (let i = 0; i < attempts.length; i++) {
+        const click = attempts[i];
         const event = buildDataManagerEvent({
           click,
+          userData,
           orderId,
           conversionValue,
           currencyCode: cfg.currencyCode,
@@ -941,8 +1072,8 @@ async function handleAdsOfflineAfterSoldSet({
           orderId,
           leadId: t.leadId,
           projectId: t.projectId,
-          clickIdType: click.type,
-          clickId: click.value,
+          clickIdType: click ? click.type : "user_data",
+          clickId: click ? click.value : null,
           conversionValue,
           currencyCode: cfg.currencyCode,
           conversionDateTime,
@@ -951,13 +1082,19 @@ async function handleAdsOfflineAfterSoldSet({
           adsJobId: requestJobId,
           adsRequestId: upload.requestId,
           responseSnippet: upload.raw,
+          userIdentifierCount,
+          validateOnly: cfg.validateOnly,
         };
         if (!upload.ok) {
           settled = { status: "error", reason: "upload_error", click, error: upload.error, auditBase };
           break;
         }
+        if (cfg.validateOnly) {
+          settled = { status: "validated", reason: "validate_ok", click, auditBase };
+          break;
+        }
         const confirmed = await retrieveRequestStatus(accessToken, upload.requestId);
-        if (confirmed.kind === "failed" && isInvalidGclid(confirmed.errorInfo) && i < clicks.length - 1) {
+        if (confirmed.kind === "failed" && isInvalidGclid(confirmed.errorInfo) && i < attempts.length - 1) {
           continue;
         }
         if (confirmed.kind === "success") {
@@ -987,25 +1124,30 @@ async function handleAdsOfflineAfterSoldSet({
           error: settled.error || null,
         })
       );
-      const patch = adsFlagsPatch({
-        status: settled.status,
-        clickType: settled.click.type,
-        orderId,
-        errorMessage: settled.status === "error" ? String(settled.error || "error") : null,
-        adsJobId: settled.auditBase.adsJobId,
-        adsOfflineAuditKey: auditKey,
-        requestId: settled.requestId || null,
-      });
-      await ref.update(patch);
+      const clickIdType = settled.auditBase.clickIdType;
+      if (!cfg.validateOnly) {
+        await ref.update(
+          adsFlagsPatch({
+            status: settled.status,
+            clickType: clickIdType,
+            orderId,
+            errorMessage: settled.status === "error" ? String(settled.error || "error") : null,
+            adsJobId: settled.auditBase.adsJobId,
+            adsOfflineAuditKey: auditKey,
+            requestId: settled.requestId || null,
+          })
+        );
+      }
       item.status = settled.status;
-      item.clickIdType = settled.click.type;
+      item.clickIdType = clickIdType;
+      item.userIdentifierCount = userIdentifierCount;
       item.adsJobId = settled.auditBase.adsJobId;
       item.adsRequestId = settled.requestId || null;
       item.error = settled.error || null;
       item.adsOfflineAuditKey = auditKey;
       leadResults.push(item);
       logger.info(
-        `[ads-offline] ${settled.status} orderId=${orderId} lead=${t.leadId} type=${settled.click.type}`
+        `[ads-offline] ${settled.status} orderId=${orderId} lead=${t.leadId} type=${clickIdType} ids=${userIdentifierCount}`
       );
     } catch (err) {
       const message = err.message || String(err);
@@ -1050,6 +1192,7 @@ async function handleAdsOfflineAfterSoldSet({
       (r) =>
         r.status === "uploaded" ||
         r.status === "accepted" ||
+        r.status === "validated" ||
         r.status === "restated" ||
         r.status === "retracted" ||
         r.status === "skipped" ||
@@ -1167,7 +1310,7 @@ async function writeOppAdsState(orderId, patch) {
   });
 }
 
-async function uploadFromOpportunity({ cfg, payload, orderId, clicks }) {
+async function uploadFromOpportunity({ cfg, payload, orderId, clicks, userData = null }) {
   if (!(Number(payload.amount) > 0)) {
     await appendAdsOfflineAudit(
       buildAuditEntry({
@@ -1216,11 +1359,14 @@ async function uploadFromOpportunity({ cfg, payload, orderId, clicks }) {
     payload.cDataVenda,
     cfg.timezoneOffset
   );
+  const attempts = uploadAttempts(clicks, userData);
+  const userIdentifierCount = userData ? userData.userIdentifiers.length : 0;
   let settled = null;
-  for (let i = 0; i < clicks.length; i++) {
-    const click = clicks[i];
+  for (let i = 0; i < attempts.length; i++) {
+    const click = attempts[i];
     const event = buildDataManagerEvent({
       click,
+      userData,
       orderId,
       conversionValue: payload.amount,
       currencyCode: cfg.currencyCode,
@@ -1231,8 +1377,12 @@ async function uploadFromOpportunity({ cfg, payload, orderId, clicks }) {
       settled = { status: "error", click, error: upload.error, requestId: upload.requestId };
       break;
     }
+    if (cfg.validateOnly) {
+      settled = { status: "validated", click, requestId: null };
+      break;
+    }
     const confirmed = await retrieveRequestStatus(accessToken, upload.requestId);
-    if (confirmed.kind === "failed" && isInvalidGclid(confirmed.errorInfo) && i < clicks.length - 1) {
+    if (confirmed.kind === "failed" && isInvalidGclid(confirmed.errorInfo) && i < attempts.length - 1) {
       continue;
     }
     if (confirmed.kind === "success") {
@@ -1254,14 +1404,15 @@ async function uploadFromOpportunity({ cfg, payload, orderId, clicks }) {
   if (!settled) {
     return { skipped: true, reason: "no_click_id", leadResults: [] };
   }
+  const clickIdType = settled.click ? settled.click.type : "user_data";
   await appendAdsOfflineAudit(
     buildAuditEntry({
       status: settled.status,
       reason: settled.status === "error" ? "upload_error" : "opportunity_click",
       opportunityId: orderId,
       orderId,
-      clickIdType: settled.click.type,
-      clickId: settled.click.value,
+      clickIdType,
+      clickId: settled.click ? settled.click.value : null,
       conversionValue: payload.amount,
       currencyCode: cfg.currencyCode,
       conversionDateTime,
@@ -1269,17 +1420,21 @@ async function uploadFromOpportunity({ cfg, payload, orderId, clicks }) {
       conversionActionId: cfg.conversionActionId,
       adsRequestId: settled.requestId,
       error: settled.error || null,
+      userIdentifierCount,
+      validateOnly: cfg.validateOnly,
     })
   );
-  await writeOppAdsState(orderId, {
-    adsOfflineConversionStatus: settled.status,
-    adsOfflineRequestId: settled.requestId || null,
-    adsOfflineClickIdType: settled.click.type,
-    adsOfflineOrderId: orderId,
-  });
+  if (!cfg.validateOnly) {
+    await writeOppAdsState(orderId, {
+      adsOfflineConversionStatus: settled.status,
+      adsOfflineRequestId: settled.requestId || null,
+      adsOfflineClickIdType: clickIdType,
+      adsOfflineOrderId: orderId,
+    });
+  }
   return {
     ok: settled.status !== "error",
-    leadResults: [{ status: settled.status, adsRequestId: settled.requestId }],
+    leadResults: [{ status: settled.status, adsRequestId: settled.requestId, userIdentifierCount }],
   };
 }
 
@@ -1294,6 +1449,7 @@ async function handleAdsOfflineRetract({
   if (!cfg || !cfg.enabled || !configReadyForUpload(cfg)) {
     return { skipped: true, reason: "disabled" };
   }
+  if (cfg.validateOnly) return { skipped: true, reason: "validate_only" };
   const orderId = String(payload?.opportunityId || "").trim();
   if (!orderId) return { skipped: true, reason: "no_opportunity_id" };
   let accessToken;
@@ -1401,4 +1557,10 @@ module.exports = {
   isInvalidGclid,
   extractClickCandidates,
   clicksFromPayload,
+  normalizePhoneBr,
+  normalizeEmail,
+  extractContact,
+  marketingRejected,
+  buildUserData,
+  uploadAttempts,
 };

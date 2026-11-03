@@ -94,6 +94,7 @@ const octa = require("./octadesk");
 const emailNotif = require("./email-notification");
 const contactEmail = require("./contact-email");
 const soldSync = require("./sold-sync");
+const soldSyncResumo = require("./sold-sync-resumo");
 const suhai = require("./suhai");
 const espoReserva = require("./espo-reserva");
 const oppDedupe = require("./opp-dedupe");
@@ -1302,7 +1303,6 @@ exports.syncOpportunitySold = onRequest(
     secrets: [
       ESPO_SOLD_WEBHOOK_SECRET,
       ESPO_WEBHOOK_AUTH,
-      CONTACT_SMTP_CONFIG,
       ESPOCRM_API_CONFIG,
       GOOGLE_ADS_API_CONFIG,
     ],
@@ -1354,7 +1354,6 @@ exports.syncOpportunitySold = onRequest(
       return;
     }
 
-    const smtpConfigRaw = CONTACT_SMTP_CONFIG.value();
     const espoApiConfigRaw = ESPOCRM_API_CONFIG.value();
     let adsConfigRaw = "";
     try {
@@ -1370,6 +1369,17 @@ exports.syncOpportunitySold = onRequest(
       try {
         payload = await soldSync.enrichPayloadFromEspo(payload, espoApiConfigRaw);
       } catch (e) {
+        if (e.code === "opportunity_not_found") {
+          // Nova tentativa do Espo não traz a oportunidade de volta.
+          logger.info(`[syncOpportunitySold] ${e.message} — webhook ignorado.`);
+          itemResults.push({
+            opportunityId: payload.opportunityId,
+            ok: true,
+            httpStatus: 200,
+            skipped: "opportunity_not_found",
+          });
+          continue;
+        }
         logger.warn(`[syncOpportunitySold] enrich Espo falhou: ${e.message}`);
       }
 
@@ -1394,7 +1404,6 @@ exports.syncOpportunitySold = onRequest(
           : soldSync.validateClearPayload(payload);
       if (validationError) {
         await soldSync.notifySoldSyncError({
-          smtpConfigRaw,
           reason: "validation_error",
           payload,
           results: [{ error: validationError }],
@@ -1410,9 +1419,10 @@ exports.syncOpportunitySold = onRequest(
 
       try {
         const result = await soldSync.handleSoldSync(payload, {
-          smtpConfigRaw,
           adsConfigRaw,
           allowAds,
+          loadOpportunityContact: () =>
+            soldSync.fetchOpportunityContact(payload.opportunityId, espoApiConfigRaw),
         });
         itemResults.push({
           opportunityId: payload.opportunityId,
@@ -1423,7 +1433,6 @@ exports.syncOpportunitySold = onRequest(
       } catch (error) {
         logger.error("[syncOpportunitySold] item error:", error);
         await soldSync.notifySoldSyncError({
-          smtpConfigRaw,
           reason: "internal_error",
           payload,
           results: [{ error: error.message || String(error) }],
@@ -1439,13 +1448,7 @@ exports.syncOpportunitySold = onRequest(
     }
 
     const anyOk = itemResults.some((r) => r.ok === true);
-    const status = anyOk
-      ? 200
-      : itemResults.some((r) => r.httpStatus === 500)
-        ? 500
-        : itemResults.every((r) => r.httpStatus === 404)
-          ? 404
-          : 400;
+    const status = soldSync.batchHttpStatus(itemResults);
 
     res.status(status).json({
       ok: anyOk,
@@ -1454,6 +1457,30 @@ exports.syncOpportunitySold = onRequest(
       count: itemResults.length,
       results: itemResults,
     });
+  }
+);
+
+/**
+ * Resumo diário (08:00) dos problemas do syncOpportunitySold que pedem
+ * alerta, num único e-mail admin pelo Cloud Run de e-mail — o SMTP do
+ * cPanel recusa conexões vindas do GCP.
+ */
+exports.resumirErrosVendas = onSchedule(
+  {
+    schedule: "0 8 * * *",
+    timeZone: "America/Sao_Paulo",
+    region: "us-central1",
+    timeoutSeconds: 120,
+    retryCount: 0,
+    secrets: [SEND_EMAIL_NOTIFICATION_URL_DEV, SEND_EMAIL_NOTIFICATION_URL_PROD],
+  },
+  async () => {
+    const resultado = await soldSyncResumo.resumirErros({
+      rootRef: getDatabase().ref(),
+      emailUrl: SEND_EMAIL_NOTIFICATION_URL_PROD.value() || SEND_EMAIL_NOTIFICATION_URL_DEV.value(),
+      logger,
+    });
+    logger.info(`[resumirErrosVendas] ${resultado}`);
   }
 );
 

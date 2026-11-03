@@ -11,7 +11,6 @@
 const { initializeApp, getApps, applicationDefault } = require("firebase-admin/app");
 const { getDatabase } = require("firebase-admin/database");
 const { logger } = require("firebase-functions");
-const nodemailer = require("nodemailer");
 const crypto = require("node:crypto");
 const adsOffline = require("./ads-offline-conversion");
 
@@ -30,13 +29,6 @@ const LEGACY_TIMEOUT_MS = 8000;
 const GCLID_INDEX_PATH = {
   [LEGACY_PROJECT]: "data/GCLID_FLD",
 };
-
-/** Destinatários de alerta (validation_error, database_error, actionable no_firebase_match, …). */
-const ERROR_EMAIL_TO = [
-  "lrotero@gmail.com",
-  "alexkaminski70@gmail.com",
-  "alex.kaminski@imediatoseguros.com.br",
-].join(", ");
 
 const SOLD_FIELDS = [
   "soldStatus",
@@ -155,9 +147,58 @@ async function fetchOpportunityFromEspo(espoCfg, opportunityId) {
   });
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Espo GET Opportunity ${opportunityId} HTTP ${res.status}: ${text.slice(0, 200)}`);
+    const err = new Error(`Espo GET Opportunity ${opportunityId} HTTP ${res.status}: ${text.slice(0, 200)}`);
+    err.status = res.status;
+    throw err;
   }
   return text ? JSON.parse(text) : null;
+}
+
+/** Blocos do Espo em ordem de tentativa: dev primeiro, depois prod. */
+function espoConfigList(espoApiConfigRaw) {
+  const configs = [];
+  if (espoApiConfigRaw) {
+    try {
+      const j = JSON.parse(espoApiConfigRaw);
+      if (j.dev?.baseUrl && j.dev?.apiKey) configs.push(j.dev);
+      if (j.prod?.baseUrl && j.prod?.apiKey) configs.push(j.prod);
+      if (!j.dev && !j.prod && j.baseUrl) configs.push(j);
+    } catch {
+      /* ignore */
+    }
+  }
+  const espoCfg = resolveEspoDevConfig(espoApiConfigRaw);
+  if (espoCfg && !configs.length) configs.push(espoCfg);
+  return configs;
+}
+
+/**
+ * Celular e e-mail da Opportunity para as conversões otimizadas. Fica fora do
+ * payload porque o payload vai para logs e sold_sync_errors.
+ * @returns {Promise<{ phone: string|null, email: string|null } | null>}
+ */
+async function fetchOpportunityContact(opportunityId, espoApiConfigRaw) {
+  if (!opportunityId) return null;
+  for (const cfg of espoConfigList(espoApiConfigRaw)) {
+    try {
+      const opp = await fetchOpportunityFromEspo(
+        {
+          baseUrl: String(cfg.baseUrl).replace(/\/$/, ""),
+          apiKey: String(cfg.apiKey),
+        },
+        opportunityId
+      );
+      if (opp) {
+        return {
+          phone: opp.cCelular || null,
+          email: opp.cEmailAdress || opp.emailAddress || null,
+        };
+      }
+    } catch {
+      /* tenta o próximo bloco */
+    }
+  }
+  return null;
 }
 
 /**
@@ -180,24 +221,10 @@ async function enrichPayloadFromEspo(payload, espoApiConfigRaw) {
     needsIdentity || needsSetCommercial || needsClassifyMeta || needsStage;
   if (!needsFetch) return payload;
 
-  const espoCfg = resolveEspoDevConfig(espoApiConfigRaw);
-  // Preferir bloco conforme ambiente: se stage set e amount missing, tentar
-  // ambos os blocos (dev primeiro; prod se baseUrl diferente).
-  const configs = [];
-  if (espoApiConfigRaw) {
-    try {
-      const j = JSON.parse(espoApiConfigRaw);
-      if (j.dev?.baseUrl && j.dev?.apiKey) configs.push(j.dev);
-      if (j.prod?.baseUrl && j.prod?.apiKey) configs.push(j.prod);
-      if (!j.dev && !j.prod && j.baseUrl) configs.push(j);
-    } catch {
-      /* ignore */
-    }
-  }
-  if (espoCfg && !configs.length) configs.push(espoCfg);
-
+  const configs = espoConfigList(espoApiConfigRaw);
   let opp = null;
   let lastErr = null;
+  let notFound = 0;
   for (const cfg of configs) {
     try {
       opp = await fetchOpportunityFromEspo(
@@ -210,26 +237,38 @@ async function enrichPayloadFromEspo(payload, espoApiConfigRaw) {
       if (opp) break;
     } catch (e) {
       lastErr = e;
+      if (e.status === 404) notFound += 1;
     }
   }
   if (!opp) {
+    if (configs.length > 0 && notFound === configs.length) {
+      const err = new Error(`Opportunity ${payload.opportunityId} não existe em nenhum Espo (apagada)`);
+      err.code = "opportunity_not_found";
+      throw err;
+    }
     if (lastErr) throw lastErr;
     return payload;
   }
 
+  // Webhook de edição sem `stage` chega com action vazia: a ação vem da
+  // etapa lida do Espo (mesma regra do normalizePayload), senão amount e
+  // cDataVenda ficam vazios e a venda é rejeitada na validação.
+  const stage = payload.stage || opp.stage;
+  const action = payload.action || (stage === "Vendido" ? "set" : stage ? "clear" : "");
+
   return normalizePayload({
     ...payload,
-    action: payload.action,
+    action,
     opportunityId: payload.opportunityId,
-    stage: payload.stage || opp.stage,
+    stage,
     amount:
-      payload.action === "set"
+      action === "set"
         ? payload.amount != null
           ? payload.amount
           : opp.amount
         : payload.amount,
     cDataVenda:
-      payload.action === "set"
+      action === "set"
         ? payload.cDataVenda || opp.cDataVenda
         : payload.cDataVenda,
     cLeadId: payload.cLeadId || opp.cLeadId,
@@ -808,66 +847,19 @@ function explainSoldSyncErrorPlain({ reason, missClass = null, results, payload 
 }
 
 /**
- * Best-effort: SMTP via CONTACT_SMTP_CONFIG (pode falhar em IP GCP).
- * Sempre loga; se SMTP falhar, grava sold_sync_errors no RTDB site novo.
+ * Grava o problema em sold_sync_errors (RTDB site novo). O aviso por e-mail
+ * sai no resumo diário (sold-sync-resumo.js) para os registros sem
+ * `skipEmail` — o SMTP do cPanel recusa conexões do GCP.
  */
 async function notifySoldSyncError({
-  smtpConfigRaw,
   reason,
   payload,
   results,
   skipEmail = false,
   missClass = null,
 }) {
-  const subject = missClass
-    ? `[sold-sync] ${reason} (${missClass})`
-    : `[sold-sync] ${reason}`;
   const plain = explainSoldSyncErrorPlain({ reason, missClass, results, payload });
-  const text = [
-    plain,
-    "—",
-    "Detalhes técnicos (para TI):",
-    `Motivo: ${reason}`,
-    missClass ? `Classe: ${missClass}` : null,
-    `Quando: ${new Date().toISOString()}`,
-    `Payload: ${JSON.stringify(payload, null, 2)}`,
-    `Resultados: ${JSON.stringify(results, null, 2)}`,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-
   logger.error(`[sold-sync] ${reason}`, { payload, results, missClass });
-
-  let emailSent = false;
-  let emailError = null;
-
-  if (!skipEmail && smtpConfigRaw) {
-    try {
-      const cfg = JSON.parse(smtpConfigRaw);
-      if (cfg.host && cfg.user && cfg.pass) {
-        const transporter = nodemailer.createTransport({
-          host: cfg.host,
-          port: Number(cfg.port || 465),
-          secure: Number(cfg.port || 465) === 465,
-          auth: { user: cfg.user, pass: cfg.pass },
-          // Padrão do nodemailer é 2 min de conexão; a CF tem timeout de 120 s.
-          connectionTimeout: 10000,
-          greetingTimeout: 10000,
-          socketTimeout: 20000,
-        });
-        await transporter.sendMail({
-          from: cfg.from || cfg.user,
-          to: ERROR_EMAIL_TO,
-          subject,
-          text,
-        });
-        emailSent = true;
-      }
-    } catch (err) {
-      emailError = err.message || String(err);
-      logger.warn(`[sold-sync] e-mail falhou: ${emailError}`);
-    }
-  }
 
   try {
     const errRef = getSiteNovoDatabase().ref("sold_sync_errors").push();
@@ -877,20 +869,18 @@ async function notifySoldSyncError({
       missClass: missClass || null,
       payload,
       results,
-      emailTo: ERROR_EMAIL_TO,
-      emailSent,
-      emailError,
       skipEmail: Boolean(skipEmail),
       plainSummary: plain,
     });
   } catch (err) {
     logger.warn(`[sold-sync] falha ao gravar sold_sync_errors: ${err.message}`);
   }
-
-  return { emailSent, emailError };
 }
 
-async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds = false } = {}) {
+async function handleSoldSync(
+  payload,
+  { adsConfigRaw, allowAds = false, loadOpportunityContact = null } = {}
+) {
   const action = payload.action;
   const results = [];
 
@@ -944,7 +934,6 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
 
   if (siteNovoFailed) {
     await notifySoldSyncError({
-      smtpConfigRaw,
       reason: "database_error",
       payload,
       results,
@@ -976,11 +965,11 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
                 adsConfigRaw,
                 databases,
                 opportunityOnly: true,
+                loadOpportunityContact,
               });
         const progressed = adsAttemptProgressed(fromOpp);
         if (progressed) {
           await notifySoldSyncError({
-            smtpConfigRaw,
             reason: "no_firebase_match",
             payload,
             results,
@@ -1008,13 +997,18 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
       }
     }
     await notifySoldSyncError({
-      smtpConfigRaw,
       reason: "no_firebase_match",
       payload,
       results,
       missClass,
       skipEmail: skipMissEmail,
     });
+    if (noMatchIsFinal(skipMissEmail, results)) {
+      return {
+        httpStatus: 200,
+        body: { ok: true, action, firebaseMatch: false, updatedCount: 0, noopCount: 0, missClass, results },
+      };
+    }
     return {
       httpStatus: 404,
       body: { ok: false, error: "no_firebase_match", missClass, results },
@@ -1026,7 +1020,6 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
   const legacy = results.find((r) => r.projectId === LEGACY_PROJECT);
   if (legacy && legacy.ok === false) {
     await notifySoldSyncError({
-      smtpConfigRaw,
       reason: "legacy_partial_failure",
       payload,
       results,
@@ -1058,6 +1051,7 @@ async function handleSoldSync(payload, { smtpConfigRaw, adsConfigRaw, allowAds =
           [SITE_NOVO_PROJECT]: getSiteNovoDatabase(),
           [LEGACY_PROJECT]: getLegacyDatabase(),
         },
+        loadOpportunityContact,
       });
     } catch (err) {
       logger.warn(
@@ -1114,6 +1108,28 @@ function timingSafeEqualString(a, b) {
 }
 
 /** Offline Ads no set com update, ou no-op se o upload ainda não foi confirmado. Clear nunca. */
+/**
+ * "Sem lead" esperado (sem atribuição, legado/sem vínculo) é definitivo e não
+ * pede nova tentativa do Espo — exceto com o legado fora: aí a nova tentativa
+ * é o que acaba marcando as vendas do site antigo.
+ */
+function noMatchIsFinal(skipEmail, results) {
+  const legacyFailed = (results || []).some(
+    (r) => r && r.projectId === LEGACY_PROJECT && r.ok === false
+  );
+  return Boolean(skipEmail) && !legacyFailed;
+}
+
+/**
+ * Status HTTP do lote do webhook. 500 e 404 pedem nova tentativa do Espo e
+ * prevalecem sobre itens ok do mesmo lote (reprocessar item ok é no-op).
+ */
+function batchHttpStatus(itemResults) {
+  if (itemResults.some((r) => r.httpStatus === 500)) return 500;
+  if (itemResults.some((r) => r.httpStatus === 404)) return 404;
+  return itemResults.some((r) => r.ok === true) ? 200 : 400;
+}
+
 function shouldAttemptAdsOffline(action, totalUpdated, opts = {}) {
   if (action !== "set") return false;
   if (Number(totalUpdated) > 0) return true;
@@ -1138,10 +1154,10 @@ module.exports = {
   SITE_NOVO_PROJECT,
   LEGACY_PROJECT,
   GCLID_INDEX_PATH,
-  ERROR_EMAIL_TO,
   normalizePayload,
   expandRequestItems,
   enrichPayloadFromEspo,
+  fetchOpportunityContact,
   authorizeRequest,
   parseEspoWebhookAuth,
   buildEspoSignatureV9,
@@ -1160,6 +1176,8 @@ module.exports = {
   notifySoldSyncError,
   explainSoldSyncErrorPlain,
   timingSafeEqualString,
+  noMatchIsFinal,
+  batchHttpStatus,
   shouldAttemptAdsOffline,
   shouldAttemptAdsRetract,
   hasOpportunityClick,
