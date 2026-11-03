@@ -200,7 +200,13 @@ type AnalyticsEventMap = {
   /** Saiu depois de ver o preço sem transmitir a proposta. `stage` = até onde chegou. */
   suhai_offer_abandon: SuhaiBase & { stage: "price" | "plan" | "proposal_form"; reason: "pagehide" | "hidden" };
   /** Proposta transmitida à Suhai. Igual nos dois hosts do experimento. */
-  suhai_proposal_sent: SuhaiBase & { plan: string; installments: number };
+  suhai_proposal_sent: SuhaiBase & {
+    plan: string;
+    installments: number;
+    /** Número da proposta na Suhai: deduplica a conversão no Ads. */
+    transaction_id: string;
+    user_data?: HashedUserData;
+  };
 };
 
 /** Braço do experimento Suhai: `subdominio` = suhai.segurosimediato.com.br; `site` = /cotacao-suhai. */
