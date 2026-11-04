@@ -13,6 +13,19 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Corrigido — 04/11/2026 (veículo da cotação Suhai)
+
+Em 03 e 04/11, 5 de 9 cotações gravadas terminaram em "O Veículo não foi localizado" ou "Modelo informado está incorreto". Os veículos eram comuns (Fit 2015, Creta 2025, up! 2018, XTZ 250 2024, Fazer 150 2026).
+
+### Fixed
+- `lib/suhai/fipe-publica.ts`: a placa traz abreviações que a tabela FIPE não usa (`CVT`, `MCV`, `TA`) e letras grudadas em números (`XTZ250`, `CRETA1TA`). Antes, o modelo só entrava se o nome tivesse todos os tokens da placa; sem candidato, o site mandava à Suhai o nome cru da placa. Agora a família (primeiro token) é obrigatória, `XTZ250` vale como `XTZ 250` e, sem cobertura completa, ficam os modelos que cobrem mais tokens. Vários resultados abrem a escolha de versão, como já acontecia.
+- Sem placa: marca, modelo e ano digitados passam pela mesma busca (`POST /api/suhai/veiculo` com `marca`, `modelo` e `anoModelo`), nas tabelas de carro e de moto. Uma versão preenche o modelo com a grafia da tabela; várias abrem a lista "Versão". Modelo não encontrado avisa uma vez e deixa seguir no segundo clique. A categoria (carro ou moto) passa a vir da busca, e não mais fixa em carro.
+
+### Added
+- `npm run test:fipe-publica`: casos dos cinco veículos que falharam e da família obrigatória.
+
+---
+
 ## Ajustado — 04/11/2026 (1º dia da campanha Suhai)
 
 Sem mudança no site. Detalhe em [`suhai-integracao/10-MEDICAO-E-CAMPANHA.md`](suhai-integracao/10-MEDICAO-E-CAMPANHA.md).
