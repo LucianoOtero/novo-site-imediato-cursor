@@ -40,7 +40,7 @@ Campanha `ATIVA - Suhai Cotacao - Site Novo` no ar desde 04/11, com a medição 
 |---|---|
 | Lance só pela meta "Suhai - Lance" (metas por categoria fora do lance) | Feito em 04/11 |
 | Negativas de atendimento ao segurado | Feito em 04/11; rever os termos a cada semana (`ads-campaign-dia.mjs`) |
-| Cotação recusada com "Veículo não foi localizado": a placa traz abreviações do Denatran (CVT, MCV, `XTZ250`) que a busca na FIPE pública não acha, e sem placa o modelo é texto livre | 5 de 9 cotações em 03 e 04/11. Correção em PR própria |
+| Cotação recusada com "Veículo não foi localizado": a placa traz abreviações do Denatran (CVT, MCV, `XTZ250`) que a busca na FIPE pública não acha, e sem placa o modelo é texto livre | 5 de 9 cotações em 03 e 04/11. Corrigido na [PR #21](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/21) em 04/11; conferir `suhaiCotacao.status` das próximas cotações |
 | Funil e cobertura das conversões otimizadas | 05/11 |
 | Experimento de 5 dias úteis | 11/11 |
 

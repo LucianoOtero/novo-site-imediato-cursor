@@ -32,7 +32,7 @@ Sem mudança no site. Detalhe em [`suhai-integracao/10-MEDICAO-E-CAMPANHA.md`](s
 
 ### Changed
 - Campanha Suhai: as metas por categoria "Envio de formulário de lead" e "Compra" (origem site) saíram do lance. Com a meta personalizada, elas continuavam valendo e a ação genérica de lead contava junto com o "Suhai - Contato inicial", em dobro. `ads-suhai-custom-goal.mjs --apply` faz isso; `--remove` devolve o lance a elas.
-- Campanha Suhai: 9 frases negativas de quem já é segurado e procura atendimento (fone, número, contato, aplicativo, assistência 24 horas, 2a via, segurado). `ads-campaign-negatives.mjs` aplica e desfaz.
+- Campanha Suhai: 8 frases negativas de quem já é segurado e procura atendimento (fone, número, contato, assistência 24 horas, 2a via, segurado). `ads-campaign-negatives.mjs` aplica e desfaz. "aplicativo" entrou e saiu no mesmo dia: barraria buscas de seguro para motorista de aplicativo.
 
 ### Added
 - `ads-campaign-dia.mjs`: relatório diário da campanha (impressões, cliques, custo, parcela de impressões, grupos, termos de pesquisa e conversões por ação).

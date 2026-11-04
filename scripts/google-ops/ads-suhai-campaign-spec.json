@@ -178,7 +178,6 @@
     { "text": "número", "matchType": "PHRASE" },
     { "text": "numero", "matchType": "PHRASE" },
     { "text": "contato", "matchType": "PHRASE" },
-    { "text": "aplicativo", "matchType": "PHRASE" },
     { "text": "assistência 24 horas", "matchType": "PHRASE" },
     { "text": "assistencia 24 horas", "matchType": "PHRASE" },
     { "text": "2a via", "matchType": "PHRASE" },
