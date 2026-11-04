@@ -16,7 +16,7 @@ Pendências com data. Passos de produção continuam pedindo o "pode" do Luciano
 |---|---|---|
 | 03/11, noite | Google Ads / Suhai | Executar o plano da campanha de pesquisa Suhai (molde da Porto, R$ 150/dia, seg–sex 9h–18h): spec, paridade das duas páginas Suhai, eventos de atrito no GA4, conversões próprias, campanha criada pausada; ativação e frase negativa `suhai` na Exp, no Sábado e na Porto com "pode" |
 | 04/11 | Ads offline | Feito: auditoria limpa (26 vendas validadas, 0 erro depois do secret v10) e `validateOnly: false` em produção (secret v11, revisão `00020-fov`). Conferir nos próximos dias os primeiros `uploaded`/`accepted` em `ads_offline_audit` |
-| 04/11, 09h | Suhai (F8 continuação) | Revisar as rodadas da rotina de 28/10 a 03/11 e as primeiras propostas reais; Fase B; Lotes 3 e 5; projeto do cartão |
+| 04/11 | Suhai (F8 continuação) | Rotina revisada: 24 rodadas por dia de 29/10 a 04/11, nenhum erro ou alerta, `suhai_acompanhamento` vazio porque ainda não houve proposta real. Cotações reais: 9 em 04/11 (4 com ofertas, 5 com erro do veículo, já corrigido), nenhum plano escolhido. Rever quando houver a primeira proposta real. Faltam: Fase B, Lotes 3 e 5 e o projeto do cartão |
 | 04 a 06/11 | Ads | Cobertura das conversões otimizadas (0.2.58) no Diagnóstico do Ads |
 | 06/11, 09–12h | Dash | F5: telas de vendedores, analítico e inconsistências, com export para Excel |
 | 08/11 | RPA | Ajustes no servidor Hetzner (snapshot, swap, limpeza de disco, 4 GB de RAM) |
