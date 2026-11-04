@@ -13,6 +13,13 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Ligado — 04/11/2026 (venda offline ao Google Ads em envio real)
+
+### Changed
+- `GOOGLE_ADS_API_CONFIG` v11 com `validateOnly: false`; `syncOpportunitySold` reimplantada (revisão `00020-fov`, mesmo código do main). Vendas sem `cGclid` passam a ser registradas no Ads, uma vez por oportunidade; as com `cGclid` continuam no CSV do Espo. Base: 2 dias de validação com 26 vendas distintas validadas e nenhum erro depois do secret v10. Rollback: secret com `enabled: false` ou `validateOnly: true` e novo deploy da função ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md)).
+
+---
+
 ## Corrigido — 04/11/2026 (veículo da cotação Suhai)
 
 Em 03 e 04/11, 5 de 9 cotações gravadas terminaram em "O Veículo não foi localizado" ou "Modelo informado está incorreto". Os veículos eram comuns (Fit 2015, Creta 2025, up! 2018, XTZ 250 2024, Fazer 150 2026).
@@ -32,7 +39,7 @@ Sem mudança no site. Detalhe em [`suhai-integracao/10-MEDICAO-E-CAMPANHA.md`](s
 
 ### Changed
 - Campanha Suhai: as metas por categoria "Envio de formulário de lead" e "Compra" (origem site) saíram do lance. Com a meta personalizada, elas continuavam valendo e a ação genérica de lead contava junto com o "Suhai - Contato inicial", em dobro. `ads-suhai-custom-goal.mjs --apply` faz isso; `--remove` devolve o lance a elas.
-- Campanha Suhai: 9 frases negativas de quem já é segurado e procura atendimento (fone, número, contato, aplicativo, assistência 24 horas, 2a via, segurado). `ads-campaign-negatives.mjs` aplica e desfaz.
+- Campanha Suhai: 8 frases negativas de quem já é segurado e procura atendimento (fone, número, contato, assistência 24 horas, 2a via, segurado). `ads-campaign-negatives.mjs` aplica e desfaz. "aplicativo" entrou e saiu no mesmo dia: barraria buscas de seguro para motorista de aplicativo.
 
 ### Added
 - `ads-campaign-dia.mjs`: relatório diário da campanha (impressões, cliques, custo, parcela de impressões, grupos, termos de pesquisa e conversões por ação).

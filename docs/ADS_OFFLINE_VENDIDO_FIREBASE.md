@@ -1,6 +1,6 @@
 # Offline Conversion Ads no evento Vendido (Firebase → Google Ads API)
 
-**Status:** desde 2026-11-03 ligado em **modo de validação** (`enabled: true`, `mode: "complementar"`, `validateOnly: true`; `syncOpportunitySold` na revisão `00018-tib`, secret v10). O Google só valida e nada é registrado; vendas com `cGclid` seguem pelo lote CSV do Espo (ter–sáb 02:00). Próximo passo: conferir `ads_offline_audit` (`validated` × `error`) e, com "pode", passar `validateOnly` para `false`. Rollback: `enabled: false`.  
+**Status:** desde 2026-11-04 (fim do dia) em **envio real** (`enabled: true`, `mode: "complementar"`, `validateOnly: false`; `syncOpportunitySold` na revisão `00020-fov`, secret v11). As vendas sem `cGclid` são registradas no Ads (Data Manager, `user_data`), uma vez por oportunidade; as com `cGclid` seguem pelo lote CSV do Espo (ter–sáb 02:00). Antes houve 2 dias de validação (03–04/11): 26 vendas distintas validadas (~R$ 20,1 mil, 0 valor zerado, datas de 0 a 30 dias), 0 erro depois da troca do secret (os 9 `oauth_error` de 03/11 12:38–13:02 são anteriores à v10). Rollback: nova versão do secret com `enabled: false` (ou `validateOnly: true`) e `firebase deploy --only functions:syncOpportunitySold`.  
 **Plano:** Ads offline on Vendido  
 **Depende de:** sync Espo `Vendido` → Firebase ([`ESPO_VENDIDO_FIREBASE_SYNC.md`](ESPO_VENDIDO_FIREBASE_SYNC.md), Fase 4 OK)
 
