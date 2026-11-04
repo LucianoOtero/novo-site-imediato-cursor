@@ -13,6 +13,35 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Ajustado — 04/11/2026 (1º dia da campanha Suhai)
+
+Sem mudança no site. Detalhe em [`suhai-integracao/10-MEDICAO-E-CAMPANHA.md`](suhai-integracao/10-MEDICAO-E-CAMPANHA.md).
+
+### Changed
+- Campanha Suhai: as metas por categoria "Envio de formulário de lead" e "Compra" (origem site) saíram do lance. Com a meta personalizada, elas continuavam valendo e a ação genérica de lead contava junto com o "Suhai - Contato inicial", em dobro. `ads-suhai-custom-goal.mjs --apply` faz isso; `--remove` devolve o lance a elas.
+- Campanha Suhai: 9 frases negativas de quem já é segurado e procura atendimento (fone, número, contato, aplicativo, assistência 24 horas, 2a via, segurado). `ads-campaign-negatives.mjs` aplica e desfaz.
+
+### Added
+- `ads-campaign-dia.mjs`: relatório diário da campanha (impressões, cliques, custo, parcela de impressões, grupos, termos de pesquisa e conversões por ação).
+
+---
+
+## Publicado — 03/11/2026 (campanha e medição da Suhai)
+
+PRs [#17](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/17) e [#18](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/18), sem mudança de versão. Detalhe em [`suhai-integracao/10-MEDICAO-E-CAMPANHA.md`](suhai-integracao/10-MEDICAO-E-CAMPANHA.md).
+
+### Added
+- Eventos `suhai_*` em toda a jornada (etapas, erros de campo, consultas de placa e CPF, resultado da cotação, assistência, plano, proposta e abandono da oferta), com `arm` (`subdominio` ou `site`).
+- `suhai_proposal_sent` com `transaction_id` e `user_data` (celular e e-mail com hash SHA-256, espera de até 300 ms).
+- GTM v54: uma tag GA4 para todo `^suhai_`, três conversões do Ads (Suhai - Contato inicial, Preço exibido e Proposta enviada) e e-mail com hash nos dados fornecidos pelo usuário.
+- GA4: 12 dimensões de evento, a métrica `duration_ms` e os eventos-chave `suhai_quote_price` e `suhai_proposal_sent`.
+- Google Ads: campanha `ATIVA - Suhai Cotacao - Site Novo` com lance pela meta personalizada "Suhai - Lance" (contato e proposta da Suhai e venda offline). As ações da Suhai são secundárias e não entram nas metas da conta.
+
+### Changed
+- `trackSuhai` limpa as chaves de parâmetro que não se aplicam ao evento, para que valores de um evento não passem para o seguinte no GTM.
+
+---
+
 ## [0.2.58] — 03/11/2026 — conversões otimizadas do Google Ads
 
 Branch `feat/conversoes-otimizadas`, a partir da 0.2.57. GTM preparado no workspace 60 e publicado junto com o site. Motivo: em 29/10 o Diagnóstico do Ads mostrava cobertura de 0% em "Envio de Formulário de Lead na Página" (30 de 30 conversões sem dados do usuário) e 6% em "Preencher o telefone no modal de whatsapp". O site novo não mandava nenhum dado do usuário junto da conversão.
@@ -212,7 +241,7 @@ Não é release de produção. `novo.segurosimediato.com.br` segue na linha `v0.
 - Preview público do branch `uat-marca-suhai` (commit `0ac3001`): [landing](https://imediato-seguros-git-uat-marca-suhai-lucianooteros-projects.vercel.app/marca-suhai).
 - O preview anterior permanece no branch `uat-suhai`: cotação no visual da Imediato em [cotacao-suhai](https://imediato-seguros-git-uat-suhai-lucianooteros-projects.vercel.app/cotacao-suhai).
 - Cards de moto, carro e caminhão com o véu de foto medido no site da Suhai ([`SUHAI_CARDS_IMAGEM.md`](SUHAI_CARDS_IMAGEM.md)).
-- Eventos `suhai_quote_start`, `suhai_quote_price` e `suhai_quote_abandon` no código. As tags do GTM não foram publicadas.
+- Eventos `suhai_quote_start`, `suhai_quote_price` e `suhai_quote_abandon` no código. As tags do GTM não foram publicadas nessa data; a medição completa entrou na v54 do GTM, em 03/11/2026.
 
 ### Changed
 - Nas três subpáginas o formulário passou para a hero, no mesmo formato da home: foto e título à esquerda, cotação à direita. No celular, o título fica em cima e o formulário logo abaixo. Aceito em 01/10/2026 no workspace. O preview publicado ainda está no commit `0ac3001`, em que esse formulário vinha depois do conteúdo.

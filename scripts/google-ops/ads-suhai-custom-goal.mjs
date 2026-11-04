@@ -2,12 +2,14 @@
 /**
  * Meta personalizada "Suhai - Lance" (Contato Suhai + Proposta Suhai + venda
  * offline 303889427) ligada só à campanha Suhai. As outras campanhas seguem
- * nas metas da conta.
+ * nas metas da conta. Com a meta personalizada, as metas por categoria da
+ * campanha continuam valendo no lance e a ação genérica de lead conta em dobro com
+ * o "Contato inicial"; por isso o --apply as tira do lance.
  *
  *   node ads-suhai-custom-goal.mjs            → dry-run
  *   node ads-suhai-custom-goal.mjs --apply
  *   node ads-suhai-custom-goal.mjs --remove   → campanha volta às metas por categoria
- *                                               (SUBMIT_LEAD_FORM e PURCHASE); meta REMOVED
+ *                                               (SUBMIT_LEAD_FORM e PURCHASE com lance); meta REMOVED
  */
 import { lerAcoesSuhai } from "./ads-suhai-conversion-actions.mjs";
 import { adsSession, argValue, gaqlString, mutate, searchAll, writeLog } from "./lib/ads-rest.mjs";
@@ -39,14 +41,35 @@ async function lerMeta(s) {
   return row?.customConversionGoal;
 }
 
+async function lerMetasCategoria(s, campaignRn) {
+  const rows = await searchAll(
+    s,
+    `SELECT campaign_conversion_goal.resource_name, campaign_conversion_goal.category,
+       campaign_conversion_goal.origin, campaign_conversion_goal.biddable
+     FROM campaign_conversion_goal WHERE campaign_conversion_goal.campaign = '${campaignRn}'`,
+  );
+  return rows.map((r) => r.campaignConversionGoal);
+}
+
+async function definirLance(s, metas, biddable) {
+  if (metas.length === 0) return;
+  await mutate(s, "campaignConversionGoals", {
+    operations: metas.map((m) => ({ update: { resourceName: m.resourceName, biddable }, updateMask: "biddable" })),
+  });
+}
+
 async function main() {
   const s = await adsSession();
   const cid = s.ads.customerId;
   const campaignRn = `customers/${cid}/campaigns/${CAMPAIGN_ID}`;
   const report = { ranAt: new Date().toISOString(), mode: REMOVE ? "remove" : APPLY ? "apply" : "dry-run", steps: [] };
 
-  const antes = { config: await lerConfig(s, campaignRn), meta: await lerMeta(s) };
+  const antes = { config: await lerConfig(s, campaignRn), meta: await lerMeta(s), metasCategoria: await lerMetasCategoria(s, campaignRn) };
   report.antes = antes;
+  const comLance = antes.metasCategoria.filter((m) => m.biddable);
+  const originais = antes.metasCategoria.filter(
+    (m) => m.origin === "WEBSITE" && ["SUBMIT_LEAD_FORM", "PURCHASE"].includes(m.category) && !m.biddable,
+  );
 
   if (REMOVE) {
     if (antes.config?.customConversionGoal) {
@@ -60,6 +83,8 @@ async function main() {
       });
       report.steps.push({ step: "campaign_back_to_campaign_category_goals" });
     }
+    await definirLance(s, originais, true);
+    if (originais.length) report.steps.push({ step: "category_goals_biddable", metas: originais.map((m) => `${m.category}~${m.origin}`) });
     if (antes.meta) {
       await mutate(s, "customConversionGoals", {
         operations: [{ update: { resourceName: antes.meta.resourceName, status: "REMOVED" }, updateMask: "status" }],
@@ -101,12 +126,18 @@ async function main() {
         ],
       });
       report.steps.push({ step: "campaign_uses_custom_goal" });
+      await definirLance(s, comLance, false);
+      if (comLance.length) report.steps.push({ step: "category_goals_not_biddable", metas: comLance.map((m) => `${m.category}~${m.origin}`) });
     } else {
-      report.steps.push({ step: antes.meta ? "would_update_goal" : "would_create_goal" }, { step: "would_link_campaign" });
+      report.steps.push(
+        { step: antes.meta ? "would_update_goal" : "would_create_goal" },
+        { step: "would_link_campaign" },
+        { step: "would_unbid_category_goals", metas: comLance.map((m) => `${m.category}~${m.origin}`) },
+      );
     }
   }
 
-  report.depois = { config: await lerConfig(s, campaignRn), meta: await lerMeta(s) };
+  report.depois = { config: await lerConfig(s, campaignRn), meta: await lerMeta(s), metasCategoria: await lerMetasCategoria(s, campaignRn) };
   writeLog("suhai-custom-goal", report);
   console.log(JSON.stringify({ mode: report.mode, antes: report.antes, steps: report.steps, depois: report.depois }, null, 2));
 }

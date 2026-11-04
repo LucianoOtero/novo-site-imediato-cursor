@@ -34,10 +34,7 @@
   "finalUrl": "https://suhai.segurosimediato.com.br/",
   "path1": "seguro",
   "path2": "suhai",
-  "biddableConversionGoals": [
-    { "category": "SUBMIT_LEAD_FORM", "origin": "WEBSITE" },
-    { "category": "PURCHASE", "origin": "WEBSITE" }
-  ],
+  "biddableConversionGoals": [],
   "rsa": {
     "headlines": [
       { "text": "Imediato Seguros", "pinnedField": "HEADLINE_1" },
@@ -176,7 +173,16 @@
     { "text": "cancelamento", "matchType": "PHRASE" },
     { "text": "parceiros", "matchType": "PHRASE" },
     { "text": "ituran", "matchType": "PHRASE" },
-    { "text": "cooperativa", "matchType": "PHRASE" }
+    { "text": "cooperativa", "matchType": "PHRASE" },
+    { "text": "fone", "matchType": "PHRASE" },
+    { "text": "número", "matchType": "PHRASE" },
+    { "text": "numero", "matchType": "PHRASE" },
+    { "text": "contato", "matchType": "PHRASE" },
+    { "text": "aplicativo", "matchType": "PHRASE" },
+    { "text": "assistência 24 horas", "matchType": "PHRASE" },
+    { "text": "assistencia 24 horas", "matchType": "PHRASE" },
+    { "text": "2a via", "matchType": "PHRASE" },
+    { "text": "segurado", "matchType": "PHRASE" }
   ],
   "importNegatives": {
     "snapshot": "logs/exp-snapshot-for-suhai.json",

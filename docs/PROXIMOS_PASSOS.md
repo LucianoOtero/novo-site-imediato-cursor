@@ -32,6 +32,18 @@ Já concluídos e registrados: Lote 1 do funil v2 (27–28/10), acompanhamento S
 
 ---
 
+## Campanha Suhai (04/11/2026) — retomar daqui
+
+Campanha `ATIVA - Suhai Cotacao - Site Novo` no ar desde 04/11, com a medição da v54 do GTM ([`suhai-integracao/10-MEDICAO-E-CAMPANHA.md`](suhai-integracao/10-MEDICAO-E-CAMPANHA.md)).
+
+| Item | Situação |
+|---|---|
+| Lance só pela meta "Suhai - Lance" (metas por categoria fora do lance) | Feito em 04/11 |
+| Negativas de atendimento ao segurado | Feito em 04/11; rever os termos a cada semana (`ads-campaign-dia.mjs`) |
+| Cotação recusada com "Veículo não foi localizado": a placa traz abreviações do Denatran (CVT, MCV, `XTZ250`) que a busca na FIPE pública não acha, e sem placa o modelo é texto livre | 5 de 9 cotações em 03 e 04/11. Correção em PR própria |
+| Funil e cobertura das conversões otimizadas | 05/11 |
+| Experimento de 5 dias úteis | 11/11 |
+
 ## Projeto funil v2 (2026-10-25) — retomar daqui
 
 O 0.2.55 está em produção. O projeto seguinte tem 6 lotes, cada um com UAT próprio. Passos que só existem em produção pedem o "pode" do Luciano antes:
