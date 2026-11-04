@@ -13,6 +13,19 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Ajustado — 04/11/2026 (1º dia da campanha Suhai)
+
+Sem mudança no site. Detalhe em [`suhai-integracao/10-MEDICAO-E-CAMPANHA.md`](suhai-integracao/10-MEDICAO-E-CAMPANHA.md).
+
+### Changed
+- Campanha Suhai: as metas por categoria "Envio de formulário de lead" e "Compra" (origem site) saíram do lance. Com a meta personalizada, elas continuavam valendo e a ação genérica de lead contava junto com o "Suhai - Contato inicial", em dobro. `ads-suhai-custom-goal.mjs --apply` faz isso; `--remove` devolve o lance a elas.
+- Campanha Suhai: 9 frases negativas de quem já é segurado e procura atendimento (fone, número, contato, aplicativo, assistência 24 horas, 2a via, segurado). `ads-campaign-negatives.mjs` aplica e desfaz.
+
+### Added
+- `ads-campaign-dia.mjs`: relatório diário da campanha (impressões, cliques, custo, parcela de impressões, grupos, termos de pesquisa e conversões por ação).
+
+---
+
 ## Publicado — 03/11/2026 (campanha e medição da Suhai)
 
 PRs [#17](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/17) e [#18](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/18), sem mudança de versão. Detalhe em [`suhai-integracao/10-MEDICAO-E-CAMPANHA.md`](suhai-integracao/10-MEDICAO-E-CAMPANHA.md).

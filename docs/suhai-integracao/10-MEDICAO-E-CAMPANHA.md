@@ -50,11 +50,14 @@ Ações de conversão, todas secundárias (`primaryForGoal: false`), uma por cli
 
 Secundárias para não entrarem nas metas da conta nem mexerem nas campanhas da Porto.
 
-Campanha `ATIVA - Suhai Cotacao - Site Novo` (24433459330): lance pela meta personalizada **Suhai - Lance** (6459768828), com Suhai - Contato inicial, Suhai - Proposta enviada e `SegurosImediatoOffline` (venda importada). O "Preço exibido" fica só para observação.
+Campanha `ATIVA - Suhai Cotacao - Site Novo` (24433459330): lance pela meta personalizada **Suhai - Lance** (6459768828), com Suhai - Contato inicial, Suhai - Proposta enviada e `SegurosImediatoOffline` (venda importada). O "Preço exibido" fica só para observação. As metas por categoria da campanha ficam fora do lance (desde 04/11): sem isso, "Envio de Formulário de Lead na Página" contava junto com o "Suhai - Contato inicial" e cada contato valia duas conversões.
+
+Negativas de atendimento ao segurado ficam em `campaignNegatives` na spec da campanha. As de 04/11 vieram dos termos de pesquisa do 1º dia.
 
 Rollback:
 
-- Meta: `node ads-suhai-custom-goal.mjs --remove` (a campanha volta às metas por categoria, envio de lead e compra).
+- Meta: `node ads-suhai-custom-goal.mjs --remove` (a campanha volta às metas por categoria, envio de lead e compra, com lance).
+- Negativas: `node ads-campaign-negatives.mjs --campaign-id=24433459330 --add="<frases>" --remove --apply`.
 - Ações: `node ads-suhai-conversion-actions.mjs --remove`.
 
 Conferência: `node ads-verify-campaign.mjs --campaign-id=24433459330` mostra a meta em uso e as ações dela.
@@ -64,7 +67,9 @@ Conferência: `node ads-verify-campaign.mjs --campaign-id=24433459330` mostra a 
 | Script | Uso |
 |---|---|
 | `ads-suhai-conversion-actions.mjs` | Cria ou remove as três ações; sem `--apply` só relata. |
-| `ads-suhai-custom-goal.mjs` | Cria a meta e liga na campanha; `--remove` desfaz. |
+| `ads-suhai-custom-goal.mjs` | Cria a meta, liga na campanha e tira do lance as metas por categoria; `--remove` desfaz. |
+| `ads-campaign-negatives.mjs` | Frases negativas numa campanha existente, sem bloquear palavra-chave positiva; `--remove` desfaz. |
+| `ads-campaign-dia.mjs` | Dia a dia da campanha: custo, parcela de impressões, grupos, termos e conversões por ação. |
 | `ga4-ensure-suhai-dimensions.mjs` | Dimensões, métrica e eventos-chave. |
 | `gtm-suhai-medicao-completa.mjs` | Workspace com as tags; `--publish` cria a versão e publica. |
 | `gtm-suhai-preview.mjs` | Compila o workspace e grava em `logs/` a URL do `gtm.js` de preview. |
