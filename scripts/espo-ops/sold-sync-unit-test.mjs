@@ -233,6 +233,29 @@ assert(
   "miss: Telefone source → expected"
 );
 assert(
+  sold.classifyNoFirebaseMatch({
+    action: "clear",
+    cLeadId: null,
+    cGclid: "Cjw",
+    leadSource: "Clientes Existente",
+  }).missClass === "expected_clear_no_match" &&
+    sold.classifyNoFirebaseMatch({
+      action: "clear",
+      cLeadId: "lead1",
+      cWebpage: "novo.segurosimediato.com.br",
+    }).skipEmail === true,
+  "miss: clear sem lead no Firebase → skip email"
+);
+assert(
+  sold.classifyNoFirebaseMatch({
+    action: "set",
+    cLeadId: null,
+    cGclid: "Cjw",
+    leadSource: "Clientes Existente",
+  }).missClass === "actionable_unknown",
+  "miss: set com clique e sem lead continua alertando"
+);
+assert(
   sold.normalizePayload({
     action: "clear",
     id: "o1",

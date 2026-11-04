@@ -299,6 +299,10 @@ function classifyNoFirebaseMatch(payload) {
   const isPhoneSource =
     leadSource.includes("telefone") || leadSource.includes("phone");
 
+  // Desfazer venda sem lead no Firebase: não há "vendido" para limpar.
+  if (payload?.action === "clear") {
+    return { missClass: "expected_clear_no_match", skipEmail: true };
+  }
   if (!hasLead && !hasClick) {
     return { missClass: "expected_no_attribution", skipEmail: true };
   }
@@ -801,6 +805,13 @@ function explainSoldSyncErrorPlain({ reason, missClass = null, results, payload 
   }
 
   if (reason === "no_firebase_match") {
+    if (missClass === "expected_clear_no_match") {
+      return (
+        "Em resumo: a oportunidade saiu de «Vendido» no CRM, mas não há lead correspondente no Firebase, então não havia venda espelhada para desfazer. " +
+        "Nada a fazer." +
+        oppHint
+      );
+    }
     if (missClass === "actionable_site_novo_gap") {
       return (
         "Em resumo: a oportunidade foi marcada como vendida no CRM, mas não encontramos o lead correspondente no Firebase do site novo. " +
