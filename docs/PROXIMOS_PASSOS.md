@@ -15,7 +15,7 @@ Pendências com data. Passos de produção continuam pedindo o "pode" do Luciano
 | Quando | Frente | O que fazer |
 |---|---|---|
 | 03/11, noite | Google Ads / Suhai | Executar o plano da campanha de pesquisa Suhai (molde da Porto, R$ 150/dia, seg–sex 9h–18h): spec, paridade das duas páginas Suhai, eventos de atrito no GA4, conversões próprias, campanha criada pausada; ativação e frase negativa `suhai` na Exp, no Sábado e na Porto com "pode" |
-| 04/11, 08h | Ads offline | Conferir `ads_offline_audit` (`validated` × `error`) e o resumo de erros de vendas; se ok, "pode" para `validateOnly: false` |
+| 04/11 | Ads offline | Feito: auditoria limpa (26 vendas validadas, 0 erro depois do secret v10) e `validateOnly: false` em produção (secret v11, revisão `00020-fov`). Conferir nos próximos dias os primeiros `uploaded`/`accepted` em `ads_offline_audit` |
 | 04/11, 09h | Suhai (F8 continuação) | Revisar as rodadas da rotina de 28/10 a 03/11 e as primeiras propostas reais; Fase B; Lotes 3 e 5; projeto do cartão |
 | 04 a 06/11 | Ads | Cobertura das conversões otimizadas (0.2.58) no Diagnóstico do Ads |
 | 06/11, 09–12h | Dash | F5: telas de vendedores, analítico e inconsistências, com export para Excel |
@@ -56,7 +56,7 @@ O 0.2.55 está em produção. O projeto seguinte tem 6 lotes, cada um com UAT pr
 |---|---|---|
 | 0 | Conferir a atribuição Ads → Espo em produção | **Concluído** em 25/10 ([`FASE5_ROLLOUT_PRODUCAO.md`](FASE5_ROLLOUT_PRODUCAO.md)) |
 | 1 | Telefone em campo único + deduplicação durável (reaproveita a Opp aberta do mesmo celular e ramo por 7 dias) | **Concluído.** Em produção desde 27/10 (0.2.56); `oppReuseDays: 7` no bloco `prod` desde 28/10 (`ESPOCRM_API_CONFIG` v7, `deliverlead-00038-dej`; rollback = v6 + deploy). Registro em [`UAT_PLANO_COMPLETO.md`](UAT_PLANO_COMPLETO.md) (F5) e [`UAT_LOTE1_FUNIL_V2.md`](UAT_LOTE1_FUNIL_V2.md) |
-| 2 | Venda ao Google Ads na hora, desligando o CSV noturno do Espo ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md)) | Sombra 2/5 ok (lotes de 23/10 e 26/10). Desde 03/11 a função envia em modo de validação (`complementar`, `validateOnly: true`). Faltam: conferir a auditoria, `validateOnly: false` com "pode", completar as 5 rodadas e o aceite para desligar os 5 jobs do CSV |
+| 2 | Venda ao Google Ads na hora, desligando o CSV noturno do Espo ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md)) | Sombra 2/5 ok (lotes de 23/10 e 26/10). Desde 04/11 a função envia de verdade as vendas sem `cGclid` (`complementar`, `validateOnly: false`, depois de 2 dias de validação limpa). Faltam: conferir os primeiros envios reais, completar as 5 rodadas e o aceite para desligar os 5 jobs do CSV |
 | 3 | Velocidade no celular (linha de base, limpeza do GTM, GTM atrasado em teste) | Pendente |
 | 4 | Cálculo Suhai junto com o RPA, em modo simulado e só no UAT | Pendente: só o plano, em [`FASE_B_SUHAI_PARALELO.md`](FASE_B_SUHAI_PARALELO.md); revisão em 04/11 |
 | 5 | SEO orgânico com Semrush: monitoramento, conteúdo das páginas de ramo, guias | Pendente |

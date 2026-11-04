@@ -13,6 +13,13 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Ligado — 04/11/2026 (venda offline ao Google Ads em envio real)
+
+### Changed
+- `GOOGLE_ADS_API_CONFIG` v11 com `validateOnly: false`; `syncOpportunitySold` reimplantada (revisão `00020-fov`, mesmo código do main). Vendas sem `cGclid` passam a ser registradas no Ads, uma vez por oportunidade; as com `cGclid` continuam no CSV do Espo. Base: 2 dias de validação com 26 vendas distintas validadas e nenhum erro depois do secret v10. Rollback: secret com `enabled: false` ou `validateOnly: true` e novo deploy da função ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md)).
+
+---
+
 ## Corrigido — 04/11/2026 (veículo da cotação Suhai)
 
 Em 03 e 04/11, 5 de 9 cotações gravadas terminaram em "O Veículo não foi localizado" ou "Modelo informado está incorreto". Os veículos eram comuns (Fit 2015, Creta 2025, up! 2018, XTZ 250 2024, Fazer 150 2026).
