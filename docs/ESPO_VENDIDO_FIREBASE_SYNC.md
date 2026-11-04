@@ -176,7 +176,9 @@ Quando `stage = Vendido`: campo `amount` **required** na UI (e backend conforme 
 
 A CF infere `action=set` se `stage=Vendido`, senão `clear` se `stage` veio no payload; enriquece Opp via API (**também no clear**: completa `cLeadId` / click IDs / `cWebpage` / `leadSource` quando faltam — evita `no_firebase_match` falso se `espocrmOpportunityId` no RTDB estiver stale). Match por `espocrmLeadId` com OppId divergente **reconcilia** `espocrmOpportunityId` no Firebase (sem `autoSync`).
 
-`no_firebase_match` grava `missClass` em `sold_sync_errors/`; e-mail só para classes `actionable_*` (ver [`FASE3_HARDENING_SOLD_SYNC.md`](FASE3_HARDENING_SOLD_SYNC.md)).
+`no_firebase_match` grava `missClass` em `sold_sync_errors/`; e-mail só para classes `actionable_*` (ver [`FASE3_HARDENING_SOLD_SYNC.md`](FASE3_HARDENING_SOLD_SYNC.md)). Desde 04/11/2026, o `clear` sem lead no Firebase é `expected_clear_no_match` e não entra no resumo diário: não havia venda espelhada para desfazer (caso da oportunidade movida para "Vendas a Verificar" em 03/11).
+
+Para cruzar os registros de `sold_sync_errors` com o estado atual das oportunidades no Espo PROD e dos leads no Firebase: `node --env-file=<.env com FIREBASE_*> scripts/espo-ops/sold-sync-errors-report.mjs --hours 72` (somente leitura; com `ESPOCRM_API_CONFIG` no ambiente, também consulta o Espo).
 
 **Não** ativar Workflow Send HTTP Request em paralelo com este Webhook (eventos duplicados).
 
