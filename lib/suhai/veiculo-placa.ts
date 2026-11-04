@@ -65,20 +65,52 @@ export async function veiculoPorPlaca(placa: string): Promise<VeiculoPreenchido 
     ano: consulta.anoModelo,
   });
 
-  let categoria = tipo === "moto" ? "moto" : "auto";
-  const marca = consulta.marca ?? "";
-  const modelo = consulta.modelo ?? "";
-  const opcoes = await Promise.all(candidatos.map((candidato) => grafiaSuhai(candidato, marca)));
+  return preencher(candidatos, {
+    tipo,
+    marca: consulta.marca ?? "",
+    modelo: consulta.modelo ?? "",
+    anoModelo: consulta.anoModelo,
+    anoFabricacao: consulta.anoFabricacao ?? consulta.anoModelo,
+  });
+}
+
+/**
+ * Sem placa: a marca e o modelo digitados, no ano informado, nas tabelas de
+ * carro e de moto. Sem nenhuma versão encontrada devolve `ok: false` — o
+ * nome digitado não serve à Suhai, que só aceita a grafia do catálogo.
+ */
+export async function veiculoPorModelo(dados: {
+  marca: string;
+  modelo: string;
+  anoModelo: string;
+}): Promise<VeiculoPreenchido | { ok: false }> {
+  const busca = { marca: dados.marca, modelo: dados.modelo, ano: dados.anoModelo };
+  const [carros, motos] = await Promise.all([
+    candidatosFipePublicos({ ...busca, tipo: "carro" }),
+    candidatosFipePublicos({ ...busca, tipo: "moto" }),
+  ]);
+  const tipo = carros.length > 0 ? "carro" : "moto";
+  const candidatos = carros.length > 0 ? carros : motos;
+  if (candidatos.length === 0) return { ok: false };
+  return preencher(candidatos, { ...dados, tipo, anoFabricacao: dados.anoModelo });
+}
+
+async function preencher(
+  candidatos: CandidatoFipe[],
+  veiculo: { tipo: "carro" | "moto"; marca: string; modelo: string; anoModelo: string; anoFabricacao: string },
+): Promise<VeiculoPreenchido> {
+  let categoria = veiculo.tipo === "moto" ? "moto" : "auto";
+  const opcoes = await Promise.all(candidatos.map((candidato) => grafiaSuhai(candidato, veiculo.marca)));
   const unica = opcoes.length === 1 ? opcoes[0] : undefined;
   if (unica?.categoria) categoria = unica.categoria;
 
   return {
     ok: true,
     categoria,
-    anoModelo: consulta.anoModelo,
-    anoFabricacao: consulta.anoFabricacao ?? consulta.anoModelo,
-    marca: unica?.marca || marca,
-    modelo: unica?.modelo || (opcoes.length > 1 ? "" : modelo),
+    anoModelo: veiculo.anoModelo,
+    anoFabricacao: veiculo.anoFabricacao,
+    marca: unica?.marca || veiculo.marca,
+    modelo: unica?.modelo || (opcoes.length > 1 ? "" : veiculo.modelo),
     codFipe: unica?.codFipe,
     opcoes: opcoes.length > 1 ? opcoes.map(({ marca: marcaOpcao, modelo: modeloOpcao, codFipe }) => ({ marca: marcaOpcao, modelo: modeloOpcao, codFipe })) : undefined,
   };

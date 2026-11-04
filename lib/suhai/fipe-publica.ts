@@ -41,7 +41,7 @@ function preparar(valor: string): string {
 /**
  * `16SV` na placa é `1.6` + `SV`. `16V` fica inteiro: é válvula, não motorização.
  */
-function tokensExigidos(modelo: string): string[] {
+export function tokensExigidos(modelo: string): string[] {
   const tokens: string[] = [];
   for (const token of preparar(modelo).split(" ").filter(Boolean)) {
     const colado = token.match(/^(\d)(\d)([a-z]{2,})$/);
@@ -54,8 +54,38 @@ function tokensExigidos(modelo: string): string[] {
   return tokens;
 }
 
-function nomeContem(nome: string, token: string): boolean {
-  return preparar(nome).split(" ").includes(token);
+/** `XTZ250` na placa é `XTZ 250` na tabela; `CRETA1TA` vira `CRETA 1 TA`. */
+function partes(token: string): string[] {
+  return token.split(/(?<=[a-z])(?=\d)|(?<=\d)(?=[a-z])/).filter(Boolean);
+}
+
+function tokenCasa(palavras: string[], token: string): boolean {
+  if (palavras.includes(token)) return true;
+  const pedacos = partes(token);
+  return pedacos.length > 1 && pedacos.every((pedaco) => palavras.includes(pedaco));
+}
+
+/**
+ * Modelos da marca agrupados por quantos tokens da placa o nome cobre, do
+ * mais completo ao menos. A família (primeiro token, como "FIT" ou "XTZ")
+ * é obrigatória; o resto pode faltar, porque a placa traz abreviações que a
+ * tabela não usa ("CVT", "MCV", "TA"). Só aceita família por prefixo
+ * ("320" em "320iA") quando nenhum nome a tem inteira.
+ */
+export function niveisPorCobertura(modelos: Item[], exigidos: string[]): Item[][] {
+  if (exigidos.length === 0) return [];
+  const familia = partes(exigidos[0])[0];
+  const comPalavras = modelos.map((item) => ({ item, palavras: preparar(item.nome).split(" ") }));
+  let daFamilia = comPalavras.filter(({ palavras }) => tokenCasa(palavras, exigidos[0]) || palavras.includes(familia));
+  if (daFamilia.length === 0 && familia.length >= 3) {
+    daFamilia = comPalavras.filter(({ palavras }) => palavras.some((palavra) => palavra.startsWith(familia)));
+  }
+  const porCobertura = new Map<number, Item[]>();
+  for (const { item, palavras } of daFamilia) {
+    const cobertura = exigidos.filter((token) => tokenCasa(palavras, token)).length;
+    porCobertura.set(cobertura, [...(porCobertura.get(cobertura) ?? []), item]);
+  }
+  return [...porCobertura.entries()].sort(([a], [b]) => b - a).map(([, itens]) => itens);
 }
 
 async function obterJson<T>(url: string): Promise<T | undefined> {
@@ -104,8 +134,9 @@ async function anosDosModelos(tipo: "carro" | "moto", marcaCodigo: string, ano: 
 }
 
 /**
- * Modelos da tabela pública cujo nome cobre a abreviação da placa e que
- * existem naquele ano. Mais de um resultado não escolhe versão.
+ * Modelos da tabela pública que existem naquele ano e cujo nome cobre o
+ * máximo de tokens da abreviação da placa. Mais de um resultado não
+ * escolhe versão.
  */
 export async function candidatosFipePublicos(parametros: {
   tipo: "carro" | "moto";
@@ -131,21 +162,24 @@ export async function candidatosFipePublicos(parametros: {
     obterJson<{ modelos: Item[] }>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos`),
     anosDosModelos(parametros.tipo, marcaItem.codigo, ano),
   ]);
-  const exigidos = tokensExigidos(modelo);
-  const compativeis = (modelos?.modelos ?? []).filter((item) => exigidos.every((token) => nomeContem(item.nome, token)));
+  const niveis = niveisPorCobertura(modelos?.modelos ?? [], tokensExigidos(modelo));
 
-  const candidatos = await mapearComLimite(compativeis, SIMULTANEAS, async (item): Promise<CandidatoFipe | undefined> => {
-    let anoCodigo = anoPorModelo?.get(String(item.codigo));
-    if (!anoPorModelo) {
-      const anos = await obterJson<Item[]>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos`);
-      anoCodigo = anos?.find((entrada) => entrada.codigo.startsWith(ano) || entrada.nome.startsWith(ano))?.codigo;
-    }
-    if (!anoCodigo) return undefined;
-    const preco = await obterJson<Preco>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos/${anoCodigo}`);
-    const codFipe = preco?.CodigoFipe || preco?.codigoFipe;
-    return codFipe ? { nome: item.nome, codFipe } : undefined;
-  });
-  return candidatos.filter((candidato): candidato is CandidatoFipe => candidato !== undefined);
+  for (const compativeis of niveis) {
+    const candidatos = await mapearComLimite(compativeis, SIMULTANEAS, async (item): Promise<CandidatoFipe | undefined> => {
+      let anoCodigo = anoPorModelo?.get(String(item.codigo));
+      if (!anoPorModelo) {
+        const anos = await obterJson<Item[]>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos`);
+        anoCodigo = anos?.find((entrada) => entrada.codigo.startsWith(ano) || entrada.nome.startsWith(ano))?.codigo;
+      }
+      if (!anoCodigo) return undefined;
+      const preco = await obterJson<Preco>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos/${anoCodigo}`);
+      const codFipe = preco?.CodigoFipe || preco?.codigoFipe;
+      return codFipe ? { nome: item.nome, codFipe } : undefined;
+    });
+    const encontrados = candidatos.filter((candidato): candidato is CandidatoFipe => candidato !== undefined);
+    if (encontrados.length > 0) return encontrados;
+  }
+  return [];
 }
 
 export async function codigoFipePublico(parametros: {

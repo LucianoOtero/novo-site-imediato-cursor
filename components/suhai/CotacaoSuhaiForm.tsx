@@ -75,6 +75,8 @@ export const PREMISSAS_INICIAIS: PremissasSuhai = {
   classeBonus: "0",
 };
 
+type Consulta = "placa" | "modelo" | "cpf";
+
 type Estado = {
   ddd: string;
   celular: string;
@@ -121,6 +123,12 @@ const INICIAL: Estado = {
   perfilManual: false,
 };
 
+const MODELO_NAO_ENCONTRADO = "Não achamos esse modelo na tabela FIPE. Confira como está escrito (ex.: Onix, Fazer 150).";
+
+function chaveModelo({ marca, modelo, anoModelo }: Pick<Estado, "marca" | "modelo" | "anoModelo">) {
+  return `${marca.trim()}|${modelo.trim()}|${anoModelo}`.toLowerCase();
+}
+
 export type CotacaoSuhaiHandle = {
   recalcular: (premissas: PremissasSuhai) => Promise<void>;
   cotarAssistencia: (premissas: PremissasSuhai, nivel: PlanoAssistencia) => Promise<CotacaoResultado>;
@@ -145,7 +153,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   const [erros, setErros] = useState<Record<string, string>>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
-  const [consultando, setConsultando] = useState<"placa" | "cpf" | null>(null);
+  const [consultando, setConsultando] = useState<Consulta | null>(null);
   const [avancando, setAvancando] = useState(false);
   const avancandoRef = useRef(false);
   const [demorando, setDemorando] = useState(false);
@@ -166,6 +174,8 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   const contatoInicialRef = useRef<Promise<void> | null>(null);
   const telefoneEnviadoRef = useRef("");
   const consultaPlacaRef = useRef<{ placa: string; resultado: ReturnType<typeof consultarPlaca> } | null>(null);
+  const consultaModeloRef = useRef<{ chave: string; resultado: ReturnType<typeof consultarModelo> } | null>(null);
+  const avisoModeloRef = useRef("");
   const consultaCpfRef = useRef<{ cpf: string; resultado: ReturnType<typeof consultarPerfil> } | null>(null);
 
   useEffect(() => {
@@ -178,7 +188,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   }, [consultando]);
 
   /** Mantém o aviso "Consultando…" enquanto a consulta mais recente não volta. */
-  function acompanharConsulta<T>(tipo: "placa" | "cpf", promessa: Promise<T>): Promise<T> {
+  function acompanharConsulta<T>(tipo: Consulta, promessa: Promise<T>): Promise<T> {
     const consulta = ++consultaAtivaRef.current;
     setConsultando(tipo);
     return promessa.finally(() => {
@@ -329,6 +339,15 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     setEstado((anterior) => ({ ...anterior, [campo]: valor }));
   }
 
+  /** Editar o veículo digitado descarta a versão encontrada para o texto anterior. */
+  function editarVeiculoDigitado(campo: "marca" | "modelo" | "anoModelo", valor: string) {
+    setEstado((anterior) => ({ ...anterior, [campo]: valor, codFipe: "", opcoes: [] }));
+  }
+
+  function buscarModeloDigitado() {
+    if (!estadoRef.current.codFipe) void preencherPorModelo();
+  }
+
   async function consultarCep(valor: string) {
     const digits = onlyDigits(valor);
     if (digits.length !== 8) return;
@@ -423,6 +442,62 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     }
   }
 
+  /**
+   * Sem placa: marca, modelo e ano digitados viram a versão da tabela FIPE,
+   * a única grafia que a Suhai aceita. Blur e "Continuar" reaproveitam a consulta.
+   */
+  function preencherPorModelo(): ReturnType<typeof consultarModelo> {
+    const { marca, modelo, anoModelo } = estadoRef.current;
+    if (!marca.trim() || !modelo.trim() || !/^\d{4}$/.test(anoModelo)) return Promise.resolve(null);
+    const chave = chaveModelo(estadoRef.current);
+    const anterior = consultaModeloRef.current;
+    if (anterior?.chave === chave) return anterior.resultado;
+    const resultado = acompanharConsulta("modelo", consultarModelo(marca.trim(), modelo.trim(), anoModelo)).then((patch) => {
+      if (!patch && consultaModeloRef.current?.resultado === resultado) consultaModeloRef.current = null;
+      return patch;
+    });
+    consultaModeloRef.current = { chave, resultado };
+    return resultado;
+  }
+
+  async function consultarModelo(marca: string, modelo: string, anoModelo: string) {
+    try {
+      const resposta = await fetch("/api/suhai/veiculo", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ marca, modelo, anoModelo }),
+      });
+      const corpo = (await resposta.json()) as {
+        ok?: boolean;
+        categoria?: string;
+        marca?: string;
+        modelo?: string;
+        codFipe?: string;
+        opcoes?: OpcaoVeiculo[];
+      };
+      const atual = estadoRef.current;
+      if (!atual.semPlaca || chaveModelo(atual) !== chaveModelo({ marca, modelo, anoModelo })) return null;
+      const opcoes = corpo.opcoes ?? [];
+      if (!corpo.ok || (opcoes.length === 0 && !corpo.codFipe)) {
+        setErros((anteriores) => ({ ...anteriores, modelo: MODELO_NAO_ENCONTRADO }));
+        return null;
+      }
+      const varias = opcoes.length > 1;
+      const patch = {
+        categoria: corpo.categoria || "auto",
+        marca: varias ? atual.marca : corpo.marca || atual.marca,
+        modelo: varias ? atual.modelo : corpo.modelo || atual.modelo,
+        codFipe: varias ? "" : corpo.codFipe || "",
+        opcoes,
+      };
+      setErros((anteriores) => ({ ...anteriores, modelo: "", versao: "" }));
+      setEstado((anterior) => ({ ...anterior, ...patch }));
+      return patch;
+    } catch {
+      return null;
+    }
+  }
+
   /** Blur e "Ver meu preço" pedem o mesmo CPF: reaproveita a consulta (falha libera nova tentativa). */
   function preencherPorCpf(cpfInformado?: string): ReturnType<typeof consultarPerfil> {
     const cpf = onlyDigits(cpfInformado ?? estadoRef.current.cpf);
@@ -490,6 +565,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         if (!atual.marca.trim()) proximos.marca = "Informe a marca.";
         if (!atual.modelo.trim()) proximos.modelo = "Informe o modelo.";
         if (!/^\d{4}$/.test(atual.anoModelo)) proximos.anoModelo = "Informe o ano com 4 dígitos.";
+        if (atual.opcoes.length > 1 && !atual.codFipe) proximos.versao = "Escolha a versão do veículo.";
       } else if (!isValidPlacaFormat(atual.placa.replace(/[^A-Za-z0-9]/g, ""))) {
         proximos.placa = "Informe a placa.";
       } else if (atual.opcoes.length > 1 && !atual.codFipe) {
@@ -644,6 +720,18 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       const patch = await preencherPorPlaca(atual.placa);
       if (patch) atual = { ...atual, ...patch };
     }
+    if (etapa === 2 && atual.semPlaca && !atual.codFipe && atual.opcoes.length === 0 && Object.keys(validarEtapa(atual, 2)).length === 0) {
+      const patch = await preencherPorModelo();
+      if (patch) {
+        atual = { ...atual, ...patch };
+      } else if (avisoModeloRef.current !== chaveModelo(atual)) {
+        // Avisa uma vez: com a tabela FIPE fora do ar, o segundo clique segue com o nome digitado.
+        avisoModeloRef.current = chaveModelo(atual);
+        setErros({ modelo: MODELO_NAO_ENCONTRADO });
+        trackSuhai("suhai_field_error", { step: "2", field: "modelo" });
+        return;
+      }
+    }
     const falhas = validarEtapa(atual, etapa);
     setErros(falhas);
     const camposComErro = Object.keys(falhas).filter((campo) => falhas[campo]);
@@ -680,8 +768,35 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
   const indice = etapa - 1;
   const fichaVisivel = Boolean(estado.marca || estado.modelo || estado.anoModelo);
+  const seletorVersao = estado.opcoes.length > 1 && (
+    <Field label="Versão" htmlFor="versao" error={erros.versao}>
+      <select
+        id="versao"
+        className={selectClasses}
+        value={estado.codFipe}
+        onChange={(event) => {
+          const escolhida = estado.opcoes.find((opcao) => opcao.codFipe === event.target.value);
+          setEstado((anterior) => ({
+            ...anterior,
+            codFipe: escolhida?.codFipe ?? "",
+            marca: escolhida?.marca ?? anterior.marca,
+            modelo: escolhida?.modelo ?? (anterior.semPlaca ? anterior.modelo : ""),
+          }));
+        }}
+      >
+        <option value="">Escolha a versão</option>
+        {estado.opcoes.map((opcao) => (
+          <option key={opcao.codFipe} value={opcao.codFipe}>
+            {opcao.modelo}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
   const consultaVisivel =
-    (consultando === "placa" && etapa === 2) || (consultando === "cpf" && etapa === 4) ? consultando : null;
+    ((consultando === "placa" || consultando === "modelo") && etapa === 2) || (consultando === "cpf" && etapa === 4)
+      ? consultando
+      : null;
   /**
    * Sinal de ok do LeadForm: campo tocado, preenchido e sem erro. No telefone, como lá,
    * aparece com o DDD completo enquanto o celular é digitado; o formato é conferido no blur.
@@ -796,31 +911,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                 />
               </Field>
             )}
-            {estado.opcoes.length > 1 && (
-              <Field label="Versão" htmlFor="versao" error={erros.versao}>
-                <select
-                  id="versao"
-                  className={selectClasses}
-                  value={estado.codFipe}
-                  onChange={(event) => {
-                    const escolhida = estado.opcoes.find((opcao) => opcao.codFipe === event.target.value);
-                    setEstado((anterior) => ({
-                      ...anterior,
-                      codFipe: escolhida?.codFipe ?? "",
-                      marca: escolhida?.marca ?? anterior.marca,
-                      modelo: escolhida?.modelo ?? "",
-                    }));
-                  }}
-                >
-                  <option value="">Escolha a versão</option>
-                  {estado.opcoes.map((opcao) => (
-                    <option key={opcao.codFipe} value={opcao.codFipe}>
-                      {opcao.modelo}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            )}
+            {!estado.semPlaca && seletorVersao}
             {fichaVisivel && !estado.semPlaca && (
               <VehicleInfoDisplay
                 marca={estado.marca}
@@ -832,10 +923,20 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
             {estado.semPlaca && (
               <>
                 <Field label="Marca" htmlFor="marca" error={erros.marca}>
-                  <Input id="marca" value={estado.marca} onChange={(event) => definir("marca", event.target.value)} />
+                  <Input
+                    id="marca"
+                    value={estado.marca}
+                    onChange={(event) => editarVeiculoDigitado("marca", event.target.value)}
+                    onBlur={buscarModeloDigitado}
+                  />
                 </Field>
                 <Field label="Modelo" htmlFor="modelo" error={erros.modelo}>
-                  <Input id="modelo" value={estado.modelo} onChange={(event) => definir("modelo", event.target.value)} />
+                  <Input
+                    id="modelo"
+                    value={estado.modelo}
+                    onChange={(event) => editarVeiculoDigitado("modelo", event.target.value)}
+                    onBlur={buscarModeloDigitado}
+                  />
                 </Field>
                 <Field label="Ano do modelo" htmlFor="ano" error={erros.anoModelo}>
                   <Input
@@ -843,9 +944,11 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                     inputMode="numeric"
                     maxLength={4}
                     value={estado.anoModelo}
-                    onChange={(event) => definir("anoModelo", event.target.value.replace(/\D/g, "").slice(0, 4))}
+                    onChange={(event) => editarVeiculoDigitado("anoModelo", event.target.value.replace(/\D/g, "").slice(0, 4))}
+                    onBlur={buscarModeloDigitado}
                   />
                 </Field>
+                {seletorVersao}
               </>
             )}
             <button
@@ -1042,7 +1145,9 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
             ? "Está demorando um pouco mais que o normal…"
             : consultaVisivel === "placa"
               ? "Consultando a placa…"
-              : "Consultando o CPF…"}
+              : consultaVisivel === "modelo"
+                ? "Procurando o modelo…"
+                : "Consultando o CPF…"}
         </p>
       )}
     </form>
