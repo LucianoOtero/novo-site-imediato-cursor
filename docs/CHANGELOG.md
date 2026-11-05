@@ -22,6 +22,13 @@ O Diagnóstico do Ads tinha dois alertas. O urgente diz que nenhuma importação
 - `scripts/google-ops/ads-conversion-action-primary.mjs`: torna uma ação principal ou secundária; sem `--apply` só relata.
 - `scripts/google-ops/ga4-conversoes-por-host.mjs`: eventos de conversão por domínio no GA4. Em 7 dias, só `www` e `suhai` têm tráfego; a tag antiga `form_submit_valid` não dispara, então o GTM não precisa de ajuste.
 
+### Changed (produção, com "pode")
+- Ads: a 6665179423 passou a secundária (`ads-conversion-action-primary.mjs --apply`, 08:28). Rollback: `--primary=true --apply`.
+- `syncOpportunitySold` publicada com o código do [PR #24](https://github.com/LucianoOtero/novo-site-imediato-cursor/pull/24) (revisão `00021-qoq`). O secret continua o v11 (`complementar`, sem `completoDesde`), então o comportamento não muda até o corte.
+
+### Verificado
+- Hits de conversão em `www` com a rede da aba bloqueada (nada chegou ao Google): formulário (`iwx7CNffw4YBENOW2IQD`), modal do WhatsApp (`ND-wCL7t0LgbENOW2IQD`) e Suhai (`UY74COajyLEdENOW2IQD`) saem com `em=tv.1~pn.<hash>` nos três destinos (`pagead/conversion`, `ccm/conversion`, `1p-conversion`). A configuração das conversões otimizadas está certa; a cobertura baixa do painel é atraso do Ads e recusa de marketing no banner.
+
 ---
 
 ## Adicionado — 04/11/2026 (página de origem do lead no Espo)

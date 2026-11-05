@@ -367,7 +367,7 @@ Deploy da função corrigida pode ir com o secret ainda desligado. Conversão av
 
 O Diagnóstico de conversões otimizadas marca como urgente "Nenhuma tentativa de importação com dados fornecidos pelo usuário" na `SegurosImediatoOffline`. O CSV do Espo só leva o gclid; o Firebase já manda celular e e-mail com hash, mas no `complementar` só cuida das vendas sem gclid. Com o corte, todas as vendas sobem pelo Firebase e o CSV é desligado.
 
-Pré-requisitos: deploy do código com `completoDesde` e sombra limpa (tabela da seção 8).
+Pré-requisitos: deploy do código com `completoDesde` (feito em 05/11, revisão `00021-qoq`, ainda com o secret v11 em `complementar`) e sombra limpa (tabela da seção 8). Corte previsto para 07/11, depois das rodadas 4 e 5.
 
 Ordem, num dia útil depois do lote das 02:00 (que já mandou as vendas da véspera):
 
@@ -380,7 +380,7 @@ Rollback: secret de volta a `mode: "complementar"` (sem `completoDesde`), novo d
 
 ### Ação automática de leads qualificados
 
-"Ação de conversão criada automaticamente para leads qualificados" (6665179423, `UPLOAD_CLICKS`, `QUALIFIED_LEAD`) foi criada pelo Google, é principal e nunca recebeu envio (0 conversão em 30 dias). Ela também está no alerta urgente. A meta "Lead qualificado" da conta tem lance só na campanha "ATIVA - Porto Seguro Cotacao - Site Novo", sem efeito porque a ação não tem conversões.
+"Ação de conversão criada automaticamente para leads qualificados" (6665179423, `UPLOAD_CLICKS`, `QUALIFIED_LEAD`) foi criada pelo Google, é principal e nunca recebeu envio (0 conversão em 30 dias). Ela também está no alerta urgente. A meta "Lead qualificado" da conta tem lance só na campanha "ATIVA - Porto Seguro Cotacao - Site Novo", sem efeito porque a ação não tem conversões. Passou a secundária em 05/11, 08:28.
 
 ```bash
 node scripts/google-ops/ads-conversion-action-primary.mjs            # relata
