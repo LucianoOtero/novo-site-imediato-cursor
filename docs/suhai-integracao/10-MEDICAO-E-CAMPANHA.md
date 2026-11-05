@@ -75,3 +75,8 @@ Conferência: `node ads-verify-campaign.mjs --campaign-id=24433459330` mostra a 
 | `gtm-suhai-preview.mjs` | Compila o workspace e grava em `logs/` a URL do `gtm.js` de preview. |
 | `gtm-dump-ads-tags.mjs` | Lista as tags do Ads da versão Live. |
 | `ga4-suhai-funil.mjs` | Funil por braço, resultados, erros de campo, abandono e planos. |
+| `ga4-conversoes-por-host.mjs` | Eventos de conversão por domínio; `--todos` lista todos os eventos. |
+
+## 6. Conversões otimizadas (Diagnóstico do Ads)
+
+As três ações Suhai têm conversões otimizadas ligadas pelo GTM, mas o Diagnóstico só lista ações principais; como são secundárias, a cobertura delas não aparece. Em 05/11 o painel mostrava 1% em "Envio de Formulário de Lead na Página" e 3% no modal do WhatsApp, com o gráfico parado em 03/11 (dia da 0.2.58). O site antigo não tem mais tráfego (`ga4-conversoes-por-host.mjs`), então essas conversões vêm do site novo, que manda o celular com hash desde 03/11, salvo recusa de marketing no banner. O alerta urgente das importações é tratado em [`ADS_OFFLINE_VENDIDO_FIREBASE.md`](../ADS_OFFLINE_VENDIDO_FIREBASE.md) §10.

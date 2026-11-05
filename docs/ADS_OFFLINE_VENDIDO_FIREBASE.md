@@ -204,11 +204,13 @@ JSON (exemplo de **shape**; valores só no Secret Manager):
   "currencyCode": "BRL",
   "timezoneOffset": "-03:00",
   "mode": "completo",
+  "completoDesde": "AAAA-MM-DD",
   "validateOnly": false
 }
 ```
 
 - `mode`: `completo` (padrão) envia todas as vendas. `complementar` pula as vendas cuja Opportunity tem `cGclid`, que seguem pelo CSV do Espo. Assim a mesma venda não chega duas vezes. As demais vendas sobem por gbraid/wbraid ou só pelos dados com hash.
+- `completoDesde` (`AAAA-MM-DD`, só no `completo`): a venda com `cGclid` e `cDataVenda` anterior a essa data é pulada com `gclid_via_csv`, porque o CSV do Espo já a enviou. Uma edição posterior de uma venda antiga (valor, por exemplo) não gera conversão duplicada. Sem o campo, o `completo` envia tudo.
 - `validateOnly`: `true` manda `validateOnly` ao `events:ingest`. O Google valida o formato e não registra a conversão. A auditoria grava `validated`, e o lead e `ads_offline_by_opportunity` não são marcados.
 
 ### Conversões otimizadas para leads (2026-11-03)
@@ -325,6 +327,9 @@ Critério para o corte: 5 lotes seguidos sem divergência grave.
 |---|---|---|---|---|---|
 | 1 — 2026-10-25 | 2026-10-23 | 4 | 4 | 4 | 0 |
 | 2 — 2026-10-27 | 2026-10-26 | 4 | 4 | 4 | 0 |
+| 3 — 2026-11-05 | 2026-11-04 | 8 | 8 | 8 | 0 |
+
+Os lotes gerados entre 28/10 e 04/11 não foram comparados: o Espo só publica o arquivo do dia.
 
 ---
 
@@ -355,3 +360,30 @@ node scripts/google-ops/ads-offline-shadow-csv.mjs --file=conversoes-google-late
 `enabled` só vira `true` depois dessa sombra sem divergência grave (gclid, valor, data civil) e de um aceite explícito. No mesmo momento, desligar os cinco jobs. Rollback = religar os jobs e voltar `enabled: false`.
 
 Deploy da função corrigida pode ir com o secret ainda desligado. Conversão avançada por e-mail ou telefone fica fora deste modelo.
+
+---
+
+## 10. Corte para o modo completo (alerta do Diagnóstico, 05/11/2026)
+
+O Diagnóstico de conversões otimizadas marca como urgente "Nenhuma tentativa de importação com dados fornecidos pelo usuário" na `SegurosImediatoOffline`. O CSV do Espo só leva o gclid; o Firebase já manda celular e e-mail com hash, mas no `complementar` só cuida das vendas sem gclid. Com o corte, todas as vendas sobem pelo Firebase e o CSV é desligado.
+
+Pré-requisitos: deploy do código com `completoDesde` e sombra limpa (tabela da seção 8).
+
+Ordem, num dia útil depois do lote das 02:00 (que já mandou as vendas da véspera):
+
+1. Nova versão do secret `GOOGLE_ADS_API_CONFIG`, igual à atual, com `mode: "completo"` e `completoDesde` = data do corte.
+2. `firebase deploy --only functions:syncOpportunitySold`.
+3. No Espo PROD, desligar os 5 Scheduled Jobs que geram `conversoes-google-latest.txt` (ter–sáb 02:00).
+4. Conferir em `ads_offline_audit` as primeiras vendas: `uploaded`, `clickIdType: gclid` e `userIdentifierCount` maior que 0. Reler o Diagnóstico de 2 a 3 dias depois.
+
+Rollback: secret de volta a `mode: "complementar"` (sem `completoDesde`), novo deploy e os 5 jobs religados. O primeiro lote depois do rollback traz as vendas da véspera; as que o Firebase já enviou (`uploaded` em `ads_offline_audit`) contariam duas vezes, então o ideal é religar os jobs num dia sem vendas com gclid já enviadas.
+
+### Ação automática de leads qualificados
+
+"Ação de conversão criada automaticamente para leads qualificados" (6665179423, `UPLOAD_CLICKS`, `QUALIFIED_LEAD`) foi criada pelo Google, é principal e nunca recebeu envio (0 conversão em 30 dias). Ela também está no alerta urgente. A meta "Lead qualificado" da conta tem lance só na campanha "ATIVA - Porto Seguro Cotacao - Site Novo", sem efeito porque a ação não tem conversões.
+
+```bash
+node scripts/google-ops/ads-conversion-action-primary.mjs            # relata
+node scripts/google-ops/ads-conversion-action-primary.mjs --apply    # secundária
+node scripts/google-ops/ads-conversion-action-primary.mjs --primary=true --apply   # rollback
+```

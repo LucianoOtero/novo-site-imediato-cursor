@@ -12,6 +12,8 @@
  * - Conversões otimizadas para leads: telefone (E.164) e e-mail vão só como
  *   SHA-256 hex em userData; a auditoria guarda apenas a contagem.
  * - mode "complementar": venda com cGclid na Opportunity fica para o CSV do Espo.
+ *   No "completo", `completoDesde` (AAAA-MM-DD) deixa com o CSV as vendas com
+ *   cGclid anteriores ao corte, que o lote do Espo já enviou.
  * - validateOnly: o Google só valida; nada é marcado como enviado.
  */
 const crypto = require("node:crypto");
@@ -46,6 +48,7 @@ const DAILY_JOB_ID_SUFFIX = 1;
  *   currencyCode: string,
  *   timezoneOffset: string,
  *   mode: 'completo'|'complementar',
+ *   completoDesde: string,
  *   validateOnly: boolean,
  * } | null}
  */
@@ -77,6 +80,9 @@ function parseAdsConfig(raw) {
       currencyCode: String(j.currencyCode || DEFAULT_CURRENCY),
       timezoneOffset: String(j.timezoneOffset || DEFAULT_TIMEZONE_OFFSET),
       mode: j.mode === "complementar" ? "complementar" : "completo",
+      completoDesde: /^\d{4}-\d{2}-\d{2}$/.test(String(j.completoDesde || ""))
+        ? String(j.completoDesde)
+        : "",
       validateOnly: j.validateOnly === true,
     };
   } catch {
@@ -95,6 +101,14 @@ function configReadyForUpload(cfg) {
       cfg.customerId &&
       cfg.conversionActionId
   );
+}
+
+/** Venda com cGclid que o CSV do Espo envia (complementar) ou já enviou (antes do corte). */
+function gclidFicaComCsv(cfg, payload) {
+  if (!nonEmpty(payload?.cGclid)) return false;
+  if (cfg.mode === "complementar") return true;
+  const dia = String(payload.cDataVenda || "").slice(0, 10);
+  return Boolean(cfg.completoDesde) && /^\d{4}-\d{2}-\d{2}$/.test(dia) && dia < cfg.completoDesde;
 }
 
 /**
@@ -697,7 +711,7 @@ async function handleAdsOfflineAfterSoldSet({
     return { skipped: true, reason: "no_opportunity_id" };
   }
 
-  if (cfg.mode === "complementar" && nonEmpty(payload.cGclid)) {
+  if (gclidFicaComCsv(cfg, payload)) {
     await appendAdsOfflineAudit(
       buildAuditEntry({
         status: "skipped",
