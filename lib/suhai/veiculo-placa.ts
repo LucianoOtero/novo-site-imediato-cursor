@@ -1,5 +1,5 @@
 import { consultarFipe, gatewayConfigurado, type VeiculoFipe } from "@/lib/suhai/gateway";
-import { candidatosFipePublicos, type CandidatoFipe } from "@/lib/suhai/fipe-publica";
+import { candidatosFipePublicos, FipeIndisponivel, type CandidatoFipe } from "@/lib/suhai/fipe-publica";
 import { validatePlacaViaFipe } from "@/lib/validation/placa-fipe";
 
 const CATEGORIA_POR_CODIGO: Record<number, string> = {
@@ -27,6 +27,34 @@ export type VeiculoPreenchido = {
   opcoes?: OpcaoVeiculo[];
 };
 
+/**
+ * A placa existe, mas a versão da FIPE não saiu. O nome da placa não serve à
+ * Suhai ("Veículo não foi localizado"): volta só como ponto de partida para o
+ * cliente confirmar o modelo.
+ */
+export type PlacaSemVersao = {
+  ok: false;
+  motivo: "sem_versao" | "fipe_indisponivel";
+  categoria: string;
+  anoModelo: string;
+  anoFabricacao: string;
+  marca: string;
+  modelo: string;
+};
+
+export type VeiculoNaoIdentificado = { ok: false; motivo: "nao_encontrado" | "fipe_indisponivel" };
+
+async function candidatosOuIndisponivel(
+  parametros: Parameters<typeof candidatosFipePublicos>[0],
+): Promise<CandidatoFipe[] | "indisponivel"> {
+  try {
+    return await candidatosFipePublicos(parametros);
+  } catch (error) {
+    if (error instanceof FipeIndisponivel) return "indisponivel";
+    throw error;
+  }
+}
+
 async function grafiaSuhai(candidato: CandidatoFipe, marcaPlaca: string): Promise<OpcaoVeiculo & { categoria?: string }> {
   if (!gatewayConfigurado()) {
     return { marca: marcaPlaca, modelo: candidato.nome, codFipe: candidato.codFipe };
@@ -53,25 +81,39 @@ async function grafiaSuhai(candidato: CandidatoFipe, marcaPlaca: string): Promis
  * dela quando a abreviação da placa e o ano apontam uma versão. Várias
  * versões voltam em `opcoes`, sem escolher uma.
  */
-export async function veiculoPorPlaca(placa: string): Promise<VeiculoPreenchido | { ok: false }> {
+export async function veiculoPorPlaca(
+  placa: string,
+): Promise<VeiculoPreenchido | PlacaSemVersao | { ok: false; motivo: "nao_encontrada" }> {
   const consulta = await validatePlacaViaFipe(placa);
-  if (!consulta.ok || !consulta.anoModelo) return { ok: false };
+  if (!consulta.ok || !consulta.anoModelo) return { ok: false, motivo: "nao_encontrada" };
 
-  const tipo = consulta.tipoVeiculo === "moto" ? "moto" : "carro";
-  const candidatos = await candidatosFipePublicos({
-    tipo,
-    marca: consulta.marca,
-    modelo: consulta.modelo,
-    ano: consulta.anoModelo,
-  });
-
-  return preencher(candidatos, {
+  const tipo: "carro" | "moto" = consulta.tipoVeiculo === "moto" ? "moto" : "carro";
+  const veiculo = {
     tipo,
     marca: consulta.marca ?? "",
     modelo: consulta.modelo ?? "",
     anoModelo: consulta.anoModelo,
     anoFabricacao: consulta.anoFabricacao ?? consulta.anoModelo,
+  };
+  const candidatos = await candidatosOuIndisponivel({
+    tipo,
+    marca: veiculo.marca,
+    modelo: veiculo.modelo,
+    ano: veiculo.anoModelo,
   });
+
+  if (candidatos === "indisponivel" || candidatos.length === 0) {
+    return {
+      ok: false,
+      motivo: candidatos === "indisponivel" ? "fipe_indisponivel" : "sem_versao",
+      categoria: tipo === "moto" ? "moto" : "auto",
+      anoModelo: veiculo.anoModelo,
+      anoFabricacao: veiculo.anoFabricacao,
+      marca: veiculo.marca,
+      modelo: veiculo.modelo,
+    };
+  }
+  return preencher(candidatos, veiculo);
 }
 
 /**
@@ -83,15 +125,19 @@ export async function veiculoPorModelo(dados: {
   marca: string;
   modelo: string;
   anoModelo: string;
-}): Promise<VeiculoPreenchido | { ok: false }> {
+}): Promise<VeiculoPreenchido | VeiculoNaoIdentificado> {
   const busca = { marca: dados.marca, modelo: dados.modelo, ano: dados.anoModelo };
   const [carros, motos] = await Promise.all([
-    candidatosFipePublicos({ ...busca, tipo: "carro" }),
-    candidatosFipePublicos({ ...busca, tipo: "moto" }),
+    candidatosOuIndisponivel({ ...busca, tipo: "carro" }),
+    candidatosOuIndisponivel({ ...busca, tipo: "moto" }),
   ]);
-  const tipo = carros.length > 0 ? "carro" : "moto";
-  const candidatos = carros.length > 0 ? carros : motos;
-  if (candidatos.length === 0) return { ok: false };
+  const lista = (resultado: CandidatoFipe[] | "indisponivel") => (resultado === "indisponivel" ? [] : resultado);
+  const tipo = lista(carros).length > 0 ? "carro" : "moto";
+  const candidatos = lista(carros).length > 0 ? lista(carros) : lista(motos);
+  if (candidatos.length === 0) {
+    const indisponivel = carros === "indisponivel" || motos === "indisponivel";
+    return { ok: false, motivo: indisponivel ? "fipe_indisponivel" : "nao_encontrado" };
+  }
   return preencher(candidatos, { ...dados, tipo, anoFabricacao: dados.anoModelo });
 }
 

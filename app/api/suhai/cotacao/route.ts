@@ -46,11 +46,12 @@ export async function POST(request: NextRequest) {
       const caminho = issue.path.join(".");
       if (caminho && !campos[caminho]) campos[caminho] = issue.message;
     }
-    const zeroKm = parsed.error.issues.find(
-      (issue) => issue.code === "custom" && issue.path.join(".") === "veiculo.anoModelo",
-    );
+    const paraOCliente = parsed.error.issues.find((issue) => {
+      const caminho = issue.path.join(".");
+      return caminho === "veiculo.codFipe" || (issue.code === "custom" && caminho === "veiculo.anoModelo");
+    });
     return NextResponse.json(
-      { erro: "validacao", mensagem: zeroKm?.message ?? "Dados incompletos.", campos },
+      { erro: "validacao", mensagem: paraOCliente?.message ?? "Dados incompletos.", campos },
       { status: 422 },
     );
   }

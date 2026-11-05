@@ -13,6 +13,19 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Corrigido — 05/11/2026 (cotação Suhai sem a versão da FIPE)
+
+As 5 recusas "Veículo não foi localizado" / "Modelo informado está incorreto" de 04/11 levaram à Suhai o nome do documento ("UP TAKE MCV", "Fazer150") em vez da grafia da tabela FIPE. A busca melhorou na PR #21, mas, se a tabela pública não responde (fora do ar ou limite diário), o nome cru ainda seguia, e sem placa o segundo clique seguia com o nome digitado.
+
+### Fixed
+- `lib/suhai/fipe-publica.ts`: separa "nenhum modelo compatível" (lista vazia) de "tabela indisponível" (`FipeIndisponivel`, quando alguma consulta à v1 falha e nada foi achado; a falha da v2 só troca o caminho). Testes com respostas simuladas.
+- `lib/suhai/veiculo-placa.ts` + `app/api/suhai/veiculo/route.ts`: placa encontrada sem versão devolve `motivo: "sem_versao"` ou `"fipe_indisponivel"` com marca, modelo e ano da placa, em vez de tratar o nome cru como identificado. Sem placa, `motivo: "nao_encontrado"` ou `"fipe_indisponivel"`.
+- `components/suhai/CotacaoSuhaiForm.tsx`: sem versão, o formulário abre os campos do veículo já preenchidos (a placa segue na cotação) e pede o nome principal do modelo. Com a tabela indisponível: "Não conseguimos consultar a tabela FIPE agora. Tente de novo em instantes ou fale com a gente no WhatsApp", com link. Não avança mais com o nome digitado.
+- `lib/suhai/types.ts` + `app/api/suhai/cotacao/route.ts`: `codFipe` passa a ser obrigatório na cotação ("Escolha a versão do veículo."), sem chamar a Suhai.
+- `suhai_vehicle_lookup` ganha os resultados `no_version` e `fipe_unavailable`.
+
+---
+
 ## Corrigido — 05/11/2026 (cotação Suhai recusada como 0 km com veículo usado)
 
 Em 05/11 a Suhai recusou uma cotação com "Não é possível definir Zero KM para veículos com anos anteriores a 2025" (código 503): ano-modelo 2013, sem placa no pedido. O formulário mandava `zeroKm` sempre que o veículo era digitado à mão, inclusive quando a placa não era encontrada na consulta (o formulário passa sozinho para a digitação e descartava a placa).
