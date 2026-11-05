@@ -20,6 +20,7 @@ import { postLead } from "@/lib/leads/post-lead";
 import type { OpcaoVeiculo } from "@/lib/suhai/veiculo-placa";
 import type { ContextoProposta } from "@/components/suhai/PropostaSuhaiForm";
 import type { CotacaoResultado } from "@/lib/suhai/types";
+import { aceitaZeroKm, anoMinimoZeroKm, mensagemZeroKm } from "@/lib/suhai/zero-km";
 import { cn } from "@/lib/utils";
 import {
   formatCep,
@@ -130,6 +131,19 @@ function chaveModelo({ marca, modelo, anoModelo }: Pick<Estado, "marca" | "model
   return `${marca.trim()}|${modelo.trim()}|${anoModelo}`.toLowerCase();
 }
 
+function placaNormalizada({ placa }: Pick<Estado, "placa">) {
+  return placa.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+}
+
+/**
+ * Veículo digitado à mão vai como 0 km só sem placa válida. Placa que a
+ * consulta não achou continua na cotação: é veículo usado, e a Suhai recusa
+ * 0 km com ano antigo.
+ */
+function ehZeroKm(atual: Pick<Estado, "semPlaca" | "placa">) {
+  return atual.semPlaca && !isValidPlacaFormat(placaNormalizada(atual));
+}
+
 export type CotacaoSuhaiHandle = {
   recalcular: (premissas: PremissasSuhai) => Promise<void>;
   cotarAssistencia: (premissas: PremissasSuhai, nivel: PlanoAssistencia) => Promise<CotacaoResultado>;
@@ -207,7 +221,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
    * dados da etapa 4 junto com o protocolo, sem disputar a ordem com ela.
    */
   function dadosLead(atual: Estado) {
-    const placa = atual.semPlaca ? undefined : atual.placa.replace(/[^A-Za-z0-9]/g, "").toUpperCase() || undefined;
+    const placa = ehZeroKm(atual) ? undefined : placaNormalizada(atual) || undefined;
     const cep = onlyDigits(atual.cepPernoite);
     const cpf = onlyDigits(atual.cpf);
     return {
@@ -566,6 +580,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         if (!atual.marca.trim()) proximos.marca = "Informe a marca.";
         if (!atual.modelo.trim()) proximos.modelo = "Informe o modelo.";
         if (!/^\d{4}$/.test(atual.anoModelo)) proximos.anoModelo = "Informe o ano com 4 dígitos.";
+        else if (ehZeroKm(atual) && !aceitaZeroKm(Number(atual.anoModelo))) proximos.anoModelo = mensagemZeroKm();
         if (atual.opcoes.length > 1 && !atual.codFipe) proximos.versao = "Escolha a versão do veículo.";
       } else if (!isValidPlacaFormat(atual.placa.replace(/[^A-Za-z0-9]/g, ""))) {
         proximos.placa = "Informe a placa.";
@@ -610,8 +625,8 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
           anoModelo: Number(atual.anoModelo),
           anoFabricacao: atual.anoFabricacao ? Number(atual.anoFabricacao) : undefined,
           codFipe: atual.codFipe || undefined,
-          zeroKm: atual.semPlaca,
-          placa: atual.semPlaca ? undefined : atual.placa.replace(/[^A-Za-z0-9]/g, "").toUpperCase(),
+          zeroKm: ehZeroKm(atual),
+          placa: ehZeroKm(atual) ? undefined : placaNormalizada(atual),
         },
         uso: {
           utilizacao: usadas.utilizacao,
@@ -677,7 +692,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         return;
       }
       onResultado(corpo as CotacaoResultado, atual.categoria, usadas, {
-        placa: atual.semPlaca ? "" : atual.placa.replace(/[^A-Za-z0-9]/g, "").toUpperCase(),
+        placa: ehZeroKm(atual) ? "" : placaNormalizada(atual),
         cep: onlyDigits(atual.cepPernoite),
         nome: atual.nome.trim(),
         ddd: onlyDigits(atual.ddd),
@@ -924,6 +939,12 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
             )}
             {estado.semPlaca && (
               <>
+                {!ehZeroKm(estado) && (
+                  <p className="text-sm leading-snug text-neutral-600" data-clarity-mask="true">
+                    Não encontramos a placa {placaNormalizada(estado)} na consulta. Informe o veículo abaixo; a
+                    cotação segue com essa placa.
+                  </p>
+                )}
                 <Field label="Marca" htmlFor="marca" error={erros.marca}>
                   <Input
                     id="marca"
@@ -940,7 +961,12 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                     onBlur={buscarModeloDigitado}
                   />
                 </Field>
-                <Field label="Ano do modelo" htmlFor="ano" error={erros.anoModelo}>
+                <Field
+                  label="Ano do modelo"
+                  htmlFor="ano"
+                  error={erros.anoModelo}
+                  hint={ehZeroKm(estado) ? `Veículo 0 km: ${anoMinimoZeroKm()} ou mais novo.` : undefined}
+                >
                   <Input
                     id="ano"
                     inputMode="numeric"
@@ -967,7 +993,11 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                 }));
               }}
             >
-              {estado.semPlaca ? "Tenho a placa" : "Ainda não tenho placa"}
+              {estado.semPlaca
+                ? ehZeroKm(estado)
+                  ? "Tenho a placa"
+                  : "Corrigir a placa"
+                : "Veículo 0 km, ainda sem placa"}
             </button>
           </>
         )}
@@ -1011,7 +1041,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                 {estado.anoModelo ? ` · ${estado.anoModelo}` : ""}
               </p>
               <p className="mt-0.5 text-sm text-neutral-500">
-                {estado.semPlaca ? "Sem placa" : `Placa ${estado.placa}`}
+                {ehZeroKm(estado) ? "0 km, sem placa" : `Placa ${estado.placa}`}
                 {estado.enderecoLinha
                   ? ` · ${estado.enderecoLinha}`
                   : estado.cepPernoite

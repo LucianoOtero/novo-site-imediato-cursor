@@ -66,7 +66,7 @@ Se Particular → preencher também `tipoUtilizacao` (1/2/3).
 | `sexo` | 1 F · 2 M · 3 PJ |
 | `estadoCivil` | 1 Casado/UE · 2 Solteiro · 3 Separado/Div/Outros |
 | `tipoContratacao` | 1 Novo · 2 Renovação Suhai · 3 Renovação outras |
-| `zeroKM` | 0/N · 1/S |
+| `zeroKM` | 0/N · 1/S — `S` só com ano-modelo do ano passado em diante (em 2026: 2025+); abaixo disso a Suhai devolve código 503. Regra em `lib/suhai/zero-km.ts` |
 | `tabelaComissao` | `tab 1` (10%) … `tab 11` (36%) + tabs 21–36; limites moto até tab 11; auto/caminhão &lt;10 anos até tab 9 |
 | `tp_pagamento` | **2** boleto (usar) · 1 legado descontinuado · **11** cartão+boleto · **14** cartão recorrente |
 | `cor` | 1–16 cores + 18 NI |
