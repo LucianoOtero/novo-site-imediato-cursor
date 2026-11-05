@@ -13,6 +13,17 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Adicionado — 05/11/2026 (alertas do Diagnóstico de conversões otimizadas)
+
+O Diagnóstico do Ads tinha dois alertas. O urgente diz que nenhuma importação leva dados do usuário: as vendas com gclid sobem pelo CSV do Espo, que só leva o gclid, e a ação automática de leads qualificados (6665179423) é principal sem receber nada. O outro aviso é a cobertura de 1% ("Envio de Formulário de Lead na Página") e 3% (modal do WhatsApp), mas o gráfico do Ads termina em 03/11, o dia da 0.2.58.
+
+### Added
+- `GOOGLE_ADS_API_CONFIG.completoDesde` (`AAAA-MM-DD`): no `mode: "completo"`, a venda com `cGclid` anterior ao corte fica com o CSV, que já a enviou. Prepara o corte em que todas as vendas sobem pelo Firebase, com gclid e hash, e os 5 jobs do CSV são desligados ([`ADS_OFFLINE_VENDIDO_FIREBASE.md`](ADS_OFFLINE_VENDIDO_FIREBASE.md) §10).
+- `scripts/google-ops/ads-conversion-action-primary.mjs`: torna uma ação principal ou secundária; sem `--apply` só relata.
+- `scripts/google-ops/ga4-conversoes-por-host.mjs`: eventos de conversão por domínio no GA4. Em 7 dias, só `www` e `suhai` têm tráfego; a tag antiga `form_submit_valid` não dispara, então o GTM não precisa de ajuste.
+
+---
+
 ## Adicionado — 04/11/2026 (página de origem do lead no Espo)
 
 ### Added

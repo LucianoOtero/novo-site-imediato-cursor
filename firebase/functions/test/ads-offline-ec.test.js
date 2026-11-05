@@ -200,3 +200,39 @@ test("modo completo sem validateOnly continua enviando o gclid, agora com hash",
   assert.equal(r.ingests[0].events[0].userData.userIdentifiers.length, 2);
   assert.equal(r.updates.length, 1);
 });
+
+test("config: completoDesde só aceita AAAA-MM-DD", () => {
+  assert.equal(ads.parseAdsConfig(config({ completoDesde: "2026-11-06" })).completoDesde, "2026-11-06");
+  assert.equal(ads.parseAdsConfig(config({ completoDesde: "06/11/2026" })).completoDesde, "");
+  assert.equal(ads.parseAdsConfig(config()).completoDesde, "");
+});
+
+test("completo com completoDesde: gclid vendido antes do corte fica com o CSV", async () => {
+  const r = await rodar({
+    lead: { data: { phoneE164: "+5511987654321", utm: { gclid: "g1" } } },
+    payload: { cGclid: "g1", cDataVenda: "2026-11-05" },
+    cfg: { completoDesde: "2026-11-06" },
+  });
+  assert.equal(r.res.reason, "gclid_via_csv");
+  assert.equal(r.ingests.length, 0);
+});
+
+test("completo com completoDesde: gclid vendido no dia do corte sobe com hash", async () => {
+  const r = await rodar({
+    lead: { data: { phoneE164: "+5511987654321", utm: { gclid: "g1" } } },
+    payload: { cGclid: "g1", cDataVenda: "2026-11-06" },
+    cfg: { completoDesde: "2026-11-06" },
+  });
+  assert.deepEqual(r.ingests[0].events[0].adIdentifiers, { gclid: "g1" });
+  assert.equal(r.ingests[0].events[0].userData.userIdentifiers.length, 1);
+});
+
+test("completo com completoDesde: venda antiga sem gclid continua subindo só com hash", async () => {
+  const r = await rodar({
+    lead: { data: { phoneE164: "+5511987654321" } },
+    payload: { cDataVenda: "2026-11-01" },
+    cfg: { completoDesde: "2026-11-06" },
+  });
+  assert.equal(r.ingests.length, 1);
+  assert.equal(r.ingests[0].events[0].adIdentifiers, undefined);
+});
