@@ -13,6 +13,15 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Corrigido — 05/11/2026 (alerta falso de venda sem lead no Firebase)
+
+O resumo diário de 05/11 trouxe a oportunidade 6ad11bd464d4c62c0 como `actionable_unknown`, 8 vezes. É venda de cliente existente com gclid e sem lead do site; o envio ao Ads foi pulado com `gclid_via_csv` e o gclid está no CSV do Espo. O pulo contava como "nada aconteceu", então a função respondia 404 (o Espo reenviava a cada 12 min) e o resumo alertava.
+
+### Fixed
+- `firebase/functions/sold-sync.js` (`adsAttemptProgressed`): venda sem lead no Firebase deixada para o CSV (`gclid_via_csv`) conta como resolvida: 200, sem reenvio e com `skipEmail` em `sold_sync_errors`. Outros pulos continuam como antes. Testes em `scripts/espo-ops/sold-sync-unit-test.mjs`.
+
+---
+
 ## Adicionado — 05/11/2026 (alertas do Diagnóstico de conversões otimizadas)
 
 O Diagnóstico do Ads tinha dois alertas. O urgente diz que nenhuma importação leva dados do usuário: as vendas com gclid sobem pelo CSV do Espo, que só leva o gclid, e a ação automática de leads qualificados (6665179423) é principal sem receber nada. O outro aviso é a cobertura de 1% ("Envio de Formulário de Lead na Página") e 3% (modal do WhatsApp), mas o gráfico do Ads termina em 03/11, o dia da 0.2.58.
