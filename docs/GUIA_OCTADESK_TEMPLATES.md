@@ -331,8 +331,16 @@ O texto fixo da cotação termina em "por ano"; a frase fica correta, mas o mode
 - [x] Fase 1: variáveis corrigidas no código (`firebase/functions/suhai.js`, testes em `test/suhai.test.js`) — 2026-11-05
 - [x] Fase 1 no ar: PR #31 na `main` (Vercel) e `deliverLead` publicada de novo — 2026-11-05. Conferido sem envio, nos registros das 5 propostas de produção: a função gera "Boleto em 12x de R$ 261,91, vencimento dia 15" para a 12490227 (antes, R$ 213,03).
 - [x] Fase 3: `cPagamento` corrigido no Lead e na Oportunidade (Espo PROD) das propostas 12492950, 12489998, 12486804 e 12490227, com Note de correção no Lead; nenhuma mensagem ao cliente — 2026-11-05. A 12350578 (teste de produção de 16/10) ficou de fora. Valores anteriores num log local, fora do repositório.
-- [ ] `cotacao_suhai_util_v3` e `proposta_suhai_util_v4` criados no Octadesk e aprovados pela Meta
-- [ ] IDs no `OCTADESK_API_CONFIG` e `deliverLead` publicada de novo
+- [x] `cotacao_suhai_util_v3` (`6aed0c230f2ada3f0f93ceaf`) e `proposta_suhai_util_v4` (`6aed0cad451d6360936f3566`) criados no Octadesk, com as 7 variáveis pelo botão, e aprovados pela Meta — 2026-11-05
+- [x] Cotação v3 no ar: chave `suhai_cotacao_pronta_v3` no `OCTADESK_API_CONFIG` v9 e `deliverLead` publicada de novo — 2026-11-05
+- [x] Proposta v4 no ar: chave `suhai_proposta_enviada_v4` no `OCTADESK_API_CONFIG` v10 e `deliverLead` publicada de novo — 2026-11-05. Rollback: secret v9 (só a v3) ou v8 (nenhuma das duas) e nova publicação.
+
+| Chave no secret | Nome no Octadesk | ID |
+|---|---|---|
+| `suhai_cotacao_pronta_v3` | `cotacao_suhai_util_v3` | `6aed0c230f2ada3f0f93ceaf` |
+| `suhai_proposta_enviada_v4` | `proposta_suhai_util_v4` | `6aed0cad451d6360936f3566` |
+
+As chaves `suhai_cotacao_pronta` e `suhai_proposta_enviada` continuam no secret: são o modelo usado quando falta o percentual da FIPE ou outro dado das variáveis novas.
 
 | Proposta | Parcelas | Mensagem e campo diziam | Valor da Suhai |
 |---|---|---|---|
