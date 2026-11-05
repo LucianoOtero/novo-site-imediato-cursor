@@ -101,10 +101,80 @@ function ofertaMaisBarata(ofertas) {
   return ofertas.reduce((menor, o) => (o.premioTotal < menor.premioTotal ? o : menor), ofertas[0]);
 }
 
-function pagamentoTexto(proposta, plano) {
+/**
+ * Parcela de `quantidade` vezes, da tabela da Suhai gravada com o plano (com
+ * juros e IOF). Registros anteriores a 11/2026 não têm a tabela: só o à vista
+ * e a maior parcela são conhecidos; outra quantidade fica sem valor — nunca
+ * o à vista dividido (proposta 12490227: R$ 213,03 no lugar de R$ 261,91).
+ */
+function parcelaDoPlano(plano, quantidade) {
+  if (!plano || !quantidade) return null;
+  const tabela = Array.isArray(plano.parcelas) ? plano.parcelas : Object.values(plano.parcelas || {});
+  const linha = tabela.find((p) => p && Number(p.quantidade) === Number(quantidade));
+  if (linha && linha.valorParcela > 0) return { valorParcela: linha.valorParcela, valorTotal: linha.valorTotal || null };
+  if (Number(quantidade) === 1 && plano.premioTotal > 0) return { valorParcela: plano.premioTotal, valorTotal: plano.premioTotal };
+  if (Number(quantidade) === Number(plano.parcelamentoMaximo) && plano.premioMensalEstimado > 0) {
+    return { valorParcela: plano.premioMensalEstimado, valorTotal: null };
+  }
+  return null;
+}
+
+/** "R$ 2.556,34 à vista ou 12x de R$ 261,91" */
+function precoOfertaTexto(oferta) {
+  if (!oferta) return "";
+  const aVista = `${moeda(oferta.premioTotal)} à vista`;
+  const maximo = Number(oferta.parcelamentoMaximo) || 1;
+  const parcela = maximo > 1 ? parcelaDoPlano(oferta, maximo) : null;
+  return parcela ? `${aVista} ou ${maximo}x de ${moeda(parcela.valorParcela)}` : aVista;
+}
+
+/** "Boleto em 12x de R$ 261,91 (total R$ 3.142,92)" · "Boleto à vista, R$ 2.556,34" · "Boleto em 10x" */
+function boletoTexto(proposta, plano) {
   if (!proposta || !proposta.parcelas) return "";
-  const parcela = plano && plano.premioTotal ? ` (≈ ${moeda(plano.premioTotal / proposta.parcelas)})` : "";
-  return `Boleto em ${proposta.parcelas}x${parcela}, vencimento dia ${proposta.diaVencimento}`;
+  const quantidade = Number(proposta.parcelas);
+  const parcela = parcelaDoPlano(plano, quantidade);
+  if (quantidade === 1) return `Boleto à vista${parcela ? `, ${moeda(parcela.valorParcela)}` : ""}`;
+  if (!parcela) return `Boleto em ${quantidade}x`;
+  const total = parcela.valorTotal ? ` (total ${moeda(parcela.valorTotal)})` : "";
+  return `Boleto em ${quantidade}x de ${moeda(parcela.valorParcela)}${total}`;
+}
+
+/** "Boleto em 12x de R$ 261,91 (total R$ 3.142,92), vencimento dia 15" — cabe nos 80 de `cPagamento`. */
+function pagamentoTexto(proposta, plano) {
+  const boleto = boletoTexto(proposta, plano);
+  return boleto ? `${boleto}, vencimento dia ${proposta.diaVencimento}` : "";
+}
+
+/** Percentual da FIPE indenizado; a Suhai manda "70", "100" (fração até 1 vira percentual). */
+function percentualFipe(fator) {
+  if (typeof fator !== "number" || !Number.isFinite(fator) || fator <= 0) return null;
+  return Math.round((fator <= 1 ? fator * 100 : fator) * 10) / 10;
+}
+
+/** "70%" ou `null` quando a Suhai não informou o fator. */
+function percentualTexto(cotacao) {
+  const percentual = percentualFipe(cotacao && cotacao.fatorFipe);
+  return percentual === null ? null : `${String(percentual).replace(".", ",")}%`;
+}
+
+function valorIndenizacao(cotacao, plano) {
+  return (plano && plano.importanciaSegurada) || (cotacao && cotacao.valorFipe) || null;
+}
+
+/** "70% da FIPE (R$ 44.339,40)" ou `null` sem dados. */
+function indenizacaoTexto(cotacao, plano) {
+  const percentual = percentualTexto(cotacao);
+  if (!percentual) return null;
+  const valor = valorIndenizacao(cotacao, plano);
+  return valor ? `${percentual} da FIPE (${moeda(valor)})` : `${percentual} da FIPE`;
+}
+
+/** Linha do veículo na Note: FIPE cheia e o percentual indenizado, quando a Suhai informou. */
+function fipeTexto(cotacao) {
+  const percentual = percentualFipe(cotacao.fatorFipe);
+  if (percentual === null) return cotacao.valorFipe ? `FIPE ${moeda(cotacao.valorFipe)}` : "";
+  const tabela = cotacao.valorFipeTabela ? `FIPE ${moeda(cotacao.valorFipeTabela)} · ` : "";
+  return `${tabela}indenização ${indenizacaoTexto(cotacao, null)}`;
 }
 
 function dataBr(iso) {
@@ -206,10 +276,7 @@ function camposNovos(stage, leadData) {
 }
 
 function linhaOferta(oferta, protocoloDaNota) {
-  const partes = [`• ${rotuloPlano(oferta)}: ${moeda(oferta.premioTotal)} no ano`];
-  if (oferta.premioMensalEstimado) {
-    partes.push(`(≈ ${moeda(oferta.premioMensalEstimado)}/mês em até ${oferta.parcelamentoMaximo || "?"}x)`);
-  }
+  const partes = [`• ${rotuloPlano(oferta)}: ${precoOfertaTexto(oferta)}`];
   if (oferta.franquia) partes.push(`— franquia ${moeda(oferta.franquia)}`);
   if (oferta.importanciaSegurada) partes.push(`— IS ${moeda(oferta.importanciaSegurada)}`);
   partes.push(`[cd ${oferta.cdCobertura}]`);
@@ -255,7 +322,7 @@ function buildNote(stage, leadData) {
     }
     const linhas = [
       `${prefixo}🛡️ COTAÇÃO SUHAI APRESENTADA AO CLIENTE — nº ${cotacao.protocolo}${cotacao.simulado ? " (SIMULADA, sem valor real)" : ""}`,
-      `Veículo: ${cotacao.veiculo || leadData.veiculoMarcaModelo || "?"}${cotacao.valorFipe ? ` · FIPE ${moeda(cotacao.valorFipe)}` : ""}`,
+      `Veículo: ${cotacao.veiculo || leadData.veiculoMarcaModelo || "?"}${fipeTexto(cotacao) ? ` · ${fipeTexto(cotacao)}` : ""}`,
     ];
     const premissas = linhaPremissas(cotacao.premissas);
     if (premissas) linhas.push(premissas);
@@ -270,7 +337,7 @@ function buildNote(stage, leadData) {
   if (stage === "suhai_plan_selected" && plano) {
     return (
       `${prefixoAmbiente(cotacao.ambiente)}✅ CLIENTE ESCOLHEU O PLANO SUHAI — ${rotuloPlano(plano)} [cd ${plano.cdCobertura}]: ` +
-      `${moeda(plano.premioTotal)} no ano${plano.franquia ? `, franquia ${moeda(plano.franquia)}` : ""}. ` +
+      `${precoOfertaTexto(plano)}${plano.franquia ? `, franquia ${moeda(plano.franquia)}` : ""}. ` +
       `Cotação nº ${protocoloDoPlano(plano, cotacao) || "?"}.`
     );
   }
@@ -286,8 +353,9 @@ function buildNote(stage, leadData) {
     }
     return [
       `${prefixo}📄 PROPOSTA SUHAI TRANSMITIDA — nº ${proposta.numeroProposta} (cotação nº ${proposta.protocolo})`,
-      plano ? `Plano: ${rotuloPlano(plano)} [cd ${plano.cdCobertura}] — ${moeda(plano.premioTotal)} no ano` : null,
+      plano ? `Plano: ${rotuloPlano(plano)} [cd ${plano.cdCobertura}] — ${moeda(plano.premioTotal)} à vista` : null,
       `Pagamento: ${pagamentoTexto(proposta, plano)}`,
+      indenizacaoTexto(cotacao, plano) ? `Indenização: ${indenizacaoTexto(cotacao, plano)}` : null,
       `Início da vigência: ${dataBr(proposta.vigenciaInicio)}`,
       "Próximo passo: acompanhar a proposta até a emissão da apólice. Status e pendências (vistoria, rastreador) chegam aqui como Notes e Tasks. O boleto da 1ª parcela só existe depois da apólice emitida.",
     ]
@@ -339,28 +407,72 @@ function taskSpec(stage, leadData) {
 }
 
 /**
+ * Modelos com plano, percentual da FIPE e parcela em variáveis próprias
+ * (`cotacao_suhai_util_v3`, `proposta_suhai_util_v4`). Só saem com o ID no
+ * `OCTADESK_API_CONFIG` e com todos os dados; senão, o modelo anterior.
+ */
+const TEMPLATE_COTACAO_V3 = "suhai_cotacao_pronta_v3";
+const TEMPLATE_PROPOSTA_V4 = "suhai_proposta_enviada_v4";
+
+/**
  * Template WhatsApp ao cliente, ou `null`. Cotação simulada nunca vira
  * mensagem. Variáveis na ordem do template aprovado ({{var-1}}…).
+ * `templates` é o mapa de IDs do secret: decide entre o modelo novo e o anterior.
  */
-function octaTemplate(stage, leadData, nome) {
+function octaTemplate(stage, leadData, nome, templates = {}) {
   const cotacao = cotacaoDe(leadData);
   const proposta = propostaDe(leadData);
   const veiculo = cotacao.veiculo || leadData.veiculoMarcaModelo || "veículo";
+  const temModelo = (key) => Boolean(templates && templates[key]);
 
   if (stage === "suhai_quote") {
     if (cotacao.status !== "sucesso") return { key: "calculo_manual", variables: [nome] };
     if (!cotacaoReal(cotacao)) return null;
     const recomendada = ofertaRecomendada(cotacao.ofertas);
     if (!recomendada) return null;
+    const percentual = percentualTexto(cotacao);
+    const maximo = Number(recomendada.parcelamentoMaximo) || 1;
+    const parcela = maximo > 1 ? parcelaDoPlano(recomendada, maximo) : null;
+    if (temModelo(TEMPLATE_COTACAO_V3) && percentual && parcela) {
+      return {
+        key: TEMPLATE_COTACAO_V3,
+        variables: [
+          nome,
+          veiculo,
+          rotuloPlano(recomendada),
+          percentual,
+          moeda(recomendada.premioTotal),
+          `${maximo}x de ${moeda(parcela.valorParcela)}`,
+          String(cotacao.protocolo),
+        ],
+      };
+    }
     return {
       key: "suhai_cotacao_pronta",
-      variables: [nome, veiculo, rotuloPlano(recomendada), moeda(recomendada.premioTotal), String(cotacao.protocolo)],
+      variables: [nome, veiculo, rotuloPlano(recomendada), precoOfertaTexto(recomendada), String(cotacao.protocolo)],
     };
   }
   if (stage === "suhai_proposal" && proposta.status === "sucesso" && proposta.numeroProposta) {
+    const plano = leadData.suhaiPlano;
+    const percentual = percentualTexto(cotacao);
+    const indenizacao = valorIndenizacao(cotacao, plano);
+    if (temModelo(TEMPLATE_PROPOSTA_V4) && plano && percentual && indenizacao && proposta.diaVencimento) {
+      return {
+        key: TEMPLATE_PROPOSTA_V4,
+        variables: [
+          nome,
+          String(proposta.numeroProposta),
+          rotuloPlano(plano),
+          percentual,
+          moeda(indenizacao),
+          boletoTexto(proposta, plano),
+          String(proposta.diaVencimento),
+        ],
+      };
+    }
     return {
       key: "suhai_proposta_enviada",
-      variables: [nome, String(proposta.numeroProposta), pagamentoTexto(proposta, leadData.suhaiPlano)],
+      variables: [nome, String(proposta.numeroProposta), pagamentoTexto(proposta, plano)],
     };
   }
   return null;
@@ -390,14 +502,14 @@ function emailMomento(stage, leadData) {
       momento: "suhai_cotacao",
       detalhe:
         `${prefixoAmbiente(cotacao.ambiente)}Cotação Suhai nº ${cotacao.protocolo} apresentada` +
-        (recomendada ? ` — ${rotuloPlano(recomendada)} ${moeda(recomendada.premioTotal)}` : "") +
+        (recomendada ? ` — ${rotuloPlano(recomendada)} ${precoOfertaTexto(recomendada)}` : "") +
         (cotacao.simulado ? " (simulada)" : ""),
     };
   }
   if (stage === "suhai_plan_selected" && plano) {
     return {
       momento: "suhai_plano",
-      detalhe: `${prefixoAmbiente(cotacao.ambiente)}Plano Suhai escolhido — ${rotuloPlano(plano)} ${moeda(plano.premioTotal)} (cotação nº ${protocoloDoPlano(plano, cotacao) || "?"})`,
+      detalhe: `${prefixoAmbiente(cotacao.ambiente)}Plano Suhai escolhido — ${rotuloPlano(plano)} ${precoOfertaTexto(plano)} (cotação nº ${protocoloDoPlano(plano, cotacao) || "?"})`,
     };
   }
   if (stage === "suhai_proposal") {
@@ -410,7 +522,9 @@ function emailMomento(stage, leadData) {
     }
     return {
       momento: "suhai_proposta",
-      detalhe: `${prefixoAmbiente(proposta.ambiente)}Proposta Suhai nº ${proposta.numeroProposta} transmitida — acompanhar até a emissão da apólice`,
+      detalhe:
+        `${prefixoAmbiente(proposta.ambiente)}Proposta Suhai nº ${proposta.numeroProposta} transmitida` +
+        `${pagamentoTexto(proposta, plano) ? ` — ${pagamentoTexto(proposta, plano)}` : ""} — acompanhar até a emissão da apólice`,
     };
   }
   return null;
@@ -747,6 +861,8 @@ module.exports = {
   taskSpec,
   octaTemplate,
   emailMomento,
+  pagamentoTexto,
+  precoOfertaTexto,
   moeda,
   erroLegivel,
 };

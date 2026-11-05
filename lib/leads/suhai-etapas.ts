@@ -45,6 +45,7 @@ export function resumirOfertas(resultado: CotacaoResultado): SuhaiOfertaResumo[]
     franquia: oferta.franquia,
     importanciaSegurada: oferta.importanciaSegurada,
     parcelamentoMaximo: oferta.parcelamentoMaximo,
+    parcelas: oferta.parcelas,
   }));
 }
 
@@ -71,6 +72,8 @@ export function resumirCotacao(
       simulado: saida.resultado.simulado,
       protocolo: saida.resultado.protocolo,
       valorFipe: saida.resultado.veiculo.valorFipe,
+      valorFipeTabela: saida.resultado.veiculo.valorFipeTabela,
+      fatorFipe: saida.resultado.veiculo.fatorFipe,
       ofertas: resumirOfertas(saida.resultado),
     };
   }

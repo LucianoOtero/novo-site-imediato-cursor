@@ -11,6 +11,7 @@
  * `simulado: true` para a UI sinalizar.
  */
 
+import type { ParcelaOferta } from "./parcelas";
 import { PLANOS } from "./planos";
 import type { CotacaoPayload, CotacaoResultado, Oferta } from "./types";
 
@@ -40,9 +41,25 @@ const FATOR_PLANO: Record<string, number> = {
 
 const ADICIONAL_ASSISTENCIA: Record<number, number> = { 0: 0, 1: 96, 2: 168 };
 
+const centavos = (valor: number) => Math.round(valor * 100) / 100;
+
+/** Como a Suhai: o parcelado tem juros (cerca de 27% em 12x), não é o à vista dividido. */
+function parcelasSimuladas(premioTotal: number): ParcelaOferta[] {
+  return Array.from({ length: 12 }, (_, indice) => {
+    const quantidade = indice + 1;
+    const valorParcela = centavos((premioTotal * (1 + 0.0245 * indice)) / quantidade);
+    return { quantidade, valorParcela, valorTotal: centavos(valorParcela * quantidade) };
+  });
+}
+
+/** A Suhai indeniza parte da FIPE em alguns perfis; o mock alterna para a tela exibir o fator. */
+const FATORES_FIPE = [100, 85, 70] as const;
+
 export function gerarCotacaoSimulada(payload: CotacaoPayload): CotacaoResultado {
-  const fipe = valorReferencia(payload);
+  const fipeTabela = valorReferencia(payload);
   const semente = hash(`${payload.veiculo.placa ?? ""}|${payload.uso.cepPernoite}|${payload.proponente.cpf}`);
+  const fatorFipe = FATORES_FIPE[semente % FATORES_FIPE.length];
+  const fipe = centavos((fipeTabela * fatorFipe) / 100);
 
   // Taxa base entre 3,2% e 5,6% do valor de referência ao ano.
   const taxaBase = 0.032 + (semente % 240) / 10000;
@@ -56,7 +73,8 @@ export function gerarCotacaoSimulada(payload: CotacaoPayload): CotacaoResultado 
       const codigo = plano.codigos[assistencia][0];
       const premio =
         fipe * taxaBase * FATOR_PLANO[plano.id] * agravoUso * agravoGaragem + ADICIONAL_ASSISTENCIA[assistencia];
-      const premioTotal = Math.round(premio * 100) / 100;
+      const premioTotal = centavos(premio);
+      const parcelas = parcelasSimuladas(premioTotal);
 
       ofertas.push({
         protocolo,
@@ -64,10 +82,11 @@ export function gerarCotacaoSimulada(payload: CotacaoPayload): CotacaoResultado 
         planoId: plano.id,
         assistencia,
         premioTotal,
-        premioMensalEstimado: Math.round((premioTotal / 12) * 100) / 100,
-        importanciaSegurada: plano.id === "essencial" ? fipe : Math.round(fipe * 1.0),
+        premioMensalEstimado: parcelas[parcelas.length - 1].valorParcela,
+        importanciaSegurada: fipe,
         franquia: plano.id === "essencial" ? null : Math.round((fipe * 0.05) / 10) * 10,
         parcelamentoMaximo: 12,
+        parcelas,
       });
     }
   }
@@ -80,6 +99,8 @@ export function gerarCotacaoSimulada(payload: CotacaoPayload): CotacaoResultado 
       modelo: payload.veiculo.modelo,
       anoModelo: payload.veiculo.anoModelo,
       valorFipe: fipe,
+      valorFipeTabela: fipeTabela,
+      fatorFipe,
     },
     simulado: true,
     geradoEm: new Date().toISOString(),

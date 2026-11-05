@@ -260,6 +260,7 @@ export function CotacaoSuhaiExperiencia({
                   <PropostaSuhaiForm
                     protocolo={escolhida.protocolo}
                     oferta={escolhida}
+                    veiculo={resultado.veiculo}
                     contexto={contexto}
                     onInicio={() => {
                       if (estagioRef.current) estagioRef.current = "proposal_form";

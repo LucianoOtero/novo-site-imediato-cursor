@@ -8,6 +8,7 @@
  * lugar só e o gateway permaneça um transporte fiel.
  */
 
+import { type ParcelaOferta, percentualFipe, percentualFipePorValores } from "./parcelas";
 import { classificarCobertura } from "./planos";
 import type { CotacaoPayload, CotacaoResultado, Oferta } from "./types";
 
@@ -48,6 +49,17 @@ function maiorParcelamento(parcelas: ParcelaBruta[]): ParcelaBruta | null {
   );
 }
 
+function tabelaParcelas(parcelas: ParcelaBruta[]): ParcelaOferta[] {
+  return parcelas
+    .filter((parcela) => parcela.quantidade >= 1 && typeof parcela.valorParcela === "number" && parcela.valorParcela > 0)
+    .map((parcela) => ({
+      quantidade: parcela.quantidade,
+      valorParcela: parcela.valorParcela as number,
+      valorTotal: parcela.valorTotal ?? null,
+    }))
+    .sort((a, b) => a.quantidade - b.quantidade);
+}
+
 export function normalizarCotacao(bruta: CotacaoBruta, payload: CotacaoPayload): CotacaoResultado {
   const ofertas: Oferta[] = [];
 
@@ -76,9 +88,11 @@ export function normalizarCotacao(bruta: CotacaoBruta, payload: CotacaoPayload):
       // (roubo e furto) é indenização integral.
       franquia: classificacao.plano.id === "essencial" ? null : (bruta.franquia?.valor ?? null),
       parcelamentoMaximo: parcelado?.quantidade ?? 1,
+      parcelas: tabelaParcelas(cobertura.parcelas),
     });
   }
 
+  const { valorFipe, valorFipeComFator, fatorFipe } = bruta.veiculo;
   return {
     protocolo: bruta.protocolo,
     ofertas,
@@ -86,7 +100,9 @@ export function normalizarCotacao(bruta: CotacaoBruta, payload: CotacaoPayload):
       marca: payload.veiculo.marca,
       modelo: payload.veiculo.modelo,
       anoModelo: payload.veiculo.anoModelo,
-      valorFipe: bruta.veiculo.valorFipeComFator ?? bruta.veiculo.valorFipe,
+      valorFipe: valorFipeComFator ?? valorFipe,
+      valorFipeTabela: valorFipe,
+      fatorFipe: percentualFipe(fatorFipe) ?? percentualFipePorValores(valorFipe, valorFipeComFator),
     },
     simulado: false,
     geradoEm: new Date().toISOString(),

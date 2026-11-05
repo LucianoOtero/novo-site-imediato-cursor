@@ -10,14 +10,19 @@ import { Input } from "@/components/ui/input";
 import { TelefoneInput } from "@/components/ui/telefone-input";
 import { trackPropostaSuhai, trackSuhai } from "@/lib/suhai/analytics";
 import { COMBUSTIVEL, COR_VEICULO } from "@/lib/suhai/dominio";
+import { formatarMoeda, percentualFipe, quantidadesDisponiveis, textoFipe, textoParcelamento } from "@/lib/suhai/parcelas";
 import { PLANOS } from "@/lib/suhai/planos";
-import { propostaInputSchema, type Oferta, type PropostaInput, type PropostaResultado } from "@/lib/suhai/types";
+import {
+  propostaInputSchema,
+  type CotacaoResultado,
+  type Oferta,
+  type PropostaInput,
+  type PropostaResultado,
+} from "@/lib/suhai/types";
 import { formatCep, formatTelefone, isValidEmailFormat, onlyDigits } from "@/lib/validators";
 
 const selectClasses =
   "flex h-11 w-full rounded-lg border border-neutral-200 bg-white px-3.5 text-base text-neutral-900 outline-none focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/30 aria-invalid:border-alert";
-
-const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 const UFS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA",
@@ -108,12 +113,14 @@ function vigenciaPadrao(): string {
 export function PropostaSuhaiForm({
   protocolo,
   oferta,
+  veiculo,
   contexto,
   onInicio,
   onEnviada,
 }: {
   protocolo: string;
   oferta: Oferta;
+  veiculo?: CotacaoResultado["veiculo"];
   contexto: ContextoProposta;
   onInicio?: () => void;
   onEnviada?: () => void;
@@ -133,7 +140,9 @@ export function PropostaSuhaiForm({
   const [cor, setCor] = useState("11");
   const [combustivel, setCombustivel] = useState("4");
   const [vigencia, setVigencia] = useState(vigenciaPadrao);
-  const [parcelas, setParcelas] = useState(String(Math.min(oferta.parcelamentoMaximo, 12) || 1));
+  const opcoesParcelas = quantidadesDisponiveis(oferta).filter((quantidade) => quantidade <= 12);
+  const [parcelas, setParcelas] = useState(String(opcoesParcelas[opcoesParcelas.length - 1] ?? 1));
+  const indenizacao = textoFipe(percentualFipe(veiculo?.fatorFipe), oferta.importanciaSegurada ?? veiculo?.valorFipe ?? null);
   const [vencimento, setVencimento] = useState("10");
   const [aceite, setAceite] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
@@ -386,15 +395,22 @@ export function PropostaSuhaiForm({
                 <dd className="text-right font-medium text-neutral-900">{PLANOS.find((plano) => plano.id === oferta.planoId)?.nome ?? "Suhai"}</dd>
               </div>
               <div className="flex justify-between gap-3 py-2">
-                <dt className="text-neutral-500">Valor</dt>
-                <dd className="text-right font-medium text-neutral-900">{moeda.format(oferta.premioTotal)} no ano</dd>
+                <dt className="text-neutral-500">Valor à vista</dt>
+                <dd className="text-right font-medium text-neutral-900">{formatarMoeda(oferta.premioTotal)}</dd>
               </div>
               <div className="flex justify-between gap-3 py-2">
                 <dt className="text-neutral-500">Pagamento</dt>
                 <dd className="text-right font-medium text-neutral-900">
-                  Boleto em {parcelas}x, vencimento dia {vencimento}
+                  Boleto {Number(parcelas) === 1 ? "" : "em "}
+                  {textoParcelamento(oferta, Number(parcelas))}, vencimento dia {vencimento}
                 </dd>
               </div>
+              {indenizacao && (
+                <div className="flex justify-between gap-3 py-2">
+                  <dt className="text-neutral-500">Indenização</dt>
+                  <dd className="text-right font-medium text-neutral-900">{indenizacao}</dd>
+                </div>
+              )}
               <div className="flex justify-between gap-3 py-2">
                 <dt className="text-neutral-500">Início da vigência</dt>
                 <dd className="text-right font-medium text-neutral-900">{vigencia.split("-").reverse().join("/")}</dd>
@@ -641,9 +657,9 @@ export function PropostaSuhaiForm({
       </Field>
       <Field label="Parcelas" htmlFor="proposta-parcelas" error={mensagem("parcelas")}>
         <select id="proposta-parcelas" className={selectClasses} value={parcelas} onChange={(event) => setParcelas(event.target.value)}>
-          {Array.from({ length: 12 }, (_, indice) => indice + 1).map((quantidade) => (
+          {opcoesParcelas.map((quantidade) => (
             <option key={quantidade} value={quantidade}>
-              {quantidade}
+              {textoParcelamento(oferta, quantidade)}
             </option>
           ))}
         </select>

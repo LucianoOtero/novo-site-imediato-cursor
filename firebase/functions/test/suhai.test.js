@@ -108,7 +108,124 @@ test("erro em HTML do Cloud Run vira uma linha na Note, na Task e no e-mail", ()
 test("template da cotação pronta usa o plano recomendado", () => {
   const escolha = suhai.octaTemplate("suhai_quote", { ...base, suhaiCotacao: cotacao }, "Maria");
   assert.equal(escolha.key, "suhai_cotacao_pronta");
-  assert.deepEqual(escolha.variables, ["Maria", "VW GOLF 2020", "Completo — assistência 200 km", suhai.moeda(2400), "531928"]);
+  assert.deepEqual(escolha.variables, [
+    "Maria",
+    "VW GOLF 2020",
+    "Completo — assistência 200 km",
+    `${suhai.moeda(2400)} à vista ou 10x de ${suhai.moeda(240)}`,
+    "531928",
+  ]);
+});
+
+// Cotação 228592368 / proposta 12490227: a mensagem dizia 12x de R$ 213,03 (à vista ÷ 12).
+const completoAnne = {
+  protocolo: "228592368",
+  cdCobertura: 1009,
+  plano: "Completo",
+  assistencia: 1,
+  premioTotal: 2556.34,
+  premioMensalEstimado: 261.91,
+  franquia: 10270,
+  importanciaSegurada: 44339.4,
+  parcelamentoMaximo: 12,
+  parcelas: [
+    { quantidade: 1, valorParcela: 2556.34, valorTotal: 2556.34 },
+    { quantidade: 12, valorParcela: 261.91, valorTotal: 3142.92 },
+  ],
+};
+const cotacaoAnne = {
+  ...cotacao,
+  ambiente: "producao",
+  protocolo: "228592368",
+  valorFipe: 44339.4,
+  valorFipeTabela: 63342,
+  fatorFipe: 70,
+  ofertas: [completoAnne],
+};
+const propostaAnne = { ...proposta, ambiente: "producao", protocolo: "228592368", numeroProposta: "12490227", parcelas: 12, diaVencimento: 15 };
+
+test("valores da cotação e da proposta saem da tabela de parcelas da Suhai", () => {
+  const dados = { ...base, suhaiCotacao: cotacaoAnne, suhaiPlano: completoAnne, suhaiProposta: propostaAnne };
+  const semNbsp = (texto) => texto.replace(/\u00a0/g, " ");
+
+  const cotacaoPronta = suhai.octaTemplate("suhai_quote", dados, "Ana");
+  assert.equal(semNbsp(cotacaoPronta.variables[3]), "R$ 2.556,34 à vista ou 12x de R$ 261,91");
+
+  const enviada = suhai.octaTemplate("suhai_proposal", dados, "Ana");
+  assert.equal(semNbsp(enviada.variables[2]), "Boleto em 12x de R$ 261,91 (total R$ 3.142,92), vencimento dia 15");
+  assert.doesNotMatch(enviada.variables[2], /213,03/);
+
+  const campos = suhai.camposNovos("suhai_proposal", dados);
+  assert.equal(campos.cPagamento, enviada.variables[2]);
+  assert.ok(campos.cPagamento.length <= 80);
+
+  const notaProposta = semNbsp(suhai.buildNote("suhai_proposal", dados));
+  assert.match(notaProposta, /Indenização: 70% da FIPE \(R\$ 44\.339,40\)/);
+  assert.match(notaProposta, /R\$ 2\.556,34 à vista/);
+
+  const notaCotacao = semNbsp(suhai.buildNote("suhai_quote", dados));
+  assert.match(notaCotacao, /FIPE R\$ 63\.342,00 · indenização 70% da FIPE \(R\$ 44\.339,40\)/);
+  assert.match(notaCotacao, /Completo — assistência 200 km: R\$ 2\.556,34 à vista ou 12x de R\$ 261,91/);
+
+  assert.match(semNbsp(suhai.emailMomento("suhai_proposal", dados).detalhe), /12x de R\$ 261,91/);
+});
+
+test("registro antigo, sem a tabela: parcela máxima conhecida, intermediária sem valor, nunca dividida", () => {
+  const { parcelas: _parcelas, ...semTabela } = completoAnne;
+  const semNbsp = (texto) => texto.replace(/\u00a0/g, " ");
+  assert.equal(
+    semNbsp(suhai.pagamentoTexto(propostaAnne, semTabela)),
+    "Boleto em 12x de R$ 261,91, vencimento dia 15",
+  );
+  assert.equal(suhai.pagamentoTexto({ ...propostaAnne, parcelas: 10 }, semTabela), "Boleto em 10x, vencimento dia 15");
+  assert.equal(
+    semNbsp(suhai.pagamentoTexto({ ...propostaAnne, parcelas: 1 }, semTabela)),
+    "Boleto à vista, R$ 2.556,34, vencimento dia 15",
+  );
+  assert.equal(suhai.pagamentoTexto(propostaAnne, null), "Boleto em 12x, vencimento dia 15");
+});
+
+test("modelos v3/v4 saem com o ID no secret; sem ID ou sem o fator FIPE, os anteriores", () => {
+  const dados = { ...base, suhaiCotacao: cotacaoAnne, suhaiPlano: completoAnne, suhaiProposta: propostaAnne };
+  const templates = { suhai_cotacao_pronta_v3: "id-v3", suhai_proposta_enviada_v4: "id-v4" };
+  const semNbsp = (lista) => lista.map((texto) => texto.replace(/\u00a0/g, " "));
+
+  const cotacaoV3 = suhai.octaTemplate("suhai_quote", dados, "Ana", templates);
+  assert.equal(cotacaoV3.key, "suhai_cotacao_pronta_v3");
+  assert.deepEqual(semNbsp(cotacaoV3.variables), [
+    "Ana",
+    "VW GOLF 2020",
+    "Completo — assistência 200 km",
+    "70%",
+    "R$ 2.556,34",
+    "12x de R$ 261,91",
+    "228592368",
+  ]);
+
+  const propostaV4 = suhai.octaTemplate("suhai_proposal", dados, "Ana", templates);
+  assert.equal(propostaV4.key, "suhai_proposta_enviada_v4");
+  assert.deepEqual(semNbsp(propostaV4.variables), [
+    "Ana",
+    "12490227",
+    "Completo — assistência 200 km",
+    "70%",
+    "R$ 44.339,40",
+    "Boleto em 12x de R$ 261,91 (total R$ 3.142,92)",
+    "15",
+  ]);
+  assert.ok(propostaV4.variables.every((valor) => valor && !/\n/.test(valor)));
+
+  assert.equal(suhai.octaTemplate("suhai_quote", dados, "Ana", {}).key, "suhai_cotacao_pronta");
+  assert.equal(suhai.octaTemplate("suhai_proposal", dados, "Ana").key, "suhai_proposta_enviada");
+
+  const semFator = { ...dados, suhaiCotacao: { ...cotacaoAnne, fatorFipe: undefined } };
+  assert.equal(suhai.octaTemplate("suhai_quote", semFator, "Ana", templates).key, "suhai_cotacao_pronta");
+  assert.equal(suhai.octaTemplate("suhai_proposal", semFator, "Ana", templates).key, "suhai_proposta_enviada");
+});
+
+test("tabela de parcelas lida do RTDB como objeto também vale", () => {
+  const comoObjeto = { ...completoAnne, parcelas: { 0: completoAnne.parcelas[0], 1: completoAnne.parcelas[1] } };
+  assert.match(suhai.pagamentoTexto(propostaAnne, comoObjeto), /261,91 \(total/);
 });
 
 test("note da cotação lista todas as ofertas e marca homologação", () => {
@@ -152,7 +269,7 @@ test("proposta transmitida grava número, pagamento, Task de emissão e WhatsApp
   const dados = { ...base, suhaiCotacao: cotacao, suhaiPlano: ofertas[1], suhaiProposta: proposta };
   const campos = suhai.camposNovos("suhai_proposal", dados);
   assert.equal(campos.cNumeroProposta, "9061210");
-  assert.match(campos.cPagamento, /^Boleto em 10x/);
+  assert.match(campos.cPagamento, /^Boleto em 10x de R\$\s240,00, vencimento dia 10$/);
   assert.equal(suhai.etapaFunilNova("suhai_proposal", dados), "Proposta transmitida");
   const tarefa = suhai.taskSpec("suhai_proposal", dados);
   assert.match(tarefa.name, /Acompanhar proposta Suhai nº 9061210 até a emissão da apólice/);
