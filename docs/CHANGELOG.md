@@ -24,6 +24,10 @@ A proposta 12490227 (cotação 228592368) foi ao cliente com "Boleto em 12x (≈
 - Tela: o cartão mostra a maior parcela "/mês" com "em 12x (total R$ Z) · ou R$ X à vista" e a linha "Indenização: 70% da FIPE (R$ IS)"; o cabeçalho mostra a FIPE e o percentual; na proposta, o seletor lista as quantidades da tabela com o valor de cada uma e a confirmação mostra à vista, parcela escolhida e indenização.
 - `firebase/functions/suhai.js`: `pagamentoTexto` usa a tabela (WhatsApp `suhai_proposta_enviada`, `cPagamento`, nota e e-mail); a variável de valor da `suhai_cotacao_pronta` vira "R$ X à vista ou 12x de R$ Y"; notas com a FIPE e o percentual. Suporte aos modelos novos `suhai_cotacao_pronta_v3` e `suhai_proposta_enviada_v4`, só quando o ID estiver no `OCTADESK_API_CONFIG`; sem o ID, os atuais. Ver `docs/GUIA_OCTADESK_TEMPLATES.md`.
 
+### Publicação
+- PR #31 na `main` e `deliverLead` publicada de novo (05/11/2026).
+- Espo PROD: `cPagamento` corrigido e Note de correção nas 4 propostas de cliente que saíram com a parcela sem juros (12492950, 12489998, 12486804, 12490227). Nenhuma mensagem nova ao cliente.
+
 ---
 
 ## Corrigido — 05/11/2026 (cotação Suhai sem a versão da FIPE)

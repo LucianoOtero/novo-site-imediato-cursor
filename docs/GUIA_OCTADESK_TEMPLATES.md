@@ -329,5 +329,15 @@ O texto fixo da cotação termina em "por ano"; a frase fica correta, mas o mode
 **Uso no código.** O `octaTemplate` usa a chave nova quando o ID dela está em `templates` do `OCTADESK_API_CONFIG` **e** a cotação tem o percentual da FIPE e a parcela (proposta: plano, percentual, valor da indenização e dia de vencimento). Sem isso, manda o modelo da Fase 1. Ligar: versão nova do secret com `"suhai_cotacao_pronta_v3":"ID"` e `"suhai_proposta_enviada_v4":"ID"`, mantendo as chaves atuais, e nova publicação da `deliverLead`, com "pode". Desfazer: versão anterior do secret e nova publicação.
 
 - [x] Fase 1: variáveis corrigidas no código (`firebase/functions/suhai.js`, testes em `test/suhai.test.js`) — 2026-11-05
+- [x] Fase 1 no ar: PR #31 na `main` (Vercel) e `deliverLead` publicada de novo — 2026-11-05. Conferido sem envio, nos registros das 5 propostas de produção: a função gera "Boleto em 12x de R$ 261,91, vencimento dia 15" para a 12490227 (antes, R$ 213,03).
+- [x] Fase 3: `cPagamento` corrigido no Lead e na Oportunidade (Espo PROD) das propostas 12492950, 12489998, 12486804 e 12490227, com Note de correção no Lead; nenhuma mensagem ao cliente — 2026-11-05. A 12350578 (teste de produção de 16/10) ficou de fora. Valores anteriores num log local, fora do repositório.
 - [ ] `cotacao_suhai_util_v3` e `proposta_suhai_util_v4` criados no Octadesk e aprovados pela Meta
 - [ ] IDs no `OCTADESK_API_CONFIG` e `deliverLead` publicada de novo
+
+| Proposta | Parcelas | Mensagem e campo diziam | Valor da Suhai |
+|---|---|---|---|
+| 12492950 | 12x | R$ 147,63 | R$ 181,51 |
+| 12489998 | 12x | R$ 149,82 | R$ 184,20 |
+| 12486804 | 12x | R$ 164,45 | R$ 202,19 |
+| 12490227 | 12x | R$ 213,03 | R$ 261,91 |
+| 12350578 (teste) | 12x | R$ 198,86 | R$ 244,49 |
