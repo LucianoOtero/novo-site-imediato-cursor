@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { ParcelaOferta } from "@/lib/suhai/parcelas";
 import { leadSchema, lenientCep, lenientCpf, lenientPlaca } from "@/lib/validators";
 
 /**
@@ -99,6 +100,8 @@ export type SuhaiOfertaResumo = {
   franquia: number | null;
   importanciaSegurada: number | null;
   parcelamentoMaximo: number;
+  /** Tabela de parcelas da Suhai; ausente nos registros anteriores a 11/2026. */
+  parcelas?: ParcelaOferta[];
 };
 
 export type SuhaiCotacaoResumo = {
@@ -106,7 +109,11 @@ export type SuhaiCotacaoResumo = {
   ambiente: "homologacao" | "producao";
   simulado: boolean;
   protocolo?: string;
+  /** FIPE com o fator aplicado (valor indenizado). */
   valorFipe?: number | null;
+  /** FIPE cheia e percentual indenizado (70, 100…). */
+  valorFipeTabela?: number | null;
+  fatorFipe?: number | null;
   veiculo?: string;
   premissas?: {
     utilizacao: string;

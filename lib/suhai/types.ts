@@ -19,6 +19,7 @@ import {
   TIPO_UTILIZACAO,
   UTILIZACAO_DUT,
 } from "./dominio";
+import type { ParcelaOferta } from "./parcelas";
 import type { PlanoId } from "./planos";
 import { aceitaZeroKm, mensagemZeroKm } from "./zero-km";
 
@@ -122,6 +123,8 @@ export type Oferta = {
   importanciaSegurada: number | null;
   franquia: number | null;
   parcelamentoMaximo: number;
+  /** Tabela de parcelas da Suhai (com juros e IOF); ausente em registros antigos. */
+  parcelas?: ParcelaOferta[];
 };
 
 export type CotacaoResultado = {
@@ -131,7 +134,12 @@ export type CotacaoResultado = {
     marca: string;
     modelo: string;
     anoModelo: number;
+    /** Valor indenizado: a FIPE já com o fator aplicado. */
     valorFipe: number | null;
+    /** FIPE cheia, antes do fator. */
+    valorFipeTabela?: number | null;
+    /** Percentual da FIPE indenizado (70, 100…). */
+    fatorFipe?: number | null;
   };
   /** Marca resposta vinda do mock, para não confundir teste com produção. */
   simulado: boolean;

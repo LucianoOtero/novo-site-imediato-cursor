@@ -9,7 +9,8 @@
 
 import type { RpaFinalResult, RpaPlano } from "@/lib/rpa-calculation";
 import type { DefinicaoPlano } from "@/lib/suhai/planos";
-import type { Oferta } from "@/lib/suhai/types";
+import { parcelaPara, percentualFipe, textoFipe } from "@/lib/suhai/parcelas";
+import type { CotacaoResultado, Oferta } from "@/lib/suhai/types";
 
 export type SeloOferta = "mais_escolhido" | "recomendado";
 
@@ -54,11 +55,26 @@ export function splitCurrency(valor: string): { prefix: string | null; amount: s
   return { prefix: null, amount: valor };
 }
 
-export function fromSuhaiOferta(plano: DefinicaoPlano, oferta: Oferta): OfertaExibicao {
+/**
+ * O preço grande é a maior parcela da tabela da Suhai (com juros); a legenda
+ * deixa claro o total parcelado e o à vista, que são valores diferentes.
+ */
+export function fromSuhaiOferta(
+  plano: DefinicaoPlano,
+  oferta: Oferta,
+  veiculo?: Pick<CotacaoResultado["veiculo"], "valorFipe" | "fatorFipe">,
+): OfertaExibicao {
   const coberturas: CoberturaOferta[] = plano.coberturas.map((texto) => ({ texto, tom: "incluida" }));
+  const indenizacao = textoFipe(percentualFipe(veiculo?.fatorFipe), oferta.importanciaSegurada ?? veiculo?.valorFipe ?? null);
+  if (indenizacao) coberturas.push({ texto: `Indenização: ${indenizacao}`, tom: "informativa" });
   if (oferta.franquia !== null) {
     coberturas.push({ texto: `Franquia de ${moeda.format(oferta.franquia)}`, tom: "informativa" });
   }
+
+  const maxima = parcelaPara(oferta, oferta.parcelamentoMaximo);
+  const parcelado = maxima && maxima.quantidade > 1 ? maxima : null;
+  const aVista = `${moeda.format(oferta.premioTotal)} à vista`;
+  const totalParcelado = parcelado?.valorTotal ? ` (total ${moeda.format(parcelado.valorTotal)})` : "";
 
   return {
     id: `suhai-${plano.id}-${oferta.assistencia}`,
@@ -66,8 +82,10 @@ export function fromSuhaiOferta(plano: DefinicaoPlano, oferta: Oferta): OfertaEx
     resumo: plano.resumo,
     selo: plano.destaque ? "mais_escolhido" : undefined,
     destaque: Boolean(plano.destaque),
-    preco: { prefixo: null, valor: moeda.format(oferta.premioMensalEstimado), sufixo: "/mês" },
-    legenda: `${moeda.format(oferta.premioTotal)} no ano · até ${oferta.parcelamentoMaximo}x`,
+    preco: parcelado
+      ? { prefixo: null, valor: moeda.format(parcelado.valorParcela), sufixo: "/mês" }
+      : { prefixo: null, valor: moeda.format(oferta.premioTotal), sufixo: "à vista" },
+    legenda: parcelado ? `em ${parcelado.quantidade}x${totalParcelado} · ou ${aVista}` : undefined,
     detalhes: [],
     coberturas,
   };

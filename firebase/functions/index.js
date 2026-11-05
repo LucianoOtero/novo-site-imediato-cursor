@@ -998,7 +998,7 @@ exports.deliverLead = onValueWritten(
       if (isSuhai && suhai.SUHAI_STAGES.includes(stage)) {
         // Templates Suhai só saem quando o ID aprovado pela Meta estiver no
         // secret — até lá, nada de mensagem nem e-mail de erro.
-        const escolha = suhai.octaTemplate(stage, leadData, nome);
+        const escolha = suhai.octaTemplate(stage, leadData, nome, octaConfig.templates);
         if (escolha && octaConfig.templates && octaConfig.templates[escolha.key]) {
           templateKey = escolha.key;
           variables = escolha.variables;

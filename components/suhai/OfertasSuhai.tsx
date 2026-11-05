@@ -9,6 +9,7 @@ import { fromSuhaiOferta } from "@/lib/quote/oferta";
 import { cn } from "@/lib/utils";
 import { trackSuhai } from "@/lib/suhai/analytics";
 import { ROTULO_ASSISTENCIA, type PlanoAssistencia } from "@/lib/suhai/dominio";
+import { formatarMoeda, percentualFipe } from "@/lib/suhai/parcelas";
 import { PLANOS } from "@/lib/suhai/planos";
 import type { CotacaoResultado, Oferta } from "@/lib/suhai/types";
 
@@ -21,9 +22,16 @@ import type { CotacaoResultado, Oferta } from "@/lib/suhai/types";
  * com protocolo próprio.
  */
 
-const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
-
 const NIVEIS: PlanoAssistencia[] = [1, 2, 0];
+
+/** "FIPE R$ 63.342,00 · indenização de 70% (R$ 44.339,40)" */
+function cabecalhoFipe(veiculo: CotacaoResultado["veiculo"]): string | null {
+  const percentual = percentualFipe(veiculo.fatorFipe);
+  if (!veiculo.valorFipe) return null;
+  if (percentual === null) return `valor de referência ${formatarMoeda(veiculo.valorFipe)}`;
+  const tabela = veiculo.valorFipeTabela ? `FIPE ${formatarMoeda(veiculo.valorFipeTabela)} · ` : "";
+  return `${tabela}indenização de ${percentual.toLocaleString("pt-BR")}% (${formatarMoeda(veiculo.valorFipe)})`;
+}
 
 export function OfertasSuhai({
   resultado,
@@ -49,6 +57,7 @@ export function OfertasSuhai({
   }, [resultado.ofertas, assistencia]);
 
   const protocolo = porPlano.values().next().value?.protocolo ?? resultado.protocolo;
+  const fipe = cabecalhoFipe(resultado.veiculo);
 
   async function trocarAssistencia(nivel: PlanoAssistencia) {
     if (carregando !== null) return;
@@ -85,7 +94,7 @@ export function OfertasSuhai({
         </h2>
         <p className="mt-1 text-sm text-neutral-500">
           Protocolo {protocolo}
-          {resultado.veiculo.valorFipe ? ` · valor de referência ${moeda.format(resultado.veiculo.valorFipe)}` : ""}
+          {fipe ? ` · ${fipe}` : ""}
         </p>
       </div>
 
@@ -142,7 +151,7 @@ export function OfertasSuhai({
             <OfertaCard
               key={plano.id}
               as="li"
-              oferta={fromSuhaiOferta(plano, oferta)}
+              oferta={fromSuhaiOferta(plano, oferta, resultado.veiculo)}
               className={selecionada ? "border-emerald-600 ring-2 ring-emerald-600" : undefined}
               acao={
                 <Button

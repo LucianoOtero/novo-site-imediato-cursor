@@ -151,6 +151,7 @@ O relatório (`scripts/espo-ops/fase0-suhai-fields-{dev,prod}.json`) lista campo
 - Só nos marcos: `primeira_etapa` (celular), `suhai_cotacao_pronta` (preço real), `calculo_manual` (cotação falhou) e `suhai_proposta_enviada` (proposta transmitida).
 - Os quatro estão aprovados e ativos. `suhai_cotacao_pronta` e `suhai_proposta_enviada` foram ativados em 2026-10-15 (`cotacao_suhai_util_v2` e `proposta_suhai_util_v2`); textos, IDs e variáveis estão em [`GUIA_OCTADESK_TEMPLATES.md`](./GUIA_OCTADESK_TEMPLATES.md#templates-da-cotação-suhai-cotacao-suhai-2026-10-15).
 - Se o ID de um template sair de `OCTADESK_API_CONFIG.templates`, o envio é **pulado** (log, sem e-mail de erro).
+- Valores (desde 2026-11-05): parcela e total vêm da tabela de parcelas da Suhai gravada com a cotação (`suhaiCotacao.ofertas[].parcelas`, copiada para `suhaiPlano`), com juros e IOF. A cotação diz "R$ X à vista ou 12x de R$ Y"; a proposta, "Boleto em 12x de R$ Y (total R$ Z), vencimento dia D". O mesmo texto vai para `cPagamento`, a nota e o e-mail. O percentual da FIPE (`suhaiCotacao.fatorFipe`) entra nas notas e nos modelos novos `suhai_cotacao_pronta_v3` / `suhai_proposta_enviada_v4`, usados só quando o ID deles está no secret. Registro sem a tabela: só a parcela máxima (`premioMensalEstimado`) tem valor; nunca há divisão do prêmio. Ver [`GUIA_OCTADESK_TEMPLATES.md`](./GUIA_OCTADESK_TEMPLATES.md#valores-corretos-nas-mensagens-suhai-2026-11-05).
 
 ---
 

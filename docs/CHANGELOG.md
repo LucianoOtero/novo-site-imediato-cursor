@@ -13,6 +13,19 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Corrigido — 05/11/2026 (valores das parcelas e fator FIPE nas mensagens e na tela Suhai)
+
+A proposta 12490227 (cotação 228592368) foi ao cliente com "Boleto em 12x (≈ R$ 213,03)": o à vista (R$ 2.556,34) dividido por 12, sem juros. A parcela real da Suhai era R$ 261,91. A mensagem da cotação mostrava o à vista sem dizer que era à vista, e nenhum canal mostrava que a indenização era de 70% da FIPE.
+
+### Fixed
+- `lib/suhai/parcelas.ts` (novo, com teste): parcela por quantidade a partir da tabela da Suhai (com juros e IOF), textos de preço ("R$ X à vista ou 12x de R$ Y"; "12x de R$ Y (total R$ Z)") e percentual da FIPE ("70% da FIPE (R$ IS)"). Sem a tabela, a quantidade intermediária fica sem valor; nunca divide.
+- `lib/suhai/normalizar.ts`, `types.ts`, `mock.ts`: a oferta guarda a tabela de parcelas; o veículo ganha `valorFipeTabela` (FIPE cheia) e `fatorFipe` (percentual; fração até 1 vira percentual). `valorFipe` continua sendo a FIPE com o fator. O mock passa a ter juros no parcelado e fator FIPE diferente de 100.
+- `lib/leads/suhai-etapas.ts`: a cotação e o plano gravados no RTDB levam a tabela de parcelas e o fator FIPE.
+- Tela: o cartão mostra a maior parcela "/mês" com "em 12x (total R$ Z) · ou R$ X à vista" e a linha "Indenização: 70% da FIPE (R$ IS)"; o cabeçalho mostra a FIPE e o percentual; na proposta, o seletor lista as quantidades da tabela com o valor de cada uma e a confirmação mostra à vista, parcela escolhida e indenização.
+- `firebase/functions/suhai.js`: `pagamentoTexto` usa a tabela (WhatsApp `suhai_proposta_enviada`, `cPagamento`, nota e e-mail); a variável de valor da `suhai_cotacao_pronta` vira "R$ X à vista ou 12x de R$ Y"; notas com a FIPE e o percentual. Suporte aos modelos novos `suhai_cotacao_pronta_v3` e `suhai_proposta_enviada_v4`, só quando o ID estiver no `OCTADESK_API_CONFIG`; sem o ID, os atuais. Ver `docs/GUIA_OCTADESK_TEMPLATES.md`.
+
+---
+
 ## Corrigido — 05/11/2026 (cotação Suhai sem a versão da FIPE)
 
 As 5 recusas "Veículo não foi localizado" / "Modelo informado está incorreto" de 04/11 levaram à Suhai o nome do documento ("UP TAKE MCV", "Fazer150") em vez da grafia da tabela FIPE. A busca melhorou na PR #21, mas, se a tabela pública não responde (fora do ar ou limite diário), o nome cru ainda seguia, e sem placa o segundo clique seguia com o nome digitado.

@@ -282,3 +282,52 @@ Substitui a `proposta_suhai_util_v2`, que fala em enviar o boleto antes da emiss
 - [x] Proposta v3 no ar: `OCTADESK_API_CONFIG` v7 e `deliverLead` publicada de novo — 2026-10-26
 - [x] Disparo da pendência no código da `acompanharPropostasSuhai` (testes 65/65) — 2026-10-26
 - [x] Com "pode", na F7: chave `suhai_pendencia` no `OCTADESK_API_CONFIG` (v8) e deploy da rotina — 2026-10-28
+
+## Valores corretos nas mensagens Suhai (2026-11-05)
+
+A proposta 12490227 saiu com "12x de R$ 213,03": o `pagamentoTexto` dividia o à vista por 12, sem juros. O valor certo era R$ 261,91, da tabela de parcelas da Suhai. A mensagem também não deixava claro que R$ 2.556,34 era o à vista e não mostrava que a indenização era de 70% da FIPE.
+
+**Fase 1 (sem modelo novo).** As variáveis dos modelos atuais passam a sair da tabela de parcelas gravada com a cotação:
+
+| Chave | Variável | Antes | Agora |
+|---|---|---|---|
+| `suhai_cotacao_pronta` (`cotacao_suhai_util_v2`) | `{{var-4}}` | R$ 2.556,34 | R$ 2.556,34 à vista ou 12x de R$ 261,91 |
+| `suhai_proposta_enviada` (`proposta_suhai_util_v3_octa`) | `{{var-3}}` | Boleto em 12x (≈ R$ 213,03), vencimento dia 15 | Boleto em 12x de R$ 261,91 (total R$ 3.142,92), vencimento dia 15 |
+
+O texto fixo da cotação termina em "por ano"; a frase fica correta, mas o modelo novo abaixo resolve a redação. Registro anterior a esta versão, sem a tabela: a parcela máxima vem de `premioMensalEstimado`; outra quantidade sai sem valor ("Boleto em 10x"); nunca há divisão.
+
+**Fase 2: modelos novos.** Criar no Octadesk, Português (BR), categoria Utilidade, sem palavras promocionais, com o mesmo cabeçalho fixo dos anteriores ("Cotação do seu seguro" / "Proposta do seu seguro"), sem rodapé e sem botões. Cada variável pelo botão **"Adicionar variável genérica"** (digitar `{{var-N}}` como texto faz o modelo ser aprovado sem variáveis).
+
+### `cotacao_suhai_util_v3` — chave `suhai_cotacao_pronta_v3`
+
+> Olá, {{var-1}}. A cotação do seguro do seu {{var-2}} na seguradora Suhai foi concluída. Opção recomendada: plano {{var-3}}, com indenização de {{var-4}} da tabela FIPE. Valor: {{var-5}} à vista ou {{var-6}}. Número da cotação: {{var-7}}. Um especialista da Imediato Seguros vai acompanhar a contratação por aqui. Se precisar, responda esta mensagem.
+
+| Variável | Conteúdo | Exemplo |
+|---|---|---|
+| `{{var-1}}` | primeiro nome | Maria |
+| `{{var-2}}` | veículo da cotação | JEEP RENEGADE 2016 |
+| `{{var-3}}` | plano recomendado + assistência | Completo — assistência 200 km |
+| `{{var-4}}` | percentual da FIPE indenizado | 70% |
+| `{{var-5}}` | prêmio à vista | R$ 2.556,34 |
+| `{{var-6}}` | maior parcelamento, com juros | 12x de R$ 261,91 |
+| `{{var-7}}` | protocolo (nº da cotação Suhai) | 228592368 |
+
+### `proposta_suhai_util_v4` — chave `suhai_proposta_enviada_v4`
+
+> Olá, {{var-1}}. Sua proposta de seguro Suhai nº {{var-2}} foi transmitida. Plano: {{var-3}}, com indenização de {{var-4}} da tabela FIPE ({{var-5}}). Pagamento: {{var-6}}, vencimento dia {{var-7}}, cobrado depois da emissão da apólice. Um especialista da Imediato Seguros vai acompanhar a emissão por aqui. Se precisar, responda esta mensagem.
+
+| Variável | Conteúdo | Exemplo |
+|---|---|---|
+| `{{var-1}}` | primeiro nome | Maria |
+| `{{var-2}}` | número da proposta Suhai | 12490227 |
+| `{{var-3}}` | plano escolhido + assistência | Completo — assistência 200 km |
+| `{{var-4}}` | percentual da FIPE indenizado | 70% |
+| `{{var-5}}` | valor da indenização (FIPE com o fator) | R$ 44.339,40 |
+| `{{var-6}}` | parcelamento escolhido | Boleto em 12x de R$ 261,91 (total R$ 3.142,92) |
+| `{{var-7}}` | dia de vencimento | 15 |
+
+**Uso no código.** O `octaTemplate` usa a chave nova quando o ID dela está em `templates` do `OCTADESK_API_CONFIG` **e** a cotação tem o percentual da FIPE e a parcela (proposta: plano, percentual, valor da indenização e dia de vencimento). Sem isso, manda o modelo da Fase 1. Ligar: versão nova do secret com `"suhai_cotacao_pronta_v3":"ID"` e `"suhai_proposta_enviada_v4":"ID"`, mantendo as chaves atuais, e nova publicação da `deliverLead`, com "pode". Desfazer: versão anterior do secret e nova publicação.
+
+- [x] Fase 1: variáveis corrigidas no código (`firebase/functions/suhai.js`, testes em `test/suhai.test.js`) — 2026-11-05
+- [ ] `cotacao_suhai_util_v3` e `proposta_suhai_util_v4` criados no Octadesk e aprovados pela Meta
+- [ ] IDs no `OCTADESK_API_CONFIG` e `deliverLead` publicada de novo
