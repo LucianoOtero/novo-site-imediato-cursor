@@ -98,4 +98,5 @@ scripts/google-ops/_dump-*-out.txt
 scripts/google-ops/ads-approval-status.json
 scripts/google-ops/ads-offline-shadow-last.json
 scripts/google-ops/logs/
+scripts/espo-ops/logs/
 docs/suhai-integracao/_raw/
