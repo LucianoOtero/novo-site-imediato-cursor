@@ -10,6 +10,7 @@ import { VehicleInfoDisplay } from "@/components/lead/VehicleInfoDisplay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TelefoneInput } from "@/components/ui/telefone-input";
+import { company } from "@/lib/company";
 import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO, type PlanoAssistencia } from "@/lib/suhai/dominio";
 import type { AnalyticsEventParams } from "@/lib/analytics";
 import { trackSuhai } from "@/lib/suhai/analytics";
@@ -884,7 +885,8 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
               />
             </Field>
             <p className="text-xs leading-snug text-neutral-500">
-              Usamos o número para enviar o resultado por WhatsApp e seguir sua cotação.
+              Ao informar o celular, você autoriza a {company.tradeName} a enviar o resultado pelo WhatsApp e falar
+              com você sobre esta cotação.
             </p>
           </>
         )}

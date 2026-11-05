@@ -562,6 +562,7 @@ export function ContactLeadModal() {
                 name="telefone"
                 value={telefone}
                 aria-invalid={!!telefoneError}
+                aria-describedby={telefoneError ? "modal-telefone-error" : "modal-phone-consent"}
                 data-clarity-mask="true"
                 onTelefoneChange={(next) => {
                   const options = { shouldDirty: true, shouldTouch: true, shouldValidate: Boolean(telefoneError) };
@@ -573,6 +574,9 @@ export function ContactLeadModal() {
                 }}
               />
             </Field>
+            <p id="modal-phone-consent" className="text-xs leading-snug text-neutral-500">
+              Ao informar o celular, você autoriza a {company.tradeName} a falar com você pelo WhatsApp sobre esta cotação.
+            </p>
 
             {/* Etapa 2 — aparece só depois do telefone validado (projeto 2026-07-13) */}
             {step2Visible && (

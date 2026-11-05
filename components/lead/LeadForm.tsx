@@ -208,8 +208,7 @@ const STEP_3_HINTS_BY_RAMO: Record<string, { placa: string; cep: string }> = {
 };
 const STEP_3_HINTS_DEFAULT = { placa: "Identifica seu carro na tabela FIPE.", cep: "Onde o carro dorme. Muda o preço do seguro." };
 /** Transparência do uso do celular (etapa 1) — WhatsApp/CRM reais. */
-const PHONE_MICROCOPY =
-  "Usamos o número para enviar o resultado por WhatsApp e seguir sua cotação.";
+const PHONE_MICROCOPY = `Ao informar o celular, você autoriza a ${company.tradeName} a enviar o resultado pelo WhatsApp e falar com você sobre esta cotação.`;
 
 /**
  * Card "frost" (v3 visual, 2026-08-08, pedido do cliente): na variante

@@ -13,6 +13,17 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Alterado — 05/11/2026 (autorização do WhatsApp onde o celular é coletado)
+
+A política de mensagens da Meta pede que a pessoa saiba, ao dar o número, que vai receber mensagens daquela empresa pelo WhatsApp. O modal de WhatsApp/telefone não dizia isso, e a mensagem inicial do Octadesk sai assim que o celular é validado.
+
+### Changed
+- `components/cta/ContactLeadModal.tsx`: abaixo do celular, "Ao informar o celular, você autoriza a Imediato Seguros a falar com você pelo WhatsApp sobre esta cotação." Vale para os dois canais (no "Ligar agora" a mensagem inicial também sai pelo WhatsApp). O campo aponta para o texto por `aria-describedby`.
+- `components/lead/LeadForm.tsx` e `components/suhai/CotacaoSuhaiForm.tsx`: "Ao informar o celular, você autoriza a Imediato Seguros a enviar o resultado pelo WhatsApp e falar com você sobre esta cotação." (antes: "Usamos o número para enviar o resultado por WhatsApp e seguir sua cotação.").
+- O nome vem de `company.tradeName`. O fluxo de envio não muda.
+
+---
+
 ## Corrigido — 05/11/2026 (alerta falso de venda sem lead no Firebase)
 
 O resumo diário de 05/11 trouxe a oportunidade 6ad11bd464d4c62c0 como `actionable_unknown`, 8 vezes. É venda de cliente existente com gclid e sem lead do site; o envio ao Ads foi pulado com `gclid_via_csv` e o gclid está no CSV do Espo. O pulo contava como "nada aconteceu", então a função respondia 404 (o Espo reenviava a cada 12 min) e o resumo alertava.
