@@ -21,6 +21,7 @@ import type { OpcaoVeiculo } from "@/lib/suhai/veiculo-placa";
 import type { ContextoProposta } from "@/components/suhai/PropostaSuhaiForm";
 import type { CotacaoResultado } from "@/lib/suhai/types";
 import { aceitaZeroKm, anoMinimoZeroKm, mensagemZeroKm } from "@/lib/suhai/zero-km";
+import { useWhatsappHref } from "@/lib/use-whatsapp-href";
 import { cn } from "@/lib/utils";
 import {
   formatCep,
@@ -126,6 +127,8 @@ const INICIAL: Estado = {
 };
 
 const MODELO_NAO_ENCONTRADO = "Não achamos esse modelo na tabela FIPE. Confira como está escrito (ex.: Onix, Fazer 150).";
+const VERSAO_NAO_IDENTIFICADA = "Não achamos a versão deste modelo. Escreva só o nome principal (ex.: Up, Onix, Fazer 150).";
+const AJUDA_VEICULO = "Olá! Quero cotar o seguro Suhai e o site não identificou o meu veículo.";
 
 function chaveModelo({ marca, modelo, anoModelo }: Pick<Estado, "marca" | "modelo" | "anoModelo">) {
   return `${marca.trim()}|${modelo.trim()}|${anoModelo}`.toLowerCase();
@@ -173,6 +176,8 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   const avancandoRef = useRef(false);
   const [demorando, setDemorando] = useState(false);
   const [tocados, setTocados] = useState<Record<string, boolean>>({});
+  const [fipeIndisponivel, setFipeIndisponivel] = useState(false);
+  const ajudaWhatsapp = useWhatsappHref(undefined, undefined, AJUDA_VEICULO);
   const consultaAtivaRef = useRef(0);
   const estadoRef = useRef(estado);
   estadoRef.current = estado;
@@ -190,7 +195,6 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
   const telefoneEnviadoRef = useRef("");
   const consultaPlacaRef = useRef<{ placa: string; resultado: ReturnType<typeof consultarPlaca> } | null>(null);
   const consultaModeloRef = useRef<{ chave: string; resultado: ReturnType<typeof consultarModelo> } | null>(null);
-  const avisoModeloRef = useRef("");
   const consultaCpfRef = useRef<{ cpf: string; resultado: ReturnType<typeof consultarPerfil> } | null>(null);
 
   useEffect(() => {
@@ -415,6 +419,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       });
       const corpo = (await resposta.json()) as {
         ok?: boolean;
+        motivo?: string;
         categoria?: string;
         anoModelo?: string;
         anoFabricacao?: string;
@@ -424,7 +429,28 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         opcoes?: OpcaoVeiculo[];
       };
       const opcoes = corpo.opcoes ?? [];
-      if (!corpo.ok || !corpo.marca || !corpo.anoModelo || (opcoes.length === 0 && !corpo.modelo)) {
+      if (corpo.motivo === "sem_versao" || corpo.motivo === "fipe_indisponivel") {
+        const indisponivel = corpo.motivo === "fipe_indisponivel";
+        trackSuhai("suhai_vehicle_lookup", {
+          result: indisponivel ? "fipe_unavailable" : "no_version",
+          duration_ms: Date.now() - inicio,
+        });
+        setFipeIndisponivel(indisponivel);
+        setErros((anterior) => ({ ...anterior, placa: "", modelo: indisponivel ? "" : VERSAO_NAO_IDENTIFICADA }));
+        setEstado((anterior) => ({
+          ...anterior,
+          semPlaca: true,
+          categoria: corpo.categoria || "auto",
+          marca: corpo.marca ?? "",
+          modelo: corpo.modelo ?? "",
+          anoModelo: corpo.anoModelo ?? "",
+          anoFabricacao: corpo.anoFabricacao || corpo.anoModelo || "",
+          codFipe: "",
+          opcoes: [],
+        }));
+        return null;
+      }
+      if (!corpo.ok || !corpo.marca || !corpo.anoModelo || (opcoes.length === 0 && !corpo.codFipe)) {
         trackSuhai("suhai_vehicle_lookup", {
           result: resposta.ok ? "not_found" : "error",
           duration_ms: Date.now() - inicio,
@@ -447,6 +473,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         result: opcoes.length > 1 ? "multiple" : "found",
         duration_ms: Date.now() - inicio,
       });
+      setFipeIndisponivel(false);
       setErros((anterior) => ({ ...anterior, placa: "" }));
       setEstado((anterior) => ({ ...anterior, ...patch }));
       return patch;
@@ -484,6 +511,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       });
       const corpo = (await resposta.json()) as {
         ok?: boolean;
+        motivo?: string;
         categoria?: string;
         marca?: string;
         modelo?: string;
@@ -494,9 +522,12 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       if (!atual.semPlaca || chaveModelo(atual) !== chaveModelo({ marca, modelo, anoModelo })) return null;
       const opcoes = corpo.opcoes ?? [];
       if (!corpo.ok || (opcoes.length === 0 && !corpo.codFipe)) {
-        setErros((anteriores) => ({ ...anteriores, modelo: MODELO_NAO_ENCONTRADO }));
+        const indisponivel = corpo.motivo === "fipe_indisponivel" || corpo.motivo === "limite";
+        setFipeIndisponivel(indisponivel);
+        setErros((anteriores) => ({ ...anteriores, modelo: indisponivel ? "" : MODELO_NAO_ENCONTRADO }));
         return null;
       }
+      setFipeIndisponivel(false);
       const varias = opcoes.length > 1;
       const patch = {
         categoria: corpo.categoria || "auto",
@@ -509,6 +540,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       setEstado((anterior) => ({ ...anterior, ...patch }));
       return patch;
     } catch {
+      setFipeIndisponivel(true);
       return null;
     }
   }
@@ -735,18 +767,17 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     if (etapa === 2 && !atual.semPlaca && (!atual.marca || !atual.modelo || !atual.anoModelo)) {
       const patch = await preencherPorPlaca(atual.placa);
       if (patch) atual = { ...atual, ...patch };
+      // A consulta já mostrou o motivo (placa ou versão não achada, falha de rede).
+      else if (isValidPlacaFormat(placaNormalizada(atual))) return;
     }
     if (etapa === 2 && atual.semPlaca && !atual.codFipe && atual.opcoes.length === 0 && Object.keys(validarEtapa(atual, 2)).length === 0) {
+      // Sem a versão da FIPE a Suhai recusa ("Veículo não foi localizado"): não segue com o nome digitado.
       const patch = await preencherPorModelo();
-      if (patch) {
-        atual = { ...atual, ...patch };
-      } else if (avisoModeloRef.current !== chaveModelo(atual)) {
-        // Avisa uma vez: com a tabela FIPE fora do ar, o segundo clique segue com o nome digitado.
-        avisoModeloRef.current = chaveModelo(atual);
-        setErros({ modelo: MODELO_NAO_ENCONTRADO });
+      if (!patch) {
         trackSuhai("suhai_field_error", { step: "2", field: "modelo" });
         return;
       }
+      atual = { ...atual, ...patch };
     }
     const falhas = validarEtapa(atual, etapa);
     setErros(falhas);
@@ -941,8 +972,8 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
               <>
                 {!ehZeroKm(estado) && (
                   <p className="text-sm leading-snug text-neutral-600" data-clarity-mask="true">
-                    Não encontramos a placa {placaNormalizada(estado)} na consulta. Informe o veículo abaixo; a
-                    cotação segue com essa placa.
+                    Não identificamos o veículo da placa {placaNormalizada(estado)}. Informe-o abaixo; a cotação
+                    segue com essa placa.
                   </p>
                 )}
                 <Field label="Marca" htmlFor="marca" error={erros.marca}>
@@ -977,6 +1008,15 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                   />
                 </Field>
                 {seletorVersao}
+                {fipeIndisponivel && (
+                  <p role="alert" className="text-sm font-medium leading-snug text-alert">
+                    Não conseguimos consultar a tabela FIPE agora. Tente de novo em instantes ou{" "}
+                    <a href={ajudaWhatsapp} target="_blank" rel="noopener noreferrer" className="underline">
+                      fale com a gente no WhatsApp
+                    </a>
+                    .
+                  </p>
+                )}
               </>
             )}
             <button
@@ -984,6 +1024,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
               className="self-start text-sm font-medium text-brand-700 underline-offset-2 hover:underline"
               onClick={() => {
                 if (!estado.semPlaca) trackSuhai("suhai_no_plate", {});
+                setFipeIndisponivel(false);
                 setEstado((anterior) => ({
                   ...anterior,
                   semPlaca: !anterior.semPlaca,

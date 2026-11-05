@@ -18,6 +18,14 @@ type Preco = { CodigoFipe?: string; codigoFipe?: string };
 
 export type CandidatoFipe = { nome: string; codFipe: string };
 
+/** A tabela pública não respondeu (fora do ar ou limite diário): não é "modelo inexistente". */
+export class FipeIndisponivel extends Error {
+  constructor() {
+    super("Tabela FIPE pública indisponível.");
+    this.name = "FipeIndisponivel";
+  }
+}
+
 function normalizar(valor: string): string {
   return valor
     .normalize("NFD")
@@ -136,7 +144,8 @@ async function anosDosModelos(tipo: "carro" | "moto", marcaCodigo: string, ano: 
 /**
  * Modelos da tabela pública que existem naquele ano e cujo nome cobre o
  * máximo de tokens da abreviação da placa. Mais de um resultado não
- * escolhe versão.
+ * escolhe versão. Lança `FipeIndisponivel` quando nada foi encontrado e
+ * alguma consulta à v1 falhou; a falha da v2 só troca o caminho.
  */
 export async function candidatosFipePublicos(parametros: {
   tipo: "carro" | "moto";
@@ -147,9 +156,16 @@ export async function candidatosFipePublicos(parametros: {
   const { marca, modelo, ano } = parametros;
   if (!marca || !modelo || !ano) return [];
 
+  let falhas = 0;
+  const obterV1 = async <T>(url: string): Promise<T | undefined> => {
+    const dados = await obterJson<T>(url);
+    if (dados === undefined) falhas += 1;
+    return dados;
+  };
+
   const tabela = parametros.tipo === "moto" ? "motos" : "carros";
-  const marcas = await obterJson<Item[]>(`${BASE}/${tabela}/marcas`);
-  if (!marcas) return [];
+  const marcas = await obterV1<Item[]>(`${BASE}/${tabela}/marcas`);
+  if (!marcas) throw new FipeIndisponivel();
 
   const marcaNorm = normalizar(marca);
   const marcaItem = marcas.find((item) => {
@@ -159,26 +175,28 @@ export async function candidatosFipePublicos(parametros: {
   if (!marcaItem) return [];
 
   const [modelos, anoPorModelo] = await Promise.all([
-    obterJson<{ modelos: Item[] }>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos`),
+    obterV1<{ modelos: Item[] }>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos`),
     anosDosModelos(parametros.tipo, marcaItem.codigo, ano),
   ]);
-  const niveis = niveisPorCobertura(modelos?.modelos ?? [], tokensExigidos(modelo));
+  if (!modelos) throw new FipeIndisponivel();
+  const niveis = niveisPorCobertura(modelos.modelos ?? [], tokensExigidos(modelo));
 
   for (const compativeis of niveis) {
     const candidatos = await mapearComLimite(compativeis, SIMULTANEAS, async (item): Promise<CandidatoFipe | undefined> => {
       let anoCodigo = anoPorModelo?.get(String(item.codigo));
       if (!anoPorModelo) {
-        const anos = await obterJson<Item[]>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos`);
+        const anos = await obterV1<Item[]>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos`);
         anoCodigo = anos?.find((entrada) => entrada.codigo.startsWith(ano) || entrada.nome.startsWith(ano))?.codigo;
       }
       if (!anoCodigo) return undefined;
-      const preco = await obterJson<Preco>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos/${anoCodigo}`);
+      const preco = await obterV1<Preco>(`${BASE}/${tabela}/marcas/${marcaItem.codigo}/modelos/${item.codigo}/anos/${anoCodigo}`);
       const codFipe = preco?.CodigoFipe || preco?.codigoFipe;
       return codFipe ? { nome: item.nome, codFipe } : undefined;
     });
     const encontrados = candidatos.filter((candidato): candidato is CandidatoFipe => candidato !== undefined);
     if (encontrados.length > 0) return encontrados;
   }
+  if (falhas > 0) throw new FipeIndisponivel();
   return [];
 }
 

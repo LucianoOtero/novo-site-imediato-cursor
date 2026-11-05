@@ -165,7 +165,10 @@ type AnalyticsEventMap = {
   /** Campo barrado na validação. `field` é o nome do campo, nunca o valor. */
   suhai_field_error: SuhaiBase & { step: "1" | "2" | "3" | "4" | "proposta"; field: string };
   /** Consulta da placa. */
-  suhai_vehicle_lookup: SuhaiBase & { result: "found" | "multiple" | "not_found" | "error"; duration_ms: number };
+  suhai_vehicle_lookup: SuhaiBase & {
+    result: "found" | "multiple" | "not_found" | "no_version" | "fipe_unavailable" | "error";
+    duration_ms: number;
+  };
   /** Clicou em "Veículo 0 km, ainda sem placa". */
   suhai_no_plate: SuhaiBase;
   /** Consulta do perfil pelo CPF (PH3A): `manual` = o cliente vai digitar nascimento, sexo e estado civil. */

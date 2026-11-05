@@ -29,9 +29,7 @@ export async function POST(request: NextRequest) {
     if (!marca || !modelo || !/^(19|20)\d{2}$/.test(anoModelo)) {
       return NextResponse.json({ ok: false, motivo: "formato" }, { status: 422 });
     }
-    const veiculo = await veiculoPorModelo({ marca, modelo, anoModelo });
-    if (!veiculo.ok) return NextResponse.json({ ok: false, motivo: "nao_encontrado" });
-    return NextResponse.json(veiculo);
+    return NextResponse.json(await veiculoPorModelo({ marca, modelo, anoModelo }));
   }
 
   const placa = String(dados.placa)
@@ -41,7 +39,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, motivo: "formato" }, { status: 422 });
   }
 
-  const veiculo = await veiculoPorPlaca(placa);
-  if (!veiculo.ok) return NextResponse.json({ ok: false, motivo: "nao_encontrada" });
-  return NextResponse.json(veiculo);
+  return NextResponse.json(await veiculoPorPlaca(placa));
 }

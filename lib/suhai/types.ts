@@ -22,6 +22,8 @@ import {
 import type { PlanoId } from "./planos";
 import { aceitaZeroKm, mensagemZeroKm } from "./zero-km";
 
+const VERSAO_OBRIGATORIA = "Escolha a versão do veículo.";
+
 const digitos = (tamanho: number) =>
   z
     .string()
@@ -74,7 +76,8 @@ export const cotacaoInputSchema = z.object({
     /** Grafia exata da FIPE Suhai, obtida em `ConsultaVeiculos`. */
     marca: z.string().min(1),
     modelo: z.string().min(1),
-    codFipe: z.string().optional(),
+    /** Sem o código a grafia não é da FIPE e a Suhai devolve "Veículo não foi localizado". */
+    codFipe: z.string({ error: VERSAO_OBRIGATORIA }).trim().min(1, VERSAO_OBRIGATORIA),
     anoModelo: z.number().int().min(1950).max(new Date().getFullYear() + 1),
     anoFabricacao: z.number().int().min(1950).max(new Date().getFullYear() + 1).optional(),
     zeroKm: z.boolean().default(false),
