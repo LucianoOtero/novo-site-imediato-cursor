@@ -20,6 +20,7 @@ import {
   UTILIZACAO_DUT,
 } from "./dominio";
 import type { PlanoId } from "./planos";
+import { aceitaZeroKm, mensagemZeroKm } from "./zero-km";
 
 const digitos = (tamanho: number) =>
   z
@@ -79,6 +80,10 @@ export const cotacaoInputSchema = z.object({
     zeroKm: z.boolean().default(false),
     placa: placaSchema.optional(),
     chassi: z.string().optional(),
+  }).superRefine((veiculo, ctx) => {
+    if (veiculo.zeroKm && !aceitaZeroKm(veiculo.anoModelo)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["anoModelo"], message: mensagemZeroKm() });
+    }
   }),
   uso: z.object({
     utilizacao: z.enum(Object.keys(UTILIZACAO_DUT) as [keyof typeof UTILIZACAO_DUT]),

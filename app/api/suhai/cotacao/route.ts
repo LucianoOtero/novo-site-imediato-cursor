@@ -46,7 +46,13 @@ export async function POST(request: NextRequest) {
       const caminho = issue.path.join(".");
       if (caminho && !campos[caminho]) campos[caminho] = issue.message;
     }
-    return NextResponse.json({ erro: "validacao", mensagem: "Dados incompletos.", campos }, { status: 422 });
+    const zeroKm = parsed.error.issues.find(
+      (issue) => issue.code === "custom" && issue.path.join(".") === "veiculo.anoModelo",
+    );
+    return NextResponse.json(
+      { erro: "validacao", mensagem: zeroKm?.message ?? "Dados incompletos.", campos },
+      { status: 422 },
+    );
   }
 
   const leadId = lerLeadId(json);

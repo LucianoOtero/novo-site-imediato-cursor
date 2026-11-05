@@ -13,6 +13,17 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Corrigido — 05/11/2026 (cotação Suhai recusada como 0 km com veículo usado)
+
+Em 05/11 a Suhai recusou uma cotação com "Não é possível definir Zero KM para veículos com anos anteriores a 2025" (código 503): ano-modelo 2013, sem placa no pedido. O formulário mandava `zeroKm` sempre que o veículo era digitado à mão, inclusive quando a placa não era encontrada na consulta (o formulário passa sozinho para a digitação e descartava a placa).
+
+### Fixed
+- `components/suhai/CotacaoSuhaiForm.tsx`: placa válida que a consulta não achou segue na cotação, como veículo usado, com aviso acima dos campos e o link "Corrigir a placa". Só vai como 0 km o veículo sem placa; nesse caso o ano precisa ser do ano passado em diante, senão o formulário não avança e orienta a informar a placa. O link "Ainda não tenho placa" virou "Veículo 0 km, ainda sem placa"; o resumo mostra "0 km, sem placa".
+- `lib/suhai/types.ts` + `app/api/suhai/cotacao/route.ts`: o servidor recusa `zeroKm` com ano abaixo do limite (422, com a mesma orientação), sem chamar a Suhai.
+- Regra única em `lib/suhai/zero-km.ts`, com teste em `lib/suhai/zero-km.test.mjs` (`npm run test:zero-km`).
+
+---
+
 ## Alterado — 05/11/2026 (autorização do WhatsApp onde o celular é coletado)
 
 A política de mensagens da Meta pede que a pessoa saiba, ao dar o número, que vai receber mensagens daquela empresa pelo WhatsApp. O modal de WhatsApp/telefone não dizia isso, e a mensagem inicial do Octadesk sai assim que o celular é validado.

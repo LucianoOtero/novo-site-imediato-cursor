@@ -166,7 +166,7 @@ type AnalyticsEventMap = {
   suhai_field_error: SuhaiBase & { step: "1" | "2" | "3" | "4" | "proposta"; field: string };
   /** Consulta da placa. */
   suhai_vehicle_lookup: SuhaiBase & { result: "found" | "multiple" | "not_found" | "error"; duration_ms: number };
-  /** Clicou em "Ainda não tenho placa". */
+  /** Clicou em "Veículo 0 km, ainda sem placa". */
   suhai_no_plate: SuhaiBase;
   /** Consulta do perfil pelo CPF (PH3A): `manual` = o cliente vai digitar nascimento, sexo e estado civil. */
   suhai_profile_lookup: SuhaiBase & { result: "filled" | "manual" | "error"; duration_ms: number };
