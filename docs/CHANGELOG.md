@@ -27,6 +27,7 @@ A proposta 12490227 (cotação 228592368) foi ao cliente com "Boleto em 12x (≈
 ### Publicação
 - PR #31 na `main` e `deliverLead` publicada de novo (05/11/2026).
 - Espo PROD: `cPagamento` corrigido e Note de correção nas 4 propostas de cliente que saíram com a parcela sem juros (12492950, 12489998, 12486804, 12490227). Nenhuma mensagem nova ao cliente.
+- Modelos novos aprovados e ativos: `cotacao_suhai_util_v3` (`OCTADESK_API_CONFIG` v9) e `proposta_suhai_util_v4` (v10), com `deliverLead` publicada de novo em cada passo.
 
 ---
 
