@@ -189,6 +189,21 @@ assert(
   sold.shouldAttemptAdsOffline("clear", 2) === false,
   "ads offline never on clear"
 );
+assert(
+  sold.adsAttemptProgressed({ skipped: true, reason: "gclid_via_csv" }) === true,
+  "sem lead: venda com gclid deixada para o CSV nao alerta nem pede reenvio"
+);
+assert(
+  sold.adsAttemptProgressed({ skipped: true, reason: "disabled" }) === false &&
+    sold.adsAttemptProgressed({ skipped: true, reason: "no_click_id" }) === false &&
+    sold.adsAttemptProgressed(null) === false,
+  "sem lead: outros pulos continuam como falta de atribuicao"
+);
+assert(
+  sold.adsAttemptProgressed({ leadResults: [{ status: "uploaded" }] }) === true &&
+    sold.adsAttemptProgressed({ leadResults: [{ status: "skipped" }] }) === false,
+  "sem lead: progresso pelo status do envio"
+);
 
 // --- Controle: classify + enrich clear (2026-09-25) ---
 assert(

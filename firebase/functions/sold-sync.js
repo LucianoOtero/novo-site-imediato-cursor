@@ -1148,7 +1148,9 @@ function shouldAttemptAdsOffline(action, totalUpdated, opts = {}) {
 }
 
 function adsAttemptProgressed(result) {
-  if (!result || result.skipped) return false;
+  if (!result) return false;
+  // O CSV do Espo envia (ou já enviou) a venda com gclid: não é falha nem pede reenvio.
+  if (result.skipped) return result.reason === "gclid_via_csv";
   const rows = result.leadResults || [];
   return rows.some((r) =>
     ["accepted", "uploaded", "error", "retracted", "restated"].includes(r.status)
@@ -1191,6 +1193,7 @@ module.exports = {
   batchHttpStatus,
   shouldAttemptAdsOffline,
   shouldAttemptAdsRetract,
+  adsAttemptProgressed,
   hasOpportunityClick,
   leadAdsUnconfirmed,
   parseAmount,
