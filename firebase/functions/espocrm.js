@@ -205,6 +205,21 @@ function canalCapturaFields(leadData) {
 }
 
 /**
+ * Páginas do site em `utm` (host + caminho): `capture_page` é a do envio
+ * atual e `landing_page` a da primeira captura da atribuição (até 90 dias
+ * por domínio). Mesma regra do `canalCapturaFields`: só em PUT
+ * best-effort, até os campos existirem no Entity Manager.
+ */
+function paginaCapturaFields(leadData) {
+  const utm = (leadData && leadData.utm) || {};
+  const pagina = (valor) => (valor ? String(valor).slice(0, 255) : undefined);
+  return compact({
+    cPaginaCaptura: pagina(utm.capture_page),
+    cLandingPage: pagina(utm.landing_page),
+  });
+}
+
+/**
  * Campos da Opportunity espelhados do Lead (nomes próprios da entidade —
  * `cEmailAdress`/`cCEP`). `leadId`/`stage`/`probability` só na criação;
  * `name` no update só com nome real (paridade com proxy legado /
@@ -482,6 +497,7 @@ module.exports = {
   createManualCalcTask,
   createTask,
   canalCapturaFields,
+  paginaCapturaFields,
   attributionPackageFields,
   attributionLeadExtendedFields,
   attributionOpportunityFields,

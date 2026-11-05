@@ -48,6 +48,8 @@ export const utmSchema = z.object({
   creative: z.string().optional(),
   landing_page: z.string().optional(),
   referrer: z.string().optional(),
+  /** Página (host + caminho) do envio atual; `landing_page` guarda a primeira captura. */
+  capture_page: z.string().optional(),
 });
 
 export type UtmData = z.infer<typeof utmSchema>;
@@ -384,6 +386,7 @@ export function captureUtmFromLocation(): UtmData | undefined {
     creative: pick("creative"),
     landing_page: window.location.host + window.location.pathname,
     referrer: document.referrer || undefined,
+    capture_page: window.location.host + window.location.pathname,
   };
 
   const hasAnyValue = Object.values(utm).some((value) => value !== undefined);

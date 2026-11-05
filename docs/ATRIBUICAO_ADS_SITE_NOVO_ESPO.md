@@ -194,14 +194,15 @@ Leads prod pós-suffix só entram no aceite formal na Fase 5.
 
 Ver [`CANAL_CAPTURA_ESPO.md`](CANAL_CAPTURA_ESPO.md).
 
-### 3.5 Metadados de landing (payload site / RTDB; Espo opcional)
+### 3.5 Páginas de captura e de entrada (2026-11-04)
 
-| Campo payload `utm` | Nota |
-|---|---|
-| `landing_page` | path da primeira captura útil |
-| `referrer` | `document.referrer` na captura |
+| Campo payload `utm` | Campo Espo (Lead e Opp) | Nota |
+|---|---|---|
+| `capture_page` | `cPaginaCaptura` | host + caminho da página do envio atual (ex.: `suhai.segurosimediato.com.br/`, `www.segurosimediato.com.br/cotacao-suhai`); muda se a pessoa enviar de outra página |
+| `landing_page` | `cLandingPage` | host + caminho da primeira captura da atribuição (até 90 dias, por domínio; o subdomínio `suhai.` tem memória própria) |
+| `referrer` | — | `document.referrer` na captura; só no RTDB |
 
-Não são obrigatórios no Entity Manager nesta fase; permanecem no RTDB para auditoria.
+Os dois campos Espo vão em PUT best-effort separado (`paginaCapturaFields`, mesmo padrão de `cCanalCaptura`). Criação na UI Admin (varchar 255, nomes `paginaCaptura` e `landingPage`, rótulos "Página da captura" e "Página de entrada"); o usuário da API não tem Field Manager (403). Inventário: `node scripts/espo-ops/fase0-attribution-fields.mjs --prefer=dev|prod`. Leads anteriores a 04/11 não têm `capture_page`; os `landing_page` antigos podem vir só com o caminho.
 
 ---
 

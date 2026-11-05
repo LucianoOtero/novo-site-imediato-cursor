@@ -44,6 +44,8 @@ const VARCHAR_FIELDS = [
   { final: "cCreative", apiName: "creative", label: "Creative", maxLength: 64 },
   { final: "cGclid", apiName: "gclid", label: "GCLID", maxLength: 255 },
   { final: "cWebpage", apiName: "webpage", label: "Webpage", maxLength: 255 },
+  { final: "cPaginaCaptura", apiName: "paginaCaptura", label: "Página da captura", maxLength: 255 },
+  { final: "cLandingPage", apiName: "landingPage", label: "Página de entrada", maxLength: 255 },
 ];
 
 const ENUM_CANAL = {
@@ -65,7 +67,7 @@ const PACKAGE_BY_ENTITY = {
   Lead: [
     ENUM_CANAL,
     ...VARCHAR_FIELDS.filter((f) =>
-      ["cWbraid", "cUtmCampaignName", "cUtmId", "cAdgroupId"].includes(f.final),
+      ["cWbraid", "cUtmCampaignName", "cUtmId", "cAdgroupId", "cPaginaCaptura", "cLandingPage"].includes(f.final),
     ),
   ],
   Opportunity: [
@@ -89,6 +91,8 @@ const PACKAGE_BY_ENTITY = {
         "cPlacement",
         "cAdgroupId",
         "cCreative",
+        "cPaginaCaptura",
+        "cLandingPage",
       ].includes(f.final),
     ),
   ],

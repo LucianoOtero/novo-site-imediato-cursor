@@ -45,6 +45,8 @@ UI (/cotacao-suhai) ── POST /api/lead ────────────�
 
 Em todas as etapas Suhai a Oportunidade recebe `cSeguradora = "Suhai"`. O Lead recebe `cCanalCaptura = "cotacao_suhai"`.
 
+Qual página Suhai (desde 04/11/2026): `cPaginaCaptura` no Lead e na Oportunidade traz a página do envio (`suhai.segurosimediato.com.br/` ou `…/cotacao-suhai`) e `cLandingPage`, a página de entrada ([`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) §3.5).
+
 ### 2.1 Depois da proposta: acompanhamento automático (2026-10-25)
 
 A Suhai só cobra depois da apólice emitida (Fábio Edo, 24/10/2026). Não existe boleto antes disso. O que falta ao vendedor entre a proposta e a apólice é saber o status e as pendências, e isso agora chega ao Espo sozinho:

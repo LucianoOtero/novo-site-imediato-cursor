@@ -14,6 +14,7 @@ import { captureUtmFromLocation, type UtmData } from "@/lib/validators";
  *    sobrescreve; não apagar click ID existente sem substituto).
  * 3. TTL 90 dias desde a última gravação com click ID.
  * 4. `landing_page` / `referrer` da primeira captura da sessão de atribuição.
+ * 5. `capture_page` é sempre a página do envio atual.
  */
 
 const STORAGE_KEY = "imediato_attribution";
