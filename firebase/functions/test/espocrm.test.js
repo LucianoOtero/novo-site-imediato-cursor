@@ -63,3 +63,17 @@ test("POST Lead com erro que não é duplicata continua lançando", async () => 
     mock.restore();
   }
 });
+
+test("paginaCapturaFields separa a página do envio da página de entrada", () => {
+  assert.deepEqual(
+    espo.paginaCapturaFields({
+      utm: { capture_page: "www.segurosimediato.com.br/cotacao-suhai", landing_page: "www.segurosimediato.com.br/" },
+    }),
+    { cPaginaCaptura: "www.segurosimediato.com.br/cotacao-suhai", cLandingPage: "www.segurosimediato.com.br/" },
+  );
+  assert.deepEqual(espo.paginaCapturaFields({ utm: { landing_page: "suhai.segurosimediato.com.br/" } }), {
+    cLandingPage: "suhai.segurosimediato.com.br/",
+  });
+  assert.deepEqual(espo.paginaCapturaFields({}), {});
+  assert.equal(espo.paginaCapturaFields({ utm: { capture_page: "x".repeat(300) } }).cPaginaCaptura.length, 255);
+});

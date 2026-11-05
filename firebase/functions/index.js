@@ -820,6 +820,22 @@ exports.deliverLead = onValueWritten(
           );
         }
       }
+      // Páginas de captura e de entrada (2026-11-04): PUT separado pelo
+      // mesmo motivo do canal.
+      const paginas = espo.paginaCapturaFields(leadData);
+      if (Object.keys(paginas).length > 0) {
+        try {
+          await espo.putFields(espoApiConfig, "Lead", espoLeadIdForApi, paginas, leadId);
+          if (espoOppIdForApi) {
+            await espo.putFields(espoApiConfig, "Opportunity", espoOppIdForApi, paginas, leadId);
+          }
+        } catch (error) {
+          logger.warn(
+            `[deliverLead/espo-api] Lead ${leadId}: cPaginaCaptura/cLandingPage falharam (campos podem não existir ainda).`,
+            error,
+          );
+        }
+      }
     }
 
     // Atribuição Ads (Fase 2): Lead extended + Opportunity pacote completo.

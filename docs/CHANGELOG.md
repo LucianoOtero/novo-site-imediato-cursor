@@ -13,6 +13,14 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Adicionado — 04/11/2026 (página de origem do lead no Espo)
+
+### Added
+- `utm.capture_page`: host + caminho da página de cada envio, ao lado do `landing_page` (primeira captura). Todos os formulários levam o campo pelo `getAttributionUtm`.
+- `deliverLead`: grava `cPaginaCaptura` (página do envio) e `cLandingPage` (página de entrada) no Lead e na Oportunidade, em PUT best-effort separado. Permite separar no Espo os leads de `suhai.segurosimediato.com.br` e de `segurosimediato.com.br/cotacao-suhai`. Os campos são criados na UI Admin do Espo (DEV e PROD); sem eles, o PUT só gera aviso no log ([`ATRIBUICAO_ADS_SITE_NOVO_ESPO.md`](ATRIBUICAO_ADS_SITE_NOVO_ESPO.md) §3.5).
+
+---
+
 ## Ligado — 04/11/2026 (venda offline ao Google Ads em envio real)
 
 ### Changed
