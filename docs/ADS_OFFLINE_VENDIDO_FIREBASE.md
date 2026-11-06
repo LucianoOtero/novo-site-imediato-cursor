@@ -328,6 +328,7 @@ Critério para o corte: 5 lotes seguidos sem divergência grave.
 | 1 — 2026-10-25 | 2026-10-23 | 4 | 4 | 4 | 0 |
 | 2 — 2026-10-27 | 2026-10-26 | 4 | 4 | 4 | 0 |
 | 3 — 2026-11-05 | 2026-11-04 | 8 | 8 | 8 | 0 |
+| 4 — 2026-11-06 | 2026-11-05 | 1 | 1 | 1 | 0 |
 
 Os lotes gerados entre 28/10 e 04/11 não foram comparados: o Espo só publica o arquivo do dia.
 
