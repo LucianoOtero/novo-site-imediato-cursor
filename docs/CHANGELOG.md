@@ -13,6 +13,20 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Corrigido — 06/11/2026 (perguntas de garagem da cotação Suhai)
+
+Em 06/11 a cotação de uma van (Hyundai HR, categoria Suhai 4 "Vans e Vucs") foi recusada com "Resposta da pergunta 4 é inválida". O gateway mandava 1 para sim e 3 para não em todas as perguntas, mas na Suhai a pergunta 4 só aceita 1/2, e as perguntas 1–3 têm domínios próprios. Nas 33 cotações e 5 propostas de produção feitas até aqui, trabalho e escola "não" foram como 3 ("utiliza e não guarda", o risco mais agravado), quando o cliente não usa o carro para isso.
+
+### Fixed
+- `suhai-gateway/src/cotacao.js`: pergunta 1 (residência) 1 garagem · 2 condomínio fechado · 3 estacionamento · 4 não; perguntas 2 e 3 (trabalho/escola) 1 não usa · 2 usa e guarda · 3 usa e não guarda; pergunta 4 (caminhão/van/VUC) 1 sim · 2 não. Booleanos antigos continuam aceitos.
+- `lib/suhai/dominio.ts` + `types.ts`: códigos de garagem (`GARAGEM_RESIDENCIA`, `GARAGEM_USO`, `GARAGEM_PADRAO`) e `patio`. Padrão: garagem na residência, não usa para trabalho nem escola, guarda fora de serviço.
+- `CotacaoSuhaiExperiencia.tsx` / `CotacaoSuhaiForm.tsx`: as caixas de garagem viraram listas com as opções da Suhai; para van/caminhão aparece só a pergunta do pátio. A categoria do veículo acompanha a versão escolhida (`veiculo-placa.ts` traz a categoria do catálogo Suhai).
+- `lib/suhai/mensagens-erro.ts`: "Resposta da pergunta N é inválida" vira `motivo: "pergunta_invalida"` com mensagem de que a equipe conclui pelo WhatsApp, sem voltar etapa.
+- `firebase/functions/suhai.js`: a Note descreve as respostas novas (e as antigas, em booleano) e o pátio.
+- `firebase/functions/octadesk.js`: `send-template` tenta mais uma vez, após 2 s, em erro de rede ou HTTP 502/503/504 (houve um 502 em 06/11).
+
+---
+
 ## Corrigido — 06/11/2026 (recusas da Suhai evitadas no formulário)
 
 Em 05/11 uma cotação de cliente (0 km 2026/2027) foi recusada com "O ano de fabricação do veículo é obrigatório e tem que ser inferior ou igual ao ano atual": o formulário mandou o ano de fabricação vazio e o gateway usou o ano-modelo (2027). "Há outra proposta em emissão" e "Código FIPE informado está incorreto" só apareceram nos testes de homologação, mas os dois caminhos existiam em produção.

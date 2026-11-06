@@ -11,7 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TelefoneInput } from "@/components/ui/telefone-input";
 import { company } from "@/lib/company";
-import { ESTADO_CIVIL, SEXO, TIPO_CONTRATACAO, type PlanoAssistencia } from "@/lib/suhai/dominio";
+import {
+  ESTADO_CIVIL,
+  GARAGEM_PADRAO,
+  SEXO,
+  TIPO_CONTRATACAO,
+  type GaragemResidencia,
+  type GaragemUso,
+  type PlanoAssistencia,
+} from "@/lib/suhai/dominio";
 import type { AnalyticsEventParams } from "@/lib/analytics";
 import { trackSuhai } from "@/lib/suhai/analytics";
 import { trackConversion } from "@/lib/enhanced-conversions";
@@ -64,18 +72,21 @@ const selectClasses =
 export type PremissasSuhai = {
   utilizacao: string;
   tipoUtilizacao: string;
-  garagemResidencia: boolean;
-  garagemTrabalho: boolean;
-  garagemEscola: boolean;
+  garagemResidencia: GaragemResidencia;
+  garagemTrabalho: GaragemUso;
+  garagemEscola: GaragemUso;
+  /** Pergunta 4, só para caminhão e van. */
+  garagemPatio: boolean;
   classeBonus: string;
 };
 
 export const PREMISSAS_INICIAIS: PremissasSuhai = {
   utilizacao: "particular",
   tipoUtilizacao: "1",
-  garagemResidencia: true,
-  garagemTrabalho: false,
-  garagemEscola: false,
+  garagemResidencia: GARAGEM_PADRAO.residencia,
+  garagemTrabalho: GARAGEM_PADRAO.trabalho,
+  garagemEscola: GARAGEM_PADRAO.escola,
+  garagemPatio: GARAGEM_PADRAO.patio,
   classeBonus: "0",
 };
 
@@ -684,6 +695,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
             residencia: usadas.garagemResidencia,
             trabalho: usadas.garagemTrabalho,
             escola: usadas.garagemEscola,
+            patio: usadas.garagemPatio,
           },
         },
         contrato: {
@@ -845,6 +857,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
           setEstado((anterior) => ({
             ...anterior,
             codFipe: escolhida?.codFipe ?? "",
+            categoria: escolhida?.categoria ?? anterior.categoria,
             marca: escolhida?.marca ?? anterior.marca,
             modelo: escolhida?.modelo ?? (anterior.semPlaca ? anterior.modelo : ""),
           }));

@@ -83,24 +83,40 @@ test("envelope de cotação usa a operação e o wrapper documentados", () => {
   assert.match(xml, /<suh:anoModelo>2014<\/suh:anoModelo>/);
 });
 
-test("perguntas de garagem seguem o domínio 1 sim / 3 não", () => {
-  const xml = montarEnvelopeCotacao(payload, credenciais);
+const comGaragem = (garagem, categoria = "auto") =>
+  montarEnvelopeCotacao({ ...payload, veiculo: { ...payload.veiculo, categoria }, uso: { ...payload.uso, garagem } }, credenciais);
+const pergunta = (xml, n) => xml.match(new RegExp(`<suh:pergunta${n}>(\\d)</suh:pergunta${n}>`))?.[1] ?? null;
 
-  assert.match(xml, /<suh:pergunta1>1<\/suh:pergunta1>/);
-  assert.match(xml, /<suh:pergunta2>3<\/suh:pergunta2>/);
-  assert.match(xml, /<suh:pergunta3>1<\/suh:pergunta3>/);
-  // Pergunta 4 é exclusiva de caminhão e van.
-  assert.match(xml, /<suh:pergunta4\/>/);
+test("perguntas 1 a 3 seguem o domínio da Suhai (códigos por nome)", () => {
+  const casos = [
+    [{ residencia: "garagem", trabalho: "naoUsa", escola: "naoUsa" }, ["1", "1", "1"]],
+    [{ residencia: "condominio", trabalho: "usaGuarda", escola: "usaNaoGuarda" }, ["2", "2", "3"]],
+    [{ residencia: "estacionamento", trabalho: "usaNaoGuarda", escola: "usaGuarda" }, ["3", "3", "2"]],
+    [{ residencia: "nao", trabalho: "naoUsa", escola: "naoUsa" }, ["4", "1", "1"]],
+  ];
+  for (const [garagem, esperado] of casos) {
+    const xml = comGaragem(garagem);
+    assert.deepEqual([1, 2, 3].map((n) => pergunta(xml, n)), esperado);
+    assert.match(xml, /<suh:pergunta4\/>/);
+  }
 });
 
-test("caminhão responde só a pergunta 4", () => {
-  const xml = montarEnvelopeCotacao(
-    { ...payload, veiculo: { ...payload.veiculo, categoria: "caminhao" }, uso: { ...payload.uso, garagem: { residencia: false, trabalho: false, escola: false, patio: true } } },
-    credenciais,
-  );
+test("booleanos do contrato anterior: casa sim = 1 e não = 4; trabalho/escola sim = usa e guarda (2), não = não usa (1)", () => {
+  const xml = comGaragem({ residencia: true, trabalho: false, escola: true });
+  assert.deepEqual([1, 2, 3].map((n) => pergunta(xml, n)), ["1", "1", "2"]);
+  const semGaragem = comGaragem({ residencia: false, trabalho: true, escola: false });
+  assert.deepEqual([1, 2, 3].map((n) => pergunta(semGaragem, n)), ["4", "2", "1"]);
+});
 
-  assert.match(xml, /<suh:pergunta1\/>/);
-  assert.match(xml, /<suh:pergunta4>1<\/suh:pergunta4>/);
+test("caminhão e van respondem só a pergunta 4, com 1 = sim e 2 = não", () => {
+  for (const categoria of ["caminhao", "van"]) {
+    const semResposta = comGaragem({ residencia: "garagem", trabalho: "naoUsa", escola: "naoUsa" }, categoria);
+    assert.match(semResposta, /<suh:pergunta1\/>/);
+    assert.match(semResposta, /<suh:pergunta3\/>/);
+    assert.equal(pergunta(semResposta, 4), "1");
+    assert.equal(pergunta(comGaragem({ residencia: false, trabalho: false, escola: false, patio: true }, categoria), 4), "1");
+    assert.equal(pergunta(comGaragem({ residencia: "garagem", trabalho: "naoUsa", escola: "naoUsa", patio: false }, categoria), 4), "2");
+  }
 });
 
 test("cotação sem cdCobertura para receber todas as coberturas", () => {

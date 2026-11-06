@@ -310,3 +310,19 @@ test("e-mail das etapas de veículo e CEP", () => {
   assert.equal(suhai.emailMomento("progress", { ...base, suhaiEtapa: "veiculo" }).momento, "suhai_progress");
   assert.match(suhai.emailMomento("progress", { ...base, suhaiEtapa: "cep" }).detalhe, /CEP de pernoite/);
 });
+
+test("linhaPremissas descreve as respostas de garagem novas, as legadas e o pátio", () => {
+  const comum = { utilizacao: "particular", classeBonus: 0, cepPernoite: "01310100" };
+  assert.equal(
+    suhai.linhaPremissas({ ...comum, garagemResidencia: "condominio", garagemTrabalho: "usaGuarda", garagemEscola: "naoUsa" }),
+    "Premissas: uso Particular, casa: garagem em condomínio fechado; trabalho: usa e guarda; escola: não usa, bônus 0, CEP pernoite 01310100",
+  );
+  assert.equal(
+    suhai.linhaPremissas({ ...comum, garagemResidencia: true, garagemTrabalho: false, garagemEscola: false }),
+    "Premissas: uso Particular, garagem casa, bônus 0, CEP pernoite 01310100",
+  );
+  assert.equal(
+    suhai.linhaPremissas({ ...comum, garagemResidencia: "garagem", garagemTrabalho: "naoUsa", garagemEscola: "naoUsa", garagemPatio: false }),
+    "Premissas: uso Particular, garagem fora de serviço não, bônus 0, CEP pernoite 01310100",
+  );
+});

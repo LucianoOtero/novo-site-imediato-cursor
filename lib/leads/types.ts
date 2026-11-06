@@ -118,9 +118,13 @@ export type SuhaiCotacaoResumo = {
   premissas?: {
     utilizacao: string;
     tipoUtilizacao?: number;
-    garagemResidencia: boolean;
-    garagemTrabalho: boolean;
-    garagemEscola: boolean;
+    /** Código de `GARAGEM_RESIDENCIA`; registros anteriores a 2026-11-06 guardam booleano. */
+    garagemResidencia: string | boolean;
+    /** Código de `GARAGEM_USO` (ou booleano nos registros antigos). */
+    garagemTrabalho: string | boolean;
+    garagemEscola: string | boolean;
+    /** Pergunta 4 (caminhão e van). */
+    garagemPatio?: boolean;
     classeBonus: number;
     cepPernoite: string;
   };

@@ -15,11 +15,34 @@ import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { postLead } from "@/lib/leads/post-lead";
 import { faixaPremio, trackSuhai } from "@/lib/suhai/analytics";
-import { TIPO_UTILIZACAO, UTILIZACAO_DUT, type PlanoAssistencia } from "@/lib/suhai/dominio";
+import {
+  GARAGEM_RESIDENCIA,
+  GARAGEM_USO,
+  TIPO_UTILIZACAO,
+  UTILIZACAO_DUT,
+  type GaragemResidencia,
+  type GaragemUso,
+  type PlanoAssistencia,
+} from "@/lib/suhai/dominio";
 import type { CotacaoResultado, Oferta } from "@/lib/suhai/types";
 
 const selectClasses =
   "flex h-11 w-full rounded-lg border border-neutral-200 bg-white px-3.5 text-base text-neutral-900 outline-none focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/30";
+
+/** Caminhão e van respondem só à pergunta 4 da Suhai; carro e moto, às perguntas 1 a 3. */
+function ehCargaOuVan(categoria: string) {
+  return categoria === "caminhao" || categoria === "van";
+}
+
+function textoGaragem(premissas: PremissasSuhai, categoria: string) {
+  if (ehCargaOuVan(categoria)) {
+    return premissas.garagemPatio ? "guardado em garagem fora de serviço" : "sem garagem fora de serviço";
+  }
+  const partes = [GARAGEM_RESIDENCIA[premissas.garagemResidencia].rotulo.toLowerCase()];
+  if (premissas.garagemTrabalho !== "naoUsa") partes.push(`trabalho: ${GARAGEM_USO[premissas.garagemTrabalho].rotulo.toLowerCase()}`);
+  if (premissas.garagemEscola !== "naoUsa") partes.push(`escola: ${GARAGEM_USO[premissas.garagemEscola].rotulo.toLowerCase()}`);
+  return partes.join(", ");
+}
 
 /**
  * Formulário, preço e premissas da cotação Suhai.
@@ -157,7 +180,7 @@ export function CotacaoSuhaiExperiencia({
           <Container className="max-w-5xl">
             <p className="text-sm text-neutral-600">
               Premissas deste preço: {usoAtual?.rotulo ?? "Particular"},{" "}
-              {cotadas.garagemResidencia ? "garagem na residência" : "sem garagem na residência"} e bônus{" "}
+              {textoGaragem(cotadas, categoria)} e bônus{" "}
               {cotadas.classeBonus}.
             </p>
             <button
@@ -214,28 +237,66 @@ export function CotacaoSuhaiExperiencia({
                     ))}
                   </select>
                 </label>
-                <fieldset className="flex flex-col gap-2 sm:col-span-2">
-                  <legend className="text-sm font-medium text-neutral-900">Onde o veículo fica guardado</legend>
-                  {(
-                    [
-                      ["garagemResidencia", "Garagem ou estacionamento fechado em casa"],
-                      ["garagemTrabalho", "Garagem ou estacionamento fechado no trabalho"],
-                      ["garagemEscola", "Garagem ou estacionamento fechado na escola ou faculdade"],
-                    ] as const
-                  ).map(([chave, rotulo]) => (
-                    <label key={chave} className="flex items-center gap-2 text-sm text-neutral-700">
-                      <input
-                        type="checkbox"
-                        className="size-4 rounded border-neutral-300 text-brand-500"
-                        checked={premissas[chave]}
+                {ehCargaOuVan(categoria) ? (
+                  <label className="flex flex-col gap-1.5 text-sm font-medium text-neutral-900 sm:col-span-2">
+                    Guarda o veículo em garagem ou estacionamento quando não está em serviço?
+                    <select
+                      className={selectClasses}
+                      value={premissas.garagemPatio ? "sim" : "nao"}
+                      onChange={(event) =>
+                        setPremissas((anterior) => ({ ...anterior, garagemPatio: event.target.value === "sim" }))
+                      }
+                    >
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                  </label>
+                ) : (
+                  <>
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-neutral-900">
+                      Em casa, à noite
+                      <select
+                        className={selectClasses}
+                        value={premissas.garagemResidencia}
                         onChange={(event) =>
-                          setPremissas((anterior) => ({ ...anterior, [chave]: event.target.checked }))
+                          setPremissas((anterior) => ({
+                            ...anterior,
+                            garagemResidencia: event.target.value as GaragemResidencia,
+                          }))
                         }
-                      />
-                      {rotulo}
+                      >
+                        {Object.entries(GARAGEM_RESIDENCIA).map(([chave, opcao]) => (
+                          <option key={chave} value={chave}>
+                            {opcao.rotulo}
+                          </option>
+                        ))}
+                      </select>
                     </label>
-                  ))}
-                </fieldset>
+                    {(
+                      [
+                        ["garagemTrabalho", "Ida ao trabalho"],
+                        ["garagemEscola", "Ida à escola ou faculdade"],
+                      ] as const
+                    ).map(([chave, rotulo]) => (
+                      <label key={chave} className="flex flex-col gap-1.5 text-sm font-medium text-neutral-900">
+                        {rotulo}
+                        <select
+                          className={selectClasses}
+                          value={premissas[chave]}
+                          onChange={(event) =>
+                            setPremissas((anterior) => ({ ...anterior, [chave]: event.target.value as GaragemUso }))
+                          }
+                        >
+                          {Object.entries(GARAGEM_USO).map(([codigo, opcao]) => (
+                            <option key={codigo} value={codigo}>
+                              {opcao.rotulo}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </>
+                )}
                 <Button className="sm:col-span-2 sm:w-fit" loading={recalculando} onClick={() => void recalcular(premissas)}>
                   Recalcular
                 </Button>

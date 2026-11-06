@@ -59,6 +59,8 @@ export function resumirCotacao(
     garagemResidencia: payload.uso.garagem.residencia,
     garagemTrabalho: payload.uso.garagem.trabalho,
     garagemEscola: payload.uso.garagem.escola,
+    garagemPatio:
+      payload.veiculo.categoria === "caminhao" || payload.veiculo.categoria === "van" ? payload.uso.garagem.patio : undefined,
     classeBonus: payload.contrato.classeBonus,
     cepPernoite: payload.uso.cepPernoite,
   };

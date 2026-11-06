@@ -290,16 +290,40 @@ function protocoloDoPlano(plano, cotacao) {
   return (plano && plano.protocolo) || cotacao.protocolo;
 }
 
+/** Respostas das perguntas de garagem da Suhai (códigos gravados pelo site desde 2026-11-06). */
+const GARAGEM_RESIDENCIA = {
+  garagem: "garagem na residência",
+  condominio: "garagem em condomínio fechado",
+  estacionamento: "estacionamento",
+  nao: "sem garagem",
+};
+const GARAGEM_USO = { naoUsa: "não usa", usaGuarda: "usa e guarda", usaNaoGuarda: "usa e não guarda" };
+
+function textoGaragem(premissas) {
+  if (typeof premissas.garagemPatio === "boolean") {
+    return `garagem fora de serviço ${premissas.garagemPatio ? "sim" : "não"}`;
+  }
+  // Registros anteriores guardam os checkboxes (booleano).
+  if (typeof premissas.garagemResidencia === "boolean") {
+    const garagens = [
+      premissas.garagemResidencia ? "casa" : null,
+      premissas.garagemTrabalho ? "trabalho" : null,
+      premissas.garagemEscola ? "escola" : null,
+    ].filter(Boolean);
+    return `garagem ${garagens.length ? garagens.join("/") : "não"}`;
+  }
+  return (
+    `casa: ${GARAGEM_RESIDENCIA[premissas.garagemResidencia] || premissas.garagemResidencia}; ` +
+    `trabalho: ${GARAGEM_USO[premissas.garagemTrabalho] || premissas.garagemTrabalho}; ` +
+    `escola: ${GARAGEM_USO[premissas.garagemEscola] || premissas.garagemEscola}`
+  );
+}
+
 function linhaPremissas(premissas) {
   if (!premissas) return null;
-  const garagens = [
-    premissas.garagemResidencia ? "casa" : null,
-    premissas.garagemTrabalho ? "trabalho" : null,
-    premissas.garagemEscola ? "escola" : null,
-  ].filter(Boolean);
   return (
     `Premissas: uso ${UTILIZACAO[premissas.utilizacao] || premissas.utilizacao}, ` +
-    `garagem ${garagens.length ? garagens.join("/") : "não"}, bônus ${premissas.classeBonus}, ` +
+    `${textoGaragem(premissas)}, bônus ${premissas.classeBonus}, ` +
     `CEP pernoite ${premissas.cepPernoite}`
   );
 }
@@ -878,6 +902,7 @@ module.exports = {
   etapaFunilNova,
   camposNovos,
   buildNote,
+  linhaPremissas,
   taskSpec,
   octaTemplate,
   emailMomento,

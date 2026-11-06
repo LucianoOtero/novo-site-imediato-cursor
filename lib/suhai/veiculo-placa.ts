@@ -7,6 +7,8 @@ export type OpcaoVeiculo = {
   marca: string;
   modelo: string;
   codFipe: string;
+  /** Categoria Suhai da versão; define as perguntas de garagem (1 a 3 ou 4). */
+  categoria?: string;
 };
 
 export type VeiculoPreenchido = {
@@ -144,7 +146,8 @@ async function preencher(
   const opcoes = grafias.filter((grafia): grafia is GrafiaSuhai => grafia !== null);
   if (opcoes.length === 0) return null;
   const unica = opcoes.length === 1 ? opcoes[0] : undefined;
-  if (unica?.categoria) categoria = unica.categoria;
+  const categorias = new Set(opcoes.map((opcao) => opcao.categoria).filter(Boolean));
+  if (categorias.size === 1) categoria = [...categorias][0] as string;
 
   return {
     ok: true,
@@ -154,6 +157,14 @@ async function preencher(
     marca: unica?.marca || veiculo.marca,
     modelo: unica?.modelo || (opcoes.length > 1 ? "" : veiculo.modelo),
     codFipe: unica?.codFipe,
-    opcoes: opcoes.length > 1 ? opcoes.map(({ marca: marcaOpcao, modelo: modeloOpcao, codFipe }) => ({ marca: marcaOpcao, modelo: modeloOpcao, codFipe })) : undefined,
+    opcoes:
+      opcoes.length > 1
+        ? opcoes.map(({ marca: marcaOpcao, modelo: modeloOpcao, codFipe, categoria: categoriaOpcao }) => ({
+            marca: marcaOpcao,
+            modelo: modeloOpcao,
+            codFipe,
+            categoria: categoriaOpcao,
+          }))
+        : undefined,
   };
 }

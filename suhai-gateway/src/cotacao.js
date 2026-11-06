@@ -22,9 +22,28 @@ const UTILIZACAO_DUT = {
   locacaoApp: 22,
 };
 
-/** Perguntas de garagem: 1 = sim, 3 = não (domínio da documentação). */
-function resposta(booleano) {
-  return booleano ? 1 : 3;
+/**
+ * Domínios das perguntas de garagem ("Realizar Cotação", Portal SUHAPI).
+ * O site manda os códigos por nome; booleano é o contrato anterior
+ * (checkbox "garagem em casa / no trabalho / na escola").
+ */
+const PERGUNTA1_RESIDENCIA = { garagem: 1, condominio: 2, estacionamento: 3, nao: 4 };
+/** Perguntas 2 (trabalho) e 3 (escola). */
+const PERGUNTA_USO = { naoUsa: 1, usaGuarda: 2, usaNaoGuarda: 3 };
+const PERGUNTA4_PATIO = { sim: 1, nao: 2 };
+
+export function respostaResidencia(valor) {
+  if (typeof valor === "boolean") return valor ? PERGUNTA1_RESIDENCIA.garagem : PERGUNTA1_RESIDENCIA.nao;
+  return PERGUNTA1_RESIDENCIA[valor] ?? PERGUNTA1_RESIDENCIA.garagem;
+}
+
+export function respostaUso(valor) {
+  if (typeof valor === "boolean") return valor ? PERGUNTA_USO.usaGuarda : PERGUNTA_USO.naoUsa;
+  return PERGUNTA_USO[valor] ?? PERGUNTA_USO.naoUsa;
+}
+
+export function respostaPatio(valor) {
+  return valor === false ? PERGUNTA4_PATIO.nao : PERGUNTA4_PATIO.sim;
 }
 
 /** A Suhai aceita `S`/`N` ou `1`/`0` em `zeroKm`; os exemplos usam letras. */
@@ -89,10 +108,10 @@ export function montarEnvelopeCotacao(payload, credenciais = config.credenciais)
     sexoPrincipalCondutor: condutorPrincipal.sexo,
     estadoCivilPrincipalCondutor: condutorPrincipal.estadoCivil,
     // Perguntas 1 a 3 valem para auto e moto; caminhão e van respondem só a 4.
-    pergunta1: caminhaoOuVan ? null : resposta(uso.garagem.residencia),
-    pergunta2: caminhaoOuVan ? null : resposta(uso.garagem.trabalho),
-    pergunta3: caminhaoOuVan ? null : resposta(uso.garagem.escola),
-    pergunta4: caminhaoOuVan ? resposta(uso.garagem.patio ?? false) : null,
+    pergunta1: caminhaoOuVan ? null : respostaResidencia(uso.garagem.residencia),
+    pergunta2: caminhaoOuVan ? null : respostaUso(uso.garagem.trabalho),
+    pergunta3: caminhaoOuVan ? null : respostaUso(uso.garagem.escola),
+    pergunta4: caminhaoOuVan ? respostaPatio(uso.garagem.patio) : null,
     vlr_desconto: "0.00",
     // Sem `cdCobertura` a Suhai devolve o bloco com todas as coberturas,
     // que é justamente o que a tela de planos precisa.

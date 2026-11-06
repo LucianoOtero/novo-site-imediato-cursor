@@ -80,6 +80,40 @@ export const TIPO_UTILIZACAO = {
 } as const;
 
 /**
+ * Perguntas de garagem da cotação ("Realizar Cotação"). As perguntas 1 a 3
+ * valem para auto e moto; a 4 é exclusiva e obrigatória para caminhão e
+ * van/VUC. O código numérico é aplicado no gateway.
+ */
+export const GARAGEM_RESIDENCIA = {
+  garagem: { codigo: 1, rotulo: "Garagem na residência" },
+  condominio: { codigo: 2, rotulo: "Garagem em condomínio fechado" },
+  estacionamento: { codigo: 3, rotulo: "Estacionamento" },
+  nao: { codigo: 4, rotulo: "Não fica em garagem ou estacionamento" },
+} as const;
+
+export type GaragemResidencia = keyof typeof GARAGEM_RESIDENCIA;
+
+/** Perguntas 2 (trabalho) e 3 (escola ou faculdade): mesmo domínio. */
+export const GARAGEM_USO = {
+  naoUsa: { codigo: 1, rotulo: "Não usa" },
+  usaGuarda: { codigo: 2, rotulo: "Usa e guarda em garagem ou estacionamento" },
+  usaNaoGuarda: { codigo: 3, rotulo: "Usa e não guarda em garagem ou estacionamento" },
+} as const;
+
+export type GaragemUso = keyof typeof GARAGEM_USO;
+
+/** Pergunta 4: 1 = sim, 2 = não. */
+export const GARAGEM_PATIO = { sim: 1, nao: 2 } as const;
+
+/** Premissa inicial, antes de o cliente ajustar. */
+export const GARAGEM_PADRAO = {
+  residencia: "garagem",
+  trabalho: "naoUsa",
+  escola: "naoUsa",
+  patio: true,
+} as const satisfies { residencia: GaragemResidencia; trabalho: GaragemUso; escola: GaragemUso; patio: boolean };
+
+/**
  * Status da proposta (`ConsultarStatusProposta` devolve o código em
  * `codMsgRet`). `final` indica que não há mais avanço possível pelo caminho
  * automático. A cobrança só sai depois da apólice emitida (Suhai, 24/10/2026),
