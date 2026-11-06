@@ -32,6 +32,26 @@ function simNao(booleano) {
   return booleano ? "S" : "N";
 }
 
+/**
+ * A Suhai recusa fabricação posterior ao ano corrente. Sem fabricação válida
+ * (ano-modelo ou o anterior), vai o ano-modelo limitado ao ano corrente:
+ * um 0 km 2026/2027 cotado em 2026 sai com fabricação 2026.
+ */
+export function anoFabricacaoPara(anoModelo, anoFabricacao, hoje = new Date()) {
+  const anoAtual = hoje.getFullYear();
+  const informado = Number(anoFabricacao);
+  if (
+    anoFabricacao != null &&
+    Number.isInteger(informado) &&
+    informado >= anoModelo - 1 &&
+    informado <= anoModelo &&
+    informado <= anoAtual
+  ) {
+    return informado;
+  }
+  return Math.min(anoModelo, anoAtual);
+}
+
 export function montarEnvelopeCotacao(payload, credenciais = config.credenciais) {
   const { proponente, condutorPrincipal, veiculo, uso, contrato } = payload;
   const caminhaoOuVan = veiculo.categoria === "caminhao" || veiculo.categoria === "van";
@@ -52,7 +72,7 @@ export function montarEnvelopeCotacao(payload, credenciais = config.credenciais)
     modelo: veiculo.modelo,
     codFipe: veiculo.codFipe ?? null,
     anoModelo: veiculo.anoModelo,
-    anoFabricacao: veiculo.anoFabricacao ?? veiculo.anoModelo,
+    anoFabricacao: anoFabricacaoPara(veiculo.anoModelo, veiculo.anoFabricacao),
     zeroKm: simNao(veiculo.zeroKm),
     // Veículo 0 km sem placa definitiva usa a placa convencional YYY9999.
     placa: veiculo.zeroKm ? veiculo.placa ?? "YYY9999" : veiculo.placa ?? null,

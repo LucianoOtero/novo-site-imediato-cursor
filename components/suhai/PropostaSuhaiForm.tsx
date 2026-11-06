@@ -19,6 +19,7 @@ import {
   type PropostaInput,
   type PropostaResultado,
 } from "@/lib/suhai/types";
+import { useWhatsappHref } from "@/lib/use-whatsapp-href";
 import { formatCep, formatTelefone, isValidEmailFormat, onlyDigits } from "@/lib/validators";
 
 const selectClasses =
@@ -56,6 +57,7 @@ const CAMPOS: ReadonlyArray<readonly [chave: string, id: string]> = [
 const AVISO_EMAIL = "Não conseguimos confirmar esse e-mail — revise ou prossiga assim mesmo";
 const AVISO_CELULAR = "Não conseguimos confirmar esse celular — revise ou prossiga assim mesmo";
 const AVISO_CEP = "CEP não encontrado; preencha o endereço.";
+const AJUDA_PROPOSTA = "Olá! Enviei a proposta Suhai pelo site e apareceu que já existe uma proposta para o meu veículo.";
 
 /** Mesmas regras do servidor (`propostaInputSchema`), mais as do formulário padrão para e-mail, celular e chassi. */
 function validarProposta(dados: PropostaInput): Record<string, string> {
@@ -152,6 +154,9 @@ export function PropostaSuhaiForm({
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<PropostaResultado | null>(null);
   const [confirmacaoAberta, setConfirmacaoAberta] = useState(false);
+  /** A Suhai já tem proposta para o veículo: reenviar só repete a recusa. */
+  const [propostaExistente, setPropostaExistente] = useState<string | null>(null);
+  const ajudaWhatsapp = useWhatsappHref(undefined, undefined, AJUDA_PROPOSTA);
   const valoresRef = useRef({ email, telefone: "", cep });
   valoresRef.current = { email: email.trim(), telefone: onlyDigits(ddd) + onlyDigits(celular), cep: onlyDigits(cep) };
 
@@ -322,10 +327,19 @@ export function PropostaSuhaiForm({
       const corpo = await resposta.json();
       if (!resposta.ok) {
         trackSuhai("suhai_proposal_result", {
-          result: corpo?.erro === "validacao" ? "validation" : corpo?.erro === "suhai" ? "suhai_error" : "error",
+          result:
+            corpo?.erro === "validacao"
+              ? "validation"
+              : corpo?.erro === "suhai" || corpo?.erro === "proposta_existente"
+                ? "suhai_error"
+                : "error",
           http_status: resposta.status,
           duration_ms: Date.now() - inicio,
         });
+        if (corpo?.erro === "proposta_existente") {
+          setPropostaExistente(corpo.mensagem);
+          return;
+        }
         setErros(corpo.campos ?? {});
         setErroGeral(corpo.mensagem ?? "Não foi possível transmitir a proposta.");
         return;
@@ -703,14 +717,23 @@ export function PropostaSuhaiForm({
           </p>
         )}
       </div>
-      {erroGeral && (
+      {erroGeral && !propostaExistente && (
         <p role="alert" className="text-sm text-alert sm:col-span-2">
           {erroGeral}
         </p>
       )}
-      <Button className="sm:col-span-2 sm:w-fit" loading={enviando} type="submit">
-        Transmitir proposta
-      </Button>
+      {propostaExistente ? (
+        <p role="alert" className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-neutral-800 sm:col-span-2">
+          {propostaExistente}{" "}
+          <a href={ajudaWhatsapp} target="_blank" rel="noopener noreferrer" className="font-medium underline">
+            Falar com a gente no WhatsApp
+          </a>
+        </p>
+      ) : (
+        <Button className="sm:col-span-2 sm:w-fit" loading={enviando} type="submit">
+          Transmitir proposta
+        </Button>
+      )}
     </form>
   );
 }

@@ -20,6 +20,7 @@ import { postLead } from "@/lib/leads/post-lead";
 import type { OpcaoVeiculo } from "@/lib/suhai/veiculo-placa";
 import type { ContextoProposta } from "@/components/suhai/PropostaSuhaiForm";
 import type { CotacaoResultado } from "@/lib/suhai/types";
+import { anoFabricacaoPara } from "@/lib/suhai/ano-fabricacao";
 import { aceitaZeroKm, anoMinimoZeroKm, mensagemZeroKm } from "@/lib/suhai/zero-km";
 import { useWhatsappHref } from "@/lib/use-whatsapp-href";
 import { cn } from "@/lib/utils";
@@ -147,6 +148,12 @@ function ehZeroKm(atual: Pick<Estado, "semPlaca" | "placa">) {
   return atual.semPlaca && !isValidPlacaFormat(placaNormalizada(atual));
 }
 
+/** Sem ano-modelo de 4 dígitos não há fabricação a calcular. */
+function fabricacao(anoModelo: string | undefined, anoFabricacao: string | undefined): string {
+  if (!anoModelo || !/^\d{4}$/.test(anoModelo)) return "";
+  return String(anoFabricacaoPara(Number(anoModelo), anoFabricacao));
+}
+
 export type CotacaoSuhaiHandle = {
   recalcular: (premissas: PremissasSuhai) => Promise<void>;
   cotarAssistencia: (premissas: PremissasSuhai, nivel: PlanoAssistencia) => Promise<CotacaoResultado>;
@@ -236,7 +243,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
       placa,
       veiculoMarca: atual.marca || undefined,
       veiculoModelo: atual.modelo || undefined,
-      veiculoAnoFabricacao: atual.anoFabricacao || undefined,
+      veiculoAnoFabricacao: fabricacao(atual.anoModelo, atual.anoFabricacao) || undefined,
       veiculoAnoModelo: atual.anoModelo || undefined,
       veiculoMarcaModelo: [atual.marca, atual.modelo].filter(Boolean).join(" ") || undefined,
       veiculoAno: atual.anoModelo || undefined,
@@ -358,9 +365,18 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
     setEstado((anterior) => ({ ...anterior, [campo]: valor }));
   }
 
-  /** Editar o veículo digitado descarta a versão encontrada para o texto anterior. */
+  /**
+   * Editar o veículo digitado descarta a versão encontrada para o texto anterior.
+   * Outro ano-modelo descarta a fabricação que veio da placa.
+   */
   function editarVeiculoDigitado(campo: "marca" | "modelo" | "anoModelo", valor: string) {
-    setEstado((anterior) => ({ ...anterior, [campo]: valor, codFipe: "", opcoes: [] }));
+    setEstado((anterior) => ({
+      ...anterior,
+      [campo]: valor,
+      ...(campo === "anoModelo" ? { anoFabricacao: "" } : {}),
+      codFipe: "",
+      opcoes: [],
+    }));
   }
 
   function buscarModeloDigitado() {
@@ -444,7 +460,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
           marca: corpo.marca ?? "",
           modelo: corpo.modelo ?? "",
           anoModelo: corpo.anoModelo ?? "",
-          anoFabricacao: corpo.anoFabricacao || corpo.anoModelo || "",
+          anoFabricacao: fabricacao(corpo.anoModelo, corpo.anoFabricacao),
           codFipe: "",
           opcoes: [],
         }));
@@ -463,7 +479,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         semPlaca: false,
         categoria: corpo.categoria || "auto",
         anoModelo: corpo.anoModelo,
-        anoFabricacao: corpo.anoFabricacao || corpo.anoModelo,
+        anoFabricacao: fabricacao(corpo.anoModelo, corpo.anoFabricacao),
         marca: corpo.marca,
         modelo: opcoes.length > 1 ? "" : corpo.modelo || "",
         codFipe: opcoes.length > 1 ? "" : corpo.codFipe || "",
@@ -655,7 +671,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
           marca: atual.marca,
           modelo: atual.modelo,
           anoModelo: Number(atual.anoModelo),
-          anoFabricacao: atual.anoFabricacao ? Number(atual.anoFabricacao) : undefined,
+          anoFabricacao: Number(fabricacao(atual.anoModelo, atual.anoFabricacao)) || undefined,
           codFipe: atual.codFipe || undefined,
           zeroKm: ehZeroKm(atual),
           placa: ehZeroKm(atual) ? undefined : placaNormalizada(atual),
@@ -721,6 +737,8 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
         );
         setErros(corpo.campos ?? {});
         setErroGeral(corpo.mensagem ?? "Não foi possível calcular agora.");
+        // Recusa do veículo (ano, versão, FIPE): a correção é na etapa do veículo.
+        if (corpo?.campo === "veiculo" && !recalc) setEtapa(2);
         return;
       }
       onResultado(corpo as CotacaoResultado, atual.categoria, usadas, {
@@ -793,6 +811,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
 
     if (etapa < 4) {
       trackSuhai("suhai_quote_step", { step: (etapa + 1) as 2 | 3 | 4 });
+      setErroGeral(null);
       setEtapa((passo) => (passo + 1) as Etapa);
       return;
     }
@@ -1029,6 +1048,7 @@ export const CotacaoSuhaiForm = forwardRef<CotacaoSuhaiHandle, Props>(function C
                   ...anterior,
                   semPlaca: !anterior.semPlaca,
                   placa: anterior.semPlaca ? anterior.placa : "",
+                  anoFabricacao: "",
                   codFipe: "",
                   opcoes: [],
                 }));

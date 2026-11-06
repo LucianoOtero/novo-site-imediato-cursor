@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { checkRateLimit, getClientIp, hashIp } from "@/lib/leads/security";
 import { lerLeadId, registrarCotacaoSuhai, resumirCotacao } from "@/lib/leads/suhai-etapas";
 import { GatewayError, gatewayConfigurado, realizarCotacao } from "@/lib/suhai/gateway";
+import { classificarRecusaSuhai } from "@/lib/suhai/mensagens-erro";
 import { cotacaoInputSchema } from "@/lib/suhai/types";
 
 /**
@@ -78,10 +79,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Recusa da própria Suhai (ex.: modelo fora da tabela) é informação útil
-    // ao cliente; falha de transporte vira mensagem genérica.
+    // ao cliente, no texto de `mensagens-erro`; falha de transporte vira
+    // mensagem genérica.
     if (error instanceof GatewayError && error.codigoSuhai) {
+      const recusa = classificarRecusaSuhai(error.message);
       return NextResponse.json(
-        { erro: "suhai", mensagem: error.message, codigoSuhai: error.codigoSuhai },
+        {
+          erro: "suhai",
+          mensagem: recusa?.mensagem ?? error.message,
+          codigoSuhai: error.codigoSuhai,
+          motivo: recusa?.motivo,
+          campo: recusa?.campo,
+        },
         { status: 422 },
       );
     }

@@ -1,13 +1,7 @@
-import { consultarFipe, gatewayConfigurado, type VeiculoFipe } from "@/lib/suhai/gateway";
+import { catalogoSemRegistro, grafiaDoCatalogo, type GrafiaSuhai } from "@/lib/suhai/catalogo-suhai";
+import { consultarFipe, GatewayError, gatewayConfigurado } from "@/lib/suhai/gateway";
 import { candidatosFipePublicos, FipeIndisponivel, type CandidatoFipe } from "@/lib/suhai/fipe-publica";
 import { validatePlacaViaFipe } from "@/lib/validation/placa-fipe";
-
-const CATEGORIA_POR_CODIGO: Record<number, string> = {
-  1: "auto",
-  2: "moto",
-  3: "caminhao",
-  4: "van",
-};
 
 export type OpcaoVeiculo = {
   marca: string;
@@ -55,25 +49,18 @@ async function candidatosOuIndisponivel(
   }
 }
 
-async function grafiaSuhai(candidato: CandidatoFipe, marcaPlaca: string): Promise<OpcaoVeiculo & { categoria?: string }> {
-  if (!gatewayConfigurado()) {
-    return { marca: marcaPlaca, modelo: candidato.nome, codFipe: candidato.codFipe };
-  }
+/** `null`: versão fora do catálogo Suhai, que recusaria o código na cotação. */
+async function grafiaSuhai(candidato: CandidatoFipe, marcaPlaca: string): Promise<GrafiaSuhai | null> {
+  if (!gatewayConfigurado()) return grafiaDoCatalogo(candidato, marcaPlaca, "indisponivel");
   try {
-    const veiculos = await consultarFipe({ codFipe: candidato.codFipe });
-    const suhai: VeiculoFipe | undefined = veiculos[0];
-    if (suhai?.marca && suhai.modelo) {
-      return {
-        marca: suhai.marca,
-        modelo: suhai.modelo,
-        codFipe: suhai.codFipe || candidato.codFipe,
-        categoria: suhai.codCategoria ? CATEGORIA_POR_CODIGO[suhai.codCategoria] : undefined,
-      };
-    }
+    return grafiaDoCatalogo(candidato, marcaPlaca, await consultarFipe({ codFipe: candidato.codFipe }));
   } catch (error) {
+    if (error instanceof GatewayError && error.codigoSuhai && catalogoSemRegistro(error.message)) {
+      return grafiaDoCatalogo(candidato, marcaPlaca, []);
+    }
     console.warn("[suhai/veiculo] ConsultaVeiculos indisponível; mantendo a grafia da tabela pública.", error);
+    return grafiaDoCatalogo(candidato, marcaPlaca, "indisponivel");
   }
-  return { marca: marcaPlaca, modelo: candidato.nome, codFipe: candidato.codFipe };
 }
 
 /**
@@ -102,7 +89,8 @@ export async function veiculoPorPlaca(
     ano: veiculo.anoModelo,
   });
 
-  if (candidatos === "indisponivel" || candidatos.length === 0) {
+  const preenchido = candidatos === "indisponivel" ? null : await preencher(candidatos, veiculo);
+  if (!preenchido) {
     return {
       ok: false,
       motivo: candidatos === "indisponivel" ? "fipe_indisponivel" : "sem_versao",
@@ -113,7 +101,7 @@ export async function veiculoPorPlaca(
       modelo: veiculo.modelo,
     };
   }
-  return preencher(candidatos, veiculo);
+  return preenchido;
 }
 
 /**
@@ -138,15 +126,23 @@ export async function veiculoPorModelo(dados: {
     const indisponivel = carros === "indisponivel" || motos === "indisponivel";
     return { ok: false, motivo: indisponivel ? "fipe_indisponivel" : "nao_encontrado" };
   }
-  return preencher(candidatos, { ...dados, tipo, anoFabricacao: dados.anoModelo });
+  return (
+    (await preencher(candidatos, { ...dados, tipo, anoFabricacao: dados.anoModelo })) ?? {
+      ok: false,
+      motivo: "nao_encontrado",
+    }
+  );
 }
 
+/** `null` quando nenhuma versão está no catálogo Suhai. */
 async function preencher(
   candidatos: CandidatoFipe[],
   veiculo: { tipo: "carro" | "moto"; marca: string; modelo: string; anoModelo: string; anoFabricacao: string },
-): Promise<VeiculoPreenchido> {
+): Promise<VeiculoPreenchido | null> {
   let categoria = veiculo.tipo === "moto" ? "moto" : "auto";
-  const opcoes = await Promise.all(candidatos.map((candidato) => grafiaSuhai(candidato, veiculo.marca)));
+  const grafias = await Promise.all(candidatos.map((candidato) => grafiaSuhai(candidato, veiculo.marca)));
+  const opcoes = grafias.filter((grafia): grafia is GrafiaSuhai => grafia !== null);
+  if (opcoes.length === 0) return null;
   const unica = opcoes.length === 1 ? opcoes[0] : undefined;
   if (unica?.categoria) categoria = unica.categoria;
 

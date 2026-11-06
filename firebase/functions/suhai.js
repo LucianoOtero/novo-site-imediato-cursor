@@ -348,7 +348,9 @@ function buildNote(stage, leadData) {
       return (
         `${prefixo}⚠️ PROPOSTA SUHAI NÃO TRANSMITIDA — cotação nº ${proposta.protocolo || "?"}: ` +
         `${proposta.erro || "erro não informado"}${proposta.codigoSuhai ? ` (código Suhai ${proposta.codigoSuhai})` : ""}.\n` +
-        "Retomar a cotação no Portal do Cotador Suhai e concluir a proposta com o cliente."
+        (propostaEmEmissao(proposta)
+          ? PROXIMO_PASSO_EM_EMISSAO
+          : "Retomar a cotação no Portal do Cotador Suhai e concluir a proposta com o cliente.")
       );
     }
     return [
@@ -365,6 +367,16 @@ function buildNote(stage, leadData) {
 
   return null;
 }
+
+/** Recusa "Há outra proposta em emissão", classificada pelo site (`motivo`) ou pelo texto. */
+function propostaEmEmissao(proposta) {
+  if (proposta.motivo === "proposta_em_emissao") return true;
+  return /outra proposta em emiss/i.test(String(proposta.erro || ""));
+}
+
+const PROXIMO_PASSO_EM_EMISSAO =
+  "Verificar no Portal do Cotador Suhai a proposta já existente da placa (pode ser um envio anterior do próprio cliente que não apareceu na tela). " +
+  "Para transmitir de novo é preciso cancelar a anterior; falar com o cliente pelo WhatsApp antes.";
 
 /**
  * Task acionável no CRM (Atividades do vendedor) ou `null`. `dias` = prazo
@@ -393,6 +405,14 @@ function taskSpec(stage, leadData) {
         `Proposta nº ${proposta.numeroProposta} (cotação nº ${proposta.protocolo}) transmitida pelo site com boleto. ` +
         "Acompanhar no Portal do Cotador Suhai e resolver as pendências com o cliente. " +
         "A cobrança só existe depois da apólice emitida: o boleto da 1ª parcela vem depois da emissão.",
+    };
+  }
+  if (stage === "suhai_proposal" && proposta.status !== "sucesso" && propostaEmEmissao(proposta)) {
+    return {
+      chave: "suhai_proposal_falha",
+      name: `${prefixo}Verificar no Portal Suhai a proposta já existente da placa — cotação nº ${proposta.protocolo || "?"}`,
+      dias: 0,
+      description: `A Suhai recusou a proposta do site porque já há outra em emissão para o veículo. ${PROXIMO_PASSO_EM_EMISSAO}`,
     };
   }
   if (stage === "suhai_proposal" && proposta.status !== "sucesso") {

@@ -227,8 +227,39 @@ export function registrarPlanoSuhai(leadId: string | undefined, cdCobertura: num
   });
 }
 
+/**
+ * Proposta já transmitida com sucesso para o protocolo. A Suhai recusa a
+ * retransmissão ("Há outra proposta em emissão"), então o reenvio do cliente
+ * (falha de rede, duplo clique) recebe a proposta gravada.
+ */
+export async function propostaTransmitida(
+  leadId: string | undefined,
+  protocolo: string,
+): Promise<SuhaiPropostaResumo | null> {
+  if (!leadId || !LEAD_ID.test(leadId)) return null;
+  const database = getLeadBackupDatabase();
+  if (!database) return null;
+  try {
+    const snapshot = await database.ref(`leads_backup/${leadId}/data/suhaiProposta`).get();
+    const proposta = snapshot.val() as SuhaiPropostaResumo | null;
+    if (proposta?.status === "sucesso" && proposta.numeroProposta && String(proposta.protocolo) === String(protocolo)) {
+      return proposta;
+    }
+    return null;
+  } catch (error) {
+    console.warn(`[suhai-etapas] Falha ao ler a proposta do lead ${leadId} (não bloqueante):`, error);
+    return null;
+  }
+}
+
+/** Uma falha posterior não apaga a proposta já transmitida (o CRM voltaria a "Proposta com erro"). */
 export function registrarPropostaSuhai(leadId: string | undefined, proposta: SuhaiPropostaResumo, email?: string) {
   return gravar(leadId, "suhai_proposal", (dados) => {
+    const anterior = dados.suhaiProposta as SuhaiPropostaResumo | undefined;
+    if (proposta.status === "falha" && anterior?.status === "sucesso") {
+      console.info(`[suhai-etapas] Lead ${leadId} já tem proposta transmitida — falha posterior não gravada.`);
+      return null;
+    }
     const cotacao = dados.suhaiCotacao as SuhaiCotacaoResumo | undefined;
     const plano = cotacao?.ofertas?.find((oferta) => oferta.cdCobertura === proposta.cdCobertura);
     return { suhaiProposta: proposta, ...(plano ? { suhaiPlano: plano } : {}), ...(email ? { email } : {}) };

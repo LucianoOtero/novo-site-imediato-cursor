@@ -289,6 +289,23 @@ test("proposta com erro vira Task de pendência sem WhatsApp", () => {
   assert.equal(suhai.emailMomento("suhai_proposal", dados).momento, "suhai_erro");
 });
 
+test("proposta já em emissão na Suhai pede verificação no Portal antes de retransmitir", () => {
+  const erro = "Há outra proposta em emissão. Para retransmitir será necessário cancelar a anterior - ServiceApplication";
+  const comMotivo = {
+    ...base,
+    suhaiProposta: { ...proposta, status: "falha", numeroProposta: undefined, erro, motivo: "proposta_em_emissao" },
+  };
+  const tarefa = suhai.taskSpec("suhai_proposal", comMotivo);
+  assert.match(tarefa.name, /Verificar no Portal Suhai a proposta já existente da placa/);
+  assert.match(tarefa.description, /cancelar a anterior/);
+  assert.equal(tarefa.chave, "suhai_proposal_falha");
+  assert.match(suhai.buildNote("suhai_proposal", comMotivo), /proposta já existente da placa/);
+  assert.equal(suhai.octaTemplate("suhai_proposal", comMotivo, "Maria"), null);
+
+  const semMotivo = { ...base, suhaiProposta: { ...comMotivo.suhaiProposta, motivo: undefined } };
+  assert.match(suhai.taskSpec("suhai_proposal", semMotivo).name, /Verificar no Portal Suhai/);
+});
+
 test("e-mail das etapas de veículo e CEP", () => {
   assert.equal(suhai.emailMomento("progress", { ...base, suhaiEtapa: "veiculo" }).momento, "suhai_progress");
   assert.match(suhai.emailMomento("progress", { ...base, suhaiEtapa: "cep" }).detalhe, /CEP de pernoite/);

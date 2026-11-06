@@ -13,6 +13,20 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Corrigido — 06/11/2026 (recusas da Suhai evitadas no formulário)
+
+Em 05/11 uma cotação de cliente (0 km 2026/2027) foi recusada com "O ano de fabricação do veículo é obrigatório e tem que ser inferior ou igual ao ano atual": o formulário mandou o ano de fabricação vazio e o gateway usou o ano-modelo (2027). "Há outra proposta em emissão" e "Código FIPE informado está incorreto" só apareceram nos testes de homologação, mas os dois caminhos existiam em produção.
+
+### Fixed
+- `lib/suhai/ano-fabricacao.ts` (novo, com teste): fabricação válida é o ano-modelo ou o anterior, nunca após o ano corrente; senão vai o ano-modelo limitado ao ano corrente. Usada no formulário, no `cotacaoInputSchema` (normaliza a saída) e no gateway (`anoFabricacaoPara` em `suhai-gateway/src/cotacao.js`).
+- `CotacaoSuhaiForm.tsx`: sempre envia a fabricação calculada; editar o ano-modelo e alternar placa/sem placa descartam a fabricação que veio da placa. Recusa do veículo volta à etapa do veículo.
+- `app/api/suhai/proposta/route.ts`: o mesmo protocolo não é transmitido duas vezes (o reenvio recebe a proposta gravada no lead). "Outra proposta em emissão" vira `erro: "proposta_existente"` (409) com mensagem para o cliente e link do WhatsApp, sem botão de reenvio. Uma falha posterior não sobrescreve a proposta já transmitida no RTDB.
+- `firebase/functions/suhai.js`: com `motivo: "proposta_em_emissao"` (ou o texto da Suhai), a Task e a Note pedem para verificar no Portal a proposta já existente da placa antes de retransmitir.
+- `lib/suhai/catalogo-suhai.ts` (novo, com teste) + `veiculo-placa.ts`: versão ausente do catálogo Suhai (lista vazia ou crítica "nenhum registro") sai das opções; sem nenhuma, o formulário pede para confirmar o modelo. Catálogo fora do ar mantém a grafia pública.
+- `lib/suhai/mensagens-erro.ts` (novo, com teste): recusas conhecidas (ano de fabricação, FIPE, veículo não localizado, modelo, Zero KM, outra proposta) em texto para o cliente nas rotas de cotação e proposta. O texto original continua no RTDB e no e-mail da equipe.
+
+---
+
 ## Corrigido — 05/11/2026 (valores das parcelas e fator FIPE nas mensagens e na tela Suhai)
 
 A proposta 12490227 (cotação 228592368) foi ao cliente com "Boleto em 12x (≈ R$ 213,03)": o à vista (R$ 2.556,34) dividido por 12, sem juros. A parcela real da Suhai era R$ 261,91. A mensagem da cotação mostrava o à vista sem dizer que era à vista, e nenhum canal mostrava que a indenização era de 70% da FIPE.

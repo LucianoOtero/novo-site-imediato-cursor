@@ -142,6 +142,8 @@ export type SuhaiPropostaResumo = {
   vigenciaInicio: string;
   erro?: string;
   codigoSuhai?: string | null;
+  /** Recusa conhecida (`lib/suhai/mensagens-erro.ts`), ex.: `proposta_em_emissao`. */
+  motivo?: string;
   geradoEm: string;
 };
 
