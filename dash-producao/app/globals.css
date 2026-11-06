@@ -123,3 +123,99 @@ select {
 .err {
   color: var(--bad);
 }
+
+a.btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.page {
+  padding: 16px 20px 40px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.dash-header {
+  margin-bottom: 16px;
+}
+
+.dash-header-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dash-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dash-nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dash-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 8px 12px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.dash-nav a.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.input {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.table td.num,
+.table th.num {
+  text-align: right;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.table tr.total td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+  background: var(--panel-2);
+}
+
+.table tr.clickable {
+  cursor: pointer;
+}
+
+.table tr.clickable:hover td {
+  background: var(--panel-2);
+}

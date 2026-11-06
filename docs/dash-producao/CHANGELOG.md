@@ -5,6 +5,24 @@ Ver [`docs/VERSIONING.md`](../VERSIONING.md).
 
 ---
 
+## [0.3.0] — 2026-11-06 (Fase 5: rotas do MVP + export com filtros)
+
+### Added
+- Rotas `/vendedores` (consolidado por vendedor com projeção, média 3m e linhas com flag),
+  `/analitico` (linha a linha com filtros de dia, vendedor e inconsistência, link para a Opp no Espo)
+  e `/inconsistencias` (flags agrupadas por tipo), com navegação comum (`app/components/dash.tsx`).
+- `/api/production/lines` e `/api/production/export` aceitam os mesmos filtros (`day`, `vendorKey`, `flag`);
+  o Excel traz as abas `resumo`, `analitico`, `vendedores` e `inconsistencias` do recorte filtrado.
+- Rótulos das flags em `lib/flag-labels.ts`.
+
+### Fixed
+- `lib/espo.ts`: a busca das Opps vendidas do mês mandava `where` como JSON, que o Espo ignora
+  (devolvia todas as Opps e o filtro local achava só parte delas). Agora vai `where[i][campo]`,
+  ordenado por `id` com dedupe. Novembro passou de 17 para todas as Opps vendidas no Espo
+  (27 em 06/11), e o resumo caiu de ~75 s para ~5 s.
+
+---
+
 ## [0.2.0] — 2026-11-03 (Fase 6: Cloudflare Access + runbook)
 
 ### Added
