@@ -14,7 +14,12 @@ import {
   COMBUSTIVEL,
   COR_VEICULO,
   ESTADO_CIVIL,
+  GARAGEM_PADRAO,
+  GARAGEM_RESIDENCIA,
+  GARAGEM_USO,
   SEXO,
+  type GaragemResidencia,
+  type GaragemUso,
   TIPO_CONTRATACAO,
   TIPO_UTILIZACAO,
   UTILIZACAO_DUT,
@@ -56,11 +61,11 @@ export const condutorSchema = z.object({
  * auto e moto; caminhão e van respondem apenas a quarta.
  */
 export const garagemSchema = z.object({
-  residencia: z.boolean(),
-  trabalho: z.boolean(),
-  escola: z.boolean(),
-  /** Exclusiva de caminhão e van/VUC. */
-  patio: z.boolean().optional(),
+  residencia: z.enum(Object.keys(GARAGEM_RESIDENCIA) as [GaragemResidencia, ...GaragemResidencia[]]),
+  trabalho: z.enum(Object.keys(GARAGEM_USO) as [GaragemUso, ...GaragemUso[]]),
+  escola: z.enum(Object.keys(GARAGEM_USO) as [GaragemUso, ...GaragemUso[]]),
+  /** Exclusiva de caminhão e van/VUC: guarda em garagem quando não está em serviço. */
+  patio: z.boolean().default(GARAGEM_PADRAO.patio),
 });
 
 export const cotacaoInputSchema = z.object({

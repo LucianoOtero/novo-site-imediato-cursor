@@ -86,8 +86,9 @@ O código `10110` aparece nos exemplos tanto como RCF sem assistência quanto co
 | `tabelaComissao` | string | Sim | `tab 1`…`tab 11` e tabs 21–36 (% comissão); limites por tipo/ano |
 | `classeBonus` | int 0–10 | Sim | |
 | `cpfCnpjPrincipalCondutor` + nome + nasc + sexo + estadoCivil | | Sim | Condutor indeterminado PJ: `sexo=3` e tags do condutor vazias |
-| Perguntas 1–3 (garagem residência / trabalho / escola) | int | Sim* | *Dispensadas p/ caminhões, vans/VUCs |
-| Pergunta 4 | int | Sim* | *Exclusiva caminhão/van/VUC |
+| Pergunta 1 (garagem na residência) | int | Sim* | 1 Garagem na residência · 2 Garagem em condomínio fechado · 3 Estacionamento · 4 Não. *Dispensada p/ caminhões, vans/VUCs |
+| Perguntas 2 e 3 (trabalho / escola-faculdade) | int | Sim* | 1 Não utiliza · 2 Utiliza e guarda em garagem/estacionamento · 3 Utiliza e não guarda. *Dispensadas p/ caminhões, vans/VUCs |
+| Pergunta 4 (guarda em garagem/pátio fora de serviço) | int | Sim* | 1/S Sim · 2/N Não. *Exclusiva e obrigatória p/ caminhão/van/VUC |
 | Pergunta 5 `tipoCarga` | int | Cond. | Caminhão + usos locação/fretamento |
 | `vlr_desconto` | int | Não | −99…20 (negativo = agravo) |
 | `cdCobertura` | int | Não | Default antigo **1003** se vazio; retorno novo traz múltiplas coberturas |

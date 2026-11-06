@@ -37,10 +37,10 @@ A Suhai exige dados que o funil não pergunta. Na primeira versão, **sem pergun
 | Condutor principal | O próprio proponente |
 | CEP de pernoite | CEP do funil |
 | Veículo | Placa → FIPE Suhai. Mais de uma versão possível e nenhuma bate com o ano: pula |
-| Uso, garagem, bônus | Premissas da `/cotacao-suhai`: uso particular, garagem em casa (trabalho e escola não), bônus 0, seguro novo |
+| Uso, garagem, bônus | Premissas da `/cotacao-suhai`: uso particular, garagem na residência, não usa o carro para trabalho nem escola (perguntas 1–3 = 1/1/1; van/caminhão: pergunta 4 = sim), bônus 0, seguro novo |
 | Assistência | Só o nível padrão (uma cotação; cada nível extra é outra cotação na Suhai) |
 
-As premissas aparecem no cartão ("Preço para uso particular, com garagem em casa e sem bônus") e na Note do CRM. O consultor confirma com o cliente antes da proposta.
+As premissas aparecem no cartão ("Premissas deste preço: Particular, garagem na residência e bônus 0") e na Note do CRM. O consultor confirma com o cliente antes da proposta.
 
 Cada pulo é registrado com o motivo (`sem_perfil`, `versao_ambigua`, `nao_carro`, `erro_suhai`, `timeout`). Se `sem_perfil` passar de ~30% no UAT, entra a mini-etapa opcional "Incluir a cotação Suhai" com 3 perguntas (sexo, nascimento, estado civil), num lote seguinte.
 

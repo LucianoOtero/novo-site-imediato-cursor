@@ -64,7 +64,7 @@ export function gerarCotacaoSimulada(payload: CotacaoPayload): CotacaoResultado 
   // Taxa base entre 3,2% e 5,6% do valor de referência ao ano.
   const taxaBase = 0.032 + (semente % 240) / 10000;
   const agravoUso = payload.uso.utilizacao === "particular" ? 1 : 1.24;
-  const agravoGaragem = payload.uso.garagem.residencia ? 1 : 1.12;
+  const agravoGaragem = payload.uso.garagem.residencia !== "nao" ? 1 : 1.12;
 
   const protocolo = `SIM-${semente.toString(36).toUpperCase().slice(0, 8)}`;
   const ofertas: Oferta[] = [];

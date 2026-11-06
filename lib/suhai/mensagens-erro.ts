@@ -11,7 +11,8 @@ export type MotivoRecusaSuhai =
   | "veiculo_nao_localizado"
   | "modelo_incorreto"
   | "zero_km"
-  | "proposta_em_emissao";
+  | "proposta_em_emissao"
+  | "pergunta_invalida";
 
 export type RecusaSuhai = {
   motivo: MotivoRecusaSuhai;
@@ -26,6 +27,9 @@ const VERSAO_INDISPONIVEL =
 export const MENSAGEM_PROPOSTA_EXISTENTE =
   "Já existe uma proposta em andamento para este veículo. Nossa equipe vai concluir com você pelo WhatsApp.";
 
+export const MENSAGEM_CALCULO_PELA_EQUIPE =
+  "Não conseguimos calcular automaticamente para este veículo. Nossa equipe vai concluir a sua cotação pelo WhatsApp.";
+
 function normalizar(texto: string): string {
   return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
@@ -35,6 +39,10 @@ export function classificarRecusaSuhai(texto: string | null | undefined, hoje: D
   const t = normalizar(texto);
   if (t.includes("outra proposta em emissao")) {
     return { motivo: "proposta_em_emissao", mensagem: MENSAGEM_PROPOSTA_EXISTENTE };
+  }
+  // Resposta fora do domínio de uma pergunta de garagem: o cliente não tem o que corrigir.
+  if (/resposta da pergunta \d+ (e|esta) invalida/.test(t)) {
+    return { motivo: "pergunta_invalida", mensagem: MENSAGEM_CALCULO_PELA_EQUIPE };
   }
   if (t.includes("ano de fabricacao")) {
     return {

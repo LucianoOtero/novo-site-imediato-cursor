@@ -38,7 +38,7 @@ function firstName(nome) {
  * enviados quando existem valores reais (não os "falsos" derivados do
  * telefone).
  */
-async function sendTemplate(config, templateKey, leadData, variables, leadId) {
+async function sendTemplate(config, templateKey, leadData, variables, leadId, { esperaRetentativaMs = 2000 } = {}) {
   const templateId = config.templates && config.templates[templateKey];
   if (!templateId) throw new Error(`Template "${templateKey}" sem ID configurado em OCTADESK_API_CONFIG`);
 
@@ -61,15 +61,30 @@ async function sendTemplate(config, templateKey, leadData, variables, leadId) {
     options: { automaticAssign: false },
   };
 
-  const response = await fetch(`${config.baseUrl.replace(/\/$/, "")}/chat/send-template`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", accept: "application/json", "X-API-KEY": config.apiKey },
-    body: JSON.stringify(payload),
-  });
+  const enviar = () =>
+    fetch(`${config.baseUrl.replace(/\/$/, "")}/chat/send-template`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", accept: "application/json", "X-API-KEY": config.apiKey },
+      body: JSON.stringify(payload),
+    });
+
+  // Uma nova tentativa só para falha transitória (rede ou 502/503/504); 4xx e 500 indicam payload/template.
+  let response;
+  try {
+    response = await enviar();
+  } catch {
+    response = null;
+  }
+  if (!response || HTTP_TRANSITORIO.has(response.status)) {
+    await new Promise((resolve) => setTimeout(resolve, esperaRetentativaMs));
+    response = await enviar();
+  }
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     throw new Error(`send-template "${templateKey}" HTTP ${response.status} (lead ${leadId}): ${body.slice(0, 300)}`);
   }
 }
+
+const HTTP_TRANSITORIO = new Set([502, 503, 504]);
 
 module.exports = { sendTemplate, firstName };
