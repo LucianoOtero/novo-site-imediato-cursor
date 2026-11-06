@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { checkRateLimit, getClientIp, hashIp } from "@/lib/leads/security";
-import { lerLeadId, registrarPropostaSuhai, suhaiAmbiente } from "@/lib/leads/suhai-etapas";
-import { GatewayError, transmitirProposta } from "@/lib/suhai/gateway";
+import { lerLeadId, propostaTransmitida, registrarPropostaSuhai, suhaiAmbiente } from "@/lib/leads/suhai-etapas";
+import { GatewayError, transmitirProposta, type PropostaResultado } from "@/lib/suhai/gateway";
+import { classificarRecusaSuhai } from "@/lib/suhai/mensagens-erro";
 import { propostaInputSchema } from "@/lib/suhai/types";
 
 /**
@@ -10,6 +11,8 @@ import { propostaInputSchema } from "@/lib/suhai/types";
  *
  * A rota não fala com a Suhai. O gateway fixa `tp_pagamento` em boleto.
  * Sem gateway configurado a resposta é erro: proposta simulada não existe.
+ * O mesmo protocolo não é transmitido duas vezes: o reenvio recebe a
+ * proposta gravada no lead.
  */
 export const runtime = "nodejs";
 
@@ -45,6 +48,18 @@ export async function POST(request: NextRequest) {
 
   const leadId = lerLeadId(json);
   const { aceite: _aceite, ...corpo } = parsed.data;
+
+  const anterior = await propostaTransmitida(leadId, corpo.protocolo);
+  if (anterior?.numeroProposta) {
+    const resultado: PropostaResultado = {
+      protocolo: String(anterior.protocolo),
+      numeroProposta: anterior.numeroProposta,
+      codMsgRet: "0",
+      textoMsgRet: "Proposta já transmitida.",
+    };
+    return NextResponse.json(resultado);
+  }
+
   const resumo = {
     ambiente: suhaiAmbiente(),
     protocolo: corpo.protocolo,
@@ -65,6 +80,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(resultado);
   } catch (error) {
     console.error("[api/suhai/proposta] falha ao transmitir", error);
+    const recusaSuhai = error instanceof GatewayError && error.codigoSuhai;
+    const recusa = recusaSuhai ? classificarRecusaSuhai(error.message) : null;
     await registrarPropostaSuhai(
       leadId,
       {
@@ -72,14 +89,22 @@ export async function POST(request: NextRequest) {
         status: "falha",
         erro: error instanceof Error ? error.message : String(error),
         codigoSuhai: error instanceof GatewayError ? error.codigoSuhai : null,
+        motivo: recusa?.motivo,
         geradoEm: new Date().toISOString(),
       },
       corpo.email,
     );
 
+    if (recusa?.motivo === "proposta_em_emissao") {
+      return NextResponse.json(
+        { erro: "proposta_existente", mensagem: recusa.mensagem, codigoSuhai: error instanceof GatewayError ? error.codigoSuhai : null },
+        { status: 409 },
+      );
+    }
+
     if (error instanceof GatewayError && error.codigoSuhai) {
       return NextResponse.json(
-        { erro: "suhai", mensagem: error.message, codigoSuhai: error.codigoSuhai },
+        { erro: "suhai", mensagem: recusa?.mensagem ?? error.message, codigoSuhai: error.codigoSuhai },
         { status: 422 },
       );
     }

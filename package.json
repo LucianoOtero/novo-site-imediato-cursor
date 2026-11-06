@@ -14,6 +14,7 @@
     "test:fipe-publica": "node --test lib/suhai/fipe-publica.test.mjs",
     "test:zero-km": "node --test lib/suhai/zero-km.test.mjs",
     "test:parcelas": "node --test lib/suhai/parcelas.test.mjs",
+    "test:suhai": "node --test lib/suhai/*.test.mjs",
     "test:dash-producao": "node --test scripts/dash-producao/test/**/*.test.mjs",
     "test:functions": "node --test \"firebase/functions/test/*.test.js\"",
     "test:e2e": "playwright test --config e2e/playwright.config.ts"

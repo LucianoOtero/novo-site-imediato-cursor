@@ -83,6 +83,17 @@ Cada ocorrência tem chave própria (`suhai.flagKey`): `progress_veiculo`, `prog
 
 - **Task de falha**: uma por lead (`suhai_quote_falha`, `suhai_proposal_falha`), mesmo que o cliente tente várias vezes.
 - **WhatsApp**: um por template por lead (`octa_<template>_sent`).
+- **Proposta reenviada** (2026-11-06): o mesmo protocolo não é transmitido de novo; a rota devolve a proposta gravada. Uma falha posterior não sobrescreve `suhaiProposta` com sucesso.
+
+### Recusas da Suhai evitadas no formulário (2026-11-06)
+
+| Recusa | Prevenção | Se ainda acontecer |
+|---|---|---|
+| "O ano de fabricação … inferior ou igual ao ano atual" | `anoFabricacaoPara` (site, schema e gateway): ano-modelo ou o anterior, nunca após o ano corrente | Mensagem para conferir o ano e volta à etapa do veículo |
+| "Código FIPE informado está incorreto" | Versão fora do catálogo Suhai sai das opções (`lib/suhai/catalogo-suhai.ts`) | Mensagem para escolher outra versão e volta à etapa do veículo |
+| "Há outra proposta em emissão … - ServiceApplication" | Reenvio do mesmo protocolo devolve a proposta gravada | `proposta_existente` (409): mensagem + WhatsApp, sem reenvio; `motivo: "proposta_em_emissao"` no RTDB e Task "Verificar no Portal Suhai a proposta já existente da placa" |
+
+Os textos para o cliente ficam em `lib/suhai/mensagens-erro.ts`; o texto original da Suhai segue no RTDB, na Note e no e-mail da equipe.
 
 ---
 

@@ -15,7 +15,7 @@ import { dirname, join } from "node:path";
 
 import { XMLParser } from "fast-xml-parser";
 
-import { lerRespostaCotacao, montarEnvelopeCotacao } from "../src/cotacao.js";
+import { anoFabricacaoPara, lerRespostaCotacao, montarEnvelopeCotacao } from "../src/cotacao.js";
 import { lerRespostaFipe, montarEnvelopeFipe } from "../src/fipe.js";
 import { lerRespostaProposta, montarEnvelopeProposta } from "../src/proposta.js";
 
@@ -122,6 +122,20 @@ test("veículo 0 km usa a placa convencional YYY9999", () => {
 
   assert.match(xml, /<suh:zeroKm>S<\/suh:zeroKm>/);
   assert.match(xml, /<suh:placa>YYY9999<\/suh:placa>/);
+});
+
+test("fabricação nunca passa do ano corrente nem destoa do ano-modelo", () => {
+  const em2026 = new Date("2026-11-05T12:00:00");
+  assert.equal(anoFabricacaoPara(2027, undefined, em2026), 2026);
+  assert.equal(anoFabricacaoPara(2027, 2027, em2026), 2026);
+  assert.equal(anoFabricacaoPara(2027, 2026, em2026), 2026);
+  assert.equal(anoFabricacaoPara(2020, 2019, em2026), 2019);
+  assert.equal(anoFabricacaoPara(2026, 2015, em2026), 2026);
+  assert.equal(anoFabricacaoPara(2014, null, em2026), 2014);
+});
+
+test("envelope leva a fabricação do veículo da placa", () => {
+  assert.match(montarEnvelopeCotacao(payload, credenciais), /<suh:anoFabricacao>2014<\/suh:anoFabricacao>/);
 });
 
 test("caracteres especiais são escapados no XML", () => {

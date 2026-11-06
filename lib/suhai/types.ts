@@ -21,6 +21,7 @@ import {
 } from "./dominio";
 import type { ParcelaOferta } from "./parcelas";
 import type { PlanoId } from "./planos";
+import { anoFabricacaoPara } from "./ano-fabricacao";
 import { aceitaZeroKm, mensagemZeroKm } from "./zero-km";
 
 const VERSAO_OBRIGATORIA = "Escolha a versão do veículo.";
@@ -80,6 +81,7 @@ export const cotacaoInputSchema = z.object({
     /** Sem o código a grafia não é da FIPE e a Suhai devolve "Veículo não foi localizado". */
     codFipe: z.string({ error: VERSAO_OBRIGATORIA }).trim().min(1, VERSAO_OBRIGATORIA),
     anoModelo: z.number().int().min(1950).max(new Date().getFullYear() + 1),
+    /** Ausente ou incoerente com o ano-modelo, sai como `anoFabricacaoPara` (nunca após o ano corrente). */
     anoFabricacao: z.number().int().min(1950).max(new Date().getFullYear() + 1).optional(),
     zeroKm: z.boolean().default(false),
     placa: placaSchema.optional(),
@@ -88,7 +90,10 @@ export const cotacaoInputSchema = z.object({
     if (veiculo.zeroKm && !aceitaZeroKm(veiculo.anoModelo)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["anoModelo"], message: mensagemZeroKm() });
     }
-  }),
+  }).transform((veiculo) => ({
+    ...veiculo,
+    anoFabricacao: anoFabricacaoPara(veiculo.anoModelo, veiculo.anoFabricacao),
+  })),
   uso: z.object({
     utilizacao: z.enum(Object.keys(UTILIZACAO_DUT) as [keyof typeof UTILIZACAO_DUT]),
     tipoUtilizacao: z.nativeEnum(TIPO_UTILIZACAO).optional(),
