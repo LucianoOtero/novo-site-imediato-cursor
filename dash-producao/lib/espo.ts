@@ -188,13 +188,20 @@ export async function fetchVendidosMonth(
   const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const end = `${month}-${String(lastDay).padStart(2, "0")}`;
 
-  const where = JSON.stringify([
+  // Espo ignora `where` como JSON (devolve tudo): precisa de where[i][campo].
+  const where: Record<string, string> = {};
+  [
     { type: "equals", attribute: "stage", value: "Vendido" },
     { type: "greaterThanOrEquals", attribute: "cDataDeEmisso", value: start },
     { type: "lessThanOrEquals", attribute: "cDataDeEmisso", value: end },
-  ]);
+  ].forEach((w, i) => {
+    where[`where[${i}][type]`] = w.type;
+    where[`where[${i}][attribute]`] = w.attribute;
+    where[`where[${i}][value]`] = w.value;
+  });
 
   const list: EspoOpp[] = [];
+  const seen = new Set<string>();
   let offset = 0;
   const maxSize = 200;
   for (let page = 0; page < 50; page++) {
@@ -202,14 +209,19 @@ export async function fetchVendidosMonth(
       query: {
         maxSize: String(maxSize),
         offset: String(offset),
-        orderBy: "cDataDeEmisso",
-        order: "desc",
+        // Ordem por chave única: com cDataDeEmisso (repetida) o offset pula/duplica linhas.
+        orderBy: "id",
+        order: "asc",
         select: OPP_SELECT,
-        where,
+        ...where,
       },
     });
     const batch = data.list || [];
-    list.push(...batch);
+    for (const o of batch) {
+      if (seen.has(o.id)) continue;
+      seen.add(o.id);
+      list.push(o);
+    }
     if (batch.length < maxSize) break;
     offset += maxSize;
   }
