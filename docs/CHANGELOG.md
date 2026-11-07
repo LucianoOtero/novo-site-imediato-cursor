@@ -13,6 +13,16 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Corrigido — 07/11/2026 (contato da Suhai contado duas vezes no Ads)
+
+Cada contato do formulário da Suhai disparava `[NovoSite] Ads - Suhai - Contato inicial` e também a tag genérica `[NovoSite] Ads - form initial contact` ("Envio de Formulário de Lead na Página", principal na conta). Em 06/11 foram 13 contatos Suhai em cada ação.
+
+### Fixed (produção, com "pode")
+- GTM versão 55 "Suhai - exceção na tag genérica de contato": `[NovoSite] CE - form_initial_contact - suhai` é exceção da tag genérica. Script: `scripts/google-ops/gtm-suhai-excecao-contato.mjs`. Rollback: republicar a versão 54.
+- Clique de outra campanha que termine no contato da Suhai deixa de contar como "Envio de Formulário de Lead na Página".
+
+---
+
 ## Alterado — 07/11/2026 (corte do Ads offline para o modo completo)
 
 A sombra fechou 5 lotes seguidos sem divergência grave (rodada 5: lote de 06/11, 17/17). Desde 07/11 todas as vendas sobem ao Google Ads pela `syncOpportunitySold`, com gclid e com celular e e-mail com hash; o CSV do Espo foi desligado.
