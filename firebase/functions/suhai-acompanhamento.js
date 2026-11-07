@@ -39,6 +39,7 @@ const suhai = require("./suhai");
 const espo = require("./espocrm");
 const emailNotif = require("./email-notification");
 const octa = require("./octadesk");
+const optout = require("./whatsapp-optout");
 
 const MAX_DIAS_PADRAO = 45;
 const INTERVALO_MINUTOS_PADRAO = 50;
@@ -143,6 +144,14 @@ async function processarItem({ leadId, item, rootRef, config, espoAll, emailUrls
   // A Task da mesma pendência é a reserva: falha no envio não bloqueia a rodada.
   const enviarWhatsapp = async ({ chave, key, pendencia, link }, novosEfeitos) => {
     if (efeitos[chave] || !octaPronto(octaConfig) || !(octaConfig.templates || {})[key] || !leadData.phoneE164) return;
+    try {
+      if (await optout.optOutBloqueia(rootRef, leadData.phoneE164, registro.timestamp)) {
+        logger.info(`[suhai-acomp] Lead ${leadId}: WhatsApp ${chave} pulado (cliente pediu para não receber).`);
+        return;
+      }
+    } catch (error) {
+      logger.warn(`[suhai-acomp] Lead ${leadId}: leitura do opt-out falhou; envio segue.`, error);
+    }
     const variaveis = [octa.firstName(leadData.nome) || "cliente", String(item.proposta), pendencia, link];
     try {
       await octa.sendTemplate(octaConfig, key, leadData, variaveis, leadId);

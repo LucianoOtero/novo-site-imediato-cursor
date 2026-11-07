@@ -490,6 +490,7 @@ async function createTask(config, espoLeadId, { name, description, dias = 1 }, l
 module.exports = {
   SITE_WEBPAGE,
   deliverStage,
+  findExistingLead,
   getEntity,
   putFields,
   postNote,
