@@ -100,6 +100,7 @@ const espoReserva = require("./espo-reserva");
 const oppDedupe = require("./opp-dedupe");
 const suhaiAcomp = require("./suhai-acompanhamento");
 const optout = require("./whatsapp-optout");
+const optoutVarredura = require("./whatsapp-optout-varredura");
 
 const DATABASE_URL = "https://imediato-seguros-site-novo-default-rtdb.firebaseio.com";
 
@@ -1354,6 +1355,35 @@ exports.whatsappOptOut = onRequest(
       logger.error("[whatsappOptOut]", error);
       res.status(500).json({ ok: false, error: "erro_interno" });
     }
+  }
+);
+
+/**
+ * Toque em "Prefiro não receber" lido pela API do Octadesk a cada 5 minutos
+ * (a conta não tem bot no WhatsApp). Ver whatsapp-optout-varredura.js.
+ */
+exports.whatsappOptOutVarredura = onSchedule(
+  {
+    schedule: "every 5 minutes",
+    timeZone: "America/Sao_Paulo",
+    region: "us-central1",
+    timeoutSeconds: 120,
+    retryCount: 0,
+    secrets: [OCTADESK_API_CONFIG, ESPOCRM_API_CONFIG],
+  },
+  async () => {
+    const octaConfig = parseJsonConfig(OCTADESK_API_CONFIG.value());
+    if (!octaConfig || !octaConfig.baseUrl || !octaConfig.apiKey) {
+      logger.warn("[whatsappOptOutVarredura] OCTADESK_API_CONFIG incompleto — passada pulada.");
+      return;
+    }
+    const resumo = await optoutVarredura.varrer({
+      octaConfig,
+      espoConfig: suhaiAcomp.espoBloco(parseJsonConfig(ESPOCRM_API_CONFIG.value()), "production"),
+      rootRef: getDatabase().ref(),
+      logger,
+    });
+    if (resumo.pedidos || resumo.erros) logger.info("[whatsappOptOutVarredura]", resumo);
   }
 );
 
