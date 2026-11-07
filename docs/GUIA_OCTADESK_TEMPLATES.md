@@ -383,7 +383,7 @@ A conta Octadesk não tem bot no canal WhatsApp (conferido em 07/11); as convers
 - A função agendada `whatsappOptOutVarredura` roda a cada 5 minutos. Lista as conversas do WhatsApp atualizadas desde a última passada (`GET /chat`, filtro `updatedAt`, com 2 minutos de folga; sem cursor, olha 15 minutos; nunca mais que 6 horas para trás) e lê as últimas 50 mensagens de cada uma.
 - Mensagem do **contato** com o texto `Prefiro não receber` (ou o antigo `Não quero receber`) grava o pedido como a `whatsappOptOut` faz, com `origem: "octadesk_varredura"` e a data da própria mensagem, e deixa a Note no Lead do Espo de produção.
 - Resposta ao cliente: "Pronto. Não enviaremos mais mensagens automáticas sobre esta cotação. Se precisar, é só escrever aqui." Só sai se `OCTADESK_API_CONFIG` tiver `optoutAgentEmail` (e-mail de um agente da conta, exigido pela API no header `octa-agent-email`). Sem ele, grava o pedido e não responde. Toque repetido em 10 minutos não gera nova Note nem nova resposta.
-- Cada mensagem tratada fica marcada em `whatsapp_optout_varredura/mensagens/{id}`; o cursor fica em `whatsapp_optout_varredura/ate` e só avança quando todas as conversas da passada deram certo.
+- Cada mensagem tratada fica marcada em `whatsapp_optout_varredura/mensagens/{id}`; o cursor fica em `whatsapp_optout_varredura/cursor` e só avança quando todas as conversas da passada deram certo.
 - Pendente de confirmação no primeiro teste real: que o toque no botão chega pela API como mensagem comum do contato com o texto do botão.
 
 O endpoint HTTP `whatsappOptOut` continua publicado, para um bot futuro: `POST` com header `X-Imediato-Token` (secret `OCTADESK_OPTOUT_SECRET`), corpo `{"telefone":"...","opcao":"Prefiro não receber"}`. Respostas: 200 `{ ok, repetido, nota }` (`nota`: `ok`, `sem_lead`, `falhou` ou `repetido`), 401 token errado, 400 `telefone_invalido` ou `opcao_invalida`.
@@ -406,5 +406,6 @@ Limite conhecido: se o envio direto da primeira mensagem falhar, o proxy antigo 
 - [x] Código, testes e documentação — 2026-11-07
 - [x] Secret e publicação das três funções — 2026-11-07: `OCTADESK_OPTOUT_SECRET` v1; revisões `whatsappoptout-00001-jel`, `deliverlead-00046-qig` e `acompanharpropostassuhai-00005-qor`. Endereço: `https://us-central1-imediato-seguros-site-novo.cloudfunctions.net/whatsappOptOut` (sem token responde 401). Rollback: publicar de novo `deliverLead` e `acompanharPropostasSuhai` a partir do commit anterior ao PR #39 e apagar a `whatsappOptOut`.
 - [x] Modelo `primeira_etapa_optout_v3` criado no Octadesk (`6aef112551e1a7547d59f89e`) — 2026-11-07, em análise na Meta
-- [ ] Publicação da `whatsappOptOutVarredura`; teste no número de teste
+- [x] Publicação da `whatsappOptOutVarredura` — 2026-11-07 (PR #42, `b45523a`): primeiras passadas com HTTP 200 e cursor avançando; ainda sem `optoutAgentEmail` (só grava, não responde). Rollback: `firebase functions:delete whatsappOptOutVarredura`.
+- [ ] Teste no número de teste com o `primeira_etapa_optout_v3` aprovado
 - [ ] `primeira_etapa` apontando para o modelo novo
