@@ -80,3 +80,5 @@ Conferência: `node ads-verify-campaign.mjs --campaign-id=24433459330` mostra a 
 ## 6. Conversões otimizadas (Diagnóstico do Ads)
 
 As três ações Suhai têm conversões otimizadas ligadas pelo GTM, mas o Diagnóstico só lista ações principais; como são secundárias, a cobertura delas não aparece. Em 05/11 o painel mostrava 1% em "Envio de Formulário de Lead na Página" e 3% no modal do WhatsApp, com o gráfico parado em 03/11 (dia da 0.2.58). O site antigo não tem mais tráfego (`ga4-conversoes-por-host.mjs`), então essas conversões vêm do site novo, que manda o celular com hash desde 03/11, salvo recusa de marketing no banner. O alerta urgente das importações é tratado em [`ADS_OFFLINE_VENDIDO_FIREBASE.md`](../ADS_OFFLINE_VENDIDO_FIREBASE.md) §10.
+
+Teste de 05/11, com a rede da aba bloqueada para nada chegar ao Google: `form_initial_contact`, `whatsapp_modal_initial_contact` e o contato Suhai geram hits com `em=tv.1~pn.<hash>` nos rótulos do formulário, do modal e da Suhai. O contato Suhai também dispara o rótulo genérico do formulário, como previsto; a campanha Suhai só lança pela meta "Suhai - Lance".
