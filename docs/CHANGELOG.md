@@ -13,6 +13,18 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Alterado — 07/11/2026 (corte do Ads offline para o modo completo)
+
+A sombra fechou 5 lotes seguidos sem divergência grave (rodada 5: lote de 06/11, 17/17). Desde 07/11 todas as vendas sobem ao Google Ads pela `syncOpportunitySold`, com gclid e com celular e e-mail com hash; o CSV do Espo foi desligado.
+
+### Changed (produção, com "pode")
+- `GOOGLE_ADS_API_CONFIG` v12: igual à v11, com `mode: "completo"` e `completoDesde: "2026-11-07"`.
+- `syncOpportunitySold` redeployada a partir da `main` (revisão `syncopportunitysold-00023-ror`, lê a v12).
+- Espo PROD: Scheduled Job `GerarConversoesGoogle` (`0 1 * * 2-6`, 01:00 de terça a sábado) passou a Inativo às 07:56. É um único job; os "5 jobs" da documentação eram as 5 execuções semanais.
+- Rollback: secret de volta a `complementar` (v11), novo deploy e o job em Ativo.
+
+---
+
 ## Corrigido — 06/11/2026 (perguntas de garagem da cotação Suhai)
 
 Em 06/11 a cotação de uma van (Hyundai HR, categoria Suhai 4 "Vans e Vucs") foi recusada com "Resposta da pergunta 4 é inválida". O gateway mandava 1 para sim e 3 para não em todas as perguntas, mas na Suhai a pergunta 4 só aceita 1/2, e as perguntas 1–3 têm domínios próprios. Nas 33 cotações e 5 propostas de produção feitas até aqui, trabalho e escola "não" foram como 3 ("utiliza e não guarda", o risco mais agravado), quando o cliente não usa o carro para isso.

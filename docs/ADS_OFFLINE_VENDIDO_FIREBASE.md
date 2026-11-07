@@ -378,6 +378,8 @@ Ordem, num dia útil depois do lote das 02:00 (que já mandou as vendas da vésp
 3. No Espo PROD, desligar os 5 Scheduled Jobs que geram `conversoes-google-latest.txt` (ter–sáb 02:00).
 4. Conferir em `ads_offline_audit` as primeiras vendas: `uploaded`, `clickIdType: gclid` e `userIdentifierCount` maior que 0. Reler o Diagnóstico de 2 a 3 dias depois.
 
+**Feito em 07/11/2026:** secret v12 (`completo`, `completoDesde: "2026-11-07"`), revisão `syncopportunitysold-00023-ror` e o Scheduled Job `GerarConversoesGoogle` (`0 1 * * 2-6`) em Inativo. É um único job; as "5" execuções são as de terça a sábado.
+
 Rollback: secret de volta a `mode: "complementar"` (sem `completoDesde`), novo deploy e os 5 jobs religados. O primeiro lote depois do rollback traz as vendas da véspera; as que o Firebase já enviou (`uploaded` em `ads_offline_audit`) contariam duas vezes, então o ideal é religar os jobs num dia sem vendas com gclid já enviadas.
 
 ### Ação automática de leads qualificados
