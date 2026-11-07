@@ -20,9 +20,9 @@ A primeira mensagem do WhatsApp vai ganhar o botão "Prefiro não receber" (text
 ### Added
 - `firebase/functions/whatsapp-optout.js` + função HTTP `whatsappOptOut` (secret novo `OCTADESK_OPTOUT_SECRET` em `X-Imediato-Token`): grava `whatsapp_optout/{telefone}` e deixa Note no Lead do Espo de produção.
 - Bloqueio (`optOutBloqueia`) antes dos modelos por momento da `deliverLead` (`octa_<chave>_skipped: "optout"`) e do WhatsApp de pendência do acompanhamento Suhai. Vale para leads criados até o pedido; formulário novo depois é nova autorização.
-- `firebase/functions/whatsapp-optout-varredura.js` + função agendada `whatsappOptOutVarredura` (a cada 5 min): lê as conversas recentes do WhatsApp no Octadesk, grava o pedido com `origem: "octadesk_varredura"`, deixa a Note e responde ao cliente se `OCTADESK_API_CONFIG.optoutAgentEmail` existir. Cursor e marcas em `whatsapp_optout_varredura`.
+- `firebase/functions/whatsapp-optout-varredura.js` + função agendada `whatsappOptOutVarredura` (a cada 5 min): lê as conversas recentes do WhatsApp no Octadesk, grava o pedido com `origem: "octadesk_varredura"`, deixa a Note e responde ao cliente se `OCTADESK_API_CONFIG.optoutAgentEmail` existir. Cursor e marcas em `whatsapp_optout_varredura`. Como a resposta atribui a conversa ao agente remetente, ela só sai com a conversa na fila (sem agente); conversa já em atendimento só grava o pedido (`emAtendimento: true`).
 - `espocrm.js` exporta `findExistingLead`; `whatsapp-optout.js` exporta `registrarPedido`, usado pelas duas entradas.
-- Testes: `test/whatsapp-optout.test.js`, `test/whatsapp-optout-varredura.test.js` e caso de opt-out no acompanhamento Suhai (134 testes).
+- Testes: `test/whatsapp-optout.test.js`, `test/whatsapp-optout-varredura.test.js` e caso de opt-out no acompanhamento Suhai (135 testes).
 
 ---
 

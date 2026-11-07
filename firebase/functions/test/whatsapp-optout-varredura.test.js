@@ -130,6 +130,27 @@ test("com optoutAgentEmail: responde uma vez ao cliente; a mesma mensagem na pas
   assert.equal(notas.notes.length, 1);
 });
 
+test("conversa já com agente: grava o pedido e a Note, mas não responde (não toma a conversa)", async (t) => {
+  const notas = espoFalso(t);
+  const db = rtdbFalso();
+  const config = { ...octaConfig, optoutAgentEmail: "agente@imediato.exemplo" };
+  const octa = octaFalso({
+    conversas: [chat("c1", { agent: { email: "outro@imediato.exemplo" }, status: "talking" })],
+    mensagens: { c1: [msg("m1", "Prefiro não receber", 2)] },
+  });
+  const r = await varredura.varrer({ octaConfig: config, espoConfig, rootRef: db.ref, agora: AGORA, fetchImpl: octa.fetchImpl, logger });
+  assert.deepEqual(r, { conversas: 1, pedidos: 1, respostas: 0, erros: 0 });
+  assert.equal(db.raiz.whatsapp_optout["5511987654321"].origem, "octadesk_varredura");
+  assert.equal(notas.notes.length, 1);
+  assert.equal(octa.chamadas.filter((c) => c.metodo === "POST").length, 0);
+  assert.deepEqual(db.raiz.whatsapp_optout_varredura.mensagens.m1, {
+    em: new Date(AGORA).toISOString(),
+    nota: "ok",
+    respondido: false,
+    emAtendimento: true,
+  });
+});
+
 test("dois toques seguidos na mesma conversa: um pedido com Note e uma resposta só", async (t) => {
   const notas = espoFalso(t);
   const db = rtdbFalso();

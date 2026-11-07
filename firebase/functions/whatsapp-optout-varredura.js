@@ -10,7 +10,9 @@
  * e registra o pedido como a função HTTP `whatsappOptOut` (mesma regra de
  * bloqueio). Com `optoutAgentEmail` no `OCTADESK_API_CONFIG`, responde ao
  * cliente na conversa (a janela de 24 h está aberta, porque ele acabou de
- * escrever); sem ele, só registra.
+ * escrever); sem ele, só registra. A resposta atribui a conversa ao agente
+ * remetente, então só sai com a conversa na fila (sem `agent`): se alguém já
+ * atende, não toma a conversa dele.
  *
  * Estado em `whatsapp_optout_varredura`: `cursor` (início da última passada
  * completa) e `mensagens/{id}` (mensagens já tratadas, para não repetir).
@@ -88,6 +90,7 @@ async function tratarConversa({ chat, desdeMs, octaConfig, espoConfig, rootRef, 
     logger.warn(`[whatsappOptOutVarredura] conversa ${chat.id}: pedido sem telefone reconhecível — ignorado.`);
     return;
   }
+  const emAtendimento = Boolean(chat.agent);
   for (const msg of pedidos) {
     const marca = estadoRef.child(`mensagens/${chaveMensagem(msg.id)}`);
     if ((await marca.once("value")).val()) continue;
@@ -95,7 +98,7 @@ async function tratarConversa({ chat, desdeMs, octaConfig, espoConfig, rootRef, 
     const { repetido, nota } = await optout.registrarPedido({ rootRef, digitos, espoConfig, agora: momento, logger, origem: ORIGEM });
     resumo.pedidos += 1;
     let respondido = false;
-    if (octaConfig.optoutAgentEmail && !repetido) {
+    if (octaConfig.optoutAgentEmail && !repetido && !emAtendimento) {
       try {
         await octa(
           octaConfig,
@@ -111,7 +114,7 @@ async function tratarConversa({ chat, desdeMs, octaConfig, espoConfig, rootRef, 
         logger.warn(`[whatsappOptOutVarredura] conversa ${chat.id}: resposta ao cliente falhou (best-effort).`, error);
       }
     }
-    await marca.update({ em: new Date(agora).toISOString(), nota, respondido });
+    await marca.update({ em: new Date(agora).toISOString(), nota, respondido, ...(emAtendimento ? { emAtendimento: true } : {}) });
   }
 }
 
