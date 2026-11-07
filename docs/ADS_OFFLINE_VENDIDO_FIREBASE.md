@@ -380,7 +380,7 @@ Ordem, num dia útil depois do lote das 02:00 (que já mandou as vendas da vésp
 
 **Feito em 07/11/2026:** secret v12 (`completo`, `completoDesde: "2026-11-07"`), revisão `syncopportunitysold-00023-ror` e o Scheduled Job `GerarConversoesGoogle` (`0 1 * * 2-6`) em Inativo. É um único job; as "5" execuções são as de terça a sábado.
 
-Rollback: secret de volta a `mode: "complementar"` (sem `completoDesde`), novo deploy e os 5 jobs religados. O primeiro lote depois do rollback traz as vendas da véspera; as que o Firebase já enviou (`uploaded` em `ads_offline_audit`) contariam duas vezes, então o ideal é religar os jobs num dia sem vendas com gclid já enviadas.
+Rollback: secret de volta a `mode: "complementar"` (sem `completoDesde`), novo deploy e o job `GerarConversoesGoogle` de volta a Ativo. O primeiro lote depois do rollback traz as vendas da véspera; as que o Firebase já enviou (`uploaded` em `ads_offline_audit`) contariam duas vezes, então o ideal é religar os jobs num dia sem vendas com gclid já enviadas.
 
 ### Ação automática de leads qualificados
 
