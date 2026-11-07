@@ -13,6 +13,18 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ---
 
+## Adicionado — 07/11/2026 (botão "Não quero receber" no WhatsApp)
+
+A primeira mensagem do WhatsApp vai ganhar o botão "Não quero receber". Quando o cliente toca nele, o bot do Octadesk chama a função nova, que registra o pedido e bloqueia os modelos automáticos seguintes daquele lead. Ainda não publicado; ativação em `docs/GUIA_OCTADESK_TEMPLATES.md`.
+
+### Added
+- `firebase/functions/whatsapp-optout.js` + função HTTP `whatsappOptOut` (secret novo `OCTADESK_OPTOUT_SECRET` em `X-Imediato-Token`): grava `whatsapp_optout/{telefone}` e deixa Note no Lead do Espo de produção.
+- Bloqueio (`optOutBloqueia`) antes dos modelos por momento da `deliverLead` (`octa_<chave>_skipped: "optout"`) e do WhatsApp de pendência do acompanhamento Suhai. Vale para leads criados até o pedido; formulário novo depois é nova autorização.
+- `espocrm.js` exporta `findExistingLead`.
+- Testes: `test/whatsapp-optout.test.js` e caso de opt-out no acompanhamento Suhai (125 testes).
+
+---
+
 ## Corrigido — 07/11/2026 (contato da Suhai contado duas vezes no Ads)
 
 Cada contato do formulário da Suhai disparava `[NovoSite] Ads - Suhai - Contato inicial` e também a tag genérica `[NovoSite] Ads - form initial contact` ("Envio de Formulário de Lead na Página", principal na conta). Em 06/11 foram 13 contatos Suhai em cada ação.

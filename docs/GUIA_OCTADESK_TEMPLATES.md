@@ -349,3 +349,45 @@ As chaves `suhai_cotacao_pronta` e `suhai_proposta_enviada` continuam no secret:
 | 12486804 | 12x | R$ 164,45 | R$ 202,19 |
 | 12490227 | 12x | R$ 213,03 | R$ 261,91 |
 | 12350578 (teste) | 12x | R$ 198,86 | R$ 244,49 |
+
+## Botão "Não quero receber" na primeira mensagem (2026-11-07)
+
+A primeira mensagem ganha um botão de resposta rápida. Quem toca nele deixa de receber os modelos automáticos daquela cotação; quem não toca segue recebendo, porque a autorização dada no site continua valendo.
+
+**Regra.** O pedido bloqueia os modelos automáticos dos leads daquele telefone criados até o momento do pedido: cálculo pronto ou manual, cálculo completo depois, dados recebidos, cotação e proposta Suhai e pendência do acompanhamento Suhai. Um formulário preenchido depois é uma nova autorização. A primeira mensagem de um lead novo não é bloqueada. Os atendentes não são bloqueados: ficam sabendo pela Note no Lead do Espo.
+
+### Modelo `primeira_etapa_optout` — chave `primeira_etapa`
+
+Português (BR), categoria Utilidade, sem variáveis, mesmo texto do `primeira_etapa_util` com uma frase a mais:
+
+> Olá. Recebemos seu contato. Prossiga com os demais dados solicitados para a elaboração do cálculo do seguro. Se não quiser receber mensagens sobre esta cotação por aqui, toque no botão abaixo.
+
+Botão de **resposta rápida** (não de marketing): `Não quero receber`. Anotar o ID que o Octadesk der ao modelo. Se a Meta reclassificar como Marketing, o envio continua no `primeira_etapa_util`.
+
+### Bot do Octadesk
+
+No bot do canal WhatsApp, condição "mensagem recebida igual a `Não quero receber`":
+1. Componente **"Conecte a outro sistema"**: `POST` na URL que o deploy de `whatsappOptOut` informar (`https://whatsappoptout-…-uc.a.run.app`), header `X-Imediato-Token` com o valor do secret `OCTADESK_OPTOUT_SECRET` (guardado em "Tokens externos"), corpo JSON `{"telefone":"<telefone do contato>","opcao":"Não quero receber"}`. A função aceita o telefone com ou sem +55 e também os nomes `phone`/`option`.
+2. Resposta ao cliente: "Pronto. Não enviaremos mais mensagens automáticas sobre esta cotação. Se precisar, é só escrever aqui."
+3. Se a chamada falhar (resposta diferente de 200), seguir para o atendimento humano.
+
+Respostas da função: 200 `{ ok, repetido, nota }` (`nota`: `ok`, `sem_lead`, `falhou` ou `repetido`), 401 token errado, 400 `telefone_invalido` ou `opcao_invalida`.
+
+### Onde fica no código
+
+- `firebase/functions/whatsapp-optout.js`: valida token e opção, grava `whatsapp_optout/{55DDDnúmero}` (`{ em, origem }`) e deixa a Note no Lead do Espo de produção com aquele celular. Toques repetidos em 10 minutos não repetem a Note.
+- `optOutBloqueia` antes do `sendTemplate` nos modelos por momento da `deliverLead` (grava `octa_<chave>_skipped: "optout"`) e no WhatsApp de pendência do `acompanharPropostasSuhai` (a Task segue como reserva).
+- Testes: `test/whatsapp-optout.test.js` e o caso de opt-out em `test/suhai-acompanhamento.test.js`.
+
+### Ativação (cada etapa com "pode")
+
+1. Merge do PR. Criar o secret `OCTADESK_OPTOUT_SECRET` (valor aleatório, sem registrar aqui) e publicar `whatsappOptOut`, `deliverLead` e `acompanharPropostasSuhai`. Sem pedido gravado, nada muda para o cliente.
+2. Criar o modelo e o bot. Teste completo no número de teste: o modelo chega com o botão, o toque grava o pedido, e um lead sintético anterior ao pedido deixa de receber o "cálculo pronto". Apagar os registros de teste no fim.
+3. Nova versão do `OCTADESK_API_CONFIG` com `primeira_etapa` apontando para o ID do modelo novo e nova publicação da `deliverLead`. Desfazer: versão anterior do secret e nova publicação.
+
+Limite conhecido: se o envio direto da primeira mensagem falhar, o proxy antigo (`add_webflow_octa`) manda o modelo sem botão. É raro; esse lead fica sem a opção de parar pelo botão.
+
+- [x] Código, testes e documentação — 2026-11-07
+- [ ] Secret e publicação das três funções
+- [ ] Modelo e bot no Octadesk; teste no número de teste
+- [ ] `primeira_etapa` apontando para o modelo novo

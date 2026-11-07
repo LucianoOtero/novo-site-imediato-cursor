@@ -99,6 +99,7 @@ const suhai = require("./suhai");
 const espoReserva = require("./espo-reserva");
 const oppDedupe = require("./opp-dedupe");
 const suhaiAcomp = require("./suhai-acompanhamento");
+const optout = require("./whatsapp-optout");
 
 const DATABASE_URL = "https://imediato-seguros-site-novo-default-rtdb.firebaseio.com";
 
@@ -171,6 +172,9 @@ const GOOGLE_ADS_API_CONFIG = defineSecret("GOOGLE_ADS_API_CONFIG");
  * ambiente da Suhai, `maxDias`. Ver suhai-acompanhamento.js.
  */
 const SUHAI_ACOMP_CONFIG = defineSecret("SUHAI_ACOMP_CONFIG");
+
+/** Token que o bot do Octadesk manda em `X-Imediato-Token` ao chamar `whatsappOptOut`. */
+const OCTADESK_OPTOUT_SECRET = defineSecret("OCTADESK_OPTOUT_SECRET");
 
 const RETRY_DELAYS_MS = [1000, 4000, 9000];
 /**
@@ -1035,7 +1039,19 @@ exports.deliverLead = onValueWritten(
       }
 
       const octaFlag = templateKey ? `octa_${templateKey}_sent` : null;
+      let bloqueadoOptOut = false;
       if (templateKey && workingRecord[octaFlag] !== true) {
+        try {
+          bloqueadoOptOut = await optout.optOutBloqueia(getDatabase().ref(), leadData.phoneE164, workingRecord.timestamp);
+        } catch (error) {
+          logger.warn(`[deliverLead/optout] Lead ${leadId}: leitura do opt-out falhou; envio segue.`, error);
+        }
+        if (bloqueadoOptOut) {
+          updates[`octa_${templateKey}_skipped`] = "optout";
+          logger.info(`[deliverLead/optout] Lead ${leadId}: template "${templateKey}" pulado (cliente pediu para não receber).`);
+        }
+      }
+      if (templateKey && workingRecord[octaFlag] !== true && !bloqueadoOptOut) {
         try {
           await octa.sendTemplate(octaConfig, templateKey, leadData, variables, leadId);
           updates[octaFlag] = true;
@@ -1304,6 +1320,39 @@ exports.markContactMessageSent = onRequest(
     } catch (error) {
       logger.error("[markContactMessageSent]", error);
       res.status(500).json({ ok: false, error: "db" });
+    }
+  }
+);
+
+/**
+ * Botão "Não quero receber" da primeira mensagem do WhatsApp (2026-11-07):
+ * o bot do Octadesk chama esta função com `X-Imediato-Token` e
+ * `{ telefone, opcao }`. Ver whatsapp-optout.js.
+ */
+exports.whatsappOptOut = onRequest(
+  {
+    region: "us-central1",
+    secrets: [OCTADESK_OPTOUT_SECRET, ESPOCRM_API_CONFIG],
+    cors: false,
+  },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "method_not_allowed" });
+      return;
+    }
+    try {
+      const resultado = await optout.processarPedido({
+        token: req.get("X-Imediato-Token"),
+        corpo: req.body,
+        segredo: OCTADESK_OPTOUT_SECRET.value(),
+        rootRef: getDatabase().ref(),
+        espoConfig: suhaiAcomp.espoBloco(parseJsonConfig(ESPOCRM_API_CONFIG.value()), "production"),
+        logger,
+      });
+      res.status(resultado.status).json(resultado.corpo);
+    } catch (error) {
+      logger.error("[whatsappOptOut]", error);
+      res.status(500).json({ ok: false, error: "erro_interno" });
     }
   }
 );

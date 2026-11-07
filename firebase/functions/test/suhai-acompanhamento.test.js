@@ -348,6 +348,19 @@ test("rodada: link da vistoria vai ao cliente pelo WhatsApp uma vez só", async 
   assert.equal(envios.length, 1);
 });
 
+test("rodada: cliente que pediu para não receber fica sem o WhatsApp, com a Task", async (t) => {
+  const inicial = estadoInicial();
+  inicial.leads_backup.ld_teste.timestamp = "2026-10-15T12:00:00.000Z";
+  inicial.whatsapp_optout = { "5511900000001": { em: "2026-10-20T12:00:00.000Z", origem: "octadesk_botao" } };
+  const db = rtdbFalso(inicial);
+  const espoChamadas = espoFalso(t);
+  const envio = t.mock.method(octa, "sendTemplate", async () => {});
+  await acomp.acompanharPropostas({ rootRef: db.ref, config, espoAll, octaConfig, obterToken, fetchImpl: gatewayFalso(RESPOSTAS_PENDENCIA).fetchImpl, agora: AGORA, logger });
+  assert.equal(envio.mock.callCount(), 0);
+  assert.equal(db.raiz.suhai_acompanhamento.ld_teste.efeitos.wa_pend_vistoria_previa, undefined);
+  assert.deepEqual(espoChamadas.tasks.map((x) => x.chave), ["task_pend_vistoria_previa"]);
+});
+
 test("rodada: sem o ID do template ou com o Octadesk fora, fica só a Task e o status é gravado", async (t) => {
   espoFalso(t);
   const semId = rtdbFalso(estadoInicial());
