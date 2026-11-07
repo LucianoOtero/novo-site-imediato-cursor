@@ -15,7 +15,7 @@ ATIVO (preenchido a cada release **do site** — tags `v0.2.x`)
 
 ## Adicionado — 07/11/2026 (botão "Não quero receber" no WhatsApp)
 
-A primeira mensagem do WhatsApp vai ganhar o botão "Não quero receber". Quando o cliente toca nele, o bot do Octadesk chama a função nova, que registra o pedido e bloqueia os modelos automáticos seguintes daquele lead. Ainda não publicado; ativação em `docs/GUIA_OCTADESK_TEMPLATES.md`.
+A primeira mensagem do WhatsApp vai ganhar o botão "Não quero receber". Quando o cliente toca nele, o bot do Octadesk chama a função nova, que registra o pedido e bloqueia os modelos automáticos seguintes daquele lead. Funções publicadas em 07/11 (secret v1); o botão só passa a existir quando o modelo novo e o bot do Octadesk forem ligados (passos em `docs/GUIA_OCTADESK_TEMPLATES.md`).
 
 ### Added
 - `firebase/functions/whatsapp-optout.js` + função HTTP `whatsappOptOut` (secret novo `OCTADESK_OPTOUT_SECRET` em `X-Imediato-Token`): grava `whatsapp_optout/{telefone}` e deixa Note no Lead do Espo de produção.

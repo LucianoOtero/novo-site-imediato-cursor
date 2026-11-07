@@ -388,6 +388,6 @@ Respostas da função: 200 `{ ok, repetido, nota }` (`nota`: `ok`, `sem_lead`, `
 Limite conhecido: se o envio direto da primeira mensagem falhar, o proxy antigo (`add_webflow_octa`) manda o modelo sem botão. É raro; esse lead fica sem a opção de parar pelo botão.
 
 - [x] Código, testes e documentação — 2026-11-07
-- [ ] Secret e publicação das três funções
+- [x] Secret e publicação das três funções — 2026-11-07: `OCTADESK_OPTOUT_SECRET` v1; revisões `whatsappoptout-00001-jel`, `deliverlead-00046-qig` e `acompanharpropostassuhai-00005-qor`. Endereço: `https://us-central1-imediato-seguros-site-novo.cloudfunctions.net/whatsappOptOut` (sem token responde 401). Rollback: publicar de novo `deliverLead` e `acompanharPropostasSuhai` a partir do commit anterior ao PR #39 e apagar a `whatsappOptOut`.
 - [ ] Modelo e bot no Octadesk; teste no número de teste
 - [ ] `primeira_etapa` apontando para o modelo novo
