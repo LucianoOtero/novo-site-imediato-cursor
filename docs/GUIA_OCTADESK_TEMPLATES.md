@@ -356,14 +356,18 @@ A primeira mensagem ganha um botão de resposta rápida. Quem toca nele deixa de
 
 **Regra.** O pedido bloqueia os modelos automáticos dos leads daquele telefone criados até o momento do pedido: cálculo pronto ou manual, cálculo completo depois, dados recebidos, cotação e proposta Suhai e pendência do acompanhamento Suhai. Um formulário preenchido depois é uma nova autorização. A primeira mensagem de um lead novo não é bloqueada. Os atendentes não são bloqueados: ficam sabendo pela Note no Lead do Espo.
 
-### Modelo `primeira_etapa_optout` — chave `primeira_etapa`
+### Modelo `primeira_etapa_optout_v3` — chave `primeira_etapa`
+
+ID `6aef112551e1a7547d59f89e`, criado em 07/11 (aguardando a Meta). O `primeira_etapa_optout` e o `_v2` ficaram de lado: o v2 tinha um negrito com espaço antes do fechamento, que no WhatsApp pode aparecer com os asteriscos.
 
 Português (BR), categoria Utilidade, sem variáveis:
 
 - **Cabeçalho** (texto fixo): `Cotação do seu seguro`. Sem mídia nem variável, porque o envio pela API não manda conteúdo de cabeçalho.
 - **Corpo:**
 
-> Olá! Recebemos seu pedido de cotação. Para concluirmos o cálculo do seu seguro, siga com os dados solicitados. Avisaremos por aqui quando o cálculo ficar pronto. Você decide: se preferir não receber mensagens sobre esta cotação, é só tocar no botão abaixo.
+> Olá! Recebemos seu pedido de cotação. Para concluirmos o cálculo do seu seguro, siga com os dados solicitados. Avisaremos quando o cálculo ficar pronto e **seguiremos por aqui, pelo WhatsApp**. Você decide: se preferir não receber mensagens sobre esta cotação, é só tocar no botão abaixo.
+
+Negrito sem espaço antes do fechamento (no WhatsApp vira `*…*`, e espaço antes do asterisco final deixa os asteriscos à mostra).
 
 - **Rodapé:** nenhum.
 - **Botão** de **resposta rápida** (não de marketing): `Prefiro não receber`. Um botão só.
