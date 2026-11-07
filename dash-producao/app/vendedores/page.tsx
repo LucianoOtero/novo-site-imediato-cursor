@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { brl, DashHeader, getJson, useDashParams } from "../components/dash";
+import { brl, DashHeader, getJson, linhas, useDashParams } from "../components/dash";
 
 type Vendor = {
   vendorKey: string;
@@ -130,7 +130,7 @@ function Vendedores() {
                 <td className="num">—</td>
                 <td className="num">{h.lines}</td>
                 <td className="num">
-                  <a href={`/analitico?month=${month}&flag=__any`}>{h.flagLines} linhas</a>
+                  <a href={`/analitico?month=${month}&flag=__any`}>{linhas(h.flagLines)}</a>
                 </td>
               </tr>
               <tr className="total">

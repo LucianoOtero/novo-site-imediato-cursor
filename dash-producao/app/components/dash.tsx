@@ -15,6 +15,10 @@ export function brl(n: number | null | undefined) {
   return (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+export function linhas(n: number) {
+  return `${n} ${n === 1 ? "linha" : "linhas"}`;
+}
+
 export function dataBr(iso: string | null | undefined) {
   if (!iso) return "—";
   const [y, m, d] = iso.slice(0, 10).split("-");

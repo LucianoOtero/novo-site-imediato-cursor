@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { FLAG_INFO, FLAG_ORDER, flagLabel } from "@/lib/flag-labels";
-import { brl, dataBr, DashHeader, getJson, useDashParams } from "../components/dash";
+import { brl, dataBr, DashHeader, getJson, linhas, useDashParams } from "../components/dash";
 
 type Line = {
   vendorKey: string;
@@ -135,7 +135,7 @@ function Inconsistencias() {
         </div>
         {data ? (
           <p style={{ margin: 0 }}>
-            <strong>{data.total}</strong> linhas com inconsistência de {data.monthTotals.linhas} no mês.{" "}
+            <strong>{linhas(data.total)}</strong> com inconsistência de {data.monthTotals.linhas} no mês.{" "}
             {data.total ? <Link href={analitico({ flag: "__any" })}>Ver todas no Analítico</Link> : null}
           </p>
         ) : null}
@@ -156,7 +156,7 @@ function Inconsistencias() {
               </p>
             </div>
             <Link className="btn btn-ghost" href={analitico({ flag: g.flag })}>
-              Ver {g.linhas} linhas
+              Ver {linhas(g.linhas)}
             </Link>
           </div>
           <div className="kpi-grid" style={{ marginTop: 10 }}>
