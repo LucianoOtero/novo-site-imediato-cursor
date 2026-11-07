@@ -130,16 +130,24 @@ export function sumLines(lines: Line[]) {
   };
 }
 
-/** Opções dos filtros a partir do mês inteiro (não do recorte). */
-export function lineFacets(lines: Line[]) {
+/**
+ * Opções dos filtros a partir do mês inteiro (não do recorte), para o valor
+ * escolhido nunca sumir da lista. A contagem de cada lista respeita os outros
+ * filtros (o dia conta só o vendedor escolhido, por exemplo) e pode ser 0.
+ */
+export function lineFacets(lines: Line[], filters?: LineFilters) {
   const vendors = new Map<string, string>();
   const flags: Record<string, number> = {};
   const days: Record<string, number> = {};
   for (const l of lines) {
     vendors.set(l.vendorKey, l.vendorName);
-    for (const f of l.flags) flags[f] = (flags[f] || 0) + 1;
-    if (l.emissionDate) days[l.emissionDate] = (days[l.emissionDate] || 0) + 1;
+    for (const f of l.flags) flags[f] = 0;
+    if (l.emissionDate) days[l.emissionDate] = 0;
   }
+  const forFlags = filters ? filterLines(lines, { ...filters, flag: "" }) : lines;
+  for (const l of forFlags) for (const f of l.flags) flags[f] += 1;
+  const forDays = filters ? filterLines(lines, { ...filters, day: "" }) : lines;
+  for (const l of forDays) if (l.emissionDate) days[l.emissionDate] += 1;
   return {
     vendors: [...vendors.entries()]
       .map(([key, name]) => ({ key, name }))

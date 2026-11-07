@@ -5,6 +5,15 @@ Ver [`docs/VERSIONING.md`](../VERSIONING.md).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- Analítico: a contagem de cada dia (e de cada inconsistência) respeita os outros filtros; com um vendedor
+  escolhido, o dia mostra só as linhas dele. As opções continuam vindo do mês inteiro, com 0 quando não há linhas.
+- Plural: "1 linha" em vez de "1 linhas" no Analítico, nas Inconsistências e nos Vendedores.
+
+---
+
 ## [0.3.0] — 2026-11-06 (Fase 5: rotas do MVP + export com filtros)
 
 ### Added

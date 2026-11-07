@@ -36,7 +36,7 @@ export async function GET(req: Request) {
       total: lines.length,
       totals: sumLines(lines),
       monthTotals: sumLines(all),
-      facets: lineFacets(all),
+      facets: lineFacets(all, filters),
       page,
       pageSize,
       lines: lines.slice(start, start + pageSize),

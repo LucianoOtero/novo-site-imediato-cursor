@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { FLAG_ORDER, flagLabel } from "@/lib/flag-labels";
-import { brl, dataBr, DashHeader, FlagChip, getJson, SOURCE_LABEL, useDashParams } from "../components/dash";
+import { brl, dataBr, DashHeader, FlagChip, getJson, linhas, SOURCE_LABEL, useDashParams } from "../components/dash";
 
 type Line = {
   source: string;
@@ -257,7 +257,7 @@ function Analitico() {
               ) : null}
               {t ? (
                 <tr className="total">
-                  <td colSpan={4}>Total do recorte · {t.linhas} linhas</td>
+                  <td colSpan={4}>Total do recorte · {linhas(t.linhas)}</td>
                   <td className="num">{brl(t.produzido)}</td>
                   <td className="num">{brl(t.emitido)}</td>
                   <td colSpan={5} />
