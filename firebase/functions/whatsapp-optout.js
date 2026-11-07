@@ -63,13 +63,37 @@ function opcaoValida(opcao) {
  * mesmo telefone nos últimos `JANELA_REPETICAO_MS`. Um pedido novo sempre
  * atualiza `em`, para bloquear também um lead criado depois do pedido anterior.
  */
-async function registrarOptOut(rootRef, digitos, agora) {
+async function registrarOptOut(rootRef, digitos, agora, origem = ORIGEM) {
   const ref = rootRef.child(`${CAMINHO}/${digitos}`);
   const atual = (await ref.once("value")).val();
   const anterior = atual && Date.parse(atual.em);
   const repetido = Number.isFinite(anterior) && agora - anterior < JANELA_REPETICAO_MS;
-  await ref.update({ em: new Date(agora).toISOString(), origem: ORIGEM });
+  await ref.update({ em: new Date(agora).toISOString(), origem });
   return { repetido };
+}
+
+/**
+ * Grava o pedido e deixa a Note no Lead do Espo de produção com aquele
+ * celular (best-effort). Devolve `{ repetido, nota }`; `nota`: `ok`,
+ * `sem_lead`, `falhou` ou `repetido`.
+ */
+async function registrarPedido({ rootRef, digitos, espoConfig, agora, logger, origem = ORIGEM }) {
+  const { repetido } = await registrarOptOut(rootRef, digitos, agora, origem);
+  let nota = repetido ? "repetido" : "sem_lead";
+  if (!repetido && espoConfig) {
+    try {
+      const espoLeadId = await espo.findExistingLead(espoConfig, { phoneE164: `+${digitos}` });
+      if (espoLeadId) {
+        await espo.postNote(espoConfig, espoLeadId, NOTA, `optout-${mascarar(digitos)}`);
+        nota = "ok";
+      }
+    } catch (error) {
+      nota = "falhou";
+      logger.warn(`[whatsappOptOut] ${mascarar(digitos)}: Note no Espo falhou (best-effort).`, error);
+    }
+  }
+  logger.info(`[whatsappOptOut] ${mascarar(digitos)}: pedido gravado (origem=${origem}, repetido=${repetido}, nota=${nota}).`);
+  return { repetido, nota };
 }
 
 /**
@@ -97,21 +121,7 @@ async function processarPedido({ token, corpo, segredo, rootRef, espoConfig, ago
   if (!digitos) return { status: 400, corpo: { ok: false, error: "telefone_invalido" } };
   if (!opcaoValida(dados.opcao ?? dados.option)) return { status: 400, corpo: { ok: false, error: "opcao_invalida" } };
 
-  const { repetido } = await registrarOptOut(rootRef, digitos, agora);
-  let nota = repetido ? "repetido" : "sem_lead";
-  if (!repetido && espoConfig) {
-    try {
-      const espoLeadId = await espo.findExistingLead(espoConfig, { phoneE164: `+${digitos}` });
-      if (espoLeadId) {
-        await espo.postNote(espoConfig, espoLeadId, NOTA, `optout-${mascarar(digitos)}`);
-        nota = "ok";
-      }
-    } catch (error) {
-      nota = "falhou";
-      logger.warn(`[whatsappOptOut] ${mascarar(digitos)}: Note no Espo falhou (best-effort).`, error);
-    }
-  }
-  logger.info(`[whatsappOptOut] ${mascarar(digitos)}: pedido gravado (repetido=${repetido}, nota=${nota}).`);
+  const { repetido, nota } = await registrarPedido({ rootRef, digitos, espoConfig, agora, logger });
   return { status: 200, corpo: { ok: true, repetido, nota } };
 }
 
@@ -122,6 +132,7 @@ module.exports = {
   tokenValido,
   opcaoValida,
   registrarOptOut,
+  registrarPedido,
   optOutBloqueia,
   processarPedido,
 };
