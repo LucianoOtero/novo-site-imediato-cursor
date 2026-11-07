@@ -350,7 +350,7 @@ As chaves `suhai_cotacao_pronta` e `suhai_proposta_enviada` continuam no secret:
 | 12490227 | 12x | R$ 213,03 | R$ 261,91 |
 | 12350578 (teste) | 12x | R$ 198,86 | R$ 244,49 |
 
-## Botão "Não quero receber" na primeira mensagem (2026-11-07)
+## Botão "Prefiro não receber" na primeira mensagem (2026-11-07)
 
 A primeira mensagem ganha um botão de resposta rápida. Quem toca nele deixa de receber os modelos automáticos daquela cotação; quem não toca segue recebendo, porque a autorização dada no site continua valendo.
 
@@ -358,16 +358,24 @@ A primeira mensagem ganha um botão de resposta rápida. Quem toca nele deixa de
 
 ### Modelo `primeira_etapa_optout` — chave `primeira_etapa`
 
-Português (BR), categoria Utilidade, sem variáveis, mesmo texto do `primeira_etapa_util` com uma frase a mais:
+Português (BR), categoria Utilidade, sem variáveis:
 
-> Olá. Recebemos seu contato. Prossiga com os demais dados solicitados para a elaboração do cálculo do seguro. Se não quiser receber mensagens sobre esta cotação por aqui, toque no botão abaixo.
+- **Cabeçalho** (texto fixo): `Cotação do seu seguro`. Sem mídia nem variável, porque o envio pela API não manda conteúdo de cabeçalho.
+- **Corpo:**
 
-Botão de **resposta rápida** (não de marketing): `Não quero receber`. Anotar o ID que o Octadesk der ao modelo. Se a Meta reclassificar como Marketing, o envio continua no `primeira_etapa_util`.
+> Olá! Recebemos seu pedido de cotação. Para concluirmos o cálculo do seu seguro, siga com os dados solicitados. Avisaremos por aqui quando o cálculo ficar pronto. Você decide: se preferir não receber mensagens sobre esta cotação, é só tocar no botão abaixo.
+
+- **Rodapé:** nenhum.
+- **Botão** de **resposta rápida** (não de marketing): `Prefiro não receber`. Um botão só.
+
+Anotar o ID que o Octadesk der ao modelo. Se a Meta reclassificar como Marketing, o envio continua no `primeira_etapa_util`.
+
+**Por que esse texto.** O pedido vem primeiro, com o que o cliente ganha ("avisaremos por aqui"), e a escolha vem depois, como controle ("Você decide", "Prefiro"), não como saída. Lembrar a liberdade de recusar depois de um pedido tende a aumentar a adesão (Carpenter, 2013, meta-análise de 42 estudos, efeito menor fora do presencial); saída difícil leva a bloqueio e denúncia, que derrubam a qualidade do número (política e boas práticas da Meta). A LGPD exige revogação "gratuita e facilitada" (art. 8º, § 5º). Medir depois: toques no botão (WhatsApp Manager e `whatsapp_optout`) e qualidade/bloqueios do número.
 
 ### Bot do Octadesk
 
-No bot do canal WhatsApp, condição "mensagem recebida igual a `Não quero receber`":
-1. Componente **"Conecte a outro sistema"**: `POST` na URL que o deploy de `whatsappOptOut` informar (`https://whatsappoptout-…-uc.a.run.app`), header `X-Imediato-Token` com o valor do secret `OCTADESK_OPTOUT_SECRET` (guardado em "Tokens externos"), corpo JSON `{"telefone":"<telefone do contato>","opcao":"Não quero receber"}`. A função aceita o telefone com ou sem +55 e também os nomes `phone`/`option`.
+No bot do canal WhatsApp, condição "mensagem recebida igual a `Prefiro não receber`":
+1. Componente **"Conecte a outro sistema"**: `POST` em `https://us-central1-imediato-seguros-site-novo.cloudfunctions.net/whatsappOptOut`, header `X-Imediato-Token` com o valor do secret `OCTADESK_OPTOUT_SECRET` (guardado em "Tokens externos") e `Content-Type: application/json`, corpo JSON `{"telefone":"<telefone do contato>","opcao":"Prefiro não receber"}`. A função aceita o telefone com ou sem +55, os nomes `phone`/`option` e também o texto antigo `Não quero receber`.
 2. Resposta ao cliente: "Pronto. Não enviaremos mais mensagens automáticas sobre esta cotação. Se precisar, é só escrever aqui."
 3. Se a chamada falhar (resposta diferente de 200), seguir para o atendimento humano.
 

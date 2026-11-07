@@ -43,7 +43,7 @@ function espoFalso(t, { leadId = "L1", falhar = false } = {}) {
 const pedido = (db, extra = {}) =>
   optout.processarPedido({
     token: SEGREDO,
-    corpo: { telefone: "+55 (11) 98765-4321", opcao: "Não quero receber" },
+    corpo: { telefone: "+55 (11) 98765-4321", opcao: "Prefiro não receber" },
     segredo: SEGREDO,
     rootRef: db.ref,
     espoConfig,
@@ -62,10 +62,13 @@ test("telefone: aceita +55, máscara e número sem DDI; recusa o resto", () => {
   assert.equal(optout.digitosTelefone(undefined), null);
 });
 
-test("opção: só 'Não quero receber', sem depender de acento, caixa ou pontuação", () => {
+test("opção: 'Prefiro não receber' ou 'Não quero receber', sem depender de acento, caixa ou pontuação", () => {
+  assert.equal(optout.opcaoValida("Prefiro não receber"), true);
+  assert.equal(optout.opcaoValida(" prefiro NAO receber! "), true);
   assert.equal(optout.opcaoValida("Não quero receber"), true);
   assert.equal(optout.opcaoValida("  nao QUERO receber. "), true);
   assert.equal(optout.opcaoValida("Quero receber"), false);
+  assert.equal(optout.opcaoValida("Prefiro receber"), false);
   assert.equal(optout.opcaoValida(""), false);
 });
 
@@ -97,7 +100,7 @@ test("pedido válido: grava em whatsapp_optout e deixa Note no Lead do Espo", as
   assert.deepEqual(db.raiz.whatsapp_optout["5511987654321"], { em: new Date(AGORA).toISOString(), origem: "octadesk_botao" });
   assert.deepEqual(chamadas.buscas, ["+5511987654321"]);
   assert.equal(chamadas.notes[0].id, "L1");
-  assert.match(chamadas.notes[0].texto, /Não quero receber/);
+  assert.match(chamadas.notes[0].texto, /Prefiro não receber/);
 });
 
 test("aceita os nomes de campo em inglês (phone/option)", async (t) => {
