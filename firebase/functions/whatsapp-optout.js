@@ -1,5 +1,5 @@
 /**
- * firebase/functions/whatsapp-optout.js — botão "Não quero receber" da
+ * firebase/functions/whatsapp-optout.js — botão "Prefiro não receber" da
  * primeira mensagem do WhatsApp (plano "Botão de opt-out WhatsApp",
  * 2026-11-07; docs/GUIA_OCTADESK_TEMPLATES.md).
  *
@@ -20,12 +20,13 @@ const crypto = require("node:crypto");
 const espo = require("./espocrm");
 
 const CAMINHO = "whatsapp_optout";
-const OPCAO = "nao quero receber";
+/** Texto do botão no modelo atual e no primeiro rascunho (normalizado). */
+const OPCOES = new Set(["prefiro nao receber", "nao quero receber"]);
 const ORIGEM = "octadesk_botao";
 /** Toques repetidos nesse intervalo são o mesmo pedido: não repetem a Note. */
 const JANELA_REPETICAO_MS = 10 * 60 * 1000;
 const NOTA =
-  "🚫 Cliente pediu pelo WhatsApp (botão \"Não quero receber\") para não receber mensagens automáticas sobre esta cotação. Os modelos automáticos deste lead foram bloqueados; o atendimento pode continuar se o cliente escrever.";
+  "🚫 Cliente pediu pelo WhatsApp (botão \"Prefiro não receber\") para não receber mensagens automáticas sobre esta cotação. Os modelos automáticos deste lead foram bloqueados; o atendimento pode continuar se o cliente escrever.";
 
 /** Dígitos no formato 55 + DDD + número, ou `null`. Aceita com ou sem +55, máscara e espaços. */
 function digitosTelefone(valor) {
@@ -54,7 +55,7 @@ function opcaoValida(opcao) {
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
-  return texto === OPCAO;
+  return OPCOES.has(texto);
 }
 
 /**
